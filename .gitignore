@@ -1,0 +1,8 @@
+.DS_Store
+__pycache__
+*.pyc
+media/
+git-sim_media/
+build/
+dist/
+git_story.egg-info/
