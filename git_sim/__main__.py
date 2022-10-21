@@ -29,11 +29,12 @@ def main():
 
     reset = subparsers.add_parser('reset', help='reset help')
     reset.add_argument("--commit", help="The ref (branch/tag), or first 6 characters of the commit ID to simulate reset to", type=str, default="HEAD")
-    reset.add_argument("--mode", help="Either mixed (default), soft, or hard", type=str, default="mixed")
+    reset.add_argument("--mode", help="Either mixed (default), soft, or hard", type=str, default="default")
 
     args = parser.parse_args()
 
     config.media_dir = os.path.join(args.media_dir, "git-sim_media")
+    config.verbosity = "ERROR"
 
     if ( args.low_quality ):
         config.quality = "low_quality"

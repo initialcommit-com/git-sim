@@ -65,15 +65,29 @@ class GitSim(MovingCameraScene):
             self.wait(3)
 
     def reset(self):
-        print("Simulating git reset to " + self.args.commit)
+        print("Simulating: git reset" + ( " --" + self.args.mode if self.args.mode != "default" else "" ) + " " + self.args.commit)
+
+        self.resetTo = git.repo.fun.rev_parse(self.repo, self.args.commit)
 
         try:
-            self.commits = list(self.repo.iter_commits(self.args.commit + '~3...HEAD'))
+            self.trimmed = False
+            self.commits = list(self.repo.iter_commits('HEAD~5...HEAD'))
+            print(self.commits)
+            if self.resetTo not in self.commits:
+                self.commits = list(self.repo.iter_commits(self.args.commit + '~3...HEAD'))
+
+            resetToInd = self.commits.index(self.resetTo)
+            self.commitsSinceResetTo = self.commits[:resetToInd]
+
+            if len(self.commits) > 5:
+                self.commits = self.commits[:3] + self.commits[resetToInd:resetToInd+2]
+                print(self.commits)
+                self.trimmed = True
+
         except git.exc.GitCommandError:
             print("git-sim error: No commits in current Git repository.")
             sys.exit(1)
 
-        self.resetTo = git.repo.fun.rev_parse(self.repo, self.args.commit)
         commit = self.commits[0]
 
         i = 0 
@@ -94,16 +108,71 @@ class GitSim(MovingCameraScene):
         self.play(self.toFadeOut.animate.align_to(self.camera.frame, UP).shift(DOWN*0.75))
 
         horizontal = Line((self.camera.frame.get_left()[0], self.camera.frame.get_center()[1], 0), (self.camera.frame.get_right()[0], self.camera.frame.get_center()[1], 0), color=self.fontColor).shift(UP*2.5)
+        horizontal2 = Line((self.camera.frame.get_left()[0], self.camera.frame.get_center()[1], 0), (self.camera.frame.get_right()[0], self.camera.frame.get_center()[1], 0), color=self.fontColor).shift(UP*1.5)
         vert1 = DashedLine((self.camera.frame.get_left()[0], self.camera.frame.get_bottom()[1], 0), (self.camera.frame.get_left()[0], horizontal.get_start()[1], 0), dash_length=0.2, color=self.fontColor).shift(RIGHT*6.5)
         vert2 = DashedLine((self.camera.frame.get_right()[0], self.camera.frame.get_bottom()[1], 0), (self.camera.frame.get_right()[0], horizontal.get_start()[1], 0), dash_length=0.2, color=self.fontColor).shift(LEFT*6.5)
 
-        deletedText = Text("Deleted", font="Monospace", font_size=28, color=self.fontColor).align_to(self.camera.frame, LEFT).shift(RIGHT*2).shift(UP*2.5)
-        workingdirectoryText = Text("Working directory", font="Monospace", font_size=28, color=self.fontColor).move_to(self.camera.frame.get_center()).align_to(deletedText, UP)
-        stagingareaText = Text("Staging area", font="Monospace", font_size=28, color=self.fontColor).align_to(self.camera.frame, RIGHT).shift(LEFT*2).align_to(deletedText, UP)
+        deletedText = Text("Changes deleted from", font="Monospace", font_size=28, color=self.fontColor).align_to(self.camera.frame, LEFT).shift(RIGHT*0.65).shift(UP*2.65)
+        workingdirectoryText = Text("Working directory modifications", font="Monospace", font_size=28, color=self.fontColor).move_to(self.camera.frame.get_center()).align_to(deletedText, UP)
+        stagingareaText = Text("Staged changes", font="Monospace", font_size=28, color=self.fontColor).align_to(self.camera.frame, RIGHT).shift(LEFT*1.65).align_to(deletedText, UP)
 
-        self.toFadeOut.add(horizontal, vert1, vert2, deletedText, workingdirectoryText, stagingareaText)
+        self.toFadeOut.add(horizontal, horizontal2, vert1, vert2, deletedText, workingdirectoryText, stagingareaText)
+        self.play(Create(horizontal), Create(horizontal2), Create(vert1), Create(vert2), AddTextLetterByLetter(deletedText), AddTextLetterByLetter(workingdirectoryText), AddTextLetterByLetter(stagingareaText))
 
-        self.play(Create(horizontal), AddTextLetterByLetter(deletedText), AddTextLetterByLetter(workingdirectoryText), AddTextLetterByLetter(stagingareaText))
+        deletedFileNames = set()
+        workingFileNames = set()
+        stagedFileNames = set()
+
+        for commit in self.commitsSinceResetTo:
+            if commit.hexsha == self.resetTo.hexsha:
+                break
+            for filename in commit.stats.files:
+                if self.args.mode == "soft":
+                    stagedFileNames.add(filename)
+                elif self.args.mode == "mixed" or self.args.mode == "default":
+                    workingFileNames.add(filename)
+                elif self.args.mode == "hard":
+                    deletedFileNames.add(filename)
+
+        for x in self.repo.index.diff(None):
+            if self.args.mode == "soft":
+                workingFileNames.add(x.a_path)
+            elif self.args.mode == "mixed" or self.args.mode == "default":
+                workingFileNames.add(x.a_path)
+            elif self.args.mode == "hard":
+                deletedFileNames.add(x.a_path)
+
+        for y in self.repo.index.diff("HEAD"):
+            if self.args.mode == "soft":
+                stagedFileNames.add(y.a_path)
+            elif self.args.mode == "mixed" or self.args.mode == "default":
+                workingFileNames.add(y.a_path)
+            elif self.args.mode == "hard":
+                deletedFileNames.add(y.a_path)
+
+        deletedFiles = VGroup()
+        workingFiles = VGroup()
+        stagedFiles = VGroup()
+
+        for i, f in enumerate(deletedFileNames):
+            deletedFiles.add(Text(f, font="Monospace", font_size=24, color=self.fontColor).move_to((deletedText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(i+1)))
+
+        for j, f in enumerate(workingFileNames):
+            workingFiles.add(Text(f, font="Monospace", font_size=24, color=self.fontColor).move_to((workingdirectoryText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(j+1)))
+
+        for h, f in enumerate(stagedFileNames):
+            stagedFiles.add(Text(f, font="Monospace", font_size=24, color=self.fontColor).move_to((stagingareaText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(h+1)))
+
+        if len(deletedFiles):
+            self.play(*[AddTextLetterByLetter(d) for d in deletedFiles])
+
+        if len(workingFiles):
+            self.play(*[AddTextLetterByLetter(w) for w in workingFiles])
+
+        if len(stagedFiles):
+            self.play(*[AddTextLetterByLetter(s) for s in stagedFiles])
+
+        self.toFadeOut.add(deletedFiles, workingFiles, stagedFiles)
 
     def parseCommits(self, commit, i, prevCircle, toFadeOut):
         if ( i < self.args.commits and commit in self.commits ):
@@ -151,10 +220,14 @@ class GitSim(MovingCameraScene):
                         arrow.shift(UP*1.25)
                     if ( start[0] < end[0] and start[1] == end[1] ):
                         arrow.flip(RIGHT).shift(UP)
-                
-            commitId = Text(commit.hexsha[0:6], font="Monospace", font_size=20, color=self.fontColor).next_to(circle, UP)
 
-            commitMessage = commit.message[:40].replace("\n", " ")
+            if i == 2 and self.trimmed:
+                commitId = Text('...', font="Monospace", font_size=20, color=self.fontColor).next_to(circle, UP)
+                commitMessage = '...'
+            else:
+                commitId = Text(commit.hexsha[0:6], font="Monospace", font_size=20, color=self.fontColor).next_to(circle, UP)
+                commitMessage = commit.message[:40].replace("\n", " ")
+
             message = Text('\n'.join(commitMessage[j:j+20] for j in range(0, len(commitMessage), 20))[:100], font="Monospace", font_size=14, color=self.fontColor).next_to(circle, DOWN)
 
             if ( isNewCommit ):
@@ -179,7 +252,7 @@ class GitSim(MovingCameraScene):
 
                 x = 0
                 for branch in self.repo.heads:
-                    if ( commit.hexsha == branch.commit.hexsha ):
+                    if ( commit.hexsha == branch.commit.hexsha and branch.name == self.repo.active_branch.name ):
                         branchText = Text(branch.name, font="Monospace", font_size=20, color=self.fontColor)
                         branchRec = Rectangle(color=GREEN, fill_color=GREEN, fill_opacity=0.25, height=0.4, width=branchText.width+0.25)
 
@@ -209,8 +282,8 @@ class GitSim(MovingCameraScene):
 
                         prevRef = tagRec
 
-                        self.play(Create(tagRec), Create(tagText), run_time=1/self.args.speed)
-                        toFadeOut.add(tagRec, tagText)
+                        #self.play(Create(tagRec), Create(tagText), run_time=1/self.args.speed)
+                        #toFadeOut.add(tagRec, tagText)
 
                         x += 1
                         if ( x >= self.args.max_tags_per_commit ):
@@ -231,16 +304,8 @@ class GitSim(MovingCameraScene):
 
             toFadeOut.add(circle, commitId, message)
 
-            commitParents = list(commit.parents)
-            if ( len(commitParents) > 0 ):
-                if ( self.args.invert_branches ):
-                    commitParents.reverse()
-
-                if ( self.args.hide_merged_chains ):
-                    self.parseCommits(commitParents[0], i+1,  prevCircle, toFadeOut)
-                else:
-                    for p in range(len(commitParents)):
-                        self.parseCommits(commitParents[p], i+1, prevCircle, toFadeOut)
+            if i < len(self.commits)-1:
+                self.parseCommits(self.commits[i+1], i+1, prevCircle, toFadeOut)
 
         else:
             return
