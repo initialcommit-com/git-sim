@@ -8,11 +8,33 @@ Simulate git commands on your own repos by generating a .mp4 visualization befor
 - Helping newer developers learn Git
 
 ## Features
-- Run a one-liner git-sim command in the terminal to generate a custom Git command animation (.mp4) in your repo
+- Run a one-liner git-sim command in the terminal to generate a custom Git command visualization (.mp4) in your repo
+- Speed up or slow down animation speed as desired
 - Add custom branded intro/outro sequences if desired
-- Dark mode and light mode
+- Choose between dark mode (default) and light mode
 
 ## Commands
+
+Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands such as "add", "reset", "branch", "merge", etc, along desired options.
+
+
+```console
+$ git-sim [global options] <subcommand> [subcommand options]
+```
+
+The `[global options]` apply to the overarching `git-sim` simulation itself, including:
+
+`--speed=n`: Set the multiple of animation speed of the output simulation, `n` can be an integer or float, default is 1.
+`--light-mode`: Use a light mode color scheme instead of default dark mode.
+`--low-quality`: Render the animation in low quality to speed up creation time, recommended for non-presentation use.
+`--show-intro`: Add an intro sequence with custom logo and title.
+`--show-outro`: Add an outro sequence with custom logo and text.
+`--title=title`: Custom title to display at the beginning of the animation.
+`--logo=logo.png`: The path to a custom logo to use in the animation intro/outro.
+`--outro-top-text`: Custom text to display above the logo during the outro.
+`--outro-bottom-text`: Custom text to display below the logo during the outro.
+
+The `[subcommand options]` are like regular Git options specific to the specified subcommand (see below for a full list).
 
 The following is a list of Git commands that can be simulated and their options.
 
