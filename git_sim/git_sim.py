@@ -72,7 +72,6 @@ class GitSim(MovingCameraScene):
         try:
             self.trimmed = False
             self.commits = list(self.repo.iter_commits('HEAD~5...HEAD'))
-            print(self.commits)
             if self.resetTo not in self.commits:
                 self.commits = list(self.repo.iter_commits(self.args.commit + '~3...HEAD'))
 
@@ -81,7 +80,6 @@ class GitSim(MovingCameraScene):
 
             if len(self.commits) > 5:
                 self.commits = self.commits[:3] + self.commits[resetToInd:resetToInd+2]
-                print(self.commits)
                 self.trimmed = True
 
         except git.exc.GitCommandError:
