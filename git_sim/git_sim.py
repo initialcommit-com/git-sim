@@ -10,6 +10,7 @@ class GitSim(MovingCameraScene):
         self.commits = []
         self.zoomOuts = 0
         self.toFadeOut = Group()
+        self.trimmed = False
 
         if ( self.args.light_mode ):
             self.fontColor = BLACK
@@ -45,6 +46,8 @@ class GitSim(MovingCameraScene):
 
         if self.args.subcommand == 'reset':
             self.reset()
+        elif self.args.subcommand == 'revert':
+            self.revert()
 
         self.wait(3)
 
@@ -70,7 +73,6 @@ class GitSim(MovingCameraScene):
         self.resetTo = git.repo.fun.rev_parse(self.repo, self.args.commit)
 
         try:
-            self.trimmed = False
             self.commits = list(self.repo.iter_commits('HEAD~5...HEAD'))
             if self.resetTo not in self.commits:
                 self.commits = list(self.repo.iter_commits(self.args.commit + '~3...HEAD'))
@@ -172,6 +174,63 @@ class GitSim(MovingCameraScene):
 
         self.toFadeOut.add(deletedFiles, workingFiles, stagedFiles)
 
+    def revert(self):
+        print("Simulating: git revert " + self.args.commit)
+
+        try:
+            self.commits = list(self.repo.iter_commits('HEAD~4...HEAD'))
+
+        except git.exc.GitCommandError:
+            print("git-sim error: No commits in current Git repository.")
+            sys.exit(1)
+
+        revert = git.repo.fun.rev_parse(self.repo, self.args.commit)
+        commit = self.commits[0]
+
+        i = 0
+        prevCircle = None
+
+        self.parseCommits(commit, i, prevCircle, self.toFadeOut)
+
+        self.play(self.camera.frame.animate.move_to(self.drawnCommits[self.commits[0].hexsha].get_center()))
+
+        circle = Circle(stroke_color=RED, fill_color=RED, fill_opacity=0.25)
+        circle.height = 1
+        circle.next_to(self.drawnCommits[self.commits[0].hexsha], LEFT, buff=1.5)
+
+        start = circle.get_center()
+        end = self.drawnCommits[self.commits[0].hexsha].get_center()
+        arrow = Arrow(start, end, color=self.fontColor)
+        length = numpy.linalg.norm(start-end) - ( 1.5 if start[1] == end[1] else 3  )
+        arrow.set_length(length)
+
+        commitId = Text("abcdef", font="Monospace", font_size=20, color=self.fontColor).next_to(circle, UP)
+        self.toFadeOut.add(commitId)
+
+        commitMessage = "Revert " + revert.hexsha[0:6]
+        commitMessage = commitMessage[:40].replace("\n", " ")
+        message = Text('\n'.join(commitMessage[j:j+20] for j in range(0, len(commitMessage), 20))[:100], font="Monospace", font_size=14, color=self.fontColor).next_to(circle, DOWN)
+        self.toFadeOut.add(message)
+
+        self.play(self.camera.frame.animate.move_to(circle.get_center()), Create(circle), AddTextLetterByLetter(commitId), AddTextLetterByLetter(message), run_time=1/self.args.speed)
+        self.drawnCommits[revert.hexsha] = circle
+        self.toFadeOut.add(circle)
+
+        self.play(Create(arrow), run_time=1/self.args.speed)
+        self.toFadeOut.add(arrow)
+
+        self.play(self.camera.frame.animate.move_to(self.toFadeOut.get_center()), run_time=1/self.args.speed)
+        self.play(self.camera.frame.animate.scale_to_fit_width(self.toFadeOut.get_width()*1.1), run_time=1/self.args.speed)
+
+        if ( self.toFadeOut.get_height() >= self.camera.frame.get_height() ):
+            self.play(self.camera.frame.animate.scale_to_fit_height(self.toFadeOut.get_height()*1.25), run_time=1/self.args.speed)
+
+        self.play(self.drawnRefs["HEAD"].animate.move_to((circle.get_center()[0], self.drawnRefs["HEAD"].get_center()[1], 0)),
+                  self.drawnRefs[self.repo.active_branch.name].animate.move_to((circle.get_center()[0], self.drawnRefs[self.repo.active_branch.name].get_center()[1], 0)))
+
+        self.play(self.camera.frame.animate.scale_to_fit_height(self.camera.frame.get_height()*2))
+        self.play(self.toFadeOut.animate.align_to(self.camera.frame, UP).shift(DOWN*0.75))
+
     def parseCommits(self, commit, i, prevCircle, toFadeOut):
         if ( i < self.args.commits and commit in self.commits ):
 
@@ -219,7 +278,8 @@ class GitSim(MovingCameraScene):
                     if ( start[0] < end[0] and start[1] == end[1] ):
                         arrow.flip(RIGHT).shift(UP)
 
-            if i == 2 and self.trimmed:
+            if ((i == 2 and self.trimmed and self.args.subcommand == 'reset') or
+                (i == 3 and self.args.subcommand == 'revert')):
                 commitId = Text('...', font="Monospace", font_size=20, color=self.fontColor).next_to(circle, UP)
                 commitMessage = '...'
             else:

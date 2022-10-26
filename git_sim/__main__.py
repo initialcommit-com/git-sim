@@ -31,6 +31,9 @@ def main():
     reset.add_argument("--commit", help="The ref (branch/tag), or first 6 characters of the commit ID to simulate reset to", type=str, default="HEAD")
     reset.add_argument("--mode", help="Either mixed (default), soft, or hard", type=str, default="default")
 
+    reset = subparsers.add_parser('revert', help='revert help')
+    reset.add_argument("--commit", help="The ref (branch/tag), or first 6 characters of the commit ID to simulate revert", type=str, default="HEAD")
+
     args = parser.parse_args()
 
     config.media_dir = os.path.join(args.media_dir, "git-sim_media")
