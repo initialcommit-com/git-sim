@@ -34,6 +34,9 @@ def main():
     reset = subparsers.add_parser('revert', help='revert help')
     reset.add_argument("--commit", help="The ref (branch/tag), or first 6 characters of the commit ID to simulate revert", type=str, default="HEAD")
 
+    reset = subparsers.add_parser('branch', help='branch help')
+    reset.add_argument("--name", help="The name of the new branch", type=str, default="new-branch")
+
     args = parser.parse_args()
 
     config.media_dir = os.path.join(args.media_dir, "git-sim_media")
