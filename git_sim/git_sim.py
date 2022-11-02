@@ -11,6 +11,7 @@ class GitSim(MovingCameraScene):
         self.zoomOuts = 0
         self.toFadeOut = Group()
         self.trimmed = False
+        self.topref = None
 
         if ( self.args.light_mode ):
             self.fontColor = BLACK
@@ -48,6 +49,8 @@ class GitSim(MovingCameraScene):
             self.reset()
         elif self.args.subcommand == 'revert':
             self.revert()
+        elif self.args.subcommand == 'branch':
+            self.branch()
 
         self.wait(3)
 
@@ -231,6 +234,41 @@ class GitSim(MovingCameraScene):
         self.play(self.camera.frame.animate.scale_to_fit_height(self.camera.frame.get_height()*2))
         self.play(self.toFadeOut.animate.align_to(self.camera.frame, UP).shift(DOWN*0.75))
 
+    def branch(self):
+        print("Simulating: git branch " + self.args.name)
+
+        try:
+            self.commits = list(self.repo.iter_commits('HEAD~5...HEAD'))
+
+        except git.exc.GitCommandError:
+            print("git-sim error: No commits in current Git repository.")
+            sys.exit(1)
+
+        commit = self.commits[0]
+
+        i = 0
+        prevCircle = None
+
+        self.parseCommits(commit, i, prevCircle, self.toFadeOut)
+
+        self.play(self.camera.frame.animate.move_to(self.toFadeOut.get_center()), run_time=1/self.args.speed)
+        self.play(self.camera.frame.animate.scale_to_fit_width(self.toFadeOut.get_width()*1.1), run_time=1/self.args.speed)
+
+        if ( self.toFadeOut.get_height() >= self.camera.frame.get_height() ):
+            self.play(self.camera.frame.animate.scale_to_fit_height(self.toFadeOut.get_height()*1.25), run_time=1/self.args.speed)
+
+        branchText = Text(self.args.name, font="Monospace", font_size=20, color=self.fontColor)
+        branchRec = Rectangle(color=GREEN, fill_color=GREEN, fill_opacity=0.25, height=0.4, width=branchText.width+0.25)
+
+        branchRec.next_to(self.topref, UP) 
+        branchText.move_to(branchRec.get_center())
+
+        fullbranch = VGroup(branchRec, branchText)
+
+        self.play(Create(fullbranch), run_time=1/self.args.speed)
+        self.toFadeOut.add(branchRec, branchText)
+        self.drawnRefs[self.args.name] = fullbranch
+
     def parseCommits(self, commit, i, prevCircle, toFadeOut):
         if ( i < self.args.commits and commit in self.commits ):
 
@@ -308,6 +346,9 @@ class GitSim(MovingCameraScene):
                     self.drawnRefs["HEAD"] = head
                     prevRef = head
 
+                    if i == 0:
+                        self.topref = prevRef
+
                 x = 0
                 for branch in self.repo.heads:
                     if ( commit.hexsha == branch.commit.hexsha and branch.name == self.repo.active_branch.name ):
@@ -326,6 +367,10 @@ class GitSim(MovingCameraScene):
                         self.drawnRefs[branch.name] = fullbranch
 
                         x += 1
+
+                        if i == 0:
+                            self.topref = prevRef
+
                         if ( x >= self.args.max_branches_per_commit ):
                             break
 

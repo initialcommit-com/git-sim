@@ -31,11 +31,11 @@ def main():
     reset.add_argument("--commit", help="The ref (branch/tag), or first 6 characters of the commit ID to simulate reset to", type=str, default="HEAD")
     reset.add_argument("--mode", help="Either mixed (default), soft, or hard", type=str, default="default")
 
-    reset = subparsers.add_parser('revert', help='revert help')
-    reset.add_argument("--commit", help="The ref (branch/tag), or first 6 characters of the commit ID to simulate revert", type=str, default="HEAD")
+    revert = subparsers.add_parser('revert', help='revert help')
+    revert.add_argument("--commit", help="The ref (branch/tag), or first 6 characters of the commit ID to simulate revert", type=str, default="HEAD")
 
-    reset = subparsers.add_parser('branch', help='branch help')
-    reset.add_argument("--name", help="The name of the new branch", type=str, default="new-branch")
+    branch = subparsers.add_parser('branch', help='branch help')
+    branch.add_argument("--name", help="The name of the new branch", type=str, default="new-branch")
 
     args = parser.parse_args()
 
