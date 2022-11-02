@@ -51,6 +51,8 @@ class GitSim(MovingCameraScene):
             self.revert()
         elif self.args.subcommand == 'branch':
             self.branch()
+        elif self.args.subcommand == 'tag':
+            self.tag()
 
         self.wait(3)
 
@@ -269,6 +271,40 @@ class GitSim(MovingCameraScene):
         self.toFadeOut.add(branchRec, branchText)
         self.drawnRefs[self.args.name] = fullbranch
 
+    def tag(self):
+        print("Simulating: git tag " + self.args.name)
+
+        try:
+            self.commits = list(self.repo.iter_commits('HEAD~5...HEAD'))
+
+        except git.exc.GitCommandError:
+            print("git-sim error: No commits in current Git repository.")
+            sys.exit(1)
+
+        commit = self.commits[0]
+
+        i = 0
+        prevCircle = None
+
+        self.parseCommits(commit, i, prevCircle, self.toFadeOut)
+
+        self.play(self.camera.frame.animate.move_to(self.toFadeOut.get_center()), run_time=1/self.args.speed)
+        self.play(self.camera.frame.animate.scale_to_fit_width(self.toFadeOut.get_width()*1.1), run_time=1/self.args.speed)
+
+        if ( self.toFadeOut.get_height() >= self.camera.frame.get_height() ):
+            self.play(self.camera.frame.animate.scale_to_fit_height(self.toFadeOut.get_height()*1.25), run_time=1/self.args.speed)
+
+        tagText = Text(self.args.name, font="Monospace", font_size=20, color=self.fontColor)
+        tagRec = Rectangle(color=YELLOW, fill_color=YELLOW, fill_opacity=0.25, height=0.4, width=tagText.width+0.25)
+
+        tagRec.next_to(self.topref, UP) 
+        tagText.move_to(tagRec.get_center())
+
+        fulltag = VGroup(tagRec, tagText)
+
+        self.play(Create(fulltag), run_time=1/self.args.speed)
+        self.toFadeOut.add(tagRec, tagText)
+
     def parseCommits(self, commit, i, prevCircle, toFadeOut):
         if ( i < self.args.commits and commit in self.commits ):
 
@@ -389,6 +425,10 @@ class GitSim(MovingCameraScene):
                         #toFadeOut.add(tagRec, tagText)
 
                         x += 1
+
+                        if i == 0:
+                            self.topref = prevRef
+
                         if ( x >= self.args.max_tags_per_commit ):
                             break
 

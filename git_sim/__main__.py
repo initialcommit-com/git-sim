@@ -37,6 +37,9 @@ def main():
     branch = subparsers.add_parser('branch', help='branch help')
     branch.add_argument("--name", help="The name of the new branch", type=str, default="new-branch")
 
+    tag = subparsers.add_parser('tag', help='tag help')
+    tag.add_argument("--name", help="The name of the new tag", type=str, default="new-tag")
+
     args = parser.parse_args()
 
     config.media_dir = os.path.join(args.media_dir, "git-sim_media")
