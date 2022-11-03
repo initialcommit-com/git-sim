@@ -1,5 +1,5 @@
 from manim import *
-from git_sim_command import *
+from git_sim_branch import *
 import git, sys, numpy
 
 class GitSim(MovingCameraScene):
