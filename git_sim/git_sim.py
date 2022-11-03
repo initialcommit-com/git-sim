@@ -1,4 +1,5 @@
 from manim import *
+from git_sim_command import *
 import git, sys, numpy
 
 class GitSim(MovingCameraScene):
@@ -20,57 +21,10 @@ class GitSim(MovingCameraScene):
 
     def construct(self):
 
-        try:
-            self.repo = git.Repo(search_parent_directories=True)
-        except git.exc.InvalidGitRepositoryError:
-            print("git-sim error: No Git repository found at current path.")
-            sys.exit(1)
+        if self.args.subcommand == 'branch':
+            self.command = GitSimBranch(self)
 
-        logo = ImageMobject(self.args.logo)
-        logo.width = 3
-
-        if ( self.args.show_intro ):
-            self.add(logo)
-
-            initialCommitText = Text(self.args.title, font="Monospace", font_size=36, color=self.fontColor).to_edge(UP, buff=1)
-            self.add(initialCommitText)
-            self.wait(2)
-            self.play(FadeOut(initialCommitText))
-            self.play(logo.animate.scale(0.25).to_edge(UP, buff=0).to_edge(RIGHT, buff=0))
-    
-            self.camera.frame.save_state()
-            self.play(FadeOut(logo))
-
-        else:
-            logo.scale(0.25).to_edge(UP, buff=0).to_edge(RIGHT, buff=0)
-            self.camera.frame.save_state()
-
-        if self.args.subcommand == 'reset':
-            self.reset()
-        elif self.args.subcommand == 'revert':
-            self.revert()
-        elif self.args.subcommand == 'branch':
-            self.branch()
-        elif self.args.subcommand == 'tag':
-            self.tag()
-
-        self.wait(3)
-
-        self.play(FadeOut(self.toFadeOut), run_time=1/self.args.speed)
-
-        if ( self.args.show_outro ):
-
-            self.play(Restore(self.camera.frame))
-
-            self.play(logo.animate.scale(4).set_x(0).set_y(0))
-
-            outroTopText = Text(self.args.outro_top_text, font="Monospace", font_size=36, color=self.fontColor).to_edge(UP, buff=1)
-            self.play(AddTextLetterByLetter(outroTopText))
-
-            outroBottomText = Text(self.args.outro_bottom_text, font="Monospace", font_size=36, color=self.fontColor).to_edge(DOWN, buff=1)
-            self.play(AddTextLetterByLetter(outroBottomText))
-
-            self.wait(3)
+        self.command.execute()
 
     def reset(self):
         print("Simulating: git reset" + ( " --" + self.args.mode if self.args.mode != "default" else "" ) + " " + self.args.commit)
