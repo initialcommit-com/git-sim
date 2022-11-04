@@ -6,13 +6,6 @@ class GitSim(MovingCameraScene):
     def __init__(self, args):
         super().__init__()
         self.args = args
-        self.drawnCommits = {}
-        self.drawnRefs = {}
-        self.commits = []
-        self.zoomOuts = 0
-        self.toFadeOut = Group()
-        self.trimmed = False
-        self.topref = None
 
         if ( self.args.light_mode ):
             self.fontColor = BLACK
@@ -189,41 +182,6 @@ class GitSim(MovingCameraScene):
 
         self.play(self.camera.frame.animate.scale_to_fit_height(self.camera.frame.get_height()*2))
         self.play(self.toFadeOut.animate.align_to(self.camera.frame, UP).shift(DOWN*0.75))
-
-    def branch(self):
-        print("Simulating: git branch " + self.args.name)
-
-        try:
-            self.commits = list(self.repo.iter_commits('HEAD~5...HEAD'))
-
-        except git.exc.GitCommandError:
-            print("git-sim error: No commits in current Git repository.")
-            sys.exit(1)
-
-        commit = self.commits[0]
-
-        i = 0
-        prevCircle = None
-
-        self.parseCommits(commit, i, prevCircle, self.toFadeOut)
-
-        self.play(self.camera.frame.animate.move_to(self.toFadeOut.get_center()), run_time=1/self.args.speed)
-        self.play(self.camera.frame.animate.scale_to_fit_width(self.toFadeOut.get_width()*1.1), run_time=1/self.args.speed)
-
-        if ( self.toFadeOut.get_height() >= self.camera.frame.get_height() ):
-            self.play(self.camera.frame.animate.scale_to_fit_height(self.toFadeOut.get_height()*1.25), run_time=1/self.args.speed)
-
-        branchText = Text(self.args.name, font="Monospace", font_size=20, color=self.fontColor)
-        branchRec = Rectangle(color=GREEN, fill_color=GREEN, fill_opacity=0.25, height=0.4, width=branchText.width+0.25)
-
-        branchRec.next_to(self.topref, UP) 
-        branchText.move_to(branchRec.get_center())
-
-        fullbranch = VGroup(branchRec, branchText)
-
-        self.play(Create(fullbranch), run_time=1/self.args.speed)
-        self.toFadeOut.add(branchRec, branchText)
-        self.drawnRefs[self.args.name] = fullbranch
 
     def tag(self):
         print("Simulating: git tag " + self.args.name)
@@ -406,9 +364,3 @@ class GitSim(MovingCameraScene):
 
         else:
             return
-
-    def getCenters(self):
-        centers = []
-        for commit in self.drawnCommits.values():
-            centers.append(commit.get_center())
-        return centers
