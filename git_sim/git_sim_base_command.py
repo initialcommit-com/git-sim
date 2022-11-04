@@ -15,6 +15,8 @@ class GitSimBaseCommand():
         self.trimmed = False
         self.prevRef = None
         self.topref = None
+        self.maxrefs = None
+        self.i = 0
 
         self.logo = ImageMobject(self.scene.args.logo)
         self.logo.width = 3
@@ -32,6 +34,18 @@ class GitSimBaseCommand():
         self.get_commits()
         self.fadeout()
         self.show_outro()
+
+    def parse_commits(self, commit, prevCircle=None):
+        if ( self.i < self.scene.args.commits and commit in self.commits ):
+            commitId, circle, arrow = self.draw_commit(commit, prevCircle)
+            self.draw_head(commit, commitId)
+            self.draw_branch(commit)
+            self.draw_tag(commit)
+            self.draw_arrow(prevCircle, arrow)
+
+            if self.i < len(self.commits)-1:
+                self.i += 1
+                self.parse_commits(self.commits[self.i], circle)
 
     def show_intro(self):
         if ( self.scene.args.show_intro ):
@@ -102,8 +116,8 @@ class GitSimBaseCommand():
         length = numpy.linalg.norm(start-end) - ( 1.5 if start[1] == end[1] else 3  )
         arrow.set_length(length)
 
-        commitId = Text(commit.hexsha[0:6], font="Monospace", font_size=20, color=self.scene.fontColor).next_to(circle, UP) 
-        commitMessage = commit.message[:40].replace("\n", " ")
+        commitId, commitMessage = self.build_commit_id_and_message(commit)
+        commitId.next_to(circle, UP)
 
         message = Text('\n'.join(commitMessage[j:j+20] for j in range(0, len(commitMessage), 20))[:100], font="Monospace", font_size=14, color=self.scene.fontColor).next_to(circle, DOWN)
 
@@ -115,7 +129,12 @@ class GitSimBaseCommand():
 
         return commitId, circle, arrow
 
-    def draw_head(self, commit, commitId, i):
+    def build_commit_id_and_message(self, commit):
+        commitId = Text(commit.hexsha[0:6], font="Monospace", font_size=20, color=self.scene.fontColor)
+        commitMessage = commit.message[:40].replace("\n", " ")
+        return commitId, commitMessage
+
+    def draw_head(self, commit, commitId):
         if ( commit.hexsha == self.repo.head.commit.hexsha ):
             headbox = Rectangle(color=BLUE, fill_color=BLUE, fill_opacity=0.25)
             headbox.width = 1 
@@ -130,12 +149,16 @@ class GitSimBaseCommand():
             self.drawnRefs["HEAD"] = head
             self.prevRef = head
 
-            if i == 0:
+            if self.i == 0:
                 self.topref = self.prevRef
 
-    def draw_branch(self, commit, i):
+    def draw_branch(self, commit):
         x = 0 
         for branch in self.repo.heads:
+
+            if self.maxrefs and len(self.drawnRefs) >= self.maxrefs:
+                return
+
             if ( commit.hexsha == branch.commit.hexsha and branch.name == self.repo.active_branch.name ):
                 branchText = Text(branch.name, font="Monospace", font_size=20, color=self.scene.fontColor)
                 branchRec = Rectangle(color=GREEN, fill_color=GREEN, fill_opacity=0.25, height=0.4, width=branchText.width+0.25)
@@ -153,12 +176,16 @@ class GitSimBaseCommand():
 
                 x += 1
 
-                if i == 0:
+                if self.i == 0:
                     self.topref = self.prevRef
 
-    def draw_tag(self, commit, i):
+    def draw_tag(self, commit):
         x = 0 
         for tag in self.repo.tags:
+
+            if self.maxrefs and len(self.drawnRefs) >= self.maxrefs:
+                return
+
             if ( commit.hexsha == tag.commit.hexsha ):
                 tagText = Text(tag.name, font="Monospace", font_size=20, color=self.scene.fontColor)
                 tagRec = Rectangle(color=YELLOW, fill_color=YELLOW, fill_opacity=0.25, height=0.4, width=tagText.width+0.25)
@@ -173,7 +200,7 @@ class GitSimBaseCommand():
 
                 x += 1
 
-                if i == 0:
+                if self.i == 0:
                     self.topref = self.prevRef
 
     def draw_arrow(self, prevCircle, arrow):
@@ -188,3 +215,75 @@ class GitSimBaseCommand():
         self.scene.play(self.scene.camera.frame.animate.scale_to_fit_width(self.toFadeOut.get_width()*1.1), run_time=1/self.scene.args.speed)
         if ( self.toFadeOut.get_height() >= self.scene.camera.frame.get_height() ):
             self.scene.play(self.scene.camera.frame.animate.scale_to_fit_height(self.toFadeOut.get_height()*1.25), run_time=1/self.scene.args.speed)
+
+    def vsplit_frame(self):
+        self.scene.play(self.scene.camera.frame.animate.scale_to_fit_height(self.scene.camera.frame.get_height()*2))
+        self.scene.play(self.toFadeOut.animate.align_to(self.scene.camera.frame, UP).shift(DOWN*0.75))
+
+    def setup_and_draw_zones(self):
+        horizontal = Line((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_center()[1], 0), (self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_center()[1], 0), color=self.scene.fontColor).shift(UP*2.5)
+        horizontal2 = Line((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_center()[1], 0), (self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_center()[1], 0), color=self.scene.fontColor).shift(UP*1.5)
+        vert1 = DashedLine((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_bottom()[1], 0), (self.scene.camera.frame.get_left()[0], horizontal.get_start()[1], 0), dash_length=0.2, color=self.scene.fontColor).shift(RIGHT*6.5)
+        vert2 = DashedLine((self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_bottom()[1], 0), (self.scene.camera.frame.get_right()[0], horizontal.get_start()[1], 0), dash_length=0.2, color=self.scene.fontColor).shift(LEFT*6.5)
+
+        deletedText = Text("Changes deleted from", font="Monospace", font_size=28, color=self.scene.fontColor).align_to(self.scene.camera.frame, LEFT).shift(RIGHT*0.65).shift(UP*2.6)
+        workingdirectoryText = Text("Working directory modifications", font="Monospace", font_size=28, color=self.scene.fontColor).move_to(self.scene.camera.frame.get_center()).align_to(deletedText, UP)
+        stagingareaText = Text("Staged changes", font="Monospace", font_size=28, color=self.scene.fontColor).align_to(self.scene.camera.frame, RIGHT).shift(LEFT*1.65).align_to(deletedText, UP)
+
+        self.toFadeOut.add(horizontal, horizontal2, vert1, vert2, deletedText, workingdirectoryText, stagingareaText)
+        self.scene.play(Create(horizontal), Create(horizontal2), Create(vert1), Create(vert2), AddTextLetterByLetter(deletedText), AddTextLetterByLetter(workingdirectoryText), AddTextLetterByLetter(stagingareaText)) 
+
+        deletedFileNames = set()
+        workingFileNames = set()
+        stagedFileNames = set()
+
+        for commit in self.commitsSinceResetTo:
+            if commit.hexsha == self.resetTo.hexsha:
+                break
+            for filename in commit.stats.files:
+                if self.scene.args.mode == "soft":
+                    stagedFileNames.add(filename)
+                elif self.scene.args.mode == "mixed" or self.scene.args.mode == "default":
+                    workingFileNames.add(filename)
+                elif self.scene.args.mode == "hard":
+                    deletedFileNames.add(filename)
+
+        for x in self.repo.index.diff(None):
+            if self.scene.args.mode == "soft":
+                workingFileNames.add(x.a_path)
+            elif self.scene.args.mode == "mixed" or self.scene.args.mode == "default":
+                workingFileNames.add(x.a_path)
+            elif self.scene.args.mode == "hard":
+                deletedFileNames.add(x.a_path)
+
+        for y in self.repo.index.diff("HEAD"):
+            if self.scene.args.mode == "soft":
+                stagedFileNames.add(y.a_path)
+            elif self.scene.args.mode == "mixed" or self.scene.args.mode == "default":
+                workingFileNames.add(y.a_path)
+            elif self.scene.args.mode == "hard":
+                deletedFileNames.add(y.a_path)
+
+        deletedFiles = VGroup()
+        workingFiles = VGroup()
+        stagedFiles = VGroup()
+
+        for i, f in enumerate(deletedFileNames):
+            deletedFiles.add(Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((deletedText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(i+1)))
+
+        for j, f in enumerate(workingFileNames):
+            workingFiles.add(Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((workingdirectoryText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(j+1)))
+
+        for h, f in enumerate(stagedFileNames):
+            stagedFiles.add(Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((stagingareaText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(h+1)))
+
+        if len(deletedFiles):
+            self.scene.play(*[AddTextLetterByLetter(d) for d in deletedFiles])
+
+        if len(workingFiles):
+            self.scene.play(*[AddTextLetterByLetter(w) for w in workingFiles])
+
+        if len(stagedFiles):
+            self.scene.play(*[AddTextLetterByLetter(s) for s in stagedFiles])
+
+        self.toFadeOut.add(deletedFiles, workingFiles, stagedFiles)

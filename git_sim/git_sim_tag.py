@@ -11,7 +11,7 @@ class GitSimTag(GitSimBaseCommand):
 
         self.show_intro()
         self.get_commits()
-        self.parseCommits(self.commits[0])
+        self.parse_commits(self.commits[0])
         self.recenter_frame()
         self.scale_frame()
 
@@ -28,15 +28,3 @@ class GitSimTag(GitSimBaseCommand):
 
         self.fadeout()
         self.show_outro()
-
-    def parseCommits(self, commit, i=0, prevCircle=None):
-        if ( i < self.scene.args.commits and commit in self.commits ):
-
-            commitId, circle, arrow = self.draw_commit(commit, prevCircle)
-            self.draw_head(commit, commitId, i)
-            self.draw_branch(commit, i)
-            self.draw_tag(commit, i)
-            self.draw_arrow(prevCircle, arrow)
-
-            if i < len(self.commits)-1:
-                self.parseCommits(self.commits[i+1], i+1, circle)

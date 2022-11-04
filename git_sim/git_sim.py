@@ -1,4 +1,5 @@
 from manim import *
+from git_sim_reset import *
 from git_sim_branch import *
 from git_sim_tag import *
 import git, sys, numpy
@@ -19,115 +20,10 @@ class GitSim(MovingCameraScene):
             self.command = GitSimBranch(self)
         elif self.args.subcommand == 'tag':
             self.command = GitSimTag(self)
+        elif self.args.subcommand == 'reset':
+            self.command = GitSimReset(self)
 
         self.command.execute()
-
-    def reset(self):
-        print("Simulating: git reset" + ( " --" + self.args.mode if self.args.mode != "default" else "" ) + " " + self.args.commit)
-
-        self.resetTo = git.repo.fun.rev_parse(self.repo, self.args.commit)
-
-        try:
-            self.commits = list(self.repo.iter_commits('HEAD~5...HEAD'))
-            if self.resetTo not in self.commits:
-                self.commits = list(self.repo.iter_commits(self.args.commit + '~3...HEAD'))
-
-            resetToInd = self.commits.index(self.resetTo)
-            self.commitsSinceResetTo = self.commits[:resetToInd]
-
-            if len(self.commits) > 5:
-                self.commits = self.commits[:3] + self.commits[resetToInd:resetToInd+2]
-                self.trimmed = True
-
-        except git.exc.GitCommandError:
-            print("git-sim error: No commits in current Git repository.")
-            sys.exit(1)
-
-        commit = self.commits[0]
-
-        i = 0 
-        prevCircle = None
-
-        self.parseCommits(commit, i, prevCircle, self.toFadeOut)
-
-        self.play(self.camera.frame.animate.move_to(self.toFadeOut.get_center()), run_time=1/self.args.speed)
-        self.play(self.camera.frame.animate.scale_to_fit_width(self.toFadeOut.get_width()*1.1), run_time=1/self.args.speed)
-
-        if ( self.toFadeOut.get_height() >= self.camera.frame.get_height() ):
-            self.play(self.camera.frame.animate.scale_to_fit_height(self.toFadeOut.get_height()*1.25), run_time=1/self.args.speed)
-
-        self.play(self.drawnRefs["HEAD"].animate.move_to((self.drawnCommits[self.resetTo.hexsha].get_center()[0], self.drawnRefs["HEAD"].get_center()[1], 0)),
-                  self.drawnRefs[self.repo.active_branch.name].animate.move_to((self.drawnCommits[self.resetTo.hexsha].get_center()[0], self.drawnRefs[self.repo.active_branch.name].get_center()[1], 0)))
-
-        self.play(self.camera.frame.animate.scale_to_fit_height(self.camera.frame.get_height()*2))
-        self.play(self.toFadeOut.animate.align_to(self.camera.frame, UP).shift(DOWN*0.75))
-
-        horizontal = Line((self.camera.frame.get_left()[0], self.camera.frame.get_center()[1], 0), (self.camera.frame.get_right()[0], self.camera.frame.get_center()[1], 0), color=self.fontColor).shift(UP*2.5)
-        horizontal2 = Line((self.camera.frame.get_left()[0], self.camera.frame.get_center()[1], 0), (self.camera.frame.get_right()[0], self.camera.frame.get_center()[1], 0), color=self.fontColor).shift(UP*1.5)
-        vert1 = DashedLine((self.camera.frame.get_left()[0], self.camera.frame.get_bottom()[1], 0), (self.camera.frame.get_left()[0], horizontal.get_start()[1], 0), dash_length=0.2, color=self.fontColor).shift(RIGHT*6.5)
-        vert2 = DashedLine((self.camera.frame.get_right()[0], self.camera.frame.get_bottom()[1], 0), (self.camera.frame.get_right()[0], horizontal.get_start()[1], 0), dash_length=0.2, color=self.fontColor).shift(LEFT*6.5)
-
-        deletedText = Text("Changes deleted from", font="Monospace", font_size=28, color=self.fontColor).align_to(self.camera.frame, LEFT).shift(RIGHT*0.65).shift(UP*2.65)
-        workingdirectoryText = Text("Working directory modifications", font="Monospace", font_size=28, color=self.fontColor).move_to(self.camera.frame.get_center()).align_to(deletedText, UP)
-        stagingareaText = Text("Staged changes", font="Monospace", font_size=28, color=self.fontColor).align_to(self.camera.frame, RIGHT).shift(LEFT*1.65).align_to(deletedText, UP)
-
-        self.toFadeOut.add(horizontal, horizontal2, vert1, vert2, deletedText, workingdirectoryText, stagingareaText)
-        self.play(Create(horizontal), Create(horizontal2), Create(vert1), Create(vert2), AddTextLetterByLetter(deletedText), AddTextLetterByLetter(workingdirectoryText), AddTextLetterByLetter(stagingareaText))
-
-        deletedFileNames = set()
-        workingFileNames = set()
-        stagedFileNames = set()
-
-        for commit in self.commitsSinceResetTo:
-            if commit.hexsha == self.resetTo.hexsha:
-                break
-            for filename in commit.stats.files:
-                if self.args.mode == "soft":
-                    stagedFileNames.add(filename)
-                elif self.args.mode == "mixed" or self.args.mode == "default":
-                    workingFileNames.add(filename)
-                elif self.args.mode == "hard":
-                    deletedFileNames.add(filename)
-
-        for x in self.repo.index.diff(None):
-            if self.args.mode == "soft":
-                workingFileNames.add(x.a_path)
-            elif self.args.mode == "mixed" or self.args.mode == "default":
-                workingFileNames.add(x.a_path)
-            elif self.args.mode == "hard":
-                deletedFileNames.add(x.a_path)
-
-        for y in self.repo.index.diff("HEAD"):
-            if self.args.mode == "soft":
-                stagedFileNames.add(y.a_path)
-            elif self.args.mode == "mixed" or self.args.mode == "default":
-                workingFileNames.add(y.a_path)
-            elif self.args.mode == "hard":
-                deletedFileNames.add(y.a_path)
-
-        deletedFiles = VGroup()
-        workingFiles = VGroup()
-        stagedFiles = VGroup()
-
-        for i, f in enumerate(deletedFileNames):
-            deletedFiles.add(Text(f, font="Monospace", font_size=24, color=self.fontColor).move_to((deletedText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(i+1)))
-
-        for j, f in enumerate(workingFileNames):
-            workingFiles.add(Text(f, font="Monospace", font_size=24, color=self.fontColor).move_to((workingdirectoryText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(j+1)))
-
-        for h, f in enumerate(stagedFileNames):
-            stagedFiles.add(Text(f, font="Monospace", font_size=24, color=self.fontColor).move_to((stagingareaText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(h+1)))
-
-        if len(deletedFiles):
-            self.play(*[AddTextLetterByLetter(d) for d in deletedFiles])
-
-        if len(workingFiles):
-            self.play(*[AddTextLetterByLetter(w) for w in workingFiles])
-
-        if len(stagedFiles):
-            self.play(*[AddTextLetterByLetter(s) for s in stagedFiles])
-
-        self.toFadeOut.add(deletedFiles, workingFiles, stagedFiles)
 
     def revert(self):
         print("Simulating: git revert " + self.args.commit)
