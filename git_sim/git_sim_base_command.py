@@ -287,3 +287,10 @@ class GitSimBaseCommand():
             self.scene.play(*[AddTextLetterByLetter(s) for s in stagedFiles])
 
         self.toFadeOut.add(deletedFiles, workingFiles, stagedFiles)
+
+    def center_frame_on_start_commit(self):
+        self.scene.play(self.scene.camera.frame.animate.move_to(self.drawnCommits[self.commits[0].hexsha].get_center()))
+
+    def reset_head_branch(self, hexsha):
+        self.scene.play(self.drawnRefs["HEAD"].animate.move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnRefs["HEAD"].get_center()[1], 0)),
+                        self.drawnRefs[self.repo.active_branch.name].animate.move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnRefs[self.repo.active_branch.name].get_center()[1], 0)))

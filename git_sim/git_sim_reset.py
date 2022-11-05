@@ -16,7 +16,7 @@ class GitSimReset(GitSimBaseCommand):
         self.parse_commits(self.commits[self.i])
         self.recenter_frame()
         self.scale_frame()
-        self.reset_head_branch()
+        self.reset_head_branch(self.resetTo.hexsha)
         self.vsplit_frame()
         self.setup_and_draw_zones()
         self.fadeout()
@@ -48,6 +48,3 @@ class GitSimReset(GitSimBaseCommand):
             commitMessage = commit.message[:40].replace("\n", " ")
         return commitId, commitMessage
 
-    def reset_head_branch(self):
-        self.scene.play(self.drawnRefs["HEAD"].animate.move_to((self.drawnCommits[self.resetTo.hexsha].get_center()[0], self.drawnRefs["HEAD"].get_center()[1], 0)),
-                        self.drawnRefs[self.repo.active_branch.name].animate.move_to((self.drawnCommits[self.resetTo.hexsha].get_center()[0], self.drawnRefs[self.repo.active_branch.name].get_center()[1], 0)))
