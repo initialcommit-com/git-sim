@@ -40,6 +40,8 @@ def main():
     tag = subparsers.add_parser('tag', help='tag help')
     tag.add_argument("--name", help="The name of the new tag", type=str, default="new-tag")
 
+    status = subparsers.add_parser('status', help='status help')
+
     args = parser.parse_args()
 
     config.media_dir = os.path.join(args.media_dir, "git-sim_media")

@@ -5,6 +5,7 @@ from git_sim_reset import *
 from git_sim_revert import *
 from git_sim_branch import *
 from git_sim_tag import *
+from git_sim_status import *
 
 class GitSim(MovingCameraScene):
     def __init__(self, args):
@@ -17,13 +18,15 @@ class GitSim(MovingCameraScene):
             self.fontColor = WHITE
 
     def construct(self):
-        if self.args.subcommand == 'branch':
-            self.command = GitSimBranch(self)
-        elif self.args.subcommand == 'tag':
-            self.command = GitSimTag(self)
-        elif self.args.subcommand == 'reset':
+        if self.args.subcommand == 'reset':
             self.command = GitSimReset(self)
         elif self.args.subcommand == 'revert':
             self.command = GitSimRevert(self)
+        elif self.args.subcommand == 'branch':
+            self.command = GitSimBranch(self)
+        elif self.args.subcommand == 'tag':
+            self.command = GitSimTag(self)
+        elif self.args.subcommand == 'status':
+            self.command = GitSimStatus(self)
 
         self.command.execute()

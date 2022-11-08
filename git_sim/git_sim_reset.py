@@ -18,7 +18,7 @@ class GitSimReset(GitSimBaseCommand):
         self.scale_frame()
         self.reset_head_branch(self.resetTo.hexsha)
         self.vsplit_frame()
-        self.setup_and_draw_zones()
+        self.setup_and_draw_zones(first_column_name="Changes deleted from")
         self.fadeout()
         self.show_outro()
 
@@ -48,3 +48,30 @@ class GitSimReset(GitSimBaseCommand):
             commitMessage = commit.message[:40].replace("\n", " ")
         return commitId, commitMessage
 
+    def populate_zones(self, deletedFileNames, workingFileNames, stagedFileNames):
+        for commit in self.commitsSinceResetTo:
+            if commit.hexsha == self.resetTo.hexsha:
+                break
+            for filename in commit.stats.files:
+                if self.scene.args.mode == "soft":
+                    stagedFileNames.add(filename)
+                elif self.scene.args.mode == "mixed" or self.scene.args.mode == "default":
+                    workingFileNames.add(filename)
+                elif self.scene.args.mode == "hard":
+                    deletedFileNames.add(filename)
+
+        for x in self.repo.index.diff(None):
+            if self.scene.args.mode == "soft":
+                workingFileNames.add(x.a_path)
+            elif self.scene.args.mode == "mixed" or self.scene.args.mode == "default":
+                workingFileNames.add(x.a_path)
+            elif self.scene.args.mode == "hard":
+                deletedFileNames.add(x.a_path)
+
+        for y in self.repo.index.diff("HEAD"):
+            if self.scene.args.mode == "soft":
+                stagedFileNames.add(y.a_path)
+            elif self.scene.args.mode == "mixed" or self.scene.args.mode == "default":
+                workingFileNames.add(y.a_path)
+            elif self.scene.args.mode == "hard":
+                deletedFileNames.add(y.a_path)

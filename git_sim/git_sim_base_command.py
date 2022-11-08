@@ -218,15 +218,19 @@ class GitSimBaseCommand():
 
     def vsplit_frame(self):
         self.scene.play(self.scene.camera.frame.animate.scale_to_fit_height(self.scene.camera.frame.get_height()*2))
-        self.scene.play(self.toFadeOut.animate.align_to(self.scene.camera.frame, UP).shift(DOWN*0.75))
 
-    def setup_and_draw_zones(self):
+        try:
+            self.scene.play(self.toFadeOut.animate.align_to(self.scene.camera.frame, UP).shift(DOWN*0.75))
+        except ValueError:
+            pass
+
+    def setup_and_draw_zones(self, upshift=2.6, first_column_name="Untracked files"):
         horizontal = Line((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_center()[1], 0), (self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_center()[1], 0), color=self.scene.fontColor).shift(UP*2.5)
         horizontal2 = Line((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_center()[1], 0), (self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_center()[1], 0), color=self.scene.fontColor).shift(UP*1.5)
         vert1 = DashedLine((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_bottom()[1], 0), (self.scene.camera.frame.get_left()[0], horizontal.get_start()[1], 0), dash_length=0.2, color=self.scene.fontColor).shift(RIGHT*6.5)
         vert2 = DashedLine((self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_bottom()[1], 0), (self.scene.camera.frame.get_right()[0], horizontal.get_start()[1], 0), dash_length=0.2, color=self.scene.fontColor).shift(LEFT*6.5)
 
-        deletedText = Text("Changes deleted from", font="Monospace", font_size=28, color=self.scene.fontColor).align_to(self.scene.camera.frame, LEFT).shift(RIGHT*0.65).shift(UP*2.6)
+        deletedText = Text(first_column_name, font="Monospace", font_size=28, color=self.scene.fontColor).align_to(self.scene.camera.frame, LEFT).shift(RIGHT*0.65).shift(UP*upshift)
         workingdirectoryText = Text("Working directory modifications", font="Monospace", font_size=28, color=self.scene.fontColor).move_to(self.scene.camera.frame.get_center()).align_to(deletedText, UP)
         stagingareaText = Text("Staged changes", font="Monospace", font_size=28, color=self.scene.fontColor).align_to(self.scene.camera.frame, RIGHT).shift(LEFT*1.65).align_to(deletedText, UP)
 
@@ -237,32 +241,7 @@ class GitSimBaseCommand():
         workingFileNames = set()
         stagedFileNames = set()
 
-        for commit in self.commitsSinceResetTo:
-            if commit.hexsha == self.resetTo.hexsha:
-                break
-            for filename in commit.stats.files:
-                if self.scene.args.mode == "soft":
-                    stagedFileNames.add(filename)
-                elif self.scene.args.mode == "mixed" or self.scene.args.mode == "default":
-                    workingFileNames.add(filename)
-                elif self.scene.args.mode == "hard":
-                    deletedFileNames.add(filename)
-
-        for x in self.repo.index.diff(None):
-            if self.scene.args.mode == "soft":
-                workingFileNames.add(x.a_path)
-            elif self.scene.args.mode == "mixed" or self.scene.args.mode == "default":
-                workingFileNames.add(x.a_path)
-            elif self.scene.args.mode == "hard":
-                deletedFileNames.add(x.a_path)
-
-        for y in self.repo.index.diff("HEAD"):
-            if self.scene.args.mode == "soft":
-                stagedFileNames.add(y.a_path)
-            elif self.scene.args.mode == "mixed" or self.scene.args.mode == "default":
-                workingFileNames.add(y.a_path)
-            elif self.scene.args.mode == "hard":
-                deletedFileNames.add(y.a_path)
+        self.populate_zones(deletedFileNames, workingFileNames, stagedFileNames)
 
         deletedFiles = VGroup()
         workingFiles = VGroup()
@@ -287,6 +266,17 @@ class GitSimBaseCommand():
             self.scene.play(*[AddTextLetterByLetter(s) for s in stagedFiles])
 
         self.toFadeOut.add(deletedFiles, workingFiles, stagedFiles)
+
+    def populate_zones(self, deletedFileNames, workingFileNames, stagedFileNames):
+
+        for x in self.repo.index.diff(None):
+            workingFileNames.add(x.a_path)
+
+        for y in self.repo.index.diff("HEAD"):
+            stagedFileNames.add(y.a_path)
+
+        for z in self.repo.untracked_files:
+            deletedFileNames.add(z)
 
     def center_frame_on_start_commit(self):
         self.scene.play(self.scene.camera.frame.animate.move_to(self.drawnCommits[self.commits[0].hexsha].get_center()))
