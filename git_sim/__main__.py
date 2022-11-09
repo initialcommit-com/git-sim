@@ -45,6 +45,9 @@ def main():
 
     status = subparsers.add_parser('status', help='status help')
 
+    add = subparsers.add_parser('add', help='add help')
+    add.add_argument("--name", help="The name of the file to add to Git's staging area", type=str, default=None, required=True) 
+
     args = parser.parse_args()
 
     config.media_dir = os.path.join(args.media_dir, "git-sim_media")

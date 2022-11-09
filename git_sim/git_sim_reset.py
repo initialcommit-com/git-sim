@@ -48,7 +48,7 @@ class GitSimReset(GitSimBaseCommand):
             commitMessage = commit.message[:40].replace("\n", " ")
         return commitId, commitMessage
 
-    def populate_zones(self, deletedFileNames, workingFileNames, stagedFileNames):
+    def populate_zones(self, deletedFileNames, workingFileNames, stagedFileNames, arrowMap={}):
         for commit in self.commitsSinceResetTo:
             if commit.hexsha == self.resetTo.hexsha:
                 break

@@ -278,30 +278,41 @@ class GitSimBaseCommand():
         else:
             self.scene.add(horizontal, horizontal2, vert1, vert2, deletedText, workingdirectoryText, stagingareaText)
 
-        deletedFileNames = set()
+        untrackedFileNames = set()
         workingFileNames = set()
         stagedFileNames = set()
+        arrowMap = {}
 
-        self.populate_zones(deletedFileNames, workingFileNames, stagedFileNames)
+        self.populate_zones(untrackedFileNames, workingFileNames, stagedFileNames, arrowMap)
 
-        deletedFiles = VGroup()
+        untrackedFiles = VGroup()
         workingFiles = VGroup()
         stagedFiles = VGroup()
 
-        for i, f in enumerate(deletedFileNames):
-            deletedFiles.add(Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((deletedText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(i+1)))
+        untrackedFilesDict = {}
+        workingFilesDict = {}
+        stagedFilesDict = {}
+
+        for i, f in enumerate(untrackedFileNames):
+            text = Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((deletedText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(i+1))
+            untrackedFiles.add(text)
+            untrackedFilesDict[f] = text
 
         for j, f in enumerate(workingFileNames):
-            workingFiles.add(Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((workingdirectoryText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(j+1)))
+            text = Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((workingdirectoryText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(j+1))
+            workingFiles.add(text)
+            workingFilesDict[f] = text
 
         for h, f in enumerate(stagedFileNames):
-            stagedFiles.add(Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((stagingareaText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(h+1)))
+            text = Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((stagingareaText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(h+1))
+            stagedFiles.add(text)
+            stagedFilesDict[f] = text
 
-        if len(deletedFiles):
+        if len(untrackedFiles):
             if self.scene.args.animate:
-                self.scene.play(*[AddTextLetterByLetter(d) for d in deletedFiles])
+                self.scene.play(*[AddTextLetterByLetter(d) for d in untrackedFiles])
             else:
-                self.scene.add(*[d for d in deletedFiles])
+                self.scene.add(*[d for d in untrackedFiles])
 
         if len(workingFiles):
             if self.scene.args.animate:
@@ -315,9 +326,17 @@ class GitSimBaseCommand():
             else:
                 self.scene.add(*[s for s in stagedFiles])
 
-        self.toFadeOut.add(deletedFiles, workingFiles, stagedFiles)
+        for filename in arrowMap:
+            arrowMap[filename].put_start_and_end_on((workingFilesDict[filename].get_right()[0]+0.25, workingFilesDict[filename].get_right()[1], 0), (stagedFilesDict[filename].get_left()[0]-0.25, stagedFilesDict[filename].get_left()[1], 0))
+            if self.scene.args.animate:
+                self.scene.play(Create(arrowMap[filename]))
+            else:
+                self.scene.add(arrowMap[filename])
+            self.toFadeOut.add(arrowMap[filename])
 
-    def populate_zones(self, deletedFileNames, workingFileNames, stagedFileNames):
+        self.toFadeOut.add(untrackedFiles, workingFiles, stagedFiles)
+
+    def populate_zones(self, untrackedFileNames, workingFileNames, stagedFileNames, arrowMap={}):
 
         for x in self.repo.index.diff(None):
             workingFileNames.add(x.a_path)
@@ -326,7 +345,7 @@ class GitSimBaseCommand():
             stagedFileNames.add(y.a_path)
 
         for z in self.repo.untracked_files:
-            deletedFileNames.add(z)
+            untrackedFileNames.add(z)
 
     def center_frame_on_start_commit(self):
         if self.scene.args.animate:
