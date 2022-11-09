@@ -58,9 +58,18 @@ class GitSimRevert(GitSimBaseCommand):
         message = Text('\n'.join(commitMessage[j:j+20] for j in range(0, len(commitMessage), 20))[:100], font="Monospace", font_size=14, color=self.scene.fontColor).next_to(circle, DOWN)
         self.toFadeOut.add(message)
 
-        self.scene.play(self.scene.camera.frame.animate.move_to(circle.get_center()), Create(circle), AddTextLetterByLetter(commitId), AddTextLetterByLetter(message), run_time=1/self.scene.args.speed)
+        if self.scene.args.animate:
+            self.scene.play(self.scene.camera.frame.animate.move_to(circle.get_center()), Create(circle), AddTextLetterByLetter(commitId), AddTextLetterByLetter(message), run_time=1/self.scene.args.speed)
+        else:
+            self.scene.camera.frame.move_to(circle.get_center())
+            self.scene.add(circle, commitId, message)
+
         self.drawnCommits[self.revert.hexsha] = circle
         self.toFadeOut.add(circle)
 
-        self.scene.play(Create(arrow), run_time=1/self.scene.args.speed)
+        if self.scene.args.animate:
+            self.scene.play(Create(arrow), run_time=1/self.scene.args.speed)
+        else:
+            self.scene.add(arrow)
+
         self.toFadeOut.add(arrow)

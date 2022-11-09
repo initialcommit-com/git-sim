@@ -23,7 +23,11 @@ class GitSimTag(GitSimBaseCommand):
 
         fulltag = VGroup(tagRec, tagText)
 
-        self.scene.play(Create(fulltag), run_time=1/self.scene.args.speed)
+        if self.scene.args.animate:
+            self.scene.play(Create(fulltag), run_time=1/self.scene.args.speed)
+        else:
+            self.scene.add(fulltag)
+
         self.toFadeOut.add(tagRec, tagText)
 
         self.fadeout()

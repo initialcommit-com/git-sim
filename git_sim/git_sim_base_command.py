@@ -48,7 +48,7 @@ class GitSimBaseCommand():
                 self.parse_commits(self.commits[self.i], circle)
 
     def show_intro(self):
-        if ( self.scene.args.show_intro ):
+        if ( self.scene.args.animate and self.scene.args.show_intro ):
             self.scene.add(self.logo)
 
             initialCommitText = Text(self.scene.args.title, font="Monospace", font_size=36, color=self.scene.fontColor).to_edge(UP, buff=1)
@@ -65,7 +65,7 @@ class GitSimBaseCommand():
             self.scene.camera.frame.save_state()        
 
     def show_outro(self):
-        if ( self.scene.args.show_outro ):
+        if ( self.scene.args.animate and self.scene.args.show_outro ):
 
             self.scene.play(Restore(self.scene.camera.frame))
 
@@ -80,8 +80,11 @@ class GitSimBaseCommand():
             self.scene.wait(3)
 
     def fadeout(self):
-        self.scene.wait(3)
-        self.scene.play(FadeOut(self.toFadeOut), run_time=1/self.scene.args.speed)
+        if self.scene.args.animate:
+            self.scene.wait(3)
+            self.scene.play(FadeOut(self.toFadeOut), run_time=1/self.scene.args.speed)
+        else:
+            self.scene.wait(0.1)
 
     def get_commits(self):
         try:
@@ -121,7 +124,11 @@ class GitSimBaseCommand():
 
         message = Text('\n'.join(commitMessage[j:j+20] for j in range(0, len(commitMessage), 20))[:100], font="Monospace", font_size=14, color=self.scene.fontColor).next_to(circle, DOWN)
 
-        self.scene.play(self.scene.camera.frame.animate.move_to(circle.get_center()), Create(circle), AddTextLetterByLetter(commitId), AddTextLetterByLetter(message), run_time=1/self.scene.args.speed)
+        if self.scene.args.animate:
+            self.scene.play(self.scene.camera.frame.animate.move_to(circle.get_center()), Create(circle), AddTextLetterByLetter(commitId), AddTextLetterByLetter(message), run_time=1/self.scene.args.speed)
+        else:
+            self.scene.add(circle, commitId, message)
+
         self.drawnCommits[commit.hexsha] = circle
 
         self.toFadeOut.add(circle, commitId, message)
@@ -144,7 +151,11 @@ class GitSimBaseCommand():
 
             head = VGroup(headbox, headText)
 
-            self.scene.play(Create(head), run_time=1/self.scene.args.speed)
+            if self.scene.args.animate:
+                self.scene.play(Create(head), run_time=1/self.scene.args.speed)
+            else:
+                self.scene.add(head)
+
             self.toFadeOut.add(head)
             self.drawnRefs["HEAD"] = head
             self.prevRef = head
@@ -170,7 +181,11 @@ class GitSimBaseCommand():
 
                 self.prevRef = fullbranch
 
-                self.scene.play(Create(fullbranch), run_time=1/self.scene.args.speed)
+                if self.scene.args.animate:
+                    self.scene.play(Create(fullbranch), run_time=1/self.scene.args.speed)
+                else:
+                    self.scene.add(fullbranch)
+
                 self.toFadeOut.add(branchRec, branchText)
                 self.drawnRefs[branch.name] = fullbranch
 
@@ -195,7 +210,11 @@ class GitSimBaseCommand():
 
                 self.prevRef = tagRec
 
-                self.scene.play(Create(tagRec), Create(tagText), run_time=1/self.scene.args.speed)
+                if self.scene.args.animate:
+                    self.scene.play(Create(tagRec), Create(tagText), run_time=1/self.scene.args.speed)
+                else:
+                    self.scene.add(tagRec, tagText)
+
                 self.toFadeOut.add(tagRec, tagText)
 
                 x += 1
@@ -204,23 +223,41 @@ class GitSimBaseCommand():
                     self.topref = self.prevRef
 
     def draw_arrow(self, prevCircle, arrow):
-        if ( prevCircle ):
-            self.scene.play(Create(arrow), run_time=1/self.scene.args.speed)
+        if prevCircle: 
+            if self.scene.args.animate:
+                self.scene.play(Create(arrow), run_time=1/self.scene.args.speed)
+            else:
+                self.scene.add(arrow)
+
             self.toFadeOut.add(arrow)
 
     def recenter_frame(self):
-        self.scene.play(self.scene.camera.frame.animate.move_to(self.toFadeOut.get_center()), run_time=1/self.scene.args.speed)
+        if self.scene.args.animate:
+            self.scene.play(self.scene.camera.frame.animate.move_to(self.toFadeOut.get_center()), run_time=1/self.scene.args.speed)
+        else:
+            self.scene.camera.frame.move_to(self.toFadeOut.get_center())
 
     def scale_frame(self):
-        self.scene.play(self.scene.camera.frame.animate.scale_to_fit_width(self.toFadeOut.get_width()*1.1), run_time=1/self.scene.args.speed)
-        if ( self.toFadeOut.get_height() >= self.scene.camera.frame.get_height() ):
-            self.scene.play(self.scene.camera.frame.animate.scale_to_fit_height(self.toFadeOut.get_height()*1.25), run_time=1/self.scene.args.speed)
+        if self.scene.args.animate:
+            self.scene.play(self.scene.camera.frame.animate.scale_to_fit_width(self.toFadeOut.get_width()*1.1), run_time=1/self.scene.args.speed)
+            if ( self.toFadeOut.get_height() >= self.scene.camera.frame.get_height() ):
+                self.scene.play(self.scene.camera.frame.animate.scale_to_fit_height(self.toFadeOut.get_height()*1.25), run_time=1/self.scene.args.speed)
+        else:
+            self.scene.camera.frame.scale_to_fit_width(self.toFadeOut.get_width()*1.1)
+            if ( self.toFadeOut.get_height() >= self.scene.camera.frame.get_height() ):
+                self.scene.camera.frame.scale_to_fit_height(self.toFadeOut.get_height()*1.25)
 
     def vsplit_frame(self):
-        self.scene.play(self.scene.camera.frame.animate.scale_to_fit_height(self.scene.camera.frame.get_height()*2))
+        if self.scene.args.animate:
+            self.scene.play(self.scene.camera.frame.animate.scale_to_fit_height(self.scene.camera.frame.get_height()*2))
+        else:
+            self.scene.camera.frame.scale_to_fit_height(self.scene.camera.frame.get_height()*2)
 
         try:
-            self.scene.play(self.toFadeOut.animate.align_to(self.scene.camera.frame, UP).shift(DOWN*0.75))
+            if self.scene.args.animate:
+                self.scene.play(self.toFadeOut.animate.align_to(self.scene.camera.frame, UP).shift(DOWN*0.75))
+            else:
+                self.toFadeOut.align_to(self.scene.camera.frame, UP).shift(DOWN*0.75)
         except ValueError:
             pass
 
@@ -235,7 +272,11 @@ class GitSimBaseCommand():
         stagingareaText = Text("Staged changes", font="Monospace", font_size=28, color=self.scene.fontColor).align_to(self.scene.camera.frame, RIGHT).shift(LEFT*1.65).align_to(deletedText, UP)
 
         self.toFadeOut.add(horizontal, horizontal2, vert1, vert2, deletedText, workingdirectoryText, stagingareaText)
-        self.scene.play(Create(horizontal), Create(horizontal2), Create(vert1), Create(vert2), AddTextLetterByLetter(deletedText), AddTextLetterByLetter(workingdirectoryText), AddTextLetterByLetter(stagingareaText)) 
+
+        if self.scene.args.animate:
+            self.scene.play(Create(horizontal), Create(horizontal2), Create(vert1), Create(vert2), AddTextLetterByLetter(deletedText), AddTextLetterByLetter(workingdirectoryText), AddTextLetterByLetter(stagingareaText)) 
+        else:
+            self.scene.add(horizontal, horizontal2, vert1, vert2, deletedText, workingdirectoryText, stagingareaText)
 
         deletedFileNames = set()
         workingFileNames = set()
@@ -257,13 +298,22 @@ class GitSimBaseCommand():
             stagedFiles.add(Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((stagingareaText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(h+1)))
 
         if len(deletedFiles):
-            self.scene.play(*[AddTextLetterByLetter(d) for d in deletedFiles])
+            if self.scene.args.animate:
+                self.scene.play(*[AddTextLetterByLetter(d) for d in deletedFiles])
+            else:
+                self.scene.add(*[d for d in deletedFiles])
 
         if len(workingFiles):
-            self.scene.play(*[AddTextLetterByLetter(w) for w in workingFiles])
+            if self.scene.args.animate:
+                self.scene.play(*[AddTextLetterByLetter(w) for w in workingFiles])
+            else:
+                self.scene.add(*[w for w in workingFiles])
 
         if len(stagedFiles):
-            self.scene.play(*[AddTextLetterByLetter(s) for s in stagedFiles])
+            if self.scene.args.animate:
+                self.scene.play(*[AddTextLetterByLetter(s) for s in stagedFiles])
+            else:
+                self.scene.add(*[s for s in stagedFiles])
 
         self.toFadeOut.add(deletedFiles, workingFiles, stagedFiles)
 
@@ -279,8 +329,15 @@ class GitSimBaseCommand():
             deletedFileNames.add(z)
 
     def center_frame_on_start_commit(self):
-        self.scene.play(self.scene.camera.frame.animate.move_to(self.drawnCommits[self.commits[0].hexsha].get_center()))
+        if self.scene.args.animate:
+            self.scene.play(self.scene.camera.frame.animate.move_to(self.drawnCommits[self.commits[0].hexsha].get_center()))
+        else:
+            self.scene.camera.frame.move_to(self.drawnCommits[self.commits[0].hexsha].get_center())
 
     def reset_head_branch(self, hexsha):
-        self.scene.play(self.drawnRefs["HEAD"].animate.move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnRefs["HEAD"].get_center()[1], 0)),
-                        self.drawnRefs[self.repo.active_branch.name].animate.move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnRefs[self.repo.active_branch.name].get_center()[1], 0)))
+        if self.scene.args.animate:
+            self.scene.play(self.drawnRefs["HEAD"].animate.move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnRefs["HEAD"].get_center()[1], 0)),
+                            self.drawnRefs[self.repo.active_branch.name].animate.move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnRefs[self.repo.active_branch.name].get_center()[1], 0)))
+        else:
+            self.drawnRefs["HEAD"].move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnRefs["HEAD"].get_center()[1], 0))
+            self.drawnRefs[self.repo.active_branch.name].move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnRefs[self.repo.active_branch.name].get_center()[1], 0))

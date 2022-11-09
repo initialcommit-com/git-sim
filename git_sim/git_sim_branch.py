@@ -23,7 +23,11 @@ class GitSimBranch(GitSimBaseCommand):
 
         fullbranch = VGroup(branchRec, branchText)
 
-        self.scene.play(Create(fullbranch), run_time=1/self.scene.args.speed)
+        if self.scene.args.animate:
+            self.scene.play(Create(fullbranch), run_time=1/self.scene.args.speed)
+        else:
+            self.scene.add(fullbranch)
+
         self.toFadeOut.add(branchRec, branchText)
         self.drawnRefs[self.scene.args.name] = fullbranch
 
