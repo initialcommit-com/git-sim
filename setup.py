@@ -21,7 +21,8 @@ setuptools.setup(
     python_requires='>=3.7',
     install_requires=[
         'gitpython',
-        'manim'
+        'manim',
+        'opencv-python',
     ],
     keywords='git sim simulation simulate git-simulate git-simulation git-sim manim animation gitanimation',
     project_urls={

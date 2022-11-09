@@ -3,6 +3,8 @@ import git_sim as gs
 import os
 import argparse
 import pathlib
+import time, datetime
+import cv2
 from manim import config, WHITE
 from manim.utils.file_ops import open_file as open_media_file
 
@@ -57,8 +59,20 @@ def main():
     scene = gs.GitSim(args)
     scene.render()
 
+    if not args.animate:
+        video = cv2.VideoCapture(str(scene.renderer.file_writer.movie_file_path))
+        success, image = video.read()
+        if success:
+            t = datetime.datetime.fromtimestamp(time.time()).strftime("%m-%d-%y_%H-%M-%S")
+            image_file_name = "git-sim-" + args.subcommand + "_" + t + ".jpg"
+            image_file_path = os.path.join(os.path.join(config.media_dir, "images"), image_file_name)
+            cv2.imwrite(image_file_path, image)
+
     try:
-        open_media_file(scene.renderer.file_writer.movie_file_path)
+        if not args.animate:
+            open_media_file(image_file_path)
+        else:
+            open_media_file(scene.renderer.file_writer.movie_file_path)
     except FileNotFoundError:
         print("Error automatically opening video player, please manually open the video file to view animation.")
 
