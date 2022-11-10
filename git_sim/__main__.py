@@ -33,6 +33,9 @@ def main():
     reset = subparsers.add_parser('reset', help='reset help')
     reset.add_argument("--commit", help="The ref (branch/tag), or first 6 characters of the commit ID to simulate reset to", type=str, default="HEAD")
     reset.add_argument("--mode", help="Either mixed (default), soft, or hard", type=str, default="default")
+    reset.add_argument("--soft", help="Simulate a soft reset, shortcut for --mode=soft", action="store_true")
+    reset.add_argument("--mixed", help="Simulate a mixed reset, shortcut for --mode=mixed", action="store_true")
+    reset.add_argument("--hard", help="Simulate a soft reset, shortcut for --mode=hard", action="store_true")
 
     revert = subparsers.add_parser('revert', help='revert help')
     revert.add_argument("--commit", help="The ref (branch/tag), or first 6 characters of the commit ID to simulate revert", type=str, default="HEAD")

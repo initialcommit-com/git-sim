@@ -8,6 +8,13 @@ class GitSimReset(GitSimBaseCommand):
         self.resetTo = git.repo.fun.rev_parse(self.repo, self.scene.args.commit)
         self.maxrefs = 2
 
+        if self.scene.args.hard:
+            self.scene.args.mode = "hard"
+        if self.scene.args.mixed:
+            self.scene.args.mode = "mixed"
+        if self.scene.args.soft:
+            self.scene.args.mode = "soft"
+
     def execute(self):
         print("Simulating: git reset" + ( " --" + self.scene.args.mode if self.scene.args.mode != "default" else "" ) + " " + self.scene.args.commit)
 
