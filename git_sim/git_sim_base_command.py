@@ -281,9 +281,11 @@ class GitSimBaseCommand():
         untrackedFileNames = set()
         workingFileNames = set()
         stagedFileNames = set()
-        arrowMap = {}
 
-        self.populate_zones(untrackedFileNames, workingFileNames, stagedFileNames, arrowMap)
+        untrackedArrowMap = {}
+        workingArrowMap = {}
+
+        self.populate_zones(untrackedFileNames, workingFileNames, stagedFileNames, untrackedArrowMap, workingArrowMap)
 
         untrackedFiles = VGroup()
         workingFiles = VGroup()
@@ -326,17 +328,25 @@ class GitSimBaseCommand():
             else:
                 self.scene.add(*[s for s in stagedFiles])
 
-        for filename in arrowMap:
-            arrowMap[filename].put_start_and_end_on((workingFilesDict[filename].get_right()[0]+0.25, workingFilesDict[filename].get_right()[1], 0), (stagedFilesDict[filename].get_left()[0]-0.25, stagedFilesDict[filename].get_left()[1], 0))
+        for filename in untrackedArrowMap:
+            untrackedArrowMap[filename].put_start_and_end_on((untrackedFilesDict[filename].get_right()[0]+0.25, untrackedFilesDict[filename].get_right()[1], 0), (stagedFilesDict[filename].get_left()[0]-0.25, stagedFilesDict[filename].get_left()[1], 0))
             if self.scene.args.animate:
-                self.scene.play(Create(arrowMap[filename]))
+                self.scene.play(Create(untrackedArrowMap[filename]))
             else:
-                self.scene.add(arrowMap[filename])
-            self.toFadeOut.add(arrowMap[filename])
+                self.scene.add(untrackedArrowMap[filename])
+            self.toFadeOut.add(untrackedArrowMap[filename])
+
+        for filename in workingArrowMap:
+            workingArrowMap[filename].put_start_and_end_on((workingFilesDict[filename].get_right()[0]+0.25, workingFilesDict[filename].get_right()[1], 0), (stagedFilesDict[filename].get_left()[0]-0.25, stagedFilesDict[filename].get_left()[1], 0))
+            if self.scene.args.animate:
+                self.scene.play(Create(workingArrowMap[filename]))
+            else:
+                self.scene.add(workingArrowMap[filename])
+            self.toFadeOut.add(workingArrowMap[filename])
 
         self.toFadeOut.add(untrackedFiles, workingFiles, stagedFiles)
 
-    def populate_zones(self, untrackedFileNames, workingFileNames, stagedFileNames, arrowMap={}):
+    def populate_zones(self, untrackedFileNames, workingFileNames, stagedFileNames, untrackedArrowMap={}, workingArrowMap={}):
 
         for x in self.repo.index.diff(None):
             workingFileNames.add(x.a_path)
