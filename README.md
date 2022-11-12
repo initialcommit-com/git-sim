@@ -95,7 +95,11 @@ Usage `git-sim revert --commit=<to-revert>`
 ![git-sim-revert_11-11-22_23-03-14](https://user-images.githubusercontent.com/49353917/201462008-2268a339-4b3b-452a-bd17-9be8d04eeafe.jpg)
 
 ## Video animation example
-https://user-images.githubusercontent.com/49353917/179362209-48748966-6d6c-46ff-9424-b1a7266fc83f.mp4
+```console
+$ git-sim --animate reset --commit=HEAD^
+```
+
+https://user-images.githubusercontent.com/49353917/201462192-a3bc3a2e-f2c9-4166-81ce-743e53255fc2.mp4
 
 ## Requirements
 * Python 3.7 or greater
