@@ -1,9 +1,9 @@
 # git-sim
-Simulate Git commands on your own repos by generating an image (default) or video visualization depicting the command's behavior. Command syntax is based directly on Git's command-line syntax, so using git-sim as familiar as possible.
+Simulate Git commands on your own repos by generating an image (default) or video visualization depicting the command's behavior. Command syntax is based directly on Git's command-line syntax, so using git-sim is as familiar as possible.
 
 ## Use cases
 - Visualize Git commands to understand their effects on your repo before actually running them
-- Prevent unexecpected working directory and repository states by simulating before running
+- Prevent unexpected working directory and repository states by simulating before running
 - Share visualizations (jpg image or mp4 video) of your Git commands with your team, or the world
 - Save visualizations as a part of your team documentation to document workflow and prevent recurring issues
 - Create static Git diagrams (jpg) or dynamic animated videos (mp4) to speed up content creation
@@ -80,7 +80,7 @@ Usage `git-sim revert --commit=<to-revert>`
 
 - Specify <to-revert> as any commit id, branch name, tag, or other ref to simulate revert for
 - Simulated output will show the new commit which reverts the changes from <revert-to>
-- Simluated output will include the next 4 most recent commits on the active branch
+- Simulated output will include the next 4 most recent commits on the active branch
 
 ## Video animation example
 https://user-images.githubusercontent.com/49353917/179362209-48748966-6d6c-46ff-9424-b1a7266fc83f.mp4
@@ -113,7 +113,7 @@ $ cd path/to/project/root
 $ git-sim [global options] <subcommand> [subcommand options]
 ```
 
-5) Simulated output will be created as a `.jpg` file. Output files are named using the subcommand executed combined with a timestamp, and by default are stored in a subdirectory called `git-sim_media/`. The location of this subdirectory is customizeable using the command line flag `--media-dir=path/to/output`. Note that when the `--animate` global flag is used, render times will be much longer and a `.mp4` video output file will be produced.
+5) Simulated output will be created as a `.jpg` file. Output files are named using the subcommand executed combined with a timestamp, and by default are stored in a subdirectory called `git-sim_media/`. The location of this subdirectory is customizable using the command line flag `--media-dir=path/to/output`. Note that when the `--animate` global flag is used, render times will be much longer and a `.mp4` video output file will be produced.
 
 6) See global help for list of global options/flags and subcommands:
 
@@ -140,7 +140,7 @@ Simulate adding a file to the Git staging area:
 $ git-sim --light-mode add --name=filename.ext
 ```
 
-Simluate creating a new Git branch:
+Simulate creating a new Git branch:
 
 ```console
 $ git-sim branch --name=new-branch-name 
@@ -196,7 +196,7 @@ $ git-sim --animate --low-quality status
 ```
 
 ## Installation
-See **QuickStart** section for details on installing manim and other dependencies. Then run:
+See **Quickstart** section for details on installing manim and other dependencies. Then run:
 
 ```console
 $ pip3 install git-sim
