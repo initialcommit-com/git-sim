@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.0.1",
     author="Jacob Stopak",
     author_email="jacob@initialcommit.io",
-    description="Simulate git commands with a visualization before running them",
+    description="Simulate Git commands on your own repos by generating an image (default) or video visualization depicting the command's behavior.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://initialcommit.com/tools/git-sim",
@@ -24,7 +24,7 @@ setuptools.setup(
         'manim',
         'opencv-python',
     ],
-    keywords='git sim simulation simulate git-simulate git-simulation git-sim manim animation gitanimation',
+    keywords='git sim simulation simulate git-simulate git-simulation git-sim manim animation gitanimation image video dryrun dry-run',
     project_urls={
         'Homepage': 'https://initialcommit.com/tools/git-sim',
     },
