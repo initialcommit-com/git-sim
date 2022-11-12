@@ -1,11 +1,12 @@
 # git-sim
-Simulate Git commands on your own repos by generating an image (default) or video visualization depicting the command's behavior.
+Simulate Git commands on your own repos by generating an image (default) or video visualization depicting the command's behavior. Command syntax is based directly on Git's command-line syntax, so using git-sim as familiar as possible.
 
 ## Use cases
 - Visualize Git commands to understand their effects on your repo before actually running them
-- Share visualizations of your Git workflow with your team, or the world
-- Create static Git diagrams or dynamic animated videos for your content
-- Save visualizations as a part of your teams documentation to prevent recurring issues
+- Prevent unexecpected working directory and repository states by simulating before running
+- Share visualizations (jpg image or mp4 video) of your Git commands with your team, or the world
+- Save visualizations as a part of your team documentation to document workflow and prevent recurring issues
+- Create static Git diagrams (jpg) or dynamic animated videos (mp4) to speed up content creation
 - Help newer developers learn Git
 
 ## Features
@@ -18,7 +19,6 @@ Simulate Git commands on your own repos by generating an image (default) or vide
 
 ## Commands
 Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands such as "status", "add", "commit", "branch", "reset", "revert", etc, along with corresponding options.
-
 
 ```console
 $ git-sim [global options] <subcommand> [subcommand options]
