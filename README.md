@@ -54,7 +54,7 @@ Usage: `git-sim status`
 ### git add
 Usage: `git-sim add --name=<file>`
 
-- Specify <file> as a *modified* working directory file, or an untracked file
+- Specify `<file>` as a *modified* working directory file, or an untracked file
 - Simulated output will show files being moved to the staging area
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
@@ -63,7 +63,7 @@ Usage: `git-sim add --name=<file>`
 ### git branch
 Usage: `git-sim branch --name=<new-branch>`
 
-- Specify <new-branch> as the name of the new branch to simulate creation of
+- Specify `<new-branch>` as the name of the new branch to simulate creation of
 - Simulated output will show the newly create branch ref along with most recent 5 commits on the active branch
 
 ![git-sim-branch_11-11-22_23-00-36](https://user-images.githubusercontent.com/49353917/201461993-5f5ae510-1b04-4cb3-9002-72e969c4d73a.jpg)
@@ -71,7 +71,7 @@ Usage: `git-sim branch --name=<new-branch>`
 ### git tag
 Usage: `git-sim tag --name=<new-tag>`
 
-- Specify <new-tag> as the name of the new tag to simulate creation of
+- Specify `<new-tag>` as the name of the new tag to simulate creation of
 - Simulated output will show the newly create tag ref along with most recent 5 commits on the active branch
 
 ![git-sim-tag_11-11-22_23-00-57](https://user-images.githubusercontent.com/49353917/201461998-86f58c5a-8fb5-4882-bb87-7e42e67d5c37.jpg)
@@ -79,7 +79,7 @@ Usage: `git-sim tag --name=<new-tag>`
 ### git reset
 Usage: `git-sim reset --commit=<reset-to> [--mixed|--soft|--hard]`
 
-- Specify <reset-to> as any commit id, branch name, tag, or other ref to simulate reset to from the current HEAD (default: `HEAD`)
+- Specify `<reset-to>` as any commit id, branch name, tag, or other ref to simulate reset to from the current HEAD (default: `HEAD`)
 - As with a normal git reset command, default reset mode is `--mixed`, but can be specified as desired using  `--mixed`, `--soft`, or `--hard`
 - Simulated output will show branch/HEAD resets and resulting state of the working directory, staging area, and whether any file changes would be deleted by running the actual command
 
@@ -88,8 +88,8 @@ Usage: `git-sim reset --commit=<reset-to> [--mixed|--soft|--hard]`
 ### git revert
 Usage `git-sim revert --commit=<to-revert>`
 
-- Specify <to-revert> as any commit id, branch name, tag, or other ref to simulate revert for
-- Simulated output will show the new commit which reverts the changes from <revert-to>
+- Specify `<to-revert>` as any commit id, branch name, tag, or other ref to simulate revert for
+- Simulated output will show the new commit which reverts the changes from `<to-revert>`
 - Simulated output will include the next 4 most recent commits on the active branch
 
 ![git-sim-revert_11-11-22_23-03-14](https://user-images.githubusercontent.com/49353917/201462008-2268a339-4b3b-452a-bd17-9be8d04eeafe.jpg)
