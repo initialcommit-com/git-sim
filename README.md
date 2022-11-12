@@ -105,7 +105,7 @@ $ pip3 install git-sim
 3) Browse to the Git repository you want create an animation from:
 
 ```console
-$ cd path/to/project/root
+$ cd path/to/git/repo
 ```
 
 4) Run the program:
