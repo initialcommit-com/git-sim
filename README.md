@@ -7,7 +7,7 @@ Simulate Git commands on your own repos by generating an image (default) or vide
 - Share visualizations (jpg image or mp4 video) of your Git commands with your team, or the world
 - Save visualizations as a part of your team documentation to document workflow and prevent recurring issues
 - Create static Git diagrams (jpg) or dynamic animated videos (mp4) to speed up content creation
-- Help newer developers learn Git
+- Help visual learners understand how Git commands work
 
 ## Features
 - Run a one-liner git-sim command in the terminal to generate a custom Git command visualization (.jpg) from your repo
