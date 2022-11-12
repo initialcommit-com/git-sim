@@ -1,5 +1,4 @@
-#from git_sim import git_sim as gs
-import git_sim as gs
+from git_sim import git_sim as gs
 import os
 import argparse
 import pathlib
