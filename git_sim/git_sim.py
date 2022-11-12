@@ -1,12 +1,12 @@
 from manim import *
 import git, sys, numpy
 
-from git_sim_reset import *
-from git_sim_revert import *
-from git_sim_branch import *
-from git_sim_tag import *
-from git_sim_status import *
-from git_sim_add import *
+from git_sim.git_sim_reset import *
+from git_sim.git_sim_revert import *
+from git_sim.git_sim_branch import *
+from git_sim.git_sim_tag import *
+from git_sim.git_sim_status import *
+from git_sim.git_sim_add import *
 
 class GitSim(MovingCameraScene):
     def __init__(self, args):
