@@ -1,5 +1,5 @@
 from manim import *
-from git_sim_base_command import GitSimBaseCommand
+from git_sim.git_sim_base_command import GitSimBaseCommand
 import git, sys, numpy
 
 class GitSimBranch(GitSimBaseCommand):
