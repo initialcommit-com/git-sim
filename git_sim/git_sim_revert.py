@@ -18,7 +18,7 @@ class GitSimRevert(GitSimBaseCommand):
         self.setup_and_draw_revert_commit()
         self.recenter_frame()
         self.scale_frame()
-        self.reset_head_branch(self.revert.hexsha)
+        self.reset_head_branch("abcdef")
         self.fadeout()
         self.show_outro()
 
@@ -64,7 +64,7 @@ class GitSimRevert(GitSimBaseCommand):
             self.scene.camera.frame.move_to(circle.get_center())
             self.scene.add(circle, commitId, message)
 
-        self.drawnCommits[self.revert.hexsha] = circle
+        self.drawnCommits["abcdef"] = circle
         self.toFadeOut.add(circle)
 
         if self.scene.args.animate:
