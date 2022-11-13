@@ -261,101 +261,101 @@ class GitSimBaseCommand():
         except ValueError:
             pass
 
-    def setup_and_draw_zones(self, upshift=2.6, first_column_name="Untracked files"):
+    def setup_and_draw_zones(self, upshift=2.6, first_column_name="Untracked files", second_column_name="Workding directory modifications", third_column_name="Staging area"):
         horizontal = Line((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_center()[1], 0), (self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_center()[1], 0), color=self.scene.fontColor).shift(UP*2.5)
         horizontal2 = Line((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_center()[1], 0), (self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_center()[1], 0), color=self.scene.fontColor).shift(UP*1.5)
         vert1 = DashedLine((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_bottom()[1], 0), (self.scene.camera.frame.get_left()[0], horizontal.get_start()[1], 0), dash_length=0.2, color=self.scene.fontColor).shift(RIGHT*6.5)
         vert2 = DashedLine((self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_bottom()[1], 0), (self.scene.camera.frame.get_right()[0], horizontal.get_start()[1], 0), dash_length=0.2, color=self.scene.fontColor).shift(LEFT*6.5)
 
-        deletedText = Text(first_column_name, font="Monospace", font_size=28, color=self.scene.fontColor).align_to(self.scene.camera.frame, LEFT).shift(RIGHT*0.65).shift(UP*upshift)
-        workingdirectoryText = Text("Working directory modifications", font="Monospace", font_size=28, color=self.scene.fontColor).move_to(self.scene.camera.frame.get_center()).align_to(deletedText, UP)
-        stagingareaText = Text("Staged changes", font="Monospace", font_size=28, color=self.scene.fontColor).align_to(self.scene.camera.frame, RIGHT).shift(LEFT*1.65).align_to(deletedText, UP)
+        firstColumnTitle = Text(first_column_name, font="Monospace", font_size=28, color=self.scene.fontColor).align_to(self.scene.camera.frame, LEFT).shift(RIGHT*0.65).shift(UP*upshift)
+        secondColumnTitle = Text(second_column_name, font="Monospace", font_size=28, color=self.scene.fontColor).move_to(self.scene.camera.frame.get_center()).align_to(firstColumnTitle, UP)
+        thirdColumnTitle = Text(third_column_name, font="Monospace", font_size=28, color=self.scene.fontColor).align_to(self.scene.camera.frame, RIGHT).shift(LEFT*1.65).align_to(firstColumnTitle, UP)
 
-        self.toFadeOut.add(horizontal, horizontal2, vert1, vert2, deletedText, workingdirectoryText, stagingareaText)
+        self.toFadeOut.add(horizontal, horizontal2, vert1, vert2, firstColumnTitle, secondColumnTitle, thirdColumnTitle)
 
         if self.scene.args.animate:
-            self.scene.play(Create(horizontal), Create(horizontal2), Create(vert1), Create(vert2), AddTextLetterByLetter(deletedText), AddTextLetterByLetter(workingdirectoryText), AddTextLetterByLetter(stagingareaText)) 
+            self.scene.play(Create(horizontal), Create(horizontal2), Create(vert1), Create(vert2), AddTextLetterByLetter(firstColumnTitle), AddTextLetterByLetter(secondColumnTitle), AddTextLetterByLetter(thirdColumnTitle)) 
         else:
-            self.scene.add(horizontal, horizontal2, vert1, vert2, deletedText, workingdirectoryText, stagingareaText)
+            self.scene.add(horizontal, horizontal2, vert1, vert2, firstColumnTitle, secondColumnTitle, thirdColumnTitle)
 
-        untrackedFileNames = set()
-        workingFileNames = set()
-        stagedFileNames = set()
+        firstColumnFileNames = set()
+        secondColumnFileNames = set()
+        thirdColumnFileNames = set()
 
-        untrackedArrowMap = {}
-        workingArrowMap = {}
+        firstColumnArrowMap = {}
+        secondColumnArrowMap = {}
 
-        self.populate_zones(untrackedFileNames, workingFileNames, stagedFileNames, untrackedArrowMap, workingArrowMap)
+        self.populate_zones(firstColumnFileNames, secondColumnFileNames, thirdColumnFileNames, firstColumnArrowMap, secondColumnArrowMap)
 
-        untrackedFiles = VGroup()
-        workingFiles = VGroup()
-        stagedFiles = VGroup()
+        firstColumnFiles = VGroup()
+        secondColumnFiles = VGroup()
+        thirdColumnFiles = VGroup()
 
-        untrackedFilesDict = {}
-        workingFilesDict = {}
-        stagedFilesDict = {}
+        firstColumnFilesDict = {}
+        secondColumnFilesDict = {}
+        thirdColumnFilesDict = {}
 
-        for i, f in enumerate(untrackedFileNames):
-            text = Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((deletedText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(i+1))
-            untrackedFiles.add(text)
-            untrackedFilesDict[f] = text
+        for i, f in enumerate(firstColumnFileNames):
+            text = Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((firstColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(i+1))
+            firstColumnFiles.add(text)
+            firstColumnFilesDict[f] = text
 
-        for j, f in enumerate(workingFileNames):
-            text = Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((workingdirectoryText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(j+1))
-            workingFiles.add(text)
-            workingFilesDict[f] = text
+        for j, f in enumerate(secondColumnFileNames):
+            text = Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((secondColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(j+1))
+            secondColumnFiles.add(text)
+            secondColumnFilesDict[f] = text
 
-        for h, f in enumerate(stagedFileNames):
-            text = Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((stagingareaText.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(h+1))
-            stagedFiles.add(text)
-            stagedFilesDict[f] = text
+        for h, f in enumerate(thirdColumnFileNames):
+            text = Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((thirdColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)).shift(DOWN*0.5*(h+1))
+            thirdColumnFiles.add(text)
+            thirdColumnFilesDict[f] = text
 
-        if len(untrackedFiles):
+        if len(firstColumnFiles):
             if self.scene.args.animate:
-                self.scene.play(*[AddTextLetterByLetter(d) for d in untrackedFiles])
+                self.scene.play(*[AddTextLetterByLetter(d) for d in firstColumnFiles])
             else:
-                self.scene.add(*[d for d in untrackedFiles])
+                self.scene.add(*[d for d in firstColumnFiles])
 
-        if len(workingFiles):
+        if len(secondColumnFiles):
             if self.scene.args.animate:
-                self.scene.play(*[AddTextLetterByLetter(w) for w in workingFiles])
+                self.scene.play(*[AddTextLetterByLetter(w) for w in secondColumnFiles])
             else:
-                self.scene.add(*[w for w in workingFiles])
+                self.scene.add(*[w for w in secondColumnFiles])
 
-        if len(stagedFiles):
+        if len(thirdColumnFiles):
             if self.scene.args.animate:
-                self.scene.play(*[AddTextLetterByLetter(s) for s in stagedFiles])
+                self.scene.play(*[AddTextLetterByLetter(s) for s in thirdColumnFiles])
             else:
-                self.scene.add(*[s for s in stagedFiles])
+                self.scene.add(*[s for s in thirdColumnFiles])
 
-        for filename in untrackedArrowMap:
-            untrackedArrowMap[filename].put_start_and_end_on((untrackedFilesDict[filename].get_right()[0]+0.25, untrackedFilesDict[filename].get_right()[1], 0), (stagedFilesDict[filename].get_left()[0]-0.25, stagedFilesDict[filename].get_left()[1], 0))
+        for filename in firstColumnArrowMap:
+            firstColumnArrowMap[filename].put_start_and_end_on((firstColumnFilesDict[filename].get_right()[0]+0.25, firstColumnFilesDict[filename].get_right()[1], 0), (thirdColumnFilesDict[filename].get_left()[0]-0.25, thirdColumnFilesDict[filename].get_left()[1], 0))
             if self.scene.args.animate:
-                self.scene.play(Create(untrackedArrowMap[filename]))
+                self.scene.play(Create(firstColumnArrowMap[filename]))
             else:
-                self.scene.add(untrackedArrowMap[filename])
-            self.toFadeOut.add(untrackedArrowMap[filename])
+                self.scene.add(firstColumnArrowMap[filename])
+            self.toFadeOut.add(firstColumnArrowMap[filename])
 
-        for filename in workingArrowMap:
-            workingArrowMap[filename].put_start_and_end_on((workingFilesDict[filename].get_right()[0]+0.25, workingFilesDict[filename].get_right()[1], 0), (stagedFilesDict[filename].get_left()[0]-0.25, stagedFilesDict[filename].get_left()[1], 0))
+        for filename in secondColumnArrowMap:
+            secondColumnArrowMap[filename].put_start_and_end_on((secondColumnFilesDict[filename].get_right()[0]+0.25, secondColumnFilesDict[filename].get_right()[1], 0), (thirdColumnFilesDict[filename].get_left()[0]-0.25, thirdColumnFilesDict[filename].get_left()[1], 0))
             if self.scene.args.animate:
-                self.scene.play(Create(workingArrowMap[filename]))
+                self.scene.play(Create(secondColumnArrowMap[filename]))
             else:
-                self.scene.add(workingArrowMap[filename])
-            self.toFadeOut.add(workingArrowMap[filename])
+                self.scene.add(secondColumnArrowMap[filename])
+            self.toFadeOut.add(secondColumnArrowMap[filename])
 
-        self.toFadeOut.add(untrackedFiles, workingFiles, stagedFiles)
+        self.toFadeOut.add(firstColumnFiles, secondColumnFiles, thirdColumnFiles)
 
-    def populate_zones(self, untrackedFileNames, workingFileNames, stagedFileNames, untrackedArrowMap={}, workingArrowMap={}):
+    def populate_zones(self, firstColumnFileNames, secondColumnFileNames, thirdColumnFileNames, firstColumnArrowMap={}, secondColumnArrowMap={}):
 
         for x in self.repo.index.diff(None):
-            workingFileNames.add(x.a_path)
+            secondColumnFileNames.add(x.a_path)
 
         for y in self.repo.index.diff("HEAD"):
-            stagedFileNames.add(y.a_path)
+            thirdColumnFileNames.add(y.a_path)
 
         for z in self.repo.untracked_files:
-            untrackedFileNames.add(z)
+            firstColumnFileNames.add(z)
 
     def center_frame_on_start_commit(self):
         if self.scene.args.animate:

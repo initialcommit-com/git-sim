@@ -24,19 +24,19 @@ class GitSimAdd(GitSimBaseCommand):
         self.fadeout()
         self.show_outro()
 
-    def populate_zones(self, untrackedFileNames, workingFileNames, stagedFileNames, untrackedArrowMap, workingArrowMap):
+    def populate_zones(self, firstColumnFileNames, secondColumnFileNames, thirdColumnFileNames, firstColumnArrowMap, secondColumnArrowMap):
 
         for x in self.repo.index.diff(None):
-            workingFileNames.add(x.a_path)
+            secondColumnFileNames.add(x.a_path)
             if self.scene.args.name == x.a_path:
-                stagedFileNames.add(x.a_path)
-                workingArrowMap[x.a_path] = Arrow(stroke_width=3, color=self.scene.fontColor)
+                thirdColumnFileNames.add(x.a_path)
+                secondColumnArrowMap[x.a_path] = Arrow(stroke_width=3, color=self.scene.fontColor)
 
         for y in self.repo.index.diff("HEAD"):
-            stagedFileNames.add(y.a_path)
+            thirdColumnFileNames.add(y.a_path)
 
         for z in self.repo.untracked_files:
-            untrackedFileNames.add(z)
+            firstColumnFileNames.add(z)
             if self.scene.args.name == z:
-                stagedFileNames.add(z)
-                untrackedArrowMap[z] = Arrow(stroke_width=3, color=self.scene.fontColor)
+                thirdColumnFileNames.add(z)
+                firstColumnArrowMap[z] = Arrow(stroke_width=3, color=self.scene.fontColor)

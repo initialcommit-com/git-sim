@@ -31,5 +31,7 @@ class GitSim(MovingCameraScene):
             self.command = GitSimStatus(self)
         elif self.args.subcommand == 'add':
             self.command = GitSimAdd(self)
+        elif self.args.subcommand == 'commit':
+            self.command = GitSimCommit(self)
 
         self.command.execute()

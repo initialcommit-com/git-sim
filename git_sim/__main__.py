@@ -50,6 +50,9 @@ def main():
     add = subparsers.add_parser('add', help='add help')
     add.add_argument("--name", help="The name of the file to add to Git's staging area", type=str, default=None, required=True) 
 
+    commit = subparsers.add_parser('commit', help='commit help')
+    commit.add_argument("-m", "--message", help="The commit message of the new commit", type=str, default="New commit")
+
     args = parser.parse_args()
 
     config.media_dir = os.path.join(args.media_dir, "git-sim_media")
