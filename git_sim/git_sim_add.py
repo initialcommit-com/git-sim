@@ -27,16 +27,19 @@ class GitSimAdd(GitSimBaseCommand):
     def populate_zones(self, firstColumnFileNames, secondColumnFileNames, thirdColumnFileNames, firstColumnArrowMap, secondColumnArrowMap):
 
         for x in self.repo.index.diff(None):
-            secondColumnFileNames.add(x.a_path)
-            if self.scene.args.name == x.a_path:
-                thirdColumnFileNames.add(x.a_path)
-                secondColumnArrowMap[x.a_path] = Arrow(stroke_width=3, color=self.scene.fontColor)
+            if "git-sim_media" not in x.a_path:
+                secondColumnFileNames.add(x.a_path)
+                if self.scene.args.name == x.a_path:
+                    thirdColumnFileNames.add(x.a_path)
+                    secondColumnArrowMap[x.a_path] = Arrow(stroke_width=3, color=self.scene.fontColor)
 
         for y in self.repo.index.diff("HEAD"):
-            thirdColumnFileNames.add(y.a_path)
+            if "git-sim_media" not in y.a_path:
+                thirdColumnFileNames.add(y.a_path)
 
         for z in self.repo.untracked_files:
-            firstColumnFileNames.add(z)
-            if self.scene.args.name == z:
-                thirdColumnFileNames.add(z)
-                firstColumnArrowMap[z] = Arrow(stroke_width=3, color=self.scene.fontColor)
+            if "git-sim_media" not in z:
+                firstColumnFileNames.add(z)
+                if self.scene.args.name == z:
+                    thirdColumnFileNames.add(z)
+                    firstColumnArrowMap[z] = Arrow(stroke_width=3, color=self.scene.fontColor)

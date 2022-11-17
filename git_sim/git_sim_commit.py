@@ -69,9 +69,11 @@ class GitSimCommit(GitSimBaseCommand):
     def populate_zones(self, firstColumnFileNames, secondColumnFileNames, thirdColumnFileNames, firstColumnArrowMap, secondColumnArrowMap):
 
         for x in self.repo.index.diff(None):
-            firstColumnFileNames.add(x.a_path)
+            if "git-sim_media" not in x.a_path:
+                firstColumnFileNames.add(x.a_path)
 
         for y in self.repo.index.diff("HEAD"):
-            secondColumnFileNames.add(y.a_path)
-            thirdColumnFileNames.add(y.a_path)
-            secondColumnArrowMap[y.a_path] = Arrow(stroke_width=3, color=self.scene.fontColor)
+            if "git-sim_media" not in y.a_path:
+                secondColumnFileNames.add(y.a_path)
+                thirdColumnFileNames.add(y.a_path)
+                secondColumnArrowMap[y.a_path] = Arrow(stroke_width=3, color=self.scene.fontColor)

@@ -261,7 +261,7 @@ class GitSimBaseCommand():
         except ValueError:
             pass
 
-    def setup_and_draw_zones(self, upshift=2.6, first_column_name="Untracked files", second_column_name="Workding directory modifications", third_column_name="Staging area"):
+    def setup_and_draw_zones(self, upshift=2.6, first_column_name="Untracked files", second_column_name="Working directory modifications", third_column_name="Staging area"):
         horizontal = Line((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_center()[1], 0), (self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_center()[1], 0), color=self.scene.fontColor).shift(UP*2.5)
         horizontal2 = Line((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_center()[1], 0), (self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_center()[1], 0), color=self.scene.fontColor).shift(UP*1.5)
         vert1 = DashedLine((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_bottom()[1], 0), (self.scene.camera.frame.get_left()[0], horizontal.get_start()[1], 0), dash_length=0.2, color=self.scene.fontColor).shift(RIGHT*6.5)
@@ -349,13 +349,16 @@ class GitSimBaseCommand():
     def populate_zones(self, firstColumnFileNames, secondColumnFileNames, thirdColumnFileNames, firstColumnArrowMap={}, secondColumnArrowMap={}):
 
         for x in self.repo.index.diff(None):
-            secondColumnFileNames.add(x.a_path)
+            if "git-sim_media" not in x.a_path:
+                secondColumnFileNames.add(x.a_path)
 
         for y in self.repo.index.diff("HEAD"):
-            thirdColumnFileNames.add(y.a_path)
+            if "git-sim_media" not in y.a_path:
+                thirdColumnFileNames.add(y.a_path)
 
         for z in self.repo.untracked_files:
-            firstColumnFileNames.add(z)
+            if "git-sim_media" not in z:
+                firstColumnFileNames.add(z)
 
     def center_frame_on_start_commit(self):
         if self.scene.args.animate:

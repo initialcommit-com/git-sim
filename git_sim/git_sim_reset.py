@@ -68,17 +68,19 @@ class GitSimReset(GitSimBaseCommand):
                     firstColumnFileNames.add(filename)
 
         for x in self.repo.index.diff(None):
-            if self.scene.args.mode == "soft":
-                secondColumnFileNames.add(x.a_path)
-            elif self.scene.args.mode == "mixed" or self.scene.args.mode == "default":
-                secondColumnFileNames.add(x.a_path)
-            elif self.scene.args.mode == "hard":
-                firstColumnFileNames.add(x.a_path)
+            if "git-sim_media" not in x.a_path:
+                if self.scene.args.mode == "soft":
+                    secondColumnFileNames.add(x.a_path)
+                elif self.scene.args.mode == "mixed" or self.scene.args.mode == "default":
+                    secondColumnFileNames.add(x.a_path)
+                elif self.scene.args.mode == "hard":
+                    firstColumnFileNames.add(x.a_path)
 
         for y in self.repo.index.diff("HEAD"):
-            if self.scene.args.mode == "soft":
-                thirdColumnFileNames.add(y.a_path)
-            elif self.scene.args.mode == "mixed" or self.scene.args.mode == "default":
-                secondColumnFileNames.add(y.a_path)
-            elif self.scene.args.mode == "hard":
-                firstColumnFileNames.add(y.a_path)
+            if "git-sim_media" not in y.a_path:
+                if self.scene.args.mode == "soft":
+                    thirdColumnFileNames.add(y.a_path)
+                elif self.scene.args.mode == "mixed" or self.scene.args.mode == "default":
+                    secondColumnFileNames.add(y.a_path)
+                elif self.scene.args.mode == "hard":
+                    firstColumnFileNames.add(y.a_path)
