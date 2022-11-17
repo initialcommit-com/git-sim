@@ -8,6 +8,7 @@ from git_sim.git_sim_tag import *
 from git_sim.git_sim_status import *
 from git_sim.git_sim_add import *
 from git_sim.git_sim_commit import *
+from git_sim.git_sim_stash import *
 
 class GitSim(MovingCameraScene):
     def __init__(self, args):
@@ -34,5 +35,7 @@ class GitSim(MovingCameraScene):
             self.command = GitSimAdd(self)
         elif self.args.subcommand == 'commit':
             self.command = GitSimCommit(self)
+        elif self.args.subcommand == 'stash':
+            self.command = GitSimStash(self)
 
         self.command.execute()

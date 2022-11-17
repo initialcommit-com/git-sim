@@ -1,4 +1,4 @@
-from git_sim import git_sim as gs
+import git_sim as gs
 import os
 import argparse
 import pathlib
@@ -27,31 +27,34 @@ def main():
     parser.add_argument("--speed", help="A multiple of the standard 1x animation speed (ex: 2 = twice as fast, 0.5 = half as fast)", type=float, default=1.5)
     parser.add_argument("--animate", help="Animate the simulation and output as an mp4 video", action="store_true")
 
-    subparsers = parser.add_subparsers(dest='subcommand', help='subcommand help')
+    subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
 
-    reset = subparsers.add_parser("reset", help='reset help')
+    reset = subparsers.add_parser("reset", help="reset help")
     reset.add_argument("commit", nargs="?", help="The ref (branch/tag), or first 6 characters of the commit ID to simulate reset to", type=str, default="HEAD")
     reset.add_argument("--mode", help="Either mixed (default), soft, or hard", type=str, default="default")
     reset.add_argument("--soft", help="Simulate a soft reset, shortcut for --mode=soft", action="store_true")
     reset.add_argument("--mixed", help="Simulate a mixed reset, shortcut for --mode=mixed", action="store_true")
     reset.add_argument("--hard", help="Simulate a soft reset, shortcut for --mode=hard", action="store_true")
 
-    revert = subparsers.add_parser('revert', help='revert help')
+    revert = subparsers.add_parser("revert", help="revert help")
     revert.add_argument("commit", nargs="?", help="The ref (branch/tag), or first 6 characters of the commit ID to simulate revert", type=str, default="HEAD")
 
-    branch = subparsers.add_parser('branch', help='branch help')
+    branch = subparsers.add_parser("branch", help="branch help")
     branch.add_argument("name", help="The name of the new branch", type=str)
 
-    tag = subparsers.add_parser('tag', help='tag help')
+    tag = subparsers.add_parser("tag", help="tag help")
     tag.add_argument("name", help="The name of the new tag", type=str)
 
-    status = subparsers.add_parser('status', help='status help')
+    status = subparsers.add_parser("status", help="status help")
 
-    add = subparsers.add_parser('add', help='add help')
+    add = subparsers.add_parser("add", help="add help")
     add.add_argument("name", nargs="?", help="The name of the file to add to Git's staging area", type=str, default=None) 
 
-    commit = subparsers.add_parser('commit', help='commit help')
+    commit = subparsers.add_parser("commit", help="commit help")
     commit.add_argument("-m", "--message", help="The commit message of the new commit", type=str, default="New commit")
+
+    stash = subparsers.add_parser("stash", help="stash help")
+    stash.add_argument("name", nargs="?", help="The name of the file to stash changes for", type=str, default=None)
 
     args = parser.parse_args()
 
@@ -84,5 +87,5 @@ def main():
     except FileNotFoundError:
         print("Error automatically opening video player, please manually open the video file to view animation.")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
