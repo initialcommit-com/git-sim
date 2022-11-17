@@ -48,7 +48,7 @@ def main():
     status = subparsers.add_parser("status", help="status help")
 
     add = subparsers.add_parser("add", help="add help")
-    add.add_argument("name", nargs="?", help="The name of the file to add to Git's staging area", type=str, default=None) 
+    add.add_argument("name", nargs="+", help="The names of one or more files to add to Git's staging area", type=str) 
 
     commit = subparsers.add_parser("commit", help="commit help")
     commit.add_argument("-m", "--message", help="The commit message of the new commit", type=str, default="New commit")
