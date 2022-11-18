@@ -261,11 +261,15 @@ class GitSimBaseCommand():
         except ValueError:
             pass
 
-    def setup_and_draw_zones(self, upshift=2.6, first_column_name="Untracked files", second_column_name="Working directory modifications", third_column_name="Staging area"):
+    def setup_and_draw_zones(self, upshift=2.6, first_column_name="Untracked files", second_column_name="Working directory modifications", third_column_name="Staging area", reverse=False):
         horizontal = Line((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_center()[1], 0), (self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_center()[1], 0), color=self.scene.fontColor).shift(UP*2.5)
         horizontal2 = Line((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_center()[1], 0), (self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_center()[1], 0), color=self.scene.fontColor).shift(UP*1.5)
         vert1 = DashedLine((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_bottom()[1], 0), (self.scene.camera.frame.get_left()[0], horizontal.get_start()[1], 0), dash_length=0.2, color=self.scene.fontColor).shift(RIGHT*6.5)
         vert2 = DashedLine((self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_bottom()[1], 0), (self.scene.camera.frame.get_right()[0], horizontal.get_start()[1], 0), dash_length=0.2, color=self.scene.fontColor).shift(LEFT*6.5)
+
+        if reverse:
+            first_column_name = "Staging area"
+            third_column_name = "Deleted changes"
 
         firstColumnTitle = Text(first_column_name, font="Monospace", font_size=28, color=self.scene.fontColor).align_to(self.scene.camera.frame, LEFT).shift(RIGHT*0.65).shift(UP*upshift)
         secondColumnTitle = Text(second_column_name, font="Monospace", font_size=28, color=self.scene.fontColor).move_to(self.scene.camera.frame.get_center()).align_to(firstColumnTitle, UP)
@@ -329,7 +333,10 @@ class GitSimBaseCommand():
                 self.scene.add(*[s for s in thirdColumnFiles])
 
         for filename in firstColumnArrowMap:
-            firstColumnArrowMap[filename].put_start_and_end_on((firstColumnFilesDict[filename].get_right()[0]+0.25, firstColumnFilesDict[filename].get_right()[1], 0), (thirdColumnFilesDict[filename].get_left()[0]-0.25, thirdColumnFilesDict[filename].get_left()[1], 0))
+            if reverse:
+                firstColumnArrowMap[filename].put_start_and_end_on((firstColumnFilesDict[filename].get_right()[0]+0.25, firstColumnFilesDict[filename].get_right()[1], 0), (secondColumnFilesDict[filename].get_left()[0]-0.25, secondColumnFilesDict[filename].get_left()[1], 0))
+            else:
+                firstColumnArrowMap[filename].put_start_and_end_on((firstColumnFilesDict[filename].get_right()[0]+0.25, firstColumnFilesDict[filename].get_right()[1], 0), (thirdColumnFilesDict[filename].get_left()[0]-0.25, thirdColumnFilesDict[filename].get_left()[1], 0))
             if self.scene.args.animate:
                 self.scene.play(Create(firstColumnArrowMap[filename]))
             else:

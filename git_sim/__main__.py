@@ -56,6 +56,9 @@ def main():
     stash = subparsers.add_parser("stash", help="stash help")
     stash.add_argument("name", nargs="*", help="The name of the file to stash changes for", type=str)
 
+    restore = subparsers.add_parser("restore", help="restore help")
+    restore.add_argument("name", nargs="+", help="The names of one or more files to restore", type=str) 
+
     args = parser.parse_args()
 
     config.media_dir = os.path.join(args.media_dir, "git-sim_media")
