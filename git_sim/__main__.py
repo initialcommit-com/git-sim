@@ -54,7 +54,7 @@ def main():
     commit.add_argument("-m", "--message", help="The commit message of the new commit", type=str, default="New commit")
 
     stash = subparsers.add_parser("stash", help="stash help")
-    stash.add_argument("name", nargs="?", help="The name of the file to stash changes for", type=str, default=None)
+    stash.add_argument("name", nargs="*", help="The name of the file to stash changes for", type=str)
 
     args = parser.parse_args()
 
