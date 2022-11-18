@@ -17,6 +17,7 @@ class GitSimBaseCommand():
         self.topref = None
         self.maxrefs = None
         self.i = 0
+        self.numCommits = 5
 
         self.logo = ImageMobject(self.scene.args.logo)
         self.logo.width = 3
@@ -36,7 +37,7 @@ class GitSimBaseCommand():
         self.show_outro()
 
     def parse_commits(self, commit, prevCircle=None):
-        if ( self.i < self.scene.args.commits and commit in self.commits ):
+        if ( self.i < self.numCommits and commit in self.commits ):
             commitId, circle, arrow = self.draw_commit(commit, prevCircle)
             self.draw_head(commit, commitId)
             self.draw_branch(commit)
@@ -88,7 +89,7 @@ class GitSimBaseCommand():
 
     def get_commits(self):
         try:
-            self.commits = list(self.repo.iter_commits('HEAD~5...HEAD'))
+            self.commits = list(self.repo.iter_commits("HEAD~" + str(self.numCommits) + "...HEAD"))
 
         except git.exc.GitCommandError:
             print("git-sim error: No commits in current Git repository.")

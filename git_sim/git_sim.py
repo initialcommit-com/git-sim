@@ -10,6 +10,7 @@ from git_sim.git_sim_add import *
 from git_sim.git_sim_commit import *
 from git_sim.git_sim_stash import *
 from git_sim.git_sim_restore import *
+from git_sim.git_sim_log import *
 
 class GitSim(MovingCameraScene):
     def __init__(self, args):
@@ -40,4 +41,8 @@ class GitSim(MovingCameraScene):
             self.command = GitSimStash(self)
         elif self.args.subcommand == 'restore':
             self.command = GitSimRestore(self)
+        elif self.args.subcommand == 'log':
+            self.command = GitSimLog(self)
+
         self.command.execute()
+

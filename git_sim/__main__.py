@@ -9,7 +9,6 @@ from manim.utils.file_ops import open_file as open_media_file
 
 def main():
     parser = argparse.ArgumentParser("git-sim", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--commits", help="The number of commits to display in the Git animation", type=int, default=8)
     parser.add_argument("--hide-merged-chains", help="Hide commits from merged branches, i.e. only display mainline commits", action="store_true")
     parser.add_argument("--reverse", help="Display commits in reverse order in the Git animation", action="store_true")
     parser.add_argument("--title", help="Custom title to display at the beginning of the animation", type=str, default="Git Sim, by initialcommit.com")
@@ -58,6 +57,9 @@ def main():
 
     restore = subparsers.add_parser("restore", help="restore help")
     restore.add_argument("name", nargs="+", help="The names of one or more files to restore", type=str) 
+
+    log = subparsers.add_parser("log", help="log help")
+    log.add_argument("--commits", help="The number of commits to display in the Git animation", type=int, default=8)
 
     args = parser.parse_args()
 
