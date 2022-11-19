@@ -59,7 +59,10 @@ def main():
     restore.add_argument("name", nargs="+", help="The names of one or more files to restore", type=str) 
 
     log = subparsers.add_parser("log", help="log help")
-    log.add_argument("--commits", help="The number of commits to display in the Git animation", type=int, default=8)
+    log.add_argument("--commits", help="The number of commits to display in the simulated log output", type=int, default=8)
+
+    cherrypick = subparsers.add_parser("cherry-pick", help="cherry-pick help")
+    cherrypick.add_argument("commit", nargs=1, type=str, help="The ref (branch/tag), or commit ID to simulate cherry-pick onto active branch")
 
     args = parser.parse_args()
 

@@ -36,9 +36,9 @@ class GitSimBaseCommand():
         self.fadeout()
         self.show_outro()
 
-    def parse_commits(self, commit, prevCircle=None):
+    def parse_commits(self, commit, prevCircle=None, shift=numpy.array([0., 0., 0.])):
         if ( self.i < self.numCommits and commit in self.commits ):
-            commitId, circle, arrow = self.draw_commit(commit, prevCircle)
+            commitId, circle, arrow = self.draw_commit(commit, prevCircle, shift)
             self.draw_head(commit, commitId)
             self.draw_branch(commit)
             self.draw_tag(commit)
@@ -47,6 +47,8 @@ class GitSimBaseCommand():
             if self.i < len(self.commits)-1:
                 self.i += 1
                 self.parse_commits(self.commits[self.i], circle)
+            else:
+                self.i = 0
 
     def show_intro(self):
         if ( self.scene.args.animate and self.scene.args.show_intro ):
@@ -87,9 +89,9 @@ class GitSimBaseCommand():
         else:
             self.scene.wait(0.1)
 
-    def get_commits(self):
+    def get_commits(self, start="HEAD"):
         try:
-            self.commits = list(self.repo.iter_commits("HEAD~" + str(self.numCommits) + "...HEAD"))
+            self.commits = list(self.repo.iter_commits(start + "~" + str(self.numCommits) + "..." + start))
 
         except git.exc.GitCommandError:
             print("git-sim error: No commits in current Git repository.")
@@ -101,7 +103,7 @@ class GitSimBaseCommand():
             centers.append(commit.get_center())
         return centers
 
-    def draw_commit(self, commit, prevCircle):
+    def draw_commit(self, commit, prevCircle, shift=numpy.array([0., 0., 0.])):
         if ( len(commit.parents) <= 1 ):
             commitFill = RED 
         else:
@@ -109,6 +111,9 @@ class GitSimBaseCommand():
 
         circle = Circle(stroke_color=commitFill, fill_color=commitFill, fill_opacity=0.25)
         circle.height = 1 
+
+        if shift.any():
+            circle.shift(shift)
 
         if prevCircle:
             circle.next_to(prevCircle, RIGHT, buff=1.5)
@@ -368,11 +373,11 @@ class GitSimBaseCommand():
             if "git-sim_media" not in z:
                 firstColumnFileNames.add(z)
 
-    def center_frame_on_start_commit(self):
+    def center_frame_on_commit(self, commit):
         if self.scene.args.animate:
-            self.scene.play(self.scene.camera.frame.animate.move_to(self.drawnCommits[self.commits[0].hexsha].get_center()))
+            self.scene.play(self.scene.camera.frame.animate.move_to(self.drawnCommits[commit.hexsha].get_center()))
         else:
-            self.scene.camera.frame.move_to(self.drawnCommits[self.commits[0].hexsha].get_center())
+            self.scene.camera.frame.move_to(self.drawnCommits[commit.hexsha].get_center())
 
     def reset_head_branch(self, hexsha):
         if self.scene.args.animate:
@@ -381,3 +386,77 @@ class GitSimBaseCommand():
         else:
             self.drawnRefs["HEAD"].move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnRefs["HEAD"].get_center()[1], 0))
             self.drawnRefs[self.repo.active_branch.name].move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnRefs[self.repo.active_branch.name].get_center()[1], 0))
+
+    def translate_frame(self, shift):
+        if self.scene.args.animate:
+            self.scene.play(self.scene.camera.frame.animate.shift(shift))
+        else:
+            self.scene.camera.frame.shift(shift)
+
+    def setup_and_draw_parent(self, child, commitMessage="New commit"):
+        circle = Circle(stroke_color=RED, fill_color=RED, fill_opacity=0.25)
+        circle.height = 1 
+        circle.next_to(self.drawnCommits[child.hexsha], LEFT, buff=1.5)
+
+        start = circle.get_center()
+        end = self.drawnCommits[child.hexsha].get_center()
+        arrow = Arrow(start, end, color=self.scene.fontColor)
+        length = numpy.linalg.norm(start-end) - ( 1.5 if start[1] == end[1] else 3  )
+        arrow.set_length(length)
+
+        commitId = Text("abcdef", font="Monospace", font_size=20, color=self.scene.fontColor).next_to(circle, UP) 
+        self.toFadeOut.add(commitId)
+
+        commitMessage = commitMessage[:40].replace("\n", " ")
+        message = Text('\n'.join(commitMessage[j:j+20] for j in range(0, len(commitMessage), 20))[:100], font="Monospace", font_size=14, color=self.scene.fontColor).next_to(circle, DOWN)
+        self.toFadeOut.add(message)
+
+        if self.scene.args.animate:
+            self.scene.play(self.scene.camera.frame.animate.move_to(circle.get_center()), Create(circle), AddTextLetterByLetter(commitId), AddTextLetterByLetter(message), run_time=1/self.scene.args.speed)
+        else:
+            self.scene.camera.frame.move_to(circle.get_center())
+            self.scene.add(circle, commitId, message)
+
+        self.drawnCommits["abcdef"] = circle
+        self.toFadeOut.add(circle)
+
+        if self.scene.args.animate:
+            self.scene.play(Create(arrow), run_time=1/self.scene.args.speed)
+        else:
+            self.scene.add(arrow)
+
+        self.toFadeOut.add(arrow)
+
+    def draw_arrow_between_commits(self, startsha, endsha):
+        start = self.drawnCommits[startsha].get_center()
+        end = self.drawnCommits[endsha].get_center()
+
+        arrow = DottedLine(start, end, color=self.scene.fontColor).add_tip()
+        length = numpy.linalg.norm(start-end) - ( 1.5 if start[1] == end[1] else 3  )
+        arrow.set_length(length)
+        self.draw_arrow(True, arrow)
+
+class DottedLine(Line):
+
+    def __init__(self, *args, dot_spacing=0.4, dot_kwargs={}, **kwargs):
+        Line.__init__(self, *args, **kwargs)
+        n_dots = int(self.get_length() / dot_spacing) + 1
+        dot_spacing = self.get_length() / (n_dots - 1)
+        unit_vector = self.get_unit_vector()
+        start = self.start
+
+        self.dot_points = [start + unit_vector * dot_spacing * x for x in range(n_dots)]
+        self.dots = [Dot(point, **dot_kwargs) for point in self.dot_points]
+
+        self.clear_points()
+
+        self.add(*self.dots)
+
+        self.get_start = lambda: self.dot_points[0]
+        self.get_end = lambda: self.dot_points[-1]
+
+    def get_first_handle(self):
+        return self.dot_points[-1]
+
+    def get_last_handle(self):
+        return self.dot_points[-2]
