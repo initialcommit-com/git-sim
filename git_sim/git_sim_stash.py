@@ -16,7 +16,7 @@ class GitSimStash(GitSimBaseCommand):
             self.scene.args.name = [x.a_path for x in self.repo.index.diff(None)] + [y.a_path for y in self.repo.index.diff("HEAD")]
 
     def execute(self):
-        print("Simulating: git stash " + " ".join(self.scene.args.name))
+        print("Simulating: git " + self.scene.args.subcommand + " " + " ".join(self.scene.args.name))
 
         self.show_intro()
         self.get_commits()

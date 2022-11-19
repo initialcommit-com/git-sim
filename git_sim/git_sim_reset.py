@@ -16,7 +16,7 @@ class GitSimReset(GitSimBaseCommand):
             self.scene.args.mode = "soft"
 
     def execute(self):
-        print("Simulating: git reset" + ( " --" + self.scene.args.mode if self.scene.args.mode != "default" else "" ) + " " + self.scene.args.commit)
+        print("Simulating: git " + self.scene.args.subcommand + ( " --" + self.scene.args.mode if self.scene.args.mode != "default" else "" ) + " " + self.scene.args.commit)
 
         self.show_intro()
         self.get_commits()

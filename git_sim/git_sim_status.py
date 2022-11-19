@@ -8,7 +8,7 @@ class GitSimStatus(GitSimBaseCommand):
         self.maxrefs = 2
 
     def execute(self):
-        print("Simulating: git status")
+        print("Simulating: git " + self.scene.args.subcommand)
 
         self.show_intro()
         self.get_commits()

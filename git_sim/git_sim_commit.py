@@ -9,7 +9,7 @@ class GitSimCommit(GitSimBaseCommand):
         self.numCommits = 4
 
     def execute(self):
-        print('Simulating: git commit -m "' + self.scene.args.message + '"')
+        print('Simulating: git ' + self.scene.args.subcommand + ' -m "' + self.scene.args.message + '"')
 
         self.show_intro()
         self.get_commits()

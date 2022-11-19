@@ -9,12 +9,12 @@ class GitSimRevert(GitSimBaseCommand):
         self.maxrefs = 2
 
     def execute(self):
-        print("Simulating: git revert " + self.scene.args.commit)
+        print("Simulating: git " + self.scene.args.subcommand + " " + self.scene.args.commit)
 
         self.show_intro()
         self.get_commits()
         self.parse_commits(self.commits[self.i])
-        self.center_frame_on_start_commit()
+        self.center_frame_on_commit(self.commits[0])
         self.setup_and_draw_revert_commit()
         self.recenter_frame()
         self.scale_frame()

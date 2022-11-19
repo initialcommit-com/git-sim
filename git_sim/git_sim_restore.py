@@ -13,7 +13,7 @@ class GitSimRestore(GitSimBaseCommand):
                 sys.exit()
 
     def execute(self):
-        print("Simulating: git restore " + " ".join(self.scene.args.name))
+        print("Simulating: git " + self.scene.args.subcommand + " " + " ".join(self.scene.args.name))
 
         self.show_intro()
         self.get_commits()
