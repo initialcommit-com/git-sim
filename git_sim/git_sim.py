@@ -12,6 +12,7 @@ from git_sim.git_sim_stash import *
 from git_sim.git_sim_restore import *
 from git_sim.git_sim_log import *
 from git_sim.git_sim_cherrypick import *
+from git_sim.git_sim_merge import *
 
 class GitSim(MovingCameraScene):
     def __init__(self, args):
@@ -46,6 +47,7 @@ class GitSim(MovingCameraScene):
             self.command = GitSimLog(self)
         elif self.args.subcommand == 'cherry-pick':
             self.command = GitSimCherryPick(self)
+        elif self.args.subcommand == 'merge':
+            self.command = GitSimMerge(self)
 
         self.command.execute()
-

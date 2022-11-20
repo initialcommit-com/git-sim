@@ -176,7 +176,7 @@ class GitSimBaseCommand():
             if self.maxrefs and len(self.drawnRefs) >= self.maxrefs:
                 return
 
-            if ( commit.hexsha == branch.commit.hexsha and branch.name == self.repo.active_branch.name ):
+            if ( commit.hexsha == branch.commit.hexsha ):
                 branchText = Text(branch.name, font="Monospace", font_size=20, color=self.scene.fontColor)
                 branchRec = Rectangle(color=GREEN, fill_color=GREEN, fill_opacity=0.25, height=0.4, width=branchText.width+0.25)
 
@@ -381,11 +381,11 @@ class GitSimBaseCommand():
 
     def reset_head_branch(self, hexsha):
         if self.scene.args.animate:
-            self.scene.play(self.drawnRefs["HEAD"].animate.move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnRefs["HEAD"].get_center()[1], 0)),
-                            self.drawnRefs[self.repo.active_branch.name].animate.move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnRefs[self.repo.active_branch.name].get_center()[1], 0)))
+            self.scene.play(self.drawnRefs["HEAD"].animate.move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnCommits[hexsha].get_center()[1]+1.4, 0)),
+                            self.drawnRefs[self.repo.active_branch.name].animate.move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnCommits[hexsha].get_center()[1]+2, 0)))
         else:
-            self.drawnRefs["HEAD"].move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnRefs["HEAD"].get_center()[1], 0))
-            self.drawnRefs[self.repo.active_branch.name].move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnRefs[self.repo.active_branch.name].get_center()[1], 0))
+            self.drawnRefs["HEAD"].move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnCommits[hexsha].get_center()[1]+1.4, 0))
+            self.drawnRefs[self.repo.active_branch.name].move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnCommits[hexsha].get_center()[1]+2, 0))
 
     def translate_frame(self, shift):
         if self.scene.args.animate:
@@ -393,10 +393,11 @@ class GitSimBaseCommand():
         else:
             self.scene.camera.frame.shift(shift)
 
-    def setup_and_draw_parent(self, child, commitMessage="New commit"):
+    def setup_and_draw_parent(self, child, commitMessage="New commit", shift=numpy.array([0., 0., 0.]), draw_arrow=True):
         circle = Circle(stroke_color=RED, fill_color=RED, fill_opacity=0.25)
         circle.height = 1 
         circle.next_to(self.drawnCommits[child.hexsha], LEFT, buff=1.5)
+        circle.shift(shift)
 
         start = circle.get_center()
         end = self.drawnCommits[child.hexsha].get_center()
@@ -420,19 +421,19 @@ class GitSimBaseCommand():
         self.drawnCommits["abcdef"] = circle
         self.toFadeOut.add(circle)
 
-        if self.scene.args.animate:
-            self.scene.play(Create(arrow), run_time=1/self.scene.args.speed)
-        else:
-            self.scene.add(arrow)
-
-        self.toFadeOut.add(arrow)
+        if draw_arrow:
+            if self.scene.args.animate:
+                self.scene.play(Create(arrow), run_time=1/self.scene.args.speed)
+            else:
+                self.scene.add(arrow)
+            self.toFadeOut.add(arrow)
 
     def draw_arrow_between_commits(self, startsha, endsha):
         start = self.drawnCommits[startsha].get_center()
         end = self.drawnCommits[endsha].get_center()
 
         arrow = DottedLine(start, end, color=self.scene.fontColor).add_tip()
-        length = numpy.linalg.norm(start-end) - ( 1.5 if start[1] == end[1] else 3  )
+        length = numpy.linalg.norm(start-end) - 1.65
         arrow.set_length(length)
         self.draw_arrow(True, arrow)
 

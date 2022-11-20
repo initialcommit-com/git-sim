@@ -64,6 +64,9 @@ def main():
     cherrypick = subparsers.add_parser("cherry-pick", help="cherry-pick help")
     cherrypick.add_argument("commit", nargs=1, type=str, help="The ref (branch/tag), or commit ID to simulate cherry-pick onto active branch")
 
+    merge = subparsers.add_parser("merge", help="merge help")
+    merge.add_argument("branch", nargs=1, type=str, help="The name of the branch to merge into the active checked-out branch")
+
     args = parser.parse_args()
 
     config.media_dir = os.path.join(args.media_dir, "git-sim_media")
