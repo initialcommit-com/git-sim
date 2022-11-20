@@ -379,13 +379,13 @@ class GitSimBaseCommand():
         else:
             self.scene.camera.frame.move_to(self.drawnCommits[commit.hexsha].get_center())
 
-    def reset_head_branch(self, hexsha):
+    def reset_head_branch(self, hexsha, shift=numpy.array([0., 0., 0.])):
         if self.scene.args.animate:
-            self.scene.play(self.drawnRefs["HEAD"].animate.move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnCommits[hexsha].get_center()[1]+1.4, 0)),
-                            self.drawnRefs[self.repo.active_branch.name].animate.move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnCommits[hexsha].get_center()[1]+2, 0)))
+            self.scene.play(self.drawnRefs["HEAD"].animate.move_to((self.drawnCommits[hexsha].get_center()[0]+shift[0], self.drawnCommits[hexsha].get_center()[1]+1.4+shift[1], 0)),
+                            self.drawnRefs[self.repo.active_branch.name].animate.move_to((self.drawnCommits[hexsha].get_center()[0]+shift[0], self.drawnCommits[hexsha].get_center()[1]+2+shift[1], 0)))
         else:
-            self.drawnRefs["HEAD"].move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnCommits[hexsha].get_center()[1]+1.4, 0))
-            self.drawnRefs[self.repo.active_branch.name].move_to((self.drawnCommits[hexsha].get_center()[0], self.drawnCommits[hexsha].get_center()[1]+2, 0))
+            self.drawnRefs["HEAD"].move_to((self.drawnCommits[hexsha].get_center()[0]+shift[0], self.drawnCommits[hexsha].get_center()[1]+1.4+shift[1], 0))
+            self.drawnRefs[self.repo.active_branch.name].move_to((self.drawnCommits[hexsha].get_center()[0]+shift[0], self.drawnCommits[hexsha].get_center()[1]+2+shift[1], 0))
 
     def translate_frame(self, shift):
         if self.scene.args.animate:
