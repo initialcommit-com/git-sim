@@ -13,6 +13,7 @@ from git_sim.git_sim_restore import *
 from git_sim.git_sim_log import *
 from git_sim.git_sim_cherrypick import *
 from git_sim.git_sim_merge import *
+from git_sim.git_sim_rebase import *
 
 class GitSim(MovingCameraScene):
     def __init__(self, args):
@@ -49,5 +50,7 @@ class GitSim(MovingCameraScene):
             self.command = GitSimCherryPick(self)
         elif self.args.subcommand == 'merge':
             self.command = GitSimMerge(self)
+        elif self.args.subcommand == 'rebase':
+            self.command = GitSimRebase(self)
 
         self.command.execute()
