@@ -18,7 +18,7 @@ Simulate Git commands on your own repos by generating an image (default) or vide
 - Animation only: Speed up or slow down animation speed as desired
 
 ## Commands
-Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands such as "status", "add", "commit", "branch", "reset", "revert", etc, along with corresponding options.
+Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "log", "status", "add", "restore", "commit", "stash", "branch", "tag", "reset", "revert", "merge", "rebase", "cherry-pick", along with corresponding options.
 
 ```console
 $ git-sim [global options] <subcommand> [subcommand options]
