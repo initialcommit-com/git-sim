@@ -11,7 +11,7 @@ Simulate Git commands on your own repos by generating an image (default) or vide
 
 ## Features
 - Run a one-liner git-sim command in the terminal to generate a custom Git command visualization (.jpg) from your repo
-- Supported commands: `status`, `add`, `branch`, `tag`, `reset`, `revert`
+- Supported commands: `log`, `status`, `add`, `restore`, `commit`, `stash`, `branch`, `tag`, `reset`, `revert`, `merge`, `rebase`, `cherry-pick`
 - Generate an animated video (.mp4) instead of a static image using the `--animate` flag (note: significant performance slowdown, it is recommended to use `--low-quality` to speed up testing and remove when ready to generate presentation-quality video)
 - Choose between dark mode (default) and light mode
 - Animation only: Add custom branded intro/outro sequences if desired
