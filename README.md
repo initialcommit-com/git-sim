@@ -48,6 +48,8 @@ Usage: `git-sim log`
 
 - Simulated output will show the most recent 8 commits on the active branch
 
+![git-sim-log_11-21-22_20-41-05](https://user-images.githubusercontent.com/49353917/203223506-988a097b-752e-4a11-a0ce-a8dbd9fb20bc.jpg)
+
 ### git status
 Usage: `git-sim status`
 
@@ -72,6 +74,8 @@ Usage: `git-sim restore <file 1> <file 2> ... <file n>`
 - Simulated output will show files being moved back to the working directory or discarded changes
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
+![git-sim-restore_11-21-22_20-43-45](https://user-images.githubusercontent.com/49353917/203223705-e1872376-df9f-4f11-b06e-746766b2a4ca.jpg)
+
 ### git commit
 Usage: `git-sim commit -m "Commit message"`
 
@@ -80,6 +84,8 @@ Usage: `git-sim commit -m "Commit message"`
 - HEAD and the active branch will be moved to the new commit
 - Simulated output will show files in the staging area being included in the new commit
 
+![git-sim-commit_11-21-22_20-45-11](https://user-images.githubusercontent.com/49353917/203223869-d7f37189-7a6a-4e5d-93f3-46c7f3509690.jpg)
+
 ### git stash
 Usage: `git-sim stash <file>`
 
@@ -87,6 +93,8 @@ Usage: `git-sim stash <file>`
 - If no `<file>` is specified, all available working directory and staged files will be included
 - Simulated output will show files being moved to the Git stash
 - Note that simulated output will also show the most recent 5 commits on the active branch
+
+![git-sim-stash_11-21-22_20-46-21](https://user-images.githubusercontent.com/49353917/203224031-21c4a8c0-38d4-430d-b0a2-da4b320d05ab.jpg)
 
 ### git branch
 Usage: `git-sim branch <new branch name>`
@@ -130,15 +138,21 @@ Usage: `git-sim merge <branch>`
 - Otherwise, a three-way merge will be depicted
 - To force a merge commit when a fast-forward is possible, use `--no-ff`
 
+![git-sim-merge_11-21-22_20-47-08](https://user-images.githubusercontent.com/49353917/203224123-315df1be-36ca-470a-a31b-f87f39b00f82.jpg)
+
 ### git rebase
 Usage: `git-sim rebase <new-base>`
 
 - Specify `<new-base>` as the branch name to rebase the active branch onto
 
+![git-sim-rebase_11-21-22_21-12-19](https://user-images.githubusercontent.com/49353917/203227267-c7552d92-da41-48db-a6c5-bb7f8a1e3d0f.jpg)
+
 ### git cherry-pick
 Usage: `git-sim cherry-pick <commit>`
 
 - Specify `<commit>` as a ref (branch name/tag) or commit ID to cherry-pick onto the active branch
+
+![git-sim-cherry-pick_11-21-22_21-13-23](https://user-images.githubusercontent.com/49353917/203227369-fce5edc3-00b5-4d57-95b8-318442c3984e.jpg)
 
 ## Video animation example
 ```console
