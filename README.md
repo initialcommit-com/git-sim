@@ -29,7 +29,8 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 `--light-mode`: Use a light mode color scheme instead of default dark mode.  
 `--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video.
 
-Animation-only global options (to be used in conjunction with `--animate`:  
+Animation-only global options (to be used in conjunction with `--animate`:
+
 `--speed=n`: Set the multiple of animation speed of the output simulation, `n` can be an integer or float, default is 1.  
 `--low-quality`: Render the animation in low quality to speed up creation time, recommended for non-presentation use.  
 `--show-intro`: Add an intro sequence with custom logo and title.  
