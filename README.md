@@ -25,6 +25,7 @@ $ git-sim [global options] <subcommand> [subcommand options]
 ```
 
 The `[global options]` apply to the overarching `git-sim` simulation itself, including:
+
 `--light-mode`: Use a light mode color scheme instead of default dark mode.
 `--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video. 
 
