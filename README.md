@@ -205,17 +205,41 @@ $ git-sim <subcommand> -h
 ```
 
 ## Basic command examples
-Simulate the output of the git status command:
+Simulate the output of the git log command:
 
 ```console
 $ cd path/to/git/repo
+$ git-sim log
+```
+
+Simulate the output of the git status command:
+
+```console
 $ git-sim status
 ```
 
 Simulate adding a file to the Git staging area:
 
 ```console
-$ git-sim --light-mode add filename.ext
+$ git-sim add filename.ext
+```
+
+Simulate restoring a file from the Git staging area:
+
+```console
+$ git-sim restore filename.ext
+```
+
+Simulate creating a new commit based on currently staged changes:
+
+```console
+$ git-sim commit -m "Commit message"
+```
+
+Simulate stashing all working directory and staged changes:
+
+```console
+$ git-sim stash
 ```
 
 Simulate creating a new Git branch:
@@ -242,6 +266,24 @@ Simulate reverting the changes in an older commit:
 $ git-sim revert HEAD~7
 ```
 
+Simulate merging a branch into the active branch:
+
+```console
+$ git-sim merge feature1
+```
+
+Simulate rebasing the active branch onto a new base:
+
+```console
+$ git-sim rebase main
+```
+
+Simulate cherry-picking a commit from another branch onto the active branch:
+
+```console
+$ git-sim cherry-pick 0ae641
+```
+
 ## Command examples with extra options/flags
 Use light mode for white background and black text, instead of the default black background with white text:
 
@@ -255,7 +297,7 @@ Animate the simulated output as a .mp4 video file:
 $ git-sim --animate add filename.ext
 ```
 
-Add an intro and outro with custom text and logo (must include `--animate`)
+Add an intro and outro with custom text and logo (must include `--animate`):
 
 ```console
 $ git-sim --animate --show-intro --show-outro --outro-top-text="My Git Repo" --outro-bottom-text="Thanks for watching!" --logo=path/to/logo.png status
