@@ -48,8 +48,7 @@ class GitSimRebase(GitSimBaseCommand):
         arrow = Arrow(start, end, color=self.scene.fontColor)
         length = numpy.linalg.norm(start-end) - ( 1.5 if start[1] == end[1] else 3  )
         arrow.set_length(length)
-
-        sha = "".join(chr(ord(letter)+1) for letter in child[:6])
+        sha = "".join(chr(ord(letter)+1) if (chr(ord(letter)+1).isalpha() or chr(ord(letter)+1).isdigit()) else letter for letter in child[:6])
         commitId = Text(sha, font="Monospace", font_size=20, color=self.scene.fontColor).next_to(circle, UP) 
         self.toFadeOut.add(commitId)
 
