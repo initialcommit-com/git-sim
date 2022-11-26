@@ -90,12 +90,16 @@ class GitSimBaseCommand():
             self.scene.wait(0.1)
 
     def get_commits(self, start="HEAD"):
+        if not self.numCommits:
+            print("git-sim error: No commits in current Git repository.")
+            sys.exit(1)
+
         try:
             self.commits = list(self.repo.iter_commits(start + "~" + str(self.numCommits) + "..." + start))
 
         except git.exc.GitCommandError:
-            print("git-sim error: No commits in current Git repository.")
-            sys.exit(1)
+            self.numCommits -= 1
+            self.get_commits(start=start)
 
     def get_centers(self):
         centers = []
