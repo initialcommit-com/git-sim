@@ -6,6 +6,8 @@ class GitSimMerge(GitSimBaseCommand):
     def __init__(self, scene):
         super().__init__(scene)
         self.ff = False
+        self.maxrefs = 2
+        self.selected_branch = self.scene.args.branch[0]
 
     def execute(self):
         print("Simulating: git " + self.scene.args.subcommand + " " + self.scene.args.branch[0])

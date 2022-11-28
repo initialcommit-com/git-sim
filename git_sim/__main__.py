@@ -20,6 +20,8 @@ def main():
     parser.add_argument("--light-mode", help="Enable light-mode with white background", action="store_true")
     parser.add_argument("--speed", help="A multiple of the standard 1x animation speed (ex: 2 = twice as fast, 0.5 = half as fast)", type=float, default=1.5)
     parser.add_argument("--animate", help="Animate the simulation and output as an mp4 video", action="store_true")
+    parser.add_argument("--max-branches-per-commit", help="Maximum number of branch labels to display for each commit", type=int, default=1)
+    parser.add_argument("--max-tags-per-commit", help="Maximum number of tags to display for each commit", type=int, default=1)
 
     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
 

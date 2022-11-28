@@ -18,6 +18,9 @@ class GitSimBaseCommand():
         self.maxrefs = None
         self.i = 0
         self.numCommits = 5
+        self.defaultNumCommits = 5
+        self.selected_branch = None
+        self.hide_first_tag = False
 
         self.logo = ImageMobject(self.scene.args.logo)
         self.logo.width = 3
@@ -36,13 +39,35 @@ class GitSimBaseCommand():
         self.fadeout()
         self.show_outro()
 
+    def get_commits(self, start="HEAD"):
+        if not self.numCommits:
+            print("git-sim error: No commits in current Git repository.")
+            sys.exit(1)
+
+        try:
+            self.commits = list(self.repo.iter_commits(start + "~" + str(self.numCommits) + "..." + start))
+            if len(self.commits) < self.defaultNumCommits:
+                self.commits = list(self.repo.iter_commits(start))
+            while len(self.commits) < self.defaultNumCommits:
+                self.commits.append(self.create_dark_commit())
+            if "dark" in self.commits:
+                self.numCommits = self.defaultNumCommits;
+
+        except git.exc.GitCommandError:
+            self.numCommits -= 1
+            self.get_commits(start=start)
+
     def parse_commits(self, commit, prevCircle=None, shift=numpy.array([0., 0., 0.])):
         if ( self.i < self.numCommits and commit in self.commits ):
             commitId, circle, arrow = self.draw_commit(commit, prevCircle, shift)
-            self.draw_head(commit, commitId)
-            self.draw_branch(commit)
-            self.draw_tag(commit)
-            self.draw_arrow(prevCircle, arrow)
+
+            if commit != "dark":
+                self.draw_head(commit, commitId)
+                self.draw_branch(commit)
+                self.draw_tag(commit)
+                self.draw_arrow(prevCircle, arrow)
+                if self.i == 0 and len(self.drawnRefs) < 2:
+                    self.draw_dark_ref()
 
             if self.i < len(self.commits)-1:
                 self.i += 1
@@ -89,18 +114,6 @@ class GitSimBaseCommand():
         else:
             self.scene.wait(0.1)
 
-    def get_commits(self, start="HEAD"):
-        if not self.numCommits:
-            print("git-sim error: No commits in current Git repository.")
-            sys.exit(1)
-
-        try:
-            self.commits = list(self.repo.iter_commits(start + "~" + str(self.numCommits) + "..." + start))
-
-        except git.exc.GitCommandError:
-            self.numCommits -= 1
-            self.get_commits(start=start)
-
     def get_centers(self):
         centers = []
         for commit in self.drawnCommits.values():
@@ -108,7 +121,9 @@ class GitSimBaseCommand():
         return centers
 
     def draw_commit(self, commit, prevCircle, shift=numpy.array([0., 0., 0.])):
-        if ( len(commit.parents) <= 1 ):
+        if commit == "dark":
+            commitFill = WHITE if self.scene.args.light_mode else BLACK
+        elif ( len(commit.parents) <= 1 ):
             commitFill = RED 
         else:
             commitFill = GRAY
@@ -125,7 +140,11 @@ class GitSimBaseCommand():
         start = prevCircle.get_center() if prevCircle else LEFT
         end = circle.get_center()
 
-        arrow = Arrow(start, end, color=self.scene.fontColor)
+        if commit == "dark":
+            arrow = Arrow(start, end, color=WHITE if self.scene.args.light_mode else BLACK)
+        else:
+            arrow = Arrow(start, end, color=self.scene.fontColor)
+
         length = numpy.linalg.norm(start-end) - ( 1.5 if start[1] == end[1] else 3  )
         arrow.set_length(length)
 
@@ -134,12 +153,13 @@ class GitSimBaseCommand():
 
         message = Text('\n'.join(commitMessage[j:j+20] for j in range(0, len(commitMessage), 20))[:100], font="Monospace", font_size=14, color=self.scene.fontColor).next_to(circle, DOWN)
 
-        if self.scene.args.animate:
+        if self.scene.args.animate and commit != "dark":
             self.scene.play(self.scene.camera.frame.animate.move_to(circle.get_center()), Create(circle), AddTextLetterByLetter(commitId), AddTextLetterByLetter(message), run_time=1/self.scene.args.speed)
         else:
             self.scene.add(circle, commitId, message)
 
-        self.drawnCommits[commit.hexsha] = circle
+        if commit != "dark":
+            self.drawnCommits[commit.hexsha] = circle
 
         self.toFadeOut.add(circle, commitId, message)
         self.prevRef = commitId
@@ -147,8 +167,12 @@ class GitSimBaseCommand():
         return commitId, circle, arrow
 
     def build_commit_id_and_message(self, commit):
-        commitId = Text(commit.hexsha[0:6], font="Monospace", font_size=20, color=self.scene.fontColor)
-        commitMessage = commit.message[:40].replace("\n", " ")
+        if commit == "dark":
+            commitId = Text("", font="Monospace", font_size=20, color=self.scene.fontColor)
+            commitMessage = ""
+        else:
+            commitId = Text(commit.hexsha[0:6], font="Monospace", font_size=20, color=self.scene.fontColor)
+            commitMessage = commit.message[:40].replace("\n", " ")
         return commitId, commitMessage
 
     def draw_head(self, commit, commitId):
@@ -173,15 +197,24 @@ class GitSimBaseCommand():
             if self.i == 0:
                 self.topref = self.prevRef
 
+    def draw_dark_ref(self):
+        refRec = Rectangle(color=WHITE if self.scene.args.light_mode else BLACK, fill_color=WHITE if self.scene.args.light_mode else BLACK, height=0.4, width=1)
+        refRec.next_to(self.prevRef, UP)
+        self.scene.add(refRec)
+        self.toFadeOut.add(refRec)
+        self.prevRef = refRec
+        if self.i == 0:
+            self.topref = self.prevRef
+
     def draw_branch(self, commit):
         x = 0 
-        for branch in self.repo.heads:
+        branches = [branch.name for branch in self.repo.heads]
+        if self.selected_branch:
+            branches.insert(0, branches.pop(branches.index(self.selected_branch)))
+        for branch in branches:
 
-            if self.maxrefs and len(self.drawnRefs) >= self.maxrefs:
-                return
-
-            if ( commit.hexsha == branch.commit.hexsha ):
-                branchText = Text(branch.name, font="Monospace", font_size=20, color=self.scene.fontColor)
+            if ( commit.hexsha == self.repo.heads[branch].commit.hexsha ):
+                branchText = Text(branch, font="Monospace", font_size=20, color=self.scene.fontColor)
                 branchRec = Rectangle(color=GREEN, fill_color=GREEN, fill_opacity=0.25, height=0.4, width=branchText.width+0.25)
 
                 branchRec.next_to(self.prevRef, UP) 
@@ -197,19 +230,23 @@ class GitSimBaseCommand():
                     self.scene.add(fullbranch)
 
                 self.toFadeOut.add(branchRec, branchText)
-                self.drawnRefs[branch.name] = fullbranch
-
-                x += 1
+                self.drawnRefs[branch] = fullbranch
 
                 if self.i == 0:
                     self.topref = self.prevRef
 
+                x += 1
+                if x >= self.scene.args.max_branches_per_commit:
+                    return
+
+
     def draw_tag(self, commit):
         x = 0 
-        for tag in self.repo.tags:
 
-            if self.maxrefs and len(self.drawnRefs) >= self.maxrefs:
-                return
+        if self.hide_first_tag and self.i == 0:
+            return
+        
+        for tag in self.repo.tags:
 
             if ( commit.hexsha == tag.commit.hexsha ):
                 tagText = Text(tag.name, font="Monospace", font_size=20, color=self.scene.fontColor)
@@ -227,10 +264,12 @@ class GitSimBaseCommand():
 
                 self.toFadeOut.add(tagRec, tagText)
 
-                x += 1
-
                 if self.i == 0:
                     self.topref = self.prevRef
+
+                x += 1
+                if x >= self.scene.args.max_tags_per_commit:
+                    return
 
     def draw_arrow(self, prevCircle, arrow):
         if prevCircle: 
@@ -440,6 +479,10 @@ class GitSimBaseCommand():
         length = numpy.linalg.norm(start-end) - 1.65
         arrow.set_length(length)
         self.draw_arrow(True, arrow)
+
+    def create_dark_commit(self):
+        return "dark"
+
 
 class DottedLine(Line):
 

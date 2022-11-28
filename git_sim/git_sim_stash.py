@@ -6,6 +6,8 @@ class GitSimStash(GitSimBaseCommand):
     def __init__(self, scene):
         super().__init__(scene)
         self.maxrefs = 2
+        self.selected_branch = self.repo.active_branch.name
+        self.hide_first_tag = True
 
         for name in self.scene.args.name:
             if name not in [x.a_path for x in self.repo.index.diff(None)] + [y.a_path for y in self.repo.index.diff("HEAD")]:

@@ -7,6 +7,8 @@ class GitSimRevert(GitSimBaseCommand):
         super().__init__(scene)
         self.revert = git.repo.fun.rev_parse(self.repo, self.scene.args.commit)
         self.maxrefs = 2
+        self.defaultNumCommits = 4
+        self.selected_branch = self.repo.active_branch.name
 
     def execute(self):
         print("Simulating: git " + self.scene.args.subcommand + " " + self.scene.args.commit)
@@ -22,16 +24,11 @@ class GitSimRevert(GitSimBaseCommand):
         self.fadeout()
         self.show_outro()
 
-    def get_commits(self):
-        try:
-            self.commits = list(self.repo.iter_commits('HEAD~4...HEAD'))
-
-        except git.exc.GitCommandError:
-            print("git-sim error: No commits in current Git repository.")
-            sys.exit(1)
-
     def build_commit_id_and_message(self, commit):
-        if self.i == 3:
+        if commit == "dark":
+            commitId = Text('', font="Monospace", font_size=20, color=self.scene.fontColor)
+            commitMessage = ''
+        elif self.i == 3:
             commitId = Text('...', font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = '...'
         else:

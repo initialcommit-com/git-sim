@@ -5,6 +5,7 @@ import git, sys, numpy
 class GitSimRebase(GitSimBaseCommand):
     def __init__(self, scene):
         super().__init__(scene)
+        self.selected_branch = self.scene.args.branch[0]
 
     def execute(self):
         print("Simulating: git " + self.scene.args.subcommand + " " + self.scene.args.branch[0])
@@ -36,7 +37,6 @@ class GitSimRebase(GitSimBaseCommand):
         self.fadeout()
         self.show_outro()
 
-    
     def setup_and_draw_parent(self, child, commitMessage="New commit", shift=numpy.array([0., 0., 0.]), draw_arrow=True):
         circle = Circle(stroke_color=RED, fill_color=RED, fill_opacity=0.25)
         circle.height = 1 

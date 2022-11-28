@@ -5,6 +5,8 @@ import git, sys, numpy
 class GitSimCherryPick(GitSimBaseCommand):
     def __init__(self, scene):
         super().__init__(scene)
+        if self.scene.args.commit[0] in [branch.name for branch in self.repo.heads]:
+            self.selected_branch = self.scene.args.commit[0]
 
     def execute(self):
         print("Simulating: git " + self.scene.args.subcommand + " " + self.scene.args.commit[0])

@@ -7,6 +7,8 @@ class GitSimReset(GitSimBaseCommand):
         super().__init__(scene)
         self.resetTo = git.repo.fun.rev_parse(self.repo, self.scene.args.commit)
         self.maxrefs = 2
+        self.selected_branch = self.repo.active_branch.name
+        self.hide_first_tag = True
 
         if self.scene.args.hard:
             self.scene.args.mode = "hard"
@@ -29,9 +31,9 @@ class GitSimReset(GitSimBaseCommand):
         self.fadeout()
         self.show_outro()
 
-    def get_commits(self):
+    def get_commits(self, start="HEAD"):
         try:
-            self.commits = list(self.repo.iter_commits('HEAD~5...HEAD'))
+            super().get_commits()
             if self.resetTo not in self.commits:
                 self.commits = list(self.repo.iter_commits(self.scene.args.commit + '~3...HEAD'))
 
@@ -47,7 +49,10 @@ class GitSimReset(GitSimBaseCommand):
             sys.exit(1)
 
     def build_commit_id_and_message(self, commit):
-        if ( self.i == 2 and self.trimmed ):
+        if commit == "dark":
+            commitId = Text('', font="Monospace", font_size=20, color=self.scene.fontColor)
+            commitMessage = ''
+        elif ( self.i == 2 and self.trimmed ):
             commitId = Text('...', font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = '...'
         else:

@@ -6,6 +6,7 @@ class GitSimLog(GitSimBaseCommand):
     def __init__(self, scene):
         super().__init__(scene)
         self.numCommits = self.scene.args.commits
+        self.selected_branch = self.repo.active_branch.name
 
     def execute(self):
         print("Simulating: git " + self.scene.args.subcommand)
