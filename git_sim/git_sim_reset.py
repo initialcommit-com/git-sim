@@ -6,8 +6,9 @@ class GitSimReset(GitSimBaseCommand):
     def __init__(self, scene):
         super().__init__(scene)
         self.resetTo = git.repo.fun.rev_parse(self.repo, self.scene.args.commit)
+        self.commitsSinceResetTo = list(self.repo.iter_commits(self.scene.args.commit + "...HEAD"))
         self.maxrefs = 2
-        self.selected_branch = self.repo.active_branch.name
+        self.selected_branches.append(self.repo.active_branch.name)
         self.hide_first_tag = True
 
         if self.scene.args.hard:
@@ -31,34 +32,24 @@ class GitSimReset(GitSimBaseCommand):
         self.fadeout()
         self.show_outro()
 
-    def get_commits(self, start="HEAD"):
-        try:
-            super().get_commits()
-            if self.resetTo not in self.commits:
-                self.commits = list(self.repo.iter_commits(self.scene.args.commit + '~3...HEAD'))
-
-            resetToInd = self.commits.index(self.resetTo)
-            self.commitsSinceResetTo = self.commits[:resetToInd]
-
-            if len(self.commits) > 5:
-                self.commits = self.commits[:3] + self.commits[resetToInd:resetToInd+2]
-                self.trimmed = True
-
-        except git.exc.GitCommandError:
-            print("git-sim error: No commits in current Git repository.")
-            sys.exit(1)
-
     def build_commit_id_and_message(self, commit):
+        hide_refs = False
         if commit == "dark":
             commitId = Text('', font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = ''
-        elif ( self.i == 2 and self.trimmed ):
+        elif self.i == 3 and self.resetTo.hexsha not in [commit.hexsha for commit in self.get_nondark_commits()]:
             commitId = Text('...', font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = '...'
+            hide_refs = True
+        elif self.i == 4 and self.resetTo.hexsha not in [commit.hexsha for commit in self.get_nondark_commits()]:
+            commitId = Text(self.resetTo.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
+            commitMessage = self.resetTo.message[:40].replace("\n", " ")
+            commit = self.resetTo
+            hide_refs = True
         else:
-            commitId = Text(commit.hexsha[0:6], font="Monospace", font_size=20, color=self.scene.fontColor)
+            commitId = Text(commit.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = commit.message[:40].replace("\n", " ")
-        return commitId, commitMessage
+        return commitId, commitMessage, commit, hide_refs
 
     def populate_zones(self, firstColumnFileNames, secondColumnFileNames, thirdColumnFileNames, firstColumnArrowMap={}, secondColumnArrowMap={}):
         for commit in self.commitsSinceResetTo:

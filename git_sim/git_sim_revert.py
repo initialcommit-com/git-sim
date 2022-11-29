@@ -9,7 +9,8 @@ class GitSimRevert(GitSimBaseCommand):
         self.maxrefs = 2
         self.defaultNumCommits = 4
         self.numCommits = 4
-        self.selected_branch = self.repo.active_branch.name
+        self.selected_branches.append(self.repo.active_branch.name)
+        self.hide_first_tag = True
 
     def execute(self):
         print("Simulating: git " + self.scene.args.subcommand + " " + self.scene.args.commit)
@@ -22,23 +23,28 @@ class GitSimRevert(GitSimBaseCommand):
         self.recenter_frame()
         self.scale_frame()
         self.reset_head_branch("abcdef")
+        self.vsplit_frame()
+        self.setup_and_draw_zones(upshift=2.8, first_column_name="----", second_column_name="Changes reverted from", third_column_name="----")
         self.fadeout()
         self.show_outro()
 
     def build_commit_id_and_message(self, commit):
+        hide_refs = False
         if commit == "dark":
             commitId = Text('', font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = ''
         elif self.i == 2 and self.revert.hexsha not in [commit.hexsha for commit in self.commits]:
             commitId = Text('...', font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = '...'
+            hide_refs = True
         elif self.i == 3 and self.revert.hexsha not in [commit.hexsha for commit in self.commits]:
             commitId = Text(self.revert.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = self.revert.message[:40].replace("\n", " ")
+            hide_refs = True
         else:
             commitId = Text(commit.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = commit.message[:40].replace("\n", " ")
-        return commitId, commitMessage
+        return commitId, commitMessage, commit, hide_refs
 
     def setup_and_draw_revert_commit(self):
         circle = Circle(stroke_color=RED, fill_color=RED, fill_opacity=0.25)
@@ -74,3 +80,7 @@ class GitSimRevert(GitSimBaseCommand):
             self.scene.add(arrow)
 
         self.toFadeOut.add(arrow)
+
+    def populate_zones(self, firstColumnFileNames, secondColumnFileNames, thirdColumnFileNames, firstColumnArrowMap={}, secondColumnArrowMap={}):
+        for filename in self.revert.stats.files:
+            secondColumnFileNames.add(filename)

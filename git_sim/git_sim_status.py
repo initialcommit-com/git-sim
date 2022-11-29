@@ -6,7 +6,7 @@ class GitSimStatus(GitSimBaseCommand):
     def __init__(self, scene):
         super().__init__(scene)
         self.maxrefs = 2
-        self.selected_branch = self.repo.active_branch.name
+        self.selected_branches.append(self.repo.active_branch.name)
         self.hide_first_tag = True
 
     def execute(self):

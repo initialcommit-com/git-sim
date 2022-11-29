@@ -5,7 +5,9 @@ import git, sys, numpy
 class GitSimRebase(GitSimBaseCommand):
     def __init__(self, scene):
         super().__init__(scene)
-        self.selected_branch = self.scene.args.branch[0]
+        if self.scene.args.branch[0] in [branch.name for branch in self.repo.heads]:
+            self.selected_branches.append(self.scene.args.branch[0])
+        self.selected_branches.append(self.repo.active_branch.name)
 
     def execute(self):
         print("Simulating: git " + self.scene.args.subcommand + " " + self.scene.args.branch[0])

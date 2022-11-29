@@ -19,7 +19,7 @@ class GitSimBaseCommand():
         self.i = 0
         self.numCommits = 5
         self.defaultNumCommits = 5
-        self.selected_branch = None
+        self.selected_branches = []
         self.hide_first_tag = False
 
         self.logo = ImageMobject(self.scene.args.logo)
@@ -50,8 +50,7 @@ class GitSimBaseCommand():
                 self.commits = list(self.repo.iter_commits(start))
             while len(self.commits) < self.defaultNumCommits:
                 self.commits.append(self.create_dark_commit())
-            if "dark" in self.commits:
-                self.numCommits = self.defaultNumCommits;
+            self.numCommits = self.defaultNumCommits;
 
         except git.exc.GitCommandError:
             self.numCommits -= 1
@@ -59,12 +58,13 @@ class GitSimBaseCommand():
 
     def parse_commits(self, commit, prevCircle=None, shift=numpy.array([0., 0., 0.])):
         if ( self.i < self.numCommits and commit in self.commits ):
-            commitId, circle, arrow = self.draw_commit(commit, prevCircle, shift)
+            commitId, circle, arrow, hide_refs = self.draw_commit(commit, prevCircle, shift)
 
             if commit != "dark":
-                self.draw_head(commit, commitId)
-                self.draw_branch(commit)
-                self.draw_tag(commit)
+                if not hide_refs:
+                    self.draw_head(commit, commitId)
+                    self.draw_branch(commit)
+                    self.draw_tag(commit)
                 self.draw_arrow(prevCircle, arrow)
                 if self.i == 0 and len(self.drawnRefs) < 2:
                     self.draw_dark_ref()
@@ -148,7 +148,7 @@ class GitSimBaseCommand():
         length = numpy.linalg.norm(start-end) - ( 1.5 if start[1] == end[1] else 3  )
         arrow.set_length(length)
 
-        commitId, commitMessage = self.build_commit_id_and_message(commit)
+        commitId, commitMessage, commit, hide_refs = self.build_commit_id_and_message(commit)
         commitId.next_to(circle, UP)
 
         message = Text('\n'.join(commitMessage[j:j+20] for j in range(0, len(commitMessage), 20))[:100], font="Monospace", font_size=14, color=self.scene.fontColor).next_to(circle, DOWN)
@@ -164,16 +164,17 @@ class GitSimBaseCommand():
         self.toFadeOut.add(circle, commitId, message)
         self.prevRef = commitId
 
-        return commitId, circle, arrow
+        return commitId, circle, arrow, hide_refs
 
     def build_commit_id_and_message(self, commit):
+        hide_refs = False
         if commit == "dark":
             commitId = Text("", font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = ""
         else:
             commitId = Text(commit.hexsha[0:6], font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = commit.message[:40].replace("\n", " ")
-        return commitId, commitMessage
+        return commitId, commitMessage, commit, hide_refs
 
     def draw_head(self, commit, commitId):
         if ( commit.hexsha == self.repo.head.commit.hexsha ):
@@ -209,8 +210,9 @@ class GitSimBaseCommand():
     def draw_branch(self, commit):
         x = 0 
         branches = [branch.name for branch in self.repo.heads]
-        if self.selected_branch:
-            branches.insert(0, branches.pop(branches.index(self.selected_branch)))
+        for selected_branch in self.selected_branches:
+            branches.insert(0, branches.pop(branches.index(selected_branch)))
+
         for branch in branches:
 
             if ( commit.hexsha == self.repo.heads[branch].commit.hexsha ):
@@ -310,7 +312,7 @@ class GitSimBaseCommand():
         except ValueError:
             pass
 
-    def setup_and_draw_zones(self, upshift=2.6, first_column_name="Untracked files", second_column_name="Working directory modifications", third_column_name="Staging area", reverse=False):
+    def setup_and_draw_zones(self, upshift=2.7, first_column_name="Untracked files", second_column_name="Working directory modifications", third_column_name="Staging area", reverse=False):
         horizontal = Line((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_center()[1], 0), (self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_center()[1], 0), color=self.scene.fontColor).shift(UP*2.5)
         horizontal2 = Line((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_center()[1], 0), (self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_center()[1], 0), color=self.scene.fontColor).shift(UP*1.5)
         vert1 = DashedLine((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_bottom()[1], 0), (self.scene.camera.frame.get_left()[0], horizontal.get_start()[1], 0), dash_length=0.2, color=self.scene.fontColor).shift(RIGHT*6.5)
@@ -482,6 +484,13 @@ class GitSimBaseCommand():
 
     def create_dark_commit(self):
         return "dark"
+
+    def get_nondark_commits(self):
+        nondark_commits = []
+        for commit in self.commits:
+            if commit != "dark":
+                nondark_commits.append(commit)
+        return nondark_commits
 
 
 class DottedLine(Line):
