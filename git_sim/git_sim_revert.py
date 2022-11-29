@@ -8,6 +8,7 @@ class GitSimRevert(GitSimBaseCommand):
         self.revert = git.repo.fun.rev_parse(self.repo, self.scene.args.commit)
         self.maxrefs = 2
         self.defaultNumCommits = 4
+        self.numCommits = 4
         self.selected_branch = self.repo.active_branch.name
 
     def execute(self):
@@ -28,11 +29,14 @@ class GitSimRevert(GitSimBaseCommand):
         if commit == "dark":
             commitId = Text('', font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = ''
-        elif self.i == 3:
+        elif self.i == 2 and self.revert.hexsha not in [commit.hexsha for commit in self.commits]:
             commitId = Text('...', font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = '...'
+        elif self.i == 3 and self.revert.hexsha not in [commit.hexsha for commit in self.commits]:
+            commitId = Text(self.revert.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
+            commitMessage = self.revert.message[:40].replace("\n", " ")
         else:
-            commitId = Text(commit.hexsha[0:6], font="Monospace", font_size=20, color=self.scene.fontColor)
+            commitId = Text(commit.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = commit.message[:40].replace("\n", " ")
         return commitId, commitMessage
 
