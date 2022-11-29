@@ -19,6 +19,10 @@ class GitSimMerge(GitSimBaseCommand):
         self.orig_commits = self.commits
         self.get_commits(start=self.scene.args.branch[0])
 
+        if self.repo.active_branch.name in self.repo.git.branch("--contains", self.scene.args.branch[0]):
+            print("git-sim error: Branch '" + self.scene.args.branch[0] + "' is already included in the history of active branch '" + self.repo.active_branch.name + "'.")
+            sys.exit(1)
+
         if self.scene.args.branch[0] in self.repo.git.branch("--contains", self.orig_commits[0].hexsha):
             self.ff = True
 
