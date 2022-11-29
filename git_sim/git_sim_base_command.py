@@ -198,15 +198,6 @@ class GitSimBaseCommand():
             if self.i == 0:
                 self.topref = self.prevRef
 
-    def draw_dark_ref(self):
-        refRec = Rectangle(color=WHITE if self.scene.args.light_mode else BLACK, fill_color=WHITE if self.scene.args.light_mode else BLACK, height=0.4, width=1)
-        refRec.next_to(self.prevRef, UP)
-        self.scene.add(refRec)
-        self.toFadeOut.add(refRec)
-        self.prevRef = refRec
-        if self.i == 0:
-            self.topref = self.prevRef
-
     def draw_branch(self, commit):
         x = 0 
         branches = [branch.name for branch in self.repo.heads]
@@ -491,6 +482,33 @@ class GitSimBaseCommand():
             if commit != "dark":
                 nondark_commits.append(commit)
         return nondark_commits
+
+    def draw_ref(self, commit, top, text="HEAD", color=BLUE):
+        refText = Text(text, font="Monospace", font_size=20, color=self.scene.fontColor)
+        refbox = Rectangle(color=color, fill_color=color, fill_opacity=0.25, height=0.4, width=refText.width+0.25)
+        refbox.next_to(top, UP) 
+        refText.move_to(refbox.get_center())
+
+        ref = VGroup(refbox, refText)
+
+        if self.scene.args.animate:
+            self.scene.play(Create(ref), run_time=1/self.scene.args.speed)
+        else:
+            self.scene.add(ref)
+
+        self.toFadeOut.add(ref)
+        self.drawnRefs[text] = ref
+        self.prevRef = ref
+
+        if self.i == 0:
+            self.topref = self.prevRef
+
+    def draw_dark_ref(self):
+        refRec = Rectangle(color=WHITE if self.scene.args.light_mode else BLACK, fill_color=WHITE if self.scene.args.light_mode else BLACK, height=0.4, width=1)
+        refRec.next_to(self.prevRef, UP)
+        self.scene.add(refRec)
+        self.toFadeOut.add(refRec)
+        self.prevRef = refRec
 
 
 class DottedLine(Line):

@@ -40,7 +40,11 @@ class GitSimMerge(GitSimBaseCommand):
 
             self.recenter_frame()
             self.scale_frame()
-            self.reset_head_branch(reset_head_to, shift=shift)
+            if "HEAD" in self.drawnRefs:
+                self.reset_head_branch(reset_head_to, shift=shift)
+            else:
+                self.draw_ref(self.commits[0], self.topref)
+                self.draw_ref(self.commits[0], self.topref, text=self.repo.active_branch.name, color=GREEN)
 
         else:
             self.get_commits()
