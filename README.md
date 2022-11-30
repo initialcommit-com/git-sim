@@ -155,12 +155,33 @@ Usage: `git-sim cherry-pick <commit>`
 
 ![git-sim-cherry-pick_11-21-22_21-13-23](https://user-images.githubusercontent.com/49353917/203227369-fce5edc3-00b5-4d57-95b8-318442c3984e.jpg)
 
-## Video animation example
+## Video animation examples
 ```console
 $ git-sim --animate reset HEAD^
 ```
 
 https://user-images.githubusercontent.com/49353917/201462192-a3bc3a2e-f2c9-4166-81ce-743e53255fc2.mp4
+
+```console
+$ git checkout feature9
+$ git-sim --animate merge feature6
+```
+
+https://user-images.githubusercontent.com/49353917/204897010-3aa2a0e6-c8ba-4acd-acd1-2683274afb63.mp4
+
+```console
+$ git checkout feature1
+$ git-sim --animate rebase main
+```
+
+https://user-images.githubusercontent.com/49353917/204896434-48dbc15b-9718-47c7-b790-6caad5f8a367.mp4
+
+```console
+$ git checkout main
+$ git-sim --animate cherry-pick feature5~2
+```
+
+https://user-images.githubusercontent.com/49353917/204897665-2e32e1bb-100f-48c2-8e83-b113cba957f4.mp4
 
 ## Requirements
 * Python 3.7 or greater
