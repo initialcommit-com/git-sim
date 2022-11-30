@@ -129,7 +129,7 @@ Usage: `git-sim revert <to-revert>`
 - Simulated output will show the new commit which reverts the changes from `<to-revert>`
 - Simulated output will include the next 4 most recent commits on the active branch
 
-![git-sim-revert_11-11-22_23-03-14](https://user-images.githubusercontent.com/49353917/201462008-2268a339-4b3b-452a-bd17-9be8d04eeafe.jpg)
+![git-sim-revert_11-30-22_11-46-09](https://user-images.githubusercontent.com/49353917/204893827-c0fef360-9c39-4686-81f2-f85f51a85597.jpg)
 
 ### git merge
 Usage: `git-sim merge <branch>`
