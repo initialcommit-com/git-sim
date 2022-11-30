@@ -139,7 +139,7 @@ Usage: `git-sim merge <branch>`
 - Otherwise, a three-way merge will be depicted
 - To force a merge commit when a fast-forward is possible, use `--no-ff`
 
-![git-sim-merge_11-21-22_20-47-08](https://user-images.githubusercontent.com/49353917/203224123-315df1be-36ca-470a-a31b-f87f39b00f82.jpg)
+![git-sim-merge_11-30-22_11-50-32](https://user-images.githubusercontent.com/49353917/204894714-89d77aa7-98c9-4172-b11c-58f38672f1a7.jpg)
 
 ### git rebase
 Usage: `git-sim rebase <new-base>`
