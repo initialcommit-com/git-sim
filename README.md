@@ -1,5 +1,9 @@
 # git-sim
-Simulate Git commands on your own repos by generating an image (default) or video visualization depicting the command's behavior. Command syntax is based directly on Git's command-line syntax, so using git-sim is as familiar as possible.
+Visually simulate Git operations in your own repo with a single terminal command.
+
+This generates an image (default) or video visualization depicting the command's behavior.
+
+Command syntax is based directly on Git's command-line syntax, so using git-sim is as familiar as possible.
 
 ## Use cases
 - Visualize Git commands to understand their effects on your repo before actually running them
