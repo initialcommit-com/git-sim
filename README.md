@@ -177,11 +177,11 @@ $ git-sim --animate rebase main
 https://user-images.githubusercontent.com/49353917/204896434-48dbc15b-9718-47c7-b790-6caad5f8a367.mp4
 
 ```console
-$ git checkout main
-$ git-sim --animate cherry-pick feature5~2
+$ git checkout feature6
+$ git-sim --animate cherry-pick feature9
 ```
 
-https://user-images.githubusercontent.com/49353917/204897665-2e32e1bb-100f-48c2-8e83-b113cba957f4.mp4
+https://user-images.githubusercontent.com/49353917/204899112-2c99019e-1253-4aef-a0b7-dc774d0adbe8.mp4
 
 ## Requirements
 * Python 3.7 or greater
