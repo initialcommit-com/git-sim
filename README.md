@@ -146,7 +146,7 @@ Usage: `git-sim rebase <new-base>`
 
 - Specify `<new-base>` as the branch name to rebase the active branch onto
 
-![git-sim-rebase_11-21-22_21-12-19](https://user-images.githubusercontent.com/49353917/203227267-c7552d92-da41-48db-a6c5-bb7f8a1e3d0f.jpg)
+![git-sim-rebase_11-30-22_11-52-26](https://user-images.githubusercontent.com/49353917/204895157-8f020afe-df63-494d-bd16-d00801f438bc.jpg)
 
 ### git cherry-pick
 Usage: `git-sim cherry-pick <commit>`
