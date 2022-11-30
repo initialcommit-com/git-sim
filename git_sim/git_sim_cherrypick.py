@@ -12,6 +12,10 @@ class GitSimCherryPick(GitSimBaseCommand):
     def execute(self):
         print("Simulating: git " + self.scene.args.subcommand + " " + self.scene.args.commit[0])
 
+        if self.repo.active_branch.name in self.repo.git.branch("--contains", self.scene.args.commit[0]):
+            print("git-sim error: Commit '" + self.scene.args.commit[0] + "' is already included in the history of active branch '" + self.repo.active_branch.name + "'.")
+            sys.exit(1)
+
         self.show_intro()
         self.get_commits()
         self.parse_commits(self.commits[0])
