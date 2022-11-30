@@ -11,6 +11,7 @@ class GitSimRevert(GitSimBaseCommand):
         self.numCommits = 4
         self.selected_branches.append(self.repo.active_branch.name)
         self.hide_first_tag = True
+        self.zone_title_offset += 0.1
 
     def execute(self):
         print("Simulating: git " + self.scene.args.subcommand + " " + self.scene.args.commit)
@@ -24,7 +25,7 @@ class GitSimRevert(GitSimBaseCommand):
         self.scale_frame()
         self.reset_head_branch("abcdef")
         self.vsplit_frame()
-        self.setup_and_draw_zones(upshift=2.8, first_column_name="----", second_column_name="Changes reverted from", third_column_name="----")
+        self.setup_and_draw_zones(first_column_name="----", second_column_name="Changes reverted from", third_column_name="----")
         self.fadeout()
         self.show_outro()
 

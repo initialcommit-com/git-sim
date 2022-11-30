@@ -1,5 +1,5 @@
 from manim import *
-import git, sys, numpy
+import git, sys, numpy, platform
 
 class GitSimBaseCommand():
 
@@ -22,6 +22,7 @@ class GitSimBaseCommand():
         self.selected_branches = []
         self.hide_first_tag = False
         self.stop = False
+        self.zone_title_offset = 2.7 if platform.system() == "Windows" else 2.6
 
         self.logo = ImageMobject(self.scene.args.logo)
         self.logo.width = 3
@@ -314,7 +315,7 @@ class GitSimBaseCommand():
         except ValueError:
             pass
 
-    def setup_and_draw_zones(self, upshift=2.7, first_column_name="Untracked files", second_column_name="Working directory modifications", third_column_name="Staging area", reverse=False):
+    def setup_and_draw_zones(self, first_column_name="Untracked files", second_column_name="Working directory modifications", third_column_name="Staging area", reverse=False):
         horizontal = Line((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_center()[1], 0), (self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_center()[1], 0), color=self.scene.fontColor).shift(UP*2.5)
         horizontal2 = Line((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_center()[1], 0), (self.scene.camera.frame.get_right()[0], self.scene.camera.frame.get_center()[1], 0), color=self.scene.fontColor).shift(UP*1.5)
         vert1 = DashedLine((self.scene.camera.frame.get_left()[0], self.scene.camera.frame.get_bottom()[1], 0), (self.scene.camera.frame.get_left()[0], horizontal.get_start()[1], 0), dash_length=0.2, color=self.scene.fontColor).shift(RIGHT*6.5)
@@ -324,7 +325,7 @@ class GitSimBaseCommand():
             first_column_name = "Staging area"
             third_column_name = "Deleted changes"
 
-        firstColumnTitle = Text(first_column_name, font="Monospace", font_size=28, color=self.scene.fontColor).align_to(self.scene.camera.frame, LEFT).shift(RIGHT*0.65).shift(UP*upshift)
+        firstColumnTitle = Text(first_column_name, font="Monospace", font_size=28, color=self.scene.fontColor).align_to(self.scene.camera.frame, LEFT).shift(RIGHT*0.65).shift(UP*self.zone_title_offset)
         secondColumnTitle = Text(second_column_name, font="Monospace", font_size=28, color=self.scene.fontColor).move_to(self.scene.camera.frame.get_center()).align_to(firstColumnTitle, UP)
         thirdColumnTitle = Text(third_column_name, font="Monospace", font_size=28, color=self.scene.fontColor).align_to(self.scene.camera.frame, RIGHT).shift(LEFT*1.65).align_to(firstColumnTitle, UP)
 
