@@ -22,7 +22,7 @@ class GitSimBaseCommand():
         self.selected_branches = []
         self.hide_first_tag = False
         self.stop = False
-        self.zone_title_offset = 2.7 if platform.system() == "Windows" else 2.6
+        self.zone_title_offset = 2.6 if platform.system() == "Windows" else 2.6
 
         self.logo = ImageMobject(self.scene.args.logo)
         self.logo.width = 3
