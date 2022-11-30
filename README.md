@@ -47,9 +47,9 @@ The following is a list of Git commands that can be simulated and their correspo
 ### git log
 Usage: `git-sim log`
 
-- Simulated output will show the most recent 8 commits on the active branch
+- Simulated output will show the most recent 5 commits on the active branch by default
 
-![git-sim-log_11-21-22_20-41-05](https://user-images.githubusercontent.com/49353917/203223506-988a097b-752e-4a11-a0ce-a8dbd9fb20bc.jpg)
+![git-sim-log_11-30-22_11-40-56](https://user-images.githubusercontent.com/49353917/204893190-8be7e544-1abf-4514-98c9-391a6ef732d3.jpg)
 
 ### git status
 Usage: `git-sim status`
