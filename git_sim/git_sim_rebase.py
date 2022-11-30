@@ -12,6 +12,14 @@ class GitSimRebase(GitSimBaseCommand):
     def execute(self):
         print("Simulating: git " + self.scene.args.subcommand + " " + self.scene.args.branch[0])
 
+        if self.scene.args.branch[0] in self.repo.git.branch("--contains", self.repo.active_branch.name):
+            print("git-sim error: Branch '" + self.repo.active_branch.name + "' is already included in the history of active branch '" + self.scene.args.branch[0] + "'.")
+            sys.exit(1)
+
+        if self.repo.active_branch.name in self.repo.git.branch("--contains", self.scene.args.branch[0]):
+            print("git-sim error: Branch '" + self.scene.args.branch[0] + "' is already based on active branch '" + self.repo.active_branch.name + "'.")
+            sys.exit(1)
+
         self.show_intro()
         self.get_commits(start=self.scene.args.branch[0])
         self.parse_commits(self.commits[0])

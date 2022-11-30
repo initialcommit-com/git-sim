@@ -21,6 +21,7 @@ class GitSimBaseCommand():
         self.defaultNumCommits = 5
         self.selected_branches = []
         self.hide_first_tag = False
+        self.stop = False
 
         self.logo = ImageMobject(self.scene.args.logo)
         self.logo.width = 3
@@ -57,15 +58,19 @@ class GitSimBaseCommand():
             self.get_commits(start=start)
 
     def parse_commits(self, commit, prevCircle=None, shift=numpy.array([0., 0., 0.])):
+        if self.stop:
+            return
         if ( self.i < self.numCommits and commit in self.commits ):
             commitId, circle, arrow, hide_refs = self.draw_commit(commit, prevCircle, shift)
 
             if commit != "dark":
-                if not hide_refs:
+                if not hide_refs and not self.stop:
                     self.draw_head(commit, commitId)
                     self.draw_branch(commit)
                     self.draw_tag(commit)
                 self.draw_arrow(prevCircle, arrow)
+                if self.stop:
+                    return
                 if self.i == 0 and len(self.drawnRefs) < 2:
                     self.draw_dark_ref()
 
@@ -142,6 +147,10 @@ class GitSimBaseCommand():
 
         if commit == "dark":
             arrow = Arrow(start, end, color=WHITE if self.scene.args.light_mode else BLACK)
+        elif commit.hexsha in self.drawnCommits:
+            end = self.drawnCommits[commit.hexsha].get_center()
+            arrow = Arrow(start, end, color=self.scene.fontColor)
+            self.stop = True
         else:
             arrow = Arrow(start, end, color=self.scene.fontColor)
 
@@ -153,10 +162,12 @@ class GitSimBaseCommand():
 
         message = Text('\n'.join(commitMessage[j:j+20] for j in range(0, len(commitMessage), 20))[:100], font="Monospace", font_size=14, color=self.scene.fontColor).next_to(circle, DOWN)
 
-        if self.scene.args.animate and commit != "dark":
+        if self.scene.args.animate and commit != "dark" and not self.stop:
             self.scene.play(self.scene.camera.frame.animate.move_to(circle.get_center()), Create(circle), AddTextLetterByLetter(commitId), AddTextLetterByLetter(message), run_time=1/self.scene.args.speed)
-        else:
+        elif not self.stop:
             self.scene.add(circle, commitId, message)
+        else:
+            return commitId, circle, arrow, hide_refs
 
         if commit != "dark":
             self.drawnCommits[commit.hexsha] = circle
