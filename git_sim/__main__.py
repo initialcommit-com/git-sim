@@ -26,7 +26,7 @@ def main():
     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
 
     log = subparsers.add_parser("log", help="log -h")
-    log.add_argument("--commits", help="The number of commits to display in the simulated log output", type=int, default=8, choices=range(1,13))
+    log.add_argument("--commits", help="The number of commits to display in the simulated log output", type=int, default=5, choices=range(1,13))
 
     status = subparsers.add_parser("status", help="status -h")
 

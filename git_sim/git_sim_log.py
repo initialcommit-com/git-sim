@@ -1,11 +1,12 @@
 from manim import *
-from git_sim.git_sim_base_command import GitSimBaseCommand
+from git_sim_base_command import GitSimBaseCommand
 import git, sys, numpy
 
 class GitSimLog(GitSimBaseCommand):
     def __init__(self, scene):
         super().__init__(scene)
         self.numCommits = self.scene.args.commits
+        self.defaultNumCommits = self.scene.args.commits
         self.selected_branches.append(self.repo.active_branch.name)
 
     def execute(self):
