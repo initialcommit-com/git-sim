@@ -50,7 +50,7 @@ class GitSimReset(GitSimBaseCommand):
             commitId = Text(commit.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = commit.message[:40].replace("\n", " ")
 
-        if commit.hexsha == self.resetTo.hexsha:
+        if commit != "dark" and commit.hexsha == self.resetTo.hexsha and commit.hexsha != self.repo.head.commit.hexsha:
             hide_refs = True
 
         return commitId, commitMessage, commit, hide_refs

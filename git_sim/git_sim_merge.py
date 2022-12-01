@@ -34,7 +34,7 @@ class GitSimMerge(GitSimBaseCommand):
 
             if self.scene.args.no_ff:
                 self.center_frame_on_commit(self.commits[0])
-                self.setup_and_draw_parent(self.commits[0], "Merge commit")
+                commitId = self.setup_and_draw_parent(self.commits[0], "Merge commit")
                 reset_head_to = "abcdef"
                 shift = numpy.array([0., 0., 0.])
 
@@ -43,8 +43,8 @@ class GitSimMerge(GitSimBaseCommand):
             if "HEAD" in self.drawnRefs:
                 self.reset_head_branch(reset_head_to, shift=shift)
             else:
-                self.draw_ref(self.commits[0], self.topref)
-                self.draw_ref(self.commits[0], self.topref, text=self.repo.active_branch.name, color=GREEN)
+                self.draw_ref(self.commits[0], commitId if self.scene.args.no_ff else self.topref)
+                self.draw_ref(self.commits[0], self.drawnRefs["HEAD"] if self.scene.args.no_ff else self.topref, text=self.repo.active_branch.name, color=GREEN)
 
         else:
             self.get_commits()

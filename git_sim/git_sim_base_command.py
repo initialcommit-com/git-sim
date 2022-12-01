@@ -476,6 +476,8 @@ class GitSimBaseCommand():
                 self.scene.add(arrow)
             self.toFadeOut.add(arrow)
 
+        return commitId
+
     def draw_arrow_between_commits(self, startsha, endsha):
         start = self.drawnCommits[startsha].get_center()
         end = self.drawnCommits[endsha].get_center()
