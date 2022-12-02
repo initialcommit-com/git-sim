@@ -231,48 +231,6 @@ $ git-sim --animate cherry-pick feature9
 
 https://user-images.githubusercontent.com/49353917/204899112-2c99019e-1253-4aef-a0b7-dc774d0adbe8.mp4
 
-## Requirements
-* Python 3.7 or greater
-* Pip (Package manager for Python)
-* [Manim (Community version)](https://www.manim.community/)
-* GitPython
-* OpenCV
-
-## Quickstart
-1) Install [manim and manim dependencies for your OS](https://www.manim.community/)
-
-2) Install `git-sim`:
-
-```console
-$ pip3 install git-sim
-```
-
-3) Browse to the Git repository you want create an animation from:
-
-```console
-$ cd path/to/git/repo
-```
-
-4) Run the program:
-
-```console
-$ git-sim [global options] <subcommand> [subcommand options]
-```
-
-5) Simulated output will be created as a `.jpg` file. Output files are named using the subcommand executed combined with a timestamp, and by default are stored in a subdirectory called `git-sim_media/`. The location of this subdirectory is customizable using the command line flag `--media-dir=path/to/output`. Note that when the `--animate` global flag is used, render times will be much longer and a `.mp4` video output file will be produced.
-
-6) See global help for list of global options/flags and subcommands:
-
-```console
-$ git-sim -h
-```
-
-7) See subcommand help for list of options/flags for a specific subcommand:
-
-```console
-$ git-sim <subcommand> -h
-```
-
 ## Basic command examples
 Simulate the output of the git log command:
 
