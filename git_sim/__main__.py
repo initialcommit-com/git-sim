@@ -22,6 +22,7 @@ def main():
     parser.add_argument("--animate", help="Animate the simulation and output as an mp4 video", action="store_true")
     parser.add_argument("--max-branches-per-commit", help="Maximum number of branch labels to display for each commit", type=int, default=1)
     parser.add_argument("--max-tags-per-commit", help="Maximum number of tags to display for each commit", type=int, default=1)
+    parser.add_argument("-d", "--disable-auto-open", help="Disable the automatic opening of the image/video file after generation", action="store_true")
 
     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
 
@@ -95,13 +96,14 @@ def main():
             image_file_path = os.path.join(os.path.join(config.media_dir, "images"), image_file_name)
             cv2.imwrite(image_file_path, image)
 
-    try:
-        if not args.animate:
-            open_media_file(image_file_path)
-        else:
-            open_media_file(scene.renderer.file_writer.movie_file_path)
-    except FileNotFoundError:
-        print("Error automatically opening video player, please manually open the video file to view animation.")
+    if not args.disable_auto_open:
+        try:
+            if not args.animate:
+                open_media_file(image_file_path)
+            else:
+                open_media_file(scene.renderer.file_writer.movie_file_path)
+        except FileNotFoundError:
+            print("Error automatically opening media, please manually open the image or video file to view.")
 
 if __name__ == "__main__":
     main()
