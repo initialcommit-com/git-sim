@@ -1,5 +1,5 @@
 import git_sim.git_sim as gs
-import os
+import os, sys
 import argparse
 import pathlib
 import time, datetime
@@ -67,6 +67,10 @@ def main():
 
     cherrypick = subparsers.add_parser("cherry-pick", help="cherry-pick -h")
     cherrypick.add_argument("commit", nargs=1, type=str, help="The ref (branch/tag), or commit ID to simulate cherry-pick onto active branch")
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(1)
 
     args = parser.parse_args()
 
