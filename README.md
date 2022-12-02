@@ -64,8 +64,6 @@ $ git-sim <subcommand> -h
 * Python 3.7 or greater
 * Pip (Package manager for Python)
 * [Manim (Community version)](https://www.manim.community/)
-* GitPython
-* OpenCV
 
 ## Commands
 Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "log", "status", "add", "restore", "commit", "stash", "branch", "tag", "reset", "revert", "merge", "rebase", "cherry-pick", along with corresponding options.
