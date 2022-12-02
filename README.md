@@ -5,6 +5,10 @@ This generates an image (default) or video visualization depicting the command's
 
 Command syntax is based directly on Git's command-line syntax, so using git-sim is as familiar as possible.
 
+Example: `git-sim merge <branch>`
+
+![git-sim-merge_11-30-22_11-50-32](https://user-images.githubusercontent.com/49353917/204894714-89d77aa7-98c9-4172-b11c-58f38672f1a7.jpg)
+
 ## Use cases
 - Visualize Git commands to understand their effects on your repo before actually running them
 - Prevent unexpected working directory and repository states by simulating before running
@@ -20,6 +24,48 @@ Command syntax is based directly on Git's command-line syntax, so using git-sim 
 - Choose between dark mode (default) and light mode
 - Animation only: Add custom branded intro/outro sequences if desired
 - Animation only: Speed up or slow down animation speed as desired
+
+## Quickstart
+1) Install [manim and manim dependencies for your OS](https://www.manim.community/)
+
+2) Install `git-sim`:
+
+```console
+$ pip3 install git-sim
+```
+
+3) Browse to the Git repository you want to simulate Git commands in:
+
+```console
+$ cd path/to/git/repo
+```
+
+4) Run the program:
+
+```console
+$ git-sim [global options] <subcommand> [subcommand options]
+```
+
+5) Simulated output will be created as a `.jpg` file. Output files are named using the subcommand executed combined with a timestamp, and by default are stored in a subdirectory called `git-sim_media/`. The location of this subdirectory is customizable using the command line flag `--media-dir=path/to/output`. Note that when the `--animate` global flag is used, render times will be much longer and a `.mp4` video output file will be produced.
+
+6) See global help for list of global options/flags and subcommands:
+
+```console
+$ git-sim -h
+```
+
+7) See subcommand help for list of options/flags for a specific subcommand:
+
+```console
+$ git-sim <subcommand> -h
+```
+
+## Requirements
+* Python 3.7 or greater
+* Pip (Package manager for Python)
+* [Manim (Community version)](https://www.manim.community/)
+* GitPython
+* OpenCV
 
 ## Commands
 Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "log", "status", "add", "restore", "commit", "stash", "branch", "tag", "reset", "revert", "merge", "rebase", "cherry-pick", along with corresponding options.
