@@ -253,28 +253,31 @@ class GitSimBaseCommand():
         
         for tag in self.repo.tags:
 
-            if ( commit.hexsha == tag.commit.hexsha ):
-                tagText = Text(tag.name, font="Monospace", font_size=20, color=self.scene.fontColor)
-                tagRec = Rectangle(color=YELLOW, fill_color=YELLOW, fill_opacity=0.25, height=0.4, width=tagText.width+0.25)
+            try:
+                if ( commit.hexsha == tag.commit.hexsha ):
+                    tagText = Text(tag.name, font="Monospace", font_size=20, color=self.scene.fontColor)
+                    tagRec = Rectangle(color=YELLOW, fill_color=YELLOW, fill_opacity=0.25, height=0.4, width=tagText.width+0.25)
 
-                tagRec.next_to(self.prevRef, UP) 
-                tagText.move_to(tagRec.get_center())
+                    tagRec.next_to(self.prevRef, UP) 
+                    tagText.move_to(tagRec.get_center())
 
-                self.prevRef = tagRec
+                    self.prevRef = tagRec
 
-                if self.scene.args.animate:
-                    self.scene.play(Create(tagRec), Create(tagText), run_time=1/self.scene.args.speed)
-                else:
-                    self.scene.add(tagRec, tagText)
+                    if self.scene.args.animate:
+                        self.scene.play(Create(tagRec), Create(tagText), run_time=1/self.scene.args.speed)
+                    else:
+                        self.scene.add(tagRec, tagText)
 
-                self.toFadeOut.add(tagRec, tagText)
+                    self.toFadeOut.add(tagRec, tagText)
 
-                if self.i == 0:
-                    self.topref = self.prevRef
+                    if self.i == 0:
+                        self.topref = self.prevRef
 
-                x += 1
-                if x >= self.scene.args.max_tags_per_commit:
-                    return
+                    x += 1
+                    if x >= self.scene.args.max_tags_per_commit:
+                        return
+            except ValueError:
+                pass
 
     def draw_arrow(self, prevCircle, arrow):
         if prevCircle: 
