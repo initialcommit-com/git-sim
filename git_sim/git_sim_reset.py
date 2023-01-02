@@ -43,12 +43,12 @@ class GitSimReset(GitSimBaseCommand):
             hide_refs = True
         elif self.i == 4 and self.resetTo.hexsha not in [commit.hexsha for commit in self.get_nondark_commits()]:
             commitId = Text(self.resetTo.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
-            commitMessage = self.resetTo.message[:40].replace("\n", " ")
+            commitMessage = self.resetTo.message.split("\n")[0][:40].replace("\n", " ")
             commit = self.resetTo
             hide_refs = True
         else:
             commitId = Text(commit.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
-            commitMessage = commit.message[:40].replace("\n", " ")
+            commitMessage = commit.message.split("\n")[0][:40].replace("\n", " ")
 
         if commit != "dark" and commit.hexsha == self.resetTo.hexsha and commit.hexsha != self.repo.head.commit.hexsha:
             hide_refs = True

@@ -40,11 +40,11 @@ class GitSimRevert(GitSimBaseCommand):
             hide_refs = True
         elif self.i == 3 and self.revert.hexsha not in [commit.hexsha for commit in self.commits]:
             commitId = Text(self.revert.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
-            commitMessage = self.revert.message[:40].replace("\n", " ")
+            commitMessage = self.revert.message.split("\n")[0][:40].replace("\n", " ")
             hide_refs = True
         else:
             commitId = Text(commit.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
-            commitMessage = commit.message[:40].replace("\n", " ")
+            commitMessage = commit.message.split("\n")[0][:40].replace("\n", " ")
         return commitId, commitMessage, commit, hide_refs
 
     def setup_and_draw_revert_commit(self):

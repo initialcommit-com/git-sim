@@ -185,7 +185,7 @@ class GitSimBaseCommand():
             commitMessage = ""
         else:
             commitId = Text(commit.hexsha[0:6], font="Monospace", font_size=20, color=self.scene.fontColor)
-            commitMessage = commit.message[:40].replace("\n", " ")
+            commitMessage = commit.message.split("\n")[0][:40].replace("\n", " ")
         return commitId, commitMessage, commit, hide_refs
 
     def draw_head(self, commit, commitId):
@@ -459,7 +459,7 @@ class GitSimBaseCommand():
         commitId = Text("abcdef", font="Monospace", font_size=20, color=self.scene.fontColor).next_to(circle, UP) 
         self.toFadeOut.add(commitId)
 
-        commitMessage = commitMessage[:40].replace("\n", " ")
+        commitMessage = commitMessage.split("\n")[0][:40].replace("\n", " ")
         message = Text('\n'.join(commitMessage[j:j+20] for j in range(0, len(commitMessage), 20))[:100], font="Monospace", font_size=14, color=self.scene.fontColor).next_to(circle, DOWN)
         self.toFadeOut.add(message)
 
