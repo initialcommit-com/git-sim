@@ -50,7 +50,7 @@ class GitSimRevert(GitSimBaseCommand):
     def setup_and_draw_revert_commit(self):
         circle = Circle(stroke_color=RED, fill_color=RED, fill_opacity=0.25)
         circle.height = 1 
-        circle.next_to(self.drawnCommits[self.commits[0].hexsha], LEFT, buff=1.5)
+        circle.next_to(self.drawnCommits[self.commits[0].hexsha], LEFT if self.scene.args.reverse else RIGHT, buff=1.5)
 
         start = circle.get_center()
         end = self.drawnCommits[self.commits[0].hexsha].get_center()

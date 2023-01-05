@@ -23,6 +23,7 @@ def main():
     parser.add_argument("--max-branches-per-commit", help="Maximum number of branch labels to display for each commit", type=int, default=1)
     parser.add_argument("--max-tags-per-commit", help="Maximum number of tags to display for each commit", type=int, default=1)
     parser.add_argument("-d", "--disable-auto-open", help="Disable the automatic opening of the image/video file after generation", action="store_true")
+    parser.add_argument("-r", "--reverse", help="Display commit history in the reverse direction", action="store_true")
 
     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
 

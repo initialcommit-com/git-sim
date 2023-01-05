@@ -50,7 +50,7 @@ class GitSimRebase(GitSimBaseCommand):
     def setup_and_draw_parent(self, child, commitMessage="New commit", shift=numpy.array([0., 0., 0.]), draw_arrow=True):
         circle = Circle(stroke_color=RED, fill_color=RED, fill_opacity=0.25)
         circle.height = 1 
-        circle.next_to(self.drawnCommits[child], LEFT, buff=1.5)
+        circle.next_to(self.drawnCommits[child], LEFT if self.scene.args.reverse else RIGHT, buff=1.5)
         circle.shift(shift)
 
         start = circle.get_center()
