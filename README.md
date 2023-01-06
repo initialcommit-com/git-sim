@@ -5,7 +5,7 @@ This generates an image (default) or video visualization depicting the command's
 
 Command syntax is based directly on Git's command-line syntax, so using git-sim is as familiar as possible.
 
-Example: `git-sim merge <branch>`
+Example: `$ git-sim merge <branch>`
 
 ![git-sim-merge_01-05-23_09-44-46](https://user-images.githubusercontent.com/49353917/210939840-1d51493a-6cac-43fd-9d12-3d2948d32c61.jpg)
 
@@ -78,7 +78,7 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 `--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video.  
 `--reverse`: Display commit history in the reverse direction.
 
-Animation-only global options (to be used in conjunction with `--animate`:
+Animation-only global options (to be used in conjunction with `--animate`):
 
 `--speed=n`: Set the multiple of animation speed of the output simulation, `n` can be an integer or float, default is 1.  
 `--low-quality`: Render the animation in low quality to speed up creation time, recommended for non-presentation use.  
