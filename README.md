@@ -7,7 +7,7 @@ Command syntax is based directly on Git's command-line syntax, so using git-sim 
 
 Example: `git-sim merge <branch>`
 
-![git-sim-merge_11-30-22_11-50-32](https://user-images.githubusercontent.com/49353917/204894714-89d77aa7-98c9-4172-b11c-58f38672f1a7.jpg)
+![git-sim-merge_01-05-23_09-44-46](https://user-images.githubusercontent.com/49353917/210939840-1d51493a-6cac-43fd-9d12-3d2948d32c61.jpg)
 
 ## Use cases
 - Visualize Git commands to understand their effects on your repo before actually running them
@@ -76,6 +76,7 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 
 `--light-mode`: Use a light mode color scheme instead of default dark mode.  
 `--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video.
+`--reverse`: Display commit history in the reverse direction.
 
 Animation-only global options (to be used in conjunction with `--animate`:
 
@@ -97,7 +98,7 @@ Usage: `git-sim log`
 
 - Simulated output will show the most recent 5 commits on the active branch by default
 
-![git-sim-log_11-30-22_11-40-56](https://user-images.githubusercontent.com/49353917/204893190-8be7e544-1abf-4514-98c9-391a6ef732d3.jpg)
+![git-sim-log_01-05-23_22-02-39](https://user-images.githubusercontent.com/49353917/210940300-aadd14c6-72ab-4529-a1be-b494ed5dd4c9.jpg)
 
 ### git status
 Usage: `git-sim status`
@@ -105,7 +106,7 @@ Usage: `git-sim status`
 - Simulated output will show the state of the working directory, staging area, and untracked files
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
-![git-sim-status_11-11-22_22-57-49](https://user-images.githubusercontent.com/49353917/201461977-189d58fd-f796-4069-b94e-dfb5a395758a.jpg)
+![git-sim-status_01-05-23_22-06-28](https://user-images.githubusercontent.com/49353917/210940685-735665e2-fa12-4043-979c-54c295b13800.jpg)
 
 ### git add
 Usage: `git-sim add <file 1> <file 2> ... <file n>`
@@ -114,7 +115,7 @@ Usage: `git-sim add <file 1> <file 2> ... <file n>`
 - Simulated output will show files being moved to the staging area
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
-![git-sim-add_11-11-22_22-59-54](https://user-images.githubusercontent.com/49353917/201461985-2ebf7bfe-929a-4025-9049-8f2a933a237a.jpg)
+![git-sim-add_01-05-23_22-07-40](https://user-images.githubusercontent.com/49353917/210940814-7e8dc318-6116-4e56-b415-bc547401a56a.jpg)
 
 ### git restore
 Usage: `git-sim restore <file 1> <file 2> ... <file n>`
@@ -123,7 +124,7 @@ Usage: `git-sim restore <file 1> <file 2> ... <file n>`
 - Simulated output will show files being moved back to the working directory or discarded changes
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
-![git-sim-restore_11-21-22_20-43-45](https://user-images.githubusercontent.com/49353917/203223705-e1872376-df9f-4f11-b06e-746766b2a4ca.jpg)
+![git-sim-restore_01-05-23_22-09-14](https://user-images.githubusercontent.com/49353917/210941009-e6bf7271-ce9b-4e41-9a0b-24cc4b8d3b15.jpg)
 
 ### git commit
 Usage: `git-sim commit -m "Commit message"`
@@ -133,7 +134,7 @@ Usage: `git-sim commit -m "Commit message"`
 - HEAD and the active branch will be moved to the new commit
 - Simulated output will show files in the staging area being included in the new commit
 
-![git-sim-commit_11-21-22_20-45-11](https://user-images.githubusercontent.com/49353917/203223869-d7f37189-7a6a-4e5d-93f3-46c7f3509690.jpg)
+![git-sim-commit_01-05-23_22-10-21](https://user-images.githubusercontent.com/49353917/210941149-d83677a1-3ab7-4880-bc0f-871b1f150087.jpg)
 
 ### git stash
 Usage: `git-sim stash <file>`
@@ -143,7 +144,7 @@ Usage: `git-sim stash <file>`
 - Simulated output will show files being moved to the Git stash
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
-![git-sim-stash_11-21-22_20-46-21](https://user-images.githubusercontent.com/49353917/203224031-21c4a8c0-38d4-430d-b0a2-da4b320d05ab.jpg)
+![git-sim-stash_01-05-23_22-11-18](https://user-images.githubusercontent.com/49353917/210941254-69c80b63-5c06-411a-a36a-1454b2906ee8.jpg)
 
 ### git branch
 Usage: `git-sim branch <new branch name>`
@@ -151,7 +152,7 @@ Usage: `git-sim branch <new branch name>`
 - Specify `<new branch name>` as the name of the new branch to simulate creation of
 - Simulated output will show the newly create branch ref along with most recent 5 commits on the active branch
 
-![git-sim-branch_11-11-22_23-00-36](https://user-images.githubusercontent.com/49353917/201461993-5f5ae510-1b04-4cb3-9002-72e969c4d73a.jpg)
+![git-sim-branch_01-05-23_22-13-17](https://user-images.githubusercontent.com/49353917/210941509-2a42a7a4-2168-4f62-913f-3f6fe74a0684.jpg)
 
 ### git tag
 Usage: `git-sim tag <new tag name>`
@@ -159,7 +160,7 @@ Usage: `git-sim tag <new tag name>`
 - Specify `<new tag name>` as the name of the new tag to simulate creation of
 - Simulated output will show the newly create tag ref along with most recent 5 commits on the active branch
 
-![git-sim-tag_11-11-22_23-00-57](https://user-images.githubusercontent.com/49353917/201461998-86f58c5a-8fb5-4882-bb87-7e42e67d5c37.jpg)
+![git-sim-tag_01-05-23_22-14-18](https://user-images.githubusercontent.com/49353917/210941647-79376ff7-2941-42b3-964a-b1d3a404a4fe.jpg)
 
 ### git reset
 Usage: `git-sim reset <reset-to> [--mixed|--soft|--hard]`
@@ -168,7 +169,7 @@ Usage: `git-sim reset <reset-to> [--mixed|--soft|--hard]`
 - As with a normal git reset command, default reset mode is `--mixed`, but can be specified using `--soft`, `--hard`, or `--mixed`
 - Simulated output will show branch/HEAD resets and resulting state of the working directory, staging area, and whether any file changes would be deleted by running the actual command
 
-![git-sim-reset_11-11-22_23-02-42](https://user-images.githubusercontent.com/49353917/201462003-bf59e272-16fa-4c3d-b9f3-0fc91d2caa48.jpg)
+![git-sim-reset_01-05-23_22-15-49](https://user-images.githubusercontent.com/49353917/210941835-80f032d2-4f06-4032-8dd0-98c8a2569049.jpg)
 
 ### git revert
 Usage: `git-sim revert <to-revert>`
@@ -177,7 +178,7 @@ Usage: `git-sim revert <to-revert>`
 - Simulated output will show the new commit which reverts the changes from `<to-revert>`
 - Simulated output will include the next 4 most recent commits on the active branch
 
-![git-sim-revert_11-30-22_11-46-09](https://user-images.githubusercontent.com/49353917/204893827-c0fef360-9c39-4686-81f2-f85f51a85597.jpg)
+![git-sim-revert_01-05-23_22-16-59](https://user-images.githubusercontent.com/49353917/210941979-6db8b55c-2881-41d8-9e2e-6263b1dece13.jpg)
 
 ### git merge
 Usage: `git-sim merge <branch>`
@@ -187,49 +188,49 @@ Usage: `git-sim merge <branch>`
 - Otherwise, a three-way merge will be depicted
 - To force a merge commit when a fast-forward is possible, use `--no-ff`
 
-![git-sim-merge_11-30-22_11-50-32](https://user-images.githubusercontent.com/49353917/204894714-89d77aa7-98c9-4172-b11c-58f38672f1a7.jpg)
+![git-sim-merge_01-05-23_09-44-46](https://user-images.githubusercontent.com/49353917/210942030-c7229488-571a-4943-a1f4-c6e4a0c8ccf3.jpg)
 
 ### git rebase
 Usage: `git-sim rebase <new-base>`
 
 - Specify `<new-base>` as the branch name to rebase the active branch onto
 
-![git-sim-rebase_11-30-22_11-52-26](https://user-images.githubusercontent.com/49353917/204895157-8f020afe-df63-494d-bd16-d00801f438bc.jpg)
+![git-sim-rebase_01-05-23_09-53-34](https://user-images.githubusercontent.com/49353917/210942598-4ff8d1e6-464d-48f3-afb9-f46f7ec4828c.jpg)
 
 ### git cherry-pick
 Usage: `git-sim cherry-pick <commit>`
 
 - Specify `<commit>` as a ref (branch name/tag) or commit ID to cherry-pick onto the active branch
 
-![git-sim-cherry-pick_11-21-22_21-13-23](https://user-images.githubusercontent.com/49353917/203227369-fce5edc3-00b5-4d57-95b8-318442c3984e.jpg)
+![git-sim-cherry-pick_01-05-23_22-23-08](https://user-images.githubusercontent.com/49353917/210942811-fa5155b1-4c6f-4afc-bea2-d39b4cd594aa.jpg)
 
 ## Video animation examples
 ```console
 $ git-sim --animate reset HEAD^
 ```
 
-https://user-images.githubusercontent.com/49353917/201462192-a3bc3a2e-f2c9-4166-81ce-743e53255fc2.mp4
+https://user-images.githubusercontent.com/49353917/210943230-f38d879b-bb0d-4d42-a196-f24efb9e351a.mp4
 
 ```console
-$ git checkout feature9
-$ git-sim --animate merge feature6
+$ git checkout main
+$ git-sim --animate merge dev
 ```
 
-https://user-images.githubusercontent.com/49353917/204897010-3aa2a0e6-c8ba-4acd-acd1-2683274afb63.mp4
+https://user-images.githubusercontent.com/49353917/210943418-22c2cd11-be96-41bc-b621-7018eebc6bc0.mp4
 
 ```console
-$ git checkout feature1
+$ git checkout dev
 $ git-sim --animate rebase main
 ```
 
-https://user-images.githubusercontent.com/49353917/204896434-48dbc15b-9718-47c7-b790-6caad5f8a367.mp4
+https://user-images.githubusercontent.com/49353917/210943815-4b8be2da-18da-4c42-927a-61cf9a22834e.mp4
 
 ```console
-$ git checkout feature6
-$ git-sim --animate cherry-pick feature9
+$ git checkout main
+$ git-sim --animate cherry-pick dev
 ```
 
-https://user-images.githubusercontent.com/49353917/204899112-2c99019e-1253-4aef-a0b7-dc774d0adbe8.mp4
+https://user-images.githubusercontent.com/49353917/210944001-77bd0130-306b-40a8-ba0b-22e50172802b.mp4
 
 ## Basic command examples
 Simulate the output of the git log command:
