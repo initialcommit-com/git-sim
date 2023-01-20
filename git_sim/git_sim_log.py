@@ -7,7 +7,11 @@ class GitSimLog(GitSimBaseCommand):
         super().__init__(scene)
         self.numCommits = self.scene.args.commits
         self.defaultNumCommits = self.scene.args.commits
-        self.selected_branches.append(self.repo.active_branch.name)
+
+        try:
+            self.selected_branches.append(self.repo.active_branch.name)
+        except TypeError:
+            pass
 
     def execute(self):
         print("Simulating: git " + self.scene.args.subcommand)

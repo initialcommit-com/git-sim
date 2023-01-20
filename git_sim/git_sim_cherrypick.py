@@ -7,7 +7,11 @@ class GitSimCherryPick(GitSimBaseCommand):
         super().__init__(scene)
         if self.scene.args.commit[0] in [branch.name for branch in self.repo.heads]:
             self.selected_branches.append(self.scene.args.commit[0])
-        self.selected_branches.append(self.repo.active_branch.name)
+
+        try:
+            self.selected_branches.append(self.repo.active_branch.name)
+        except TypeError:
+            pass
 
     def execute(self):
         print("Simulating: git " + self.scene.args.subcommand + " " + self.scene.args.commit[0])

@@ -8,8 +8,12 @@ class GitSimReset(GitSimBaseCommand):
         self.resetTo = git.repo.fun.rev_parse(self.repo, self.scene.args.commit)
         self.commitsSinceResetTo = list(self.repo.iter_commits(self.scene.args.commit + "...HEAD"))
         self.maxrefs = 2
-        self.selected_branches.append(self.repo.active_branch.name)
         self.hide_first_tag = True
+
+        try:
+            self.selected_branches.append(self.repo.active_branch.name)
+        except TypeError:
+            pass
 
         if self.scene.args.hard:
             self.scene.args.mode = "hard"

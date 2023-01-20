@@ -9,9 +9,13 @@ class GitSimRevert(GitSimBaseCommand):
         self.maxrefs = 2
         self.defaultNumCommits = 4
         self.numCommits = 4
-        self.selected_branches.append(self.repo.active_branch.name)
         self.hide_first_tag = True
         self.zone_title_offset += 0.1
+
+        try:
+            self.selected_branches.append(self.repo.active_branch.name)
+        except TypeError:
+            pass
 
     def execute(self):
         print("Simulating: git " + self.scene.args.subcommand + " " + self.scene.args.commit)
