@@ -47,7 +47,7 @@ class GitSimBaseCommand():
             sys.exit(1)
 
         try:
-            self.commits = list(self.repo.iter_commits(start + "~" + str(self.numCommits) + "..." + start))
+            self.commits = list(self.repo.iter_commits(start)) if self.numCommits == 1 else list(self.repo.iter_commits(start + "~" + str(self.numCommits) + "..." + start))
             if len(self.commits) < self.defaultNumCommits:
                 self.commits = list(self.repo.iter_commits(start))
             while len(self.commits) < self.defaultNumCommits:
