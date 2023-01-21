@@ -5,7 +5,13 @@ import git, sys, numpy
 class GitSimRevert(GitSimBaseCommand):
     def __init__(self, scene):
         super().__init__(scene)
-        self.revert = git.repo.fun.rev_parse(self.repo, self.scene.args.commit)
+
+        try:
+            self.revert = git.repo.fun.rev_parse(self.repo, self.scene.args.commit)
+        except git.exc.BadName:
+            print("git-sim error: '" + self.scene.args.commit + "' is not a valid Git ref or identifier.")
+            sys.exit(1)
+
         self.maxrefs = 2
         self.defaultNumCommits = 4
         self.numCommits = 4

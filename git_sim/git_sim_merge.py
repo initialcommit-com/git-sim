@@ -5,6 +5,13 @@ import git, sys, numpy
 class GitSimMerge(GitSimBaseCommand):
     def __init__(self, scene):
         super().__init__(scene)
+
+        try:
+            git.repo.fun.rev_parse(self.repo, self.scene.args.branch[0])
+        except git.exc.BadName:
+            print("git-sim error: '" + self.scene.args.branch[0] + "' is not a valid Git ref or identifier.")
+            sys.exit(1)
+
         self.ff = False
         self.maxrefs = 2
         if self.scene.args.branch[0] in [branch.name for branch in self.repo.heads]:

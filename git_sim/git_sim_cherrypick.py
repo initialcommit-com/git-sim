@@ -5,6 +5,13 @@ import git, sys, numpy
 class GitSimCherryPick(GitSimBaseCommand):
     def __init__(self, scene):
         super().__init__(scene)
+
+        try:
+            git.repo.fun.rev_parse(self.repo, self.scene.args.commit[0])
+        except git.exc.BadName:
+            print("git-sim error: '" + self.scene.args.commit[0] + "' is not a valid Git ref or identifier.")
+            sys.exit(1)
+
         if self.scene.args.commit[0] in [branch.name for branch in self.repo.heads]:
             self.selected_branches.append(self.scene.args.commit[0])
 

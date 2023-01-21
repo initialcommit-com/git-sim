@@ -5,7 +5,13 @@ import git, sys, numpy
 class GitSimReset(GitSimBaseCommand):
     def __init__(self, scene):
         super().__init__(scene)
-        self.resetTo = git.repo.fun.rev_parse(self.repo, self.scene.args.commit)
+
+        try:
+            self.resetTo = git.repo.fun.rev_parse(self.repo, self.scene.args.commit)
+        except git.exc.BadName:
+            print("git-sim error: '" + self.scene.args.commit + "' is not a valid Git ref or identifier.")
+            sys.exit(1)
+
         self.commitsSinceResetTo = list(self.repo.iter_commits(self.scene.args.commit + "...HEAD"))
         self.maxrefs = 2
         self.hide_first_tag = True
