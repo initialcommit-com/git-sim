@@ -26,13 +26,15 @@ Example: `$ git-sim merge <branch>`
 - Animation only: Speed up or slow down animation speed as desired
 
 ## Quickstart
-1) Install [manim and manim dependencies for your OS](https://www.manim.community/)
+**1) Install [manim and manim dependencies for your OS](https://www.manim.community/)**
 
 2) Install `git-sim`:
 
 ```console
 $ pip3 install git-sim
 ```
+
+Note: For MacOS, it is recommended to NOT use the system Python to install Git-Sim, and instead use [Homebrew](https://brew.sh) to install a version of Python to work with Git-Sim. Virtual environments should work too.
 
 3) Browse to the Git repository you want to simulate Git commands in:
 
