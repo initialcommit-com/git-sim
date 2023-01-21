@@ -26,7 +26,7 @@ Example: `$ git-sim merge <branch>`
 - Animation only: Speed up or slow down animation speed as desired
 
 ## Quickstart
-**1) Install [manim and manim dependencies for your OS](https://www.manim.community/)**
+1) **Install [manim and manim dependencies for your OS](https://www.manim.community/)**
 
 2) Install `git-sim`:
 
