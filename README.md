@@ -34,7 +34,7 @@ Example: `$ git-sim merge <branch>`
 $ pip3 install git-sim
 ```
 
-Note: For MacOS, it is recommended to NOT use the system Python to install Git-Sim, and instead use [Homebrew](https://brew.sh) to install a version of Python to work with Git-Sim. Virtual environments should work too.
+Note: For MacOS, it is recommended to **NOT** use the system Python to install Git-Sim, and instead use [Homebrew](https://brew.sh) to install a version of Python to work with Git-Sim. Virtual environments should work too.
 
 3) Browse to the Git repository you want to simulate Git commands in:
 
