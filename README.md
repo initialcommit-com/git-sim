@@ -1,5 +1,5 @@
 # git-sim
-Visually simulate Git operations in your own repo with a single terminal command.
+Visually simulate Git operations in your own repos with a single terminal command.
 
 This generates an image (default) or video visualization depicting the Git command's behavior.
 
