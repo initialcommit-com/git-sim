@@ -444,8 +444,8 @@ class GitSimBaseCommand():
         else:
             self.scene.camera.frame.shift(shift)
 
-    def setup_and_draw_parent(self, child, commitMessage="New commit", shift=numpy.array([0., 0., 0.]), draw_arrow=True):
-        circle = Circle(stroke_color=RED, fill_color=RED, fill_opacity=0.25)
+    def setup_and_draw_parent(self, child, commitMessage="New commit", shift=numpy.array([0., 0., 0.]), draw_arrow=True, color=RED):
+        circle = Circle(stroke_color=color, fill_color=color, fill_opacity=0.25)
         circle.height = 1 
         circle.next_to(self.drawnCommits[child.hexsha], LEFT if self.scene.args.reverse else RIGHT, buff=1.5)
         circle.shift(shift)
