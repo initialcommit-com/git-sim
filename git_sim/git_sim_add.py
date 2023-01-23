@@ -1,6 +1,9 @@
-from manim import *
+import sys
+
+import manim as m
+
 from git_sim.git_sim_base_command import GitSimBaseCommand
-import git, sys, numpy
+
 
 class GitSimAdd(GitSimBaseCommand):
     def __init__(self, scene):
@@ -56,4 +59,4 @@ class GitSimAdd(GitSimBaseCommand):
                 for name in self.scene.args.name:
                     if name == z:
                         thirdColumnFileNames.add(z)
-                        firstColumnArrowMap[z] = Arrow(stroke_width=3, color=self.scene.fontColor)
+                        firstColumnArrowMap[z] = m.Arrow(stroke_width=3, color=self.scene.fontColor)

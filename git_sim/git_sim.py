@@ -1,4 +1,4 @@
-from manim import BLACK, WHITE, MovingCameraScene
+import manim as m
 
 from git_sim.git_sim_add import GitSimAdd
 from git_sim.git_sim_branch import GitSimBranch
@@ -15,15 +15,15 @@ from git_sim.git_sim_status import GitSimStatus
 from git_sim.git_sim_tag import GitSimTag
 
 
-class GitSim(MovingCameraScene):
+class GitSim(m.MovingCameraScene):
     def __init__(self, args):
         super().__init__()
         self.args = args
 
         if ( self.args.light_mode ):
-            self.fontColor = BLACK
+            self.fontColor = m.BLACK
         else:
-            self.fontColor = WHITE
+            self.fontColor = m.WHITE
 
     def construct(self):
         if self.args.subcommand == 'log':

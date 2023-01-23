@@ -1,6 +1,11 @@
-from manim import *
+import sys
+
+import git
+import manim as m
+import numpy
+
 from git_sim.git_sim_base_command import GitSimBaseCommand
-import git, sys, numpy
+
 
 class GitSimTag(GitSimBaseCommand):
     def __init__(self, scene):
@@ -15,16 +20,16 @@ class GitSimTag(GitSimBaseCommand):
         self.recenter_frame()
         self.scale_frame()
 
-        tagText = Text(self.scene.args.name, font="Monospace", font_size=20, color=self.scene.fontColor)
-        tagRec = Rectangle(color=YELLOW, fill_color=YELLOW, fill_opacity=0.25, height=0.4, width=tagText.width+0.25)
+        tagText = m.Text(self.scene.args.name, font="Monospace", font_size=20, color=self.scene.fontColor)
+        tagRec = m.Rectangle(color=m.YELLOW, fill_color=m.YELLOW, fill_opacity=0.25, height=0.4, width=tagText.width+0.25)
 
-        tagRec.next_to(self.topref, UP) 
+        tagRec.next_to(self.topref, m.UP)
         tagText.move_to(tagRec.get_center())
 
-        fulltag = VGroup(tagRec, tagText)
+        fulltag = m.VGroup(tagRec, tagText)
 
         if self.scene.args.animate:
-            self.scene.play(Create(fulltag), run_time=1/self.scene.args.speed)
+            self.scene.play(m.Create(fulltag), run_time=1/self.scene.args.speed)
         else:
             self.scene.add(fulltag)
 

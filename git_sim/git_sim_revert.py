@@ -1,6 +1,11 @@
-from manim import *
+import sys
+
+import git
+import manim as m
+import numpy
+
 from git_sim.git_sim_base_command import GitSimBaseCommand
-import git, sys, numpy
+
 
 class GitSimRevert(GitSimBaseCommand):
     def __init__(self, scene):
@@ -42,42 +47,42 @@ class GitSimRevert(GitSimBaseCommand):
     def build_commit_id_and_message(self, commit):
         hide_refs = False
         if commit == "dark":
-            commitId = Text('', font="Monospace", font_size=20, color=self.scene.fontColor)
+            commitId = m.Text('', font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = ''
         elif self.i == 2 and self.revert.hexsha not in [commit.hexsha for commit in self.commits]:
-            commitId = Text('...', font="Monospace", font_size=20, color=self.scene.fontColor)
+            commitId = m.Text('...', font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = '...'
             hide_refs = True
         elif self.i == 3 and self.revert.hexsha not in [commit.hexsha for commit in self.commits]:
-            commitId = Text(self.revert.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
+            commitId = m.Text(self.revert.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = self.revert.message.split("\n")[0][:40].replace("\n", " ")
             hide_refs = True
         else:
-            commitId = Text(commit.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
+            commitId = m.Text(commit.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = commit.message.split("\n")[0][:40].replace("\n", " ")
         return commitId, commitMessage, commit, hide_refs
 
     def setup_and_draw_revert_commit(self):
-        circle = Circle(stroke_color=RED, fill_color=RED, fill_opacity=0.25)
-        circle.height = 1 
-        circle.next_to(self.drawnCommits[self.commits[0].hexsha], LEFT if self.scene.args.reverse else RIGHT, buff=1.5)
+        circle = m.Circle(stroke_color=m.RED, fill_color=m.RED, fill_opacity=0.25)
+        circle.height = 1
+        circle.next_to(self.drawnCommits[self.commits[0].hexsha], m.LEFT if self.scene.args.reverse else m.RIGHT, buff=1.5)
 
         start = circle.get_center()
         end = self.drawnCommits[self.commits[0].hexsha].get_center()
-        arrow = Arrow(start, end, color=self.scene.fontColor)
+        arrow = m.Arrow(start, end, color=self.scene.fontColor)
         length = numpy.linalg.norm(start-end) - ( 1.5 if start[1] == end[1] else 3  )
         arrow.set_length(length)
 
-        commitId = Text("abcdef", font="Monospace", font_size=20, color=self.scene.fontColor).next_to(circle, UP) 
+        commitId = m.Text("abcdef", font="Monospace", font_size=20, color=self.scene.fontColor).next_to(circle, m.UP)
         self.toFadeOut.add(commitId)
 
         commitMessage = "Revert " + self.revert.hexsha[0:6]
         commitMessage = commitMessage[:40].replace("\n", " ")
-        message = Text('\n'.join(commitMessage[j:j+20] for j in range(0, len(commitMessage), 20))[:100], font="Monospace", font_size=14, color=self.scene.fontColor).next_to(circle, DOWN)
+        message = m.Text('\n'.join(commitMessage[j:j+20] for j in range(0, len(commitMessage), 20))[:100], font="Monospace", font_size=14, color=self.scene.fontColor).next_to(circle, m.DOWN)
         self.toFadeOut.add(message)
 
         if self.scene.args.animate:
-            self.scene.play(self.scene.camera.frame.animate.move_to(circle.get_center()), Create(circle), AddTextLetterByLetter(commitId), AddTextLetterByLetter(message), run_time=1/self.scene.args.speed)
+            self.scene.play(self.scene.camera.frame.animate.move_to(circle.get_center()), m.Create(circle), m.AddTextLetterByLetter(commitId), m.AddTextLetterByLetter(message), run_time=1/self.scene.args.speed)
         else:
             self.scene.camera.frame.move_to(circle.get_center())
             self.scene.add(circle, commitId, message)
@@ -86,7 +91,7 @@ class GitSimRevert(GitSimBaseCommand):
         self.toFadeOut.add(circle)
 
         if self.scene.args.animate:
-            self.scene.play(Create(arrow), run_time=1/self.scene.args.speed)
+            self.scene.play(m.Create(arrow), run_time=1/self.scene.args.speed)
         else:
             self.scene.add(arrow)
 
