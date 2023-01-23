@@ -76,7 +76,7 @@ def main():
 
     args = parser.parse_args()
 
-    config.media_dir = os.path.join(args.media_dir, "git-sim_media")
+    config.media_dir = os.path.join(os.path.expanduser(args.media_dir), "git-sim_media")
     config.verbosity = "ERROR"
 
     if ( args.low_quality ):
