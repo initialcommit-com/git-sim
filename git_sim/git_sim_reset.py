@@ -1,6 +1,11 @@
+import sys
+
+import git
+import numpy
 from manim import *
+
 from git_sim.git_sim_base_command import GitSimBaseCommand
-import git, sys, numpy
+
 
 class GitSimReset(GitSimBaseCommand):
     def __init__(self, scene):
@@ -9,10 +14,16 @@ class GitSimReset(GitSimBaseCommand):
         try:
             self.resetTo = git.repo.fun.rev_parse(self.repo, self.scene.args.commit)
         except git.exc.BadName:
-            print("git-sim error: '" + self.scene.args.commit + "' is not a valid Git ref or identifier.")
+            print(
+                "git-sim error: '"
+                + self.scene.args.commit
+                + "' is not a valid Git ref or identifier.",
+            )
             sys.exit(1)
 
-        self.commitsSinceResetTo = list(self.repo.iter_commits(self.scene.args.commit + "...HEAD"))
+        self.commitsSinceResetTo = list(
+            self.repo.iter_commits(self.scene.args.commit + "...HEAD"),
+        )
         self.maxrefs = 2
         self.hide_first_tag = True
 
@@ -29,7 +40,17 @@ class GitSimReset(GitSimBaseCommand):
             self.scene.args.mode = "soft"
 
     def execute(self):
-        print("Simulating: git " + self.scene.args.subcommand + ( " --" + self.scene.args.mode if self.scene.args.mode != "default" else "" ) + " " + self.scene.args.commit)
+        print(
+            "Simulating: git "
+            + self.scene.args.subcommand
+            + (
+                " --" + self.scene.args.mode
+                if self.scene.args.mode != "default"
+                else ""
+            )
+            + " "
+            + self.scene.args.commit,
+        )
 
         self.show_intro()
         self.get_commits()
@@ -45,34 +66,65 @@ class GitSimReset(GitSimBaseCommand):
     def build_commit_id_and_message(self, commit):
         hide_refs = False
         if commit == "dark":
-            commitId = Text('', font="Monospace", font_size=20, color=self.scene.fontColor)
-            commitMessage = ''
-        elif self.i == 3 and self.resetTo.hexsha not in [commit.hexsha for commit in self.get_nondark_commits()]:
-            commitId = Text('...', font="Monospace", font_size=20, color=self.scene.fontColor)
-            commitMessage = '...'
+            commitId = Text(
+                "", font="Monospace", font_size=20, color=self.scene.fontColor,
+            )
+            commitMessage = ""
+        elif self.i == 3 and self.resetTo.hexsha not in [
+            commit.hexsha for commit in self.get_nondark_commits()
+        ]:
+            commitId = Text(
+                "...", font="Monospace", font_size=20, color=self.scene.fontColor,
+            )
+            commitMessage = "..."
             hide_refs = True
-        elif self.i == 4 and self.resetTo.hexsha not in [commit.hexsha for commit in self.get_nondark_commits()]:
-            commitId = Text(self.resetTo.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
+        elif self.i == 4 and self.resetTo.hexsha not in [
+            commit.hexsha for commit in self.get_nondark_commits()
+        ]:
+            commitId = Text(
+                self.resetTo.hexsha[:6],
+                font="Monospace",
+                font_size=20,
+                color=self.scene.fontColor,
+            )
             commitMessage = self.resetTo.message.split("\n")[0][:40].replace("\n", " ")
             commit = self.resetTo
             hide_refs = True
         else:
-            commitId = Text(commit.hexsha[:6], font="Monospace", font_size=20, color=self.scene.fontColor)
+            commitId = Text(
+                commit.hexsha[:6],
+                font="Monospace",
+                font_size=20,
+                color=self.scene.fontColor,
+            )
             commitMessage = commit.message.split("\n")[0][:40].replace("\n", " ")
 
-        if commit != "dark" and commit.hexsha == self.resetTo.hexsha and commit.hexsha != self.repo.head.commit.hexsha:
+        if (
+            commit != "dark"
+            and commit.hexsha == self.resetTo.hexsha
+            and commit.hexsha != self.repo.head.commit.hexsha
+        ):
             hide_refs = True
 
         return commitId, commitMessage, commit, hide_refs
 
-    def populate_zones(self, firstColumnFileNames, secondColumnFileNames, thirdColumnFileNames, firstColumnArrowMap={}, secondColumnArrowMap={}):
+    def populate_zones(
+        self,
+        firstColumnFileNames,
+        secondColumnFileNames,
+        thirdColumnFileNames,
+        firstColumnArrowMap={},
+        secondColumnArrowMap={},
+    ):
         for commit in self.commitsSinceResetTo:
             if commit.hexsha == self.resetTo.hexsha:
                 break
             for filename in commit.stats.files:
                 if self.scene.args.mode == "soft":
                     thirdColumnFileNames.add(filename)
-                elif self.scene.args.mode == "mixed" or self.scene.args.mode == "default":
+                elif (
+                    self.scene.args.mode == "mixed" or self.scene.args.mode == "default"
+                ):
                     secondColumnFileNames.add(filename)
                 elif self.scene.args.mode == "hard":
                     firstColumnFileNames.add(filename)
@@ -81,7 +133,9 @@ class GitSimReset(GitSimBaseCommand):
             if "git-sim_media" not in x.a_path:
                 if self.scene.args.mode == "soft":
                     secondColumnFileNames.add(x.a_path)
-                elif self.scene.args.mode == "mixed" or self.scene.args.mode == "default":
+                elif (
+                    self.scene.args.mode == "mixed" or self.scene.args.mode == "default"
+                ):
                     secondColumnFileNames.add(x.a_path)
                 elif self.scene.args.mode == "hard":
                     firstColumnFileNames.add(x.a_path)
@@ -90,7 +144,9 @@ class GitSimReset(GitSimBaseCommand):
             if "git-sim_media" not in y.a_path:
                 if self.scene.args.mode == "soft":
                     thirdColumnFileNames.add(y.a_path)
-                elif self.scene.args.mode == "mixed" or self.scene.args.mode == "default":
+                elif (
+                    self.scene.args.mode == "mixed" or self.scene.args.mode == "default"
+                ):
                     secondColumnFileNames.add(y.a_path)
                 elif self.scene.args.mode == "hard":
                     firstColumnFileNames.add(y.a_path)

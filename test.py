@@ -1,18 +1,19 @@
-import unittest, git, argparse
+import argparse
+import unittest
+
+import git
 from manim import *
 
 from git_sim.git_sim import GitSim
 
 
 class TestGitSim(unittest.TestCase):
-
     def test_git_sim(self):
         """Test git sim."""
-
         gs = GitSim(argparse.Namespace())
 
         self.assertEqual(1, 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

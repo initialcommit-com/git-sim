@@ -1,6 +1,11 @@
+import sys
+
+import git
+import numpy
 from manim import *
+
 from git_sim.git_sim_base_command import GitSimBaseCommand
-import git, sys, numpy
+
 
 class GitSimStatus(GitSimBaseCommand):
     def __init__(self, scene):
