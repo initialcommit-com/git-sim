@@ -7,6 +7,7 @@ class GitSimAdd(GitSimBaseCommand):
         super().__init__(scene)
         self.maxrefs = 2
         self.hide_first_tag = True
+        self.allow_no_commits = True
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
@@ -40,10 +41,14 @@ class GitSimAdd(GitSimBaseCommand):
                     if name == x.a_path:
                         thirdColumnFileNames.add(x.a_path)
                         secondColumnArrowMap[x.a_path] = Arrow(stroke_width=3, color=self.scene.fontColor)
-
-        for y in self.repo.index.diff("HEAD"):
-            if "git-sim_media" not in y.a_path:
-                thirdColumnFileNames.add(y.a_path)
+        try:
+            for y in self.repo.index.diff("HEAD"):
+                if "git-sim_media" not in y.a_path:
+                    thirdColumnFileNames.add(y.a_path)
+        except git.exc.BadName:
+            for (y, _stage), entry in self.repo.index.entries.items():
+                if "git-sim_media" not in y:
+                    thirdColumnFileNames.add(y)
 
         for z in self.repo.untracked_files:
             if "git-sim_media" not in z:

@@ -7,6 +7,7 @@ class GitSimStatus(GitSimBaseCommand):
         super().__init__(scene)
         self.maxrefs = 2
         self.hide_first_tag = True
+        self.allow_no_commits = True
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)

@@ -23,6 +23,7 @@ class GitSimBaseCommand():
         self.hide_first_tag = False
         self.stop = False
         self.zone_title_offset = 2.6 if platform.system() == "Windows" else 2.6
+        self.allow_no_commits = False
 
         self.logo = ImageMobject(self.scene.args.logo)
         self.logo.width = 3
@@ -43,8 +44,14 @@ class GitSimBaseCommand():
 
     def get_commits(self, start="HEAD"):
         if not self.numCommits:
-            print("git-sim error: No commits in current Git repository.")
-            sys.exit(1)
+            if self.allow_no_commits:
+                self.numCommits = self.defaultNumCommits
+                self.commits = ["dark"]*5
+                self.zone_title_offset = 2
+                return
+            else:
+                print("git-sim error: No commits in current Git repository.")
+                sys.exit(1)
 
         try:
             self.commits = list(self.repo.iter_commits(start)) if self.numCommits == 1 else list(self.repo.iter_commits(start + "~" + str(self.numCommits) + "..." + start))
@@ -416,9 +423,14 @@ class GitSimBaseCommand():
             if "git-sim_media" not in x.a_path:
                 secondColumnFileNames.add(x.a_path)
 
-        for y in self.repo.index.diff("HEAD"):
-            if "git-sim_media" not in y.a_path:
-                thirdColumnFileNames.add(y.a_path)
+        try:
+            for y in self.repo.index.diff("HEAD"):
+                if "git-sim_media" not in y.a_path:
+                    thirdColumnFileNames.add(y.a_path)
+        except git.exc.BadName:
+            for (y, _stage), entry in self.repo.index.entries.items():
+                if "git-sim_media" not in y:
+                    thirdColumnFileNames.add(y)
 
         for z in self.repo.untracked_files:
             if "git-sim_media" not in z:
