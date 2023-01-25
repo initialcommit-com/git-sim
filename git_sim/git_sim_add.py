@@ -1,5 +1,6 @@
 import sys
 
+import git
 import manim as m
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
@@ -43,7 +44,7 @@ class GitSimAdd(GitSimBaseCommand):
                 for name in self.scene.args.name:
                     if name == x.a_path:
                         thirdColumnFileNames.add(x.a_path)
-                        secondColumnArrowMap[x.a_path] = Arrow(stroke_width=3, color=self.scene.fontColor)
+                        secondColumnArrowMap[x.a_path] = m.Arrow(stroke_width=3, color=self.scene.fontColor)
         try:
             for y in self.repo.index.diff("HEAD"):
                 if "git-sim_media" not in y.a_path:
