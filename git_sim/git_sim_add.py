@@ -1,5 +1,6 @@
 import sys
 
+import git
 import manim as m
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
