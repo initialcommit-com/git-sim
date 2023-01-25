@@ -95,3 +95,8 @@ your commits, like this:
 ```
 $ git commit -sm "Fixed xyz..."
 ```
+
+## Questions
+
+If you have any additional questions about contributing to Git-Sim, feel free
+to [send me an email at jacob@initialcommit.io](mailto:jacob@initialcommit.io).
