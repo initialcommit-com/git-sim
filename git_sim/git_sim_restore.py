@@ -1,6 +1,11 @@
-from manim import *
+import sys
+
+import git
+import manim as m
+import numpy
+
 from git_sim.git_sim_base_command import GitSimBaseCommand
-import git, sys, numpy
+
 
 class GitSimRestore(GitSimBaseCommand):
     def __init__(self, scene):
@@ -39,7 +44,7 @@ class GitSimRestore(GitSimBaseCommand):
                 for name in self.scene.args.name:
                     if name == x.a_path:
                         thirdColumnFileNames.add(x.a_path)
-                        secondColumnArrowMap[x.a_path] = Arrow(stroke_width=3, color=self.scene.fontColor)
+                        secondColumnArrowMap[x.a_path] = m.Arrow(stroke_width=3, color=self.scene.fontColor)
 
         for y in self.repo.index.diff("HEAD"):
             if "git-sim_media" not in y.a_path:
@@ -47,4 +52,4 @@ class GitSimRestore(GitSimBaseCommand):
                 for name in self.scene.args.name:
                     if name == y.a_path:
                         secondColumnFileNames.add(y.a_path)
-                        firstColumnArrowMap[y.a_path] = Arrow(stroke_width=3, color=self.scene.fontColor)
+                        firstColumnArrowMap[y.a_path] = m.Arrow(stroke_width=3, color=self.scene.fontColor)

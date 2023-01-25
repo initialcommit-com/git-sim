@@ -1,6 +1,11 @@
-from manim import *
+import sys
+
+import git
+import manim as m
+import numpy
+
 from git_sim.git_sim_base_command import GitSimBaseCommand
-import git, sys, numpy
+
 
 class GitSimStash(GitSimBaseCommand):
     def __init__(self, scene):
@@ -41,11 +46,11 @@ class GitSimStash(GitSimBaseCommand):
             for name in self.scene.args.name:
                 if name == x.a_path:
                     thirdColumnFileNames.add(x.a_path)
-                    firstColumnArrowMap[x.a_path] = Arrow(stroke_width=3, color=self.scene.fontColor)
+                    firstColumnArrowMap[x.a_path] = m.Arrow(stroke_width=3, color=self.scene.fontColor)
 
         for y in self.repo.index.diff("HEAD"):
             secondColumnFileNames.add(y.a_path)
             for name in self.scene.args.name:
                 if name == y.a_path:
                     thirdColumnFileNames.add(y.a_path)
-                    secondColumnArrowMap[y.a_path] = Arrow(stroke_width=3, color=self.scene.fontColor)
+                    secondColumnArrowMap[y.a_path] = m.Arrow(stroke_width=3, color=self.scene.fontColor)

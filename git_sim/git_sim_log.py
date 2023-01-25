@@ -1,6 +1,11 @@
-from manim import *
+import sys
+
+import git
+import manim as m
+import numpy
+
 from git_sim.git_sim_base_command import GitSimBaseCommand
-import git, sys, numpy
+
 
 class GitSimLog(GitSimBaseCommand):
     def __init__(self, scene):

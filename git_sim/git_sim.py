@@ -1,29 +1,29 @@
-from manim import *
-import git, sys, numpy
+import manim as m
 
-from git_sim.git_sim_log import *
-from git_sim.git_sim_status import *
-from git_sim.git_sim_add import *
-from git_sim.git_sim_restore import *
-from git_sim.git_sim_commit import *
-from git_sim.git_sim_stash import *
-from git_sim.git_sim_branch import *
-from git_sim.git_sim_tag import *
-from git_sim.git_sim_reset import *
-from git_sim.git_sim_revert import *
-from git_sim.git_sim_merge import *
-from git_sim.git_sim_rebase import *
-from git_sim.git_sim_cherrypick import *
+from git_sim.git_sim_add import GitSimAdd
+from git_sim.git_sim_branch import GitSimBranch
+from git_sim.git_sim_cherrypick import GitSimCherryPick
+from git_sim.git_sim_commit import GitSimCommit
+from git_sim.git_sim_log import GitSimLog
+from git_sim.git_sim_merge import GitSimMerge
+from git_sim.git_sim_rebase import GitSimRebase
+from git_sim.git_sim_reset import GitSimReset
+from git_sim.git_sim_restore import GitSimRestore
+from git_sim.git_sim_revert import GitSimRevert
+from git_sim.git_sim_stash import GitSimStash
+from git_sim.git_sim_status import GitSimStatus
+from git_sim.git_sim_tag import GitSimTag
 
-class GitSim(MovingCameraScene):
+
+class GitSim(m.MovingCameraScene):
     def __init__(self, args):
         super().__init__()
         self.args = args
 
         if ( self.args.light_mode ):
-            self.fontColor = BLACK
+            self.fontColor = m.BLACK
         else:
-            self.fontColor = WHITE
+            self.fontColor = m.WHITE
 
     def construct(self):
         if self.args.subcommand == 'log':

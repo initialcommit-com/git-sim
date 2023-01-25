@@ -1,6 +1,11 @@
-from manim import *
+import sys
+
+import git
+import manim as m
+import numpy
+
 from git_sim.git_sim_base_command import GitSimBaseCommand
-import git, sys, numpy
+
 
 class GitSimMerge(GitSimBaseCommand):
     def __init__(self, scene):
@@ -55,15 +60,15 @@ class GitSimMerge(GitSimBaseCommand):
                 self.reset_head_branch(reset_head_to, shift=shift)
             else:
                 self.draw_ref(self.commits[0], commitId if self.scene.args.no_ff else self.topref)
-                self.draw_ref(self.commits[0], self.drawnRefs["HEAD"] if self.scene.args.no_ff else self.topref, text=self.repo.active_branch.name, color=GREEN)
+                self.draw_ref(self.commits[0], self.drawnRefs["HEAD"] if self.scene.args.no_ff else self.topref, text=self.repo.active_branch.name, color=m.GREEN)
 
         else:
             self.get_commits()
             self.parse_commits(self.commits[0])
             self.get_commits(start=self.scene.args.branch[0])
-            self.parse_commits(self.commits[0], shift=4*DOWN)
+            self.parse_commits(self.commits[0], shift=4*m.DOWN)
             self.center_frame_on_commit(self.orig_commits[0])
-            self.setup_and_draw_parent(self.orig_commits[0], "Merge commit", shift=2*DOWN, draw_arrow=False, color=GRAY)
+            self.setup_and_draw_parent(self.orig_commits[0], "Merge commit", shift=2*m.DOWN, draw_arrow=False, color=m.GRAY)
             self.draw_arrow_between_commits("abcdef", self.commits[0].hexsha)
             self.draw_arrow_between_commits("abcdef", self.orig_commits[0].hexsha)
             self.recenter_frame()
