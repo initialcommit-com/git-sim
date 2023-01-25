@@ -27,6 +27,7 @@ setuptools.setup(
     keywords='git sim simulation simulate git-simulate git-simulation git-sim manim animation gitanimation image video dryrun dry-run',
     project_urls={
         'Homepage': 'https://initialcommit.com/tools/git-sim',
+        'Source': 'https://github.com/initialcommit-com/git-sim',
     },
     entry_points={
         'console_scripts': [
