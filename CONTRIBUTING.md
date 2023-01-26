@@ -40,15 +40,28 @@ steps:
 2) [Fork the Git-Sim codebase](https://github.com/initialcommit-com/git-sim/fork)
 so that you have a copy on GitHub that you can clone and work with
 3) Clone the codebase down to your local machine
-4) For the code to run locally without getting a `ModuleNotFoundError`,
-install the developement package by running
+4) If you previously installed Git-Sim normally using pip, uninstall it first using:
+
 ```console
-$ cd git-sim
-$ python -m pip install --no-deps -e .
+$ pip uninstall git-sim
 ```
+
+5) To run the code locally from source, install the developement package by running:
+
+```console
+$ cd path/to/git-sim
+$ python -m pip install -e .
+```
+
 This will install sources from your cloned repo such that you can edit the source and the changes are reflected instantly.
 
-1) You can run your local Git-Sim commands from within other local repos like this:
+If you already have the dependencies, you can ignore those using the `--no-deps` flag:
+
+```console
+$ python -m pip install --no-deps -e .
+```
+
+6) You can run your local Git-Sim commands from within other local repos like this:
 
 ```console
 $ git-sim [global options] <subcommand> [subcommand options]
