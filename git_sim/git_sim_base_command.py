@@ -70,11 +70,11 @@ class GitSimBaseCommand():
             self.numCommits -= 1
             self.get_commits(start=start)
 
-    def parse_commits(self, commit, prevCircle=None, shift=numpy.array([0., 0., 0.])):
+    def parse_commits(self, commit, prevCircle=None, shift=numpy.array([0., 0., 0.]), dots=False):
         if self.stop:
             return
         if ( self.i < self.numCommits and commit in self.commits ):
-            commitId, circle, arrow, hide_refs = self.draw_commit(commit, prevCircle, shift)
+            commitId, circle, arrow, hide_refs = self.draw_commit(commit, prevCircle, shift, dots)
 
             if commit != "dark":
                 if not hide_refs and not self.stop:
@@ -89,7 +89,7 @@ class GitSimBaseCommand():
 
             if self.i < len(self.commits)-1:
                 self.i += 1
-                self.parse_commits(self.commits[self.i], circle)
+                self.parse_commits(self.commits[self.i], circle, dots=True)
             else:
                 self.i = 0
 
@@ -138,7 +138,7 @@ class GitSimBaseCommand():
             centers.append(commit.get_center())
         return centers
 
-    def draw_commit(self, commit, prevCircle, shift=numpy.array([0., 0., 0.])):
+    def draw_commit(self, commit, prevCircle, shift=numpy.array([0., 0., 0.]), dots=False):
         if commit == "dark":
             commitFill = m.WHITE if self.scene.args.light_mode else m.BLACK
         elif ( len(commit.parents) <= 1 ):
@@ -170,7 +170,7 @@ class GitSimBaseCommand():
         length = numpy.linalg.norm(start-end) - ( 1.5 if start[1] == end[1] else 3  )
         arrow.set_length(length)
 
-        commitId, commitMessage, commit, hide_refs = self.build_commit_id_and_message(commit)
+        commitId, commitMessage, commit, hide_refs = self.build_commit_id_and_message(commit, dots)
         commitId.next_to(circle, m.UP)
 
         message = m.Text('\n'.join(commitMessage[j:j+20] for j in range(0, len(commitMessage), 20))[:100], font="Monospace", font_size=14, color=self.scene.fontColor).next_to(circle, m.DOWN)
@@ -190,11 +190,14 @@ class GitSimBaseCommand():
 
         return commitId, circle, arrow, hide_refs
 
-    def build_commit_id_and_message(self, commit):
+    def build_commit_id_and_message(self, commit, dots=False):
         hide_refs = False
         if commit == "dark":
             commitId = m.Text("", font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = ""
+        elif dots and commit.hexsha == self.commits[-1].hexsha:
+            commitId = m.Text("...", font="Monospace", font_size=20, color=self.scene.fontColor)
+            commitMessage = "..."
         else:
             commitId = m.Text(commit.hexsha[0:6], font="Monospace", font_size=20, color=self.scene.fontColor)
             commitMessage = commit.message.split("\n")[0][:40].replace("\n", " ")

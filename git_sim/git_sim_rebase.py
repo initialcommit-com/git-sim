@@ -42,7 +42,13 @@ class GitSimRebase(GitSimBaseCommand):
         self.orig_commits = self.commits
         self.i = 0
         self.get_commits()
-        self.parse_commits(self.commits[0], shift=4*m.DOWN)
+
+        reached_base = False
+        for commit in self.commits:
+            if self.scene.args.branch[0] in self.repo.git.branch("--contains", commit):
+                reached_base = True
+
+        self.parse_commits(self.commits[0], shift=4*m.DOWN, dots=False if reached_base else True)
         self.center_frame_on_commit(self.orig_commits[0])
 
         to_rebase = []
@@ -51,11 +57,18 @@ class GitSimRebase(GitSimBaseCommand):
         while self.scene.args.branch[0] not in self.repo.git.branch("--contains", current):
             to_rebase.append(current)
             i += 1
+            if i >= len(self.commits):
+                break
             current = self.commits[i]
 
         parent = self.orig_commits[0].hexsha
-        for tr in reversed(to_rebase):
-            parent = self.setup_and_draw_parent(parent, tr.message)
+
+        for j, tr in enumerate(reversed(to_rebase)):
+            if ( not reached_base and j == 0 ):
+                message = "..."
+            else:
+                message = tr.message
+            parent = self.setup_and_draw_parent(parent, message)
             self.draw_arrow_between_commits(tr.hexsha, parent)
 
         self.recenter_frame()
@@ -75,8 +88,9 @@ class GitSimRebase(GitSimBaseCommand):
         arrow = m.Arrow(start, end, color=self.scene.fontColor)
         length = numpy.linalg.norm(start-end) - ( 1.5 if start[1] == end[1] else 3  )
         arrow.set_length(length)
-        sha = "".join(chr(ord(letter)+1) if (chr(ord(letter)+1).isalpha() or chr(ord(letter)+1).isdigit()) else letter for letter in child[:6])
-        commitId = m.Text(sha, font="Monospace", font_size=20, color=self.scene.fontColor).next_to(circle, m.UP)
+
+        sha = "".join(chr(ord(letter)+1) if ((chr(ord(letter)+1).isalpha() and letter < "f") or chr(ord(letter)+1).isdigit()) else letter for letter in child[:6])
+        commitId = m.Text(sha if commitMessage != "..." else "...", font="Monospace", font_size=20, color=self.scene.fontColor).next_to(circle, m.UP)
         self.toFadeOut.add(commitId)
 
         commitMessage = commitMessage[:40].replace("\n", " ")
