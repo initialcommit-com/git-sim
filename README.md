@@ -339,13 +339,13 @@ Customize the output image/video directory location:
 $ git-sim --media-dir=path/to/output status
 ```
 
-Optionally, set the environment variable `git_sim_media_dir` to default that as the media directory, if no `--media-dir` is provided.
+Optionally, set the environment variable `git_sim_media_dir` to set a global default media directory, to be used if no `--media-dir` is provided. Simulated output images/videos will be placed in this location, in subfolders named with the corresponding repo's name.
 
 ```console
 $ export git_sim_media_dir=path/to/media/directory
 $ git-sim status
 ```
-Note: `--media-dir` takes precedence over the environment variable. If you set the environment and still provide the argument, you'll find the media in the path provided by `--media-dir`
+Note: `--media-dir` takes precedence over the environment variable. If you set the environment and still provide the argument, you'll find the media in the path provided by `--media-dir`.
 
 Generate output video in low quality to speed up rendering time (useful for repeated testing, must include `--animate`):
 

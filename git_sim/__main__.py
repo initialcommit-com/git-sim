@@ -85,8 +85,8 @@ def main():
     config.media_dir = os.path.join(os.path.expanduser(args.media_dir), "git-sim_media")
     config.verbosity = "ERROR"
 
-    # If the env variable is set and no argument provideed, use the env variable value
-    if os.getenv('git_sim_media_dir') is not None and args.media_dir == '.':
+    # If the env variable is set and no argument provided, use the env variable value
+    if os.getenv('git_sim_media_dir') and args.media_dir == '.':
         config.media_dir = os.path.join(os.path.expanduser(os.getenv('git_sim_media_dir')), "git-sim_media", repo_name)
 
     if ( args.low_quality ):
