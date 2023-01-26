@@ -372,17 +372,17 @@ class GitSimBaseCommand():
         thirdColumnFilesDict = {}
 
         for i, f in enumerate(firstColumnFileNames):
-            text = m.Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((firstColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)).shift(m.DOWN*0.5*(i+1))
+            text = m.Text(self.trim_path(f), font="Monospace", font_size=24, color=self.scene.fontColor).move_to((firstColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)).shift(m.DOWN*0.5*(i+1))
             firstColumnFiles.add(text)
             firstColumnFilesDict[f] = text
 
         for j, f in enumerate(secondColumnFileNames):
-            text = m.Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((secondColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)).shift(m.DOWN*0.5*(j+1))
+            text = m.Text(self.trim_path(f), font="Monospace", font_size=24, color=self.scene.fontColor).move_to((secondColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)).shift(m.DOWN*0.5*(j+1))
             secondColumnFiles.add(text)
             secondColumnFilesDict[f] = text
 
         for h, f in enumerate(thirdColumnFileNames):
-            text = m.Text(f, font="Monospace", font_size=24, color=self.scene.fontColor).move_to((thirdColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)).shift(m.DOWN*0.5*(h+1))
+            text = m.Text(self.trim_path(f), font="Monospace", font_size=24, color=self.scene.fontColor).move_to((thirdColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)).shift(m.DOWN*0.5*(h+1))
             thirdColumnFiles.add(text)
             thirdColumnFilesDict[f] = text
 
@@ -546,6 +546,9 @@ class GitSimBaseCommand():
         self.scene.add(refRec)
         self.toFadeOut.add(refRec)
         self.prevRef = refRec
+
+    def trim_path(self, path):
+        return (path[:5] + "..." + path[-15:]) if len(path) > 20 else path
 
 
 class DottedLine(m.Line):
