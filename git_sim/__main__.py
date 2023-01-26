@@ -4,6 +4,7 @@ import argparse
 import pathlib
 import time, datetime
 import cv2
+import git
 from manim import config, WHITE
 from manim.utils.file_ops import open_file as open_media_file
 
@@ -76,8 +77,17 @@ def main():
 
     args = parser.parse_args()
 
+    if sys.platform == 'linux' or sys.platform == 'darwin':
+        repo_name = git.Repo(search_parent_directories=True).working_tree_dir.split('/')[-1]
+    elif sys.platform == 'win32':
+        repo_name = git.Repo(search_parent_directories=True).working_tree_dir.split('\\')[-1]
+
     config.media_dir = os.path.join(os.path.expanduser(args.media_dir), "git-sim_media")
     config.verbosity = "ERROR"
+
+    # If the env variable is set and no argument provideed, use the env variable value
+    if os.getenv('git_sim_media_dir') is not None and args.media_dir == '.':
+        config.media_dir = os.path.join(os.path.expanduser(os.getenv('git_sim_media_dir')), "git-sim_media", repo_name)
 
     if ( args.low_quality ):
         config.quality = "low_quality"
