@@ -40,39 +40,38 @@ steps:
 2) [Fork the Git-Sim codebase](https://github.com/initialcommit-com/git-sim/fork)
 so that you have a copy on GitHub that you can clone and work with
 3) Clone the codebase down to your local machine
-4) For the code to run locally without getting a `ModuleNotFoundError`,
-you need to remove the import prefix `git_sim.` from imports (for example
-`from git_sim_base_command import GitSimBaseCommand`) in the following files:
+4) If you previously installed Git-Sim normally using pip, uninstall it first using:
 
-- __main.py__
-- git_sim.py
-- git_sim_add.py
-- git_sim_branch.py
-- git_sim_cherrypick.py
-- git_sim_commit.py
-- git_sim_log.py
-- git_sim_merge.py
-- git_sim_rebase.py
-- git_sim_reset.py
-- git_sim_restore.py
-- git_sim_revert.py
-- git_sim_stash.py
-- git_sim_status.py
-- git_sim_tag.py
-
-There is probably a way around this. When I figure it out I'll update this guide.
-
-5) You can run your local Git-Sim commands from within other local repos like this:
-
+```console
+$ pip uninstall git-sim
 ```
-$ python ~/path/to/git-sim/git_sim/__main__.py [global options] <subcommand> [subcommand options]
+
+5) To run the code locally from source, install the developement package by running:
+
+```console
+$ cd path/to/git-sim
+$ python -m pip install -e .
+```
+
+This will install sources from your cloned repo such that you can edit the source and the changes are reflected instantly.
+
+If you already have the dependencies, you can ignore those using the `--no-deps` flag:
+
+```console
+$ python -m pip install --no-deps -e .
+```
+
+6) You can run your local Git-Sim commands from within other local repos like this:
+
+```console
+$ git-sim [global options] <subcommand> [subcommand options]
 ```
 
 For example, you can simulate the `git add` command locally like this:
 
-```
+```console
 $ cd path/to/any/local/git/repo
-$ python ~/path/to/git-sim/git_sim/__main__.py --animate add newfile.txt
+$ git-sim --animate add newfile.txt
 ```
 
 6) After pushing your code changes up to your fork, [submit a pull request](https://github.com/initialcommit-com/git-sim/compare) for me
