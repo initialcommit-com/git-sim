@@ -40,6 +40,7 @@ class GitSimRebase(GitSimBaseCommand):
         self.get_commits(start=self.scene.args.branch[0])
         self.parse_commits(self.commits[0])
         self.orig_commits = self.commits
+        self.i = 0
         self.get_commits()
         self.parse_commits(self.commits[0], shift=4*m.DOWN)
         self.center_frame_on_commit(self.orig_commits[0])
