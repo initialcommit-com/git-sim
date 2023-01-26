@@ -44,7 +44,7 @@ so that you have a copy on GitHub that you can clone and work with
 install the developement package by running
 ```console
 $ cd git-sim
-$ python setup.py develop
+$ python -m pip install --no-deps -e .
 ```
 This will install sources from your cloned repo such that you can edit the source and the changes are reflected instantly.
 
