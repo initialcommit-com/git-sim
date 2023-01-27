@@ -31,7 +31,7 @@ setuptools.setup(
     },
     entry_points={
         "console_scripts": [
-            "git-sim=git_sim.__main__:main",
+            "git-sim=git_sim.__main__:app",
         ],
     },
     include_package_data=True,
