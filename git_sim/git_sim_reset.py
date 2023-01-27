@@ -47,7 +47,7 @@ class GitSimReset(GitSimBaseCommand):
         self.fadeout()
         self.show_outro()
 
-    def build_commit_id_and_message(self, commit):
+    def build_commit_id_and_message(self, commit, dots=False):
         hide_refs = False
         if commit == "dark":
             commitId = m.Text('', font="Monospace", font_size=20, color=self.scene.fontColor)
