@@ -19,15 +19,28 @@ class GitSimStash(GitSimBaseCommand):
             pass
 
         for name in self.scene.args.name:
-            if name not in [x.a_path for x in self.repo.index.diff(None)] + [y.a_path for y in self.repo.index.diff("HEAD")]:
-                print("git-sim error: No modified or staged file with name: '" + name + "'")
+            if name not in [x.a_path for x in self.repo.index.diff(None)] + [
+                y.a_path for y in self.repo.index.diff("HEAD")
+            ]:
+                print(
+                    "git-sim error: No modified or staged file with name: '"
+                    + name
+                    + "'"
+                )
                 sys.exit()
 
         if not self.scene.args.name:
-            self.scene.args.name = [x.a_path for x in self.repo.index.diff(None)] + [y.a_path for y in self.repo.index.diff("HEAD")]
+            self.scene.args.name = [x.a_path for x in self.repo.index.diff(None)] + [
+                y.a_path for y in self.repo.index.diff("HEAD")
+            ]
 
     def execute(self):
-        print("Simulating: git " + self.scene.args.subcommand + " " + " ".join(self.scene.args.name))
+        print(
+            "Simulating: git "
+            + self.scene.args.subcommand
+            + " "
+            + " ".join(self.scene.args.name)
+        )
 
         self.show_intro()
         self.get_commits()
@@ -35,22 +48,37 @@ class GitSimStash(GitSimBaseCommand):
         self.recenter_frame()
         self.scale_frame()
         self.vsplit_frame()
-        self.setup_and_draw_zones(first_column_name="Working directory", second_column_name="Staging area", third_column_name="Stashed changes")
+        self.setup_and_draw_zones(
+            first_column_name="Working directory",
+            second_column_name="Staging area",
+            third_column_name="Stashed changes",
+        )
         self.fadeout()
         self.show_outro()
 
-    def populate_zones(self, firstColumnFileNames, secondColumnFileNames, thirdColumnFileNames, firstColumnArrowMap, secondColumnArrowMap):
+    def populate_zones(
+        self,
+        firstColumnFileNames,
+        secondColumnFileNames,
+        thirdColumnFileNames,
+        firstColumnArrowMap,
+        secondColumnArrowMap,
+    ):
 
         for x in self.repo.index.diff(None):
             firstColumnFileNames.add(x.a_path)
             for name in self.scene.args.name:
                 if name == x.a_path:
                     thirdColumnFileNames.add(x.a_path)
-                    firstColumnArrowMap[x.a_path] = m.Arrow(stroke_width=3, color=self.scene.fontColor)
+                    firstColumnArrowMap[x.a_path] = m.Arrow(
+                        stroke_width=3, color=self.scene.fontColor
+                    )
 
         for y in self.repo.index.diff("HEAD"):
             secondColumnFileNames.add(y.a_path)
             for name in self.scene.args.name:
                 if name == y.a_path:
                     thirdColumnFileNames.add(y.a_path)
-                    secondColumnArrowMap[y.a_path] = m.Arrow(stroke_width=3, color=self.scene.fontColor)
+                    secondColumnArrowMap[y.a_path] = m.Arrow(
+                        stroke_width=3, color=self.scene.fontColor
+                    )

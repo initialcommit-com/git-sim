@@ -19,12 +19,19 @@ class GitSimAdd(GitSimBaseCommand):
             pass
 
         for name in self.scene.args.name:
-            if name not in [x.a_path for x in self.repo.index.diff(None)] + [z for z in self.repo.untracked_files]:
+            if name not in [x.a_path for x in self.repo.index.diff(None)] + [
+                z for z in self.repo.untracked_files
+            ]:
                 print("git-sim error: No modified file with name: '" + name + "'")
                 sys.exit()
 
     def execute(self):
-        print("Simulating: git " + self.scene.args.subcommand + " " + " ".join(self.scene.args.name))
+        print(
+            "Simulating: git "
+            + self.scene.args.subcommand
+            + " "
+            + " ".join(self.scene.args.name)
+        )
 
         self.show_intro()
         self.get_commits()
@@ -36,7 +43,14 @@ class GitSimAdd(GitSimBaseCommand):
         self.fadeout()
         self.show_outro()
 
-    def populate_zones(self, firstColumnFileNames, secondColumnFileNames, thirdColumnFileNames, firstColumnArrowMap, secondColumnArrowMap):
+    def populate_zones(
+        self,
+        firstColumnFileNames,
+        secondColumnFileNames,
+        thirdColumnFileNames,
+        firstColumnArrowMap,
+        secondColumnArrowMap,
+    ):
 
         for x in self.repo.index.diff(None):
             if "git-sim_media" not in x.a_path:
@@ -44,7 +58,9 @@ class GitSimAdd(GitSimBaseCommand):
                 for name in self.scene.args.name:
                     if name == x.a_path:
                         thirdColumnFileNames.add(x.a_path)
-                        secondColumnArrowMap[x.a_path] = m.Arrow(stroke_width=3, color=self.scene.fontColor)
+                        secondColumnArrowMap[x.a_path] = m.Arrow(
+                            stroke_width=3, color=self.scene.fontColor
+                        )
         try:
             for y in self.repo.index.diff("HEAD"):
                 if "git-sim_media" not in y.a_path:
@@ -60,4 +76,6 @@ class GitSimAdd(GitSimBaseCommand):
                 for name in self.scene.args.name:
                     if name == z:
                         thirdColumnFileNames.add(z)
-                        firstColumnArrowMap[z] = m.Arrow(stroke_width=3, color=self.scene.fontColor)
+                        firstColumnArrowMap[z] = m.Arrow(
+                            stroke_width=3, color=self.scene.fontColor
+                        )

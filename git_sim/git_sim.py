@@ -20,37 +20,37 @@ class GitSim(m.MovingCameraScene):
         super().__init__()
         self.args = args
 
-        if ( self.args.light_mode ):
+        if self.args.light_mode:
             self.fontColor = m.BLACK
         else:
             self.fontColor = m.WHITE
 
     def construct(self):
-        if self.args.subcommand == 'log':
+        if self.args.subcommand == "log":
             self.command = GitSimLog(self)
-        elif self.args.subcommand == 'status':
+        elif self.args.subcommand == "status":
             self.command = GitSimStatus(self)
-        elif self.args.subcommand == 'add':
+        elif self.args.subcommand == "add":
             self.command = GitSimAdd(self)
-        elif self.args.subcommand == 'restore':
+        elif self.args.subcommand == "restore":
             self.command = GitSimRestore(self)
-        elif self.args.subcommand == 'commit':
+        elif self.args.subcommand == "commit":
             self.command = GitSimCommit(self)
-        elif self.args.subcommand == 'stash':
+        elif self.args.subcommand == "stash":
             self.command = GitSimStash(self)
-        elif self.args.subcommand == 'branch':
+        elif self.args.subcommand == "branch":
             self.command = GitSimBranch(self)
-        elif self.args.subcommand == 'tag':
+        elif self.args.subcommand == "tag":
             self.command = GitSimTag(self)
-        elif self.args.subcommand == 'reset':
+        elif self.args.subcommand == "reset":
             self.command = GitSimReset(self)
-        elif self.args.subcommand == 'revert':
+        elif self.args.subcommand == "revert":
             self.command = GitSimRevert(self)
-        elif self.args.subcommand == 'merge':
+        elif self.args.subcommand == "merge":
             self.command = GitSimMerge(self)
-        elif self.args.subcommand == 'rebase':
+        elif self.args.subcommand == "rebase":
             self.command = GitSimRebase(self)
-        elif self.args.subcommand == 'cherry-pick':
+        elif self.args.subcommand == "cherry-pick":
             self.command = GitSimCherryPick(self)
 
         self.command.execute()

@@ -5,7 +5,6 @@ from git_sim.git_sim import GitSim
 
 
 class TestGitSim(unittest.TestCase):
-
     def test_git_sim(self):
         """Test git sim."""
 
@@ -14,5 +13,5 @@ class TestGitSim(unittest.TestCase):
         self.assertEqual(1, 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

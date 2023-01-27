@@ -12,7 +12,9 @@ class GitSimTag(GitSimBaseCommand):
         super().__init__(scene)
 
     def execute(self):
-        print("Simulating: git " + self.scene.args.subcommand + " " + self.scene.args.name)
+        print(
+            "Simulating: git " + self.scene.args.subcommand + " " + self.scene.args.name
+        )
 
         self.show_intro()
         self.get_commits()
@@ -20,8 +22,19 @@ class GitSimTag(GitSimBaseCommand):
         self.recenter_frame()
         self.scale_frame()
 
-        tagText = m.Text(self.scene.args.name, font="Monospace", font_size=20, color=self.scene.fontColor)
-        tagRec = m.Rectangle(color=m.YELLOW, fill_color=m.YELLOW, fill_opacity=0.25, height=0.4, width=tagText.width+0.25)
+        tagText = m.Text(
+            self.scene.args.name,
+            font="Monospace",
+            font_size=20,
+            color=self.scene.fontColor,
+        )
+        tagRec = m.Rectangle(
+            color=m.YELLOW,
+            fill_color=m.YELLOW,
+            fill_opacity=0.25,
+            height=0.4,
+            width=tagText.width + 0.25,
+        )
 
         tagRec.next_to(self.topref, m.UP)
         tagText.move_to(tagRec.get_center())
@@ -29,7 +42,7 @@ class GitSimTag(GitSimBaseCommand):
         fulltag = m.VGroup(tagRec, tagText)
 
         if self.scene.args.animate:
-            self.scene.play(m.Create(fulltag), run_time=1/self.scene.args.speed)
+            self.scene.play(m.Create(fulltag), run_time=1 / self.scene.args.speed)
         else:
             self.scene.add(fulltag)
 

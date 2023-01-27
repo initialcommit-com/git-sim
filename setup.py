@@ -18,21 +18,21 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.7',
+    python_requires=">=3.7",
     install_requires=[
-        'gitpython',
-        'manim',
-        'opencv-python-headless',
+        "gitpython",
+        "manim",
+        "opencv-python-headless",
     ],
-    keywords='git sim simulation simulate git-simulate git-simulation git-sim manim animation gitanimation image video dryrun dry-run',
+    keywords="git sim simulation simulate git-simulate git-simulation git-sim manim animation gitanimation image video dryrun dry-run",
     project_urls={
-        'Homepage': 'https://initialcommit.com/tools/git-sim',
-        'Source': 'https://github.com/initialcommit-com/git-sim',
+        "Homepage": "https://initialcommit.com/tools/git-sim",
+        "Source": "https://github.com/initialcommit-com/git-sim",
     },
     entry_points={
-        'console_scripts': [
-            'git-sim=git_sim.__main__:main',
+        "console_scripts": [
+            "git-sim=git_sim.__main__:main",
         ],
     },
-    include_package_data=True
+    include_package_data=True,
 )

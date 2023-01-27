@@ -21,7 +21,13 @@ class GitSimCommit(GitSimBaseCommand):
             pass
 
     def execute(self):
-        print('Simulating: git ' + self.scene.args.subcommand + ' -m "' + self.scene.args.message + '"')
+        print(
+            "Simulating: git "
+            + self.scene.args.subcommand
+            + ' -m "'
+            + self.scene.args.message
+            + '"'
+        )
 
         self.show_intro()
         self.get_commits()
@@ -32,11 +38,22 @@ class GitSimCommit(GitSimBaseCommand):
         self.scale_frame()
         self.reset_head_branch("abcdef")
         self.vsplit_frame()
-        self.setup_and_draw_zones(first_column_name="Working directory", second_column_name="Staging area", third_column_name="New commit")
+        self.setup_and_draw_zones(
+            first_column_name="Working directory",
+            second_column_name="Staging area",
+            third_column_name="New commit",
+        )
         self.fadeout()
         self.show_outro()
 
-    def populate_zones(self, firstColumnFileNames, secondColumnFileNames, thirdColumnFileNames, firstColumnArrowMap, secondColumnArrowMap):
+    def populate_zones(
+        self,
+        firstColumnFileNames,
+        secondColumnFileNames,
+        thirdColumnFileNames,
+        firstColumnArrowMap,
+        secondColumnArrowMap,
+    ):
 
         for x in self.repo.index.diff(None):
             if "git-sim_media" not in x.a_path:
@@ -46,4 +63,6 @@ class GitSimCommit(GitSimBaseCommand):
             if "git-sim_media" not in y.a_path:
                 secondColumnFileNames.add(y.a_path)
                 thirdColumnFileNames.add(y.a_path)
-                secondColumnArrowMap[y.a_path] = m.Arrow(stroke_width=3, color=self.scene.fontColor)
+                secondColumnArrowMap[y.a_path] = m.Arrow(
+                    stroke_width=3, color=self.scene.fontColor
+                )
