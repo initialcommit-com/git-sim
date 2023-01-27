@@ -83,6 +83,12 @@ Since Git-Sim is a new project, we don't have an official code style set in
 stone. For now just try and make your new code fit in with the existing style
 you find in the codebase, and we'll update this section later if that changes.
 
+### Code Formatting
+
+This project uses the [`black`](https://github.com/psf/black) code formatter to keep all code in a constistent format.
+
+Please install it in your development environment and  run `black path/to/changed/files` before committing any changes.
+
 ## Commit conventions
 
 We have a few simple rules for Git-Sim commit messages:
