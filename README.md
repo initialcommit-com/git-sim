@@ -27,7 +27,11 @@ Example: `$ git-sim merge <branch>`
 
 ## Quickstart
 
-1) **[Install Manim and its dependencies for your OS](https://docs.manim.community/en/stable/installation.html)**
+1) **Install Manim and its dependencies for your OS / environment:**
+    - [Install Manim on Windows](https://docs.manim.community/en/stable/installation/windows.html)
+    - [Install Manim on MacOS](https://docs.manim.community/en/stable/installation/macos.html)
+    - [Install Manim on Linux](https://docs.manim.community/en/stable/installation/linux.html)
+    - [Install Manim in Conda](https://docs.manim.community/en/stable/installation/conda.html)
 
 2) Install `git-sim`:
 
