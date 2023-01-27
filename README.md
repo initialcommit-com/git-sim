@@ -26,7 +26,12 @@ Example: `$ git-sim merge <branch>`
 - Animation only: Speed up or slow down animation speed as desired
 
 ## Quickstart
-1) **Install [manim and manim dependencies for your OS](https://www.manim.community/)**
+
+1) **Install Manim and its dependencies for your OS / environment:**
+    - [Install Manim on Windows](https://docs.manim.community/en/stable/installation/windows.html)
+    - [Install Manim on MacOS](https://docs.manim.community/en/stable/installation/macos.html)
+    - [Install Manim on Linux](https://docs.manim.community/en/stable/installation/linux.html)
+    - [Install Manim in Conda](https://docs.manim.community/en/stable/installation/conda.html)
 
 2) Install `git-sim`:
 
@@ -76,19 +81,19 @@ $ git-sim [global options] <subcommand> [subcommand options]
 
 The `[global options]` apply to the overarching `git-sim` simulation itself, including:
 
-`--light-mode`: Use a light mode color scheme instead of default dark mode.  
-`--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video.  
+`--light-mode`: Use a light mode color scheme instead of default dark mode.
+`--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video.
 `--reverse`: Display commit history in the reverse direction.
 
 Animation-only global options (to be used in conjunction with `--animate`):
 
-`--speed=n`: Set the multiple of animation speed of the output simulation, `n` can be an integer or float, default is 1.  
-`--low-quality`: Render the animation in low quality to speed up creation time, recommended for non-presentation use.  
-`--show-intro`: Add an intro sequence with custom logo and title.  
-`--show-outro`: Add an outro sequence with custom logo and text.  
-`--title=title`: Custom title to display at the beginning of the animation.  
-`--logo=logo.png`: The path to a custom logo to use in the animation intro/outro.  
-`--outro-top-text`: Custom text to display above the logo during the outro.  
+`--speed=n`: Set the multiple of animation speed of the output simulation, `n` can be an integer or float, default is 1.
+`--low-quality`: Render the animation in low quality to speed up creation time, recommended for non-presentation use.
+`--show-intro`: Add an intro sequence with custom logo and title.
+`--show-outro`: Add an outro sequence with custom logo and text.
+`--title=title`: Custom title to display at the beginning of the animation.
+`--logo=logo.png`: The path to a custom logo to use in the animation intro/outro.
+`--outro-top-text`: Custom text to display above the logo during the outro.
 `--outro-bottom-text`: Custom text to display below the logo during the outro.
 
 The `[subcommand options]` are like regular Git options specific to the specified subcommand (see below for a full list).
@@ -275,7 +280,7 @@ $ git-sim stash
 Simulate creating a new Git branch:
 
 ```console
-$ git-sim branch new-branch-name 
+$ git-sim branch new-branch-name
 ```
 
 Simulate creating a new Git tag:
