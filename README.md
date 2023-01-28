@@ -141,7 +141,7 @@ Usage: `git-sim commit -m "Commit message"`
 - Specify your commit message after the -m option
 - HEAD and the active branch will be moved to the new commit
 - Simulated output will show files in the staging area being included in the new commit
-- Supports amending the last commit with: `$ git-sim commit --amand -m "Amended commit message"`
+- Supports amending the last commit with: `$ git-sim commit --amend -m "Amended commit message"`
 
 ![git-sim-commit_01-05-23_22-10-21](https://user-images.githubusercontent.com/49353917/210941149-d83677a1-3ab7-4880-bc0f-871b1f150087.jpg)
 
