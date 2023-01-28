@@ -81,19 +81,20 @@ $ git-sim [global options] <subcommand> [subcommand options]
 
 The `[global options]` apply to the overarching `git-sim` simulation itself, including:
 
-`--light-mode`: Use a light mode color scheme instead of default dark mode.
-`--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video.
-`--reverse`: Display commit history in the reverse direction.
+`--light-mode`: Use a light mode color scheme instead of default dark mode.  
+`--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video.  
+`--disable-auto-open, -d`: Disable the automatic opening of the image/video file after generation.  
+`--reverse, -r`: Display commit history in the reverse direction.
 
 Animation-only global options (to be used in conjunction with `--animate`):
 
-`--speed=n`: Set the multiple of animation speed of the output simulation, `n` can be an integer or float, default is 1.
-`--low-quality`: Render the animation in low quality to speed up creation time, recommended for non-presentation use.
-`--show-intro`: Add an intro sequence with custom logo and title.
-`--show-outro`: Add an outro sequence with custom logo and text.
-`--title=title`: Custom title to display at the beginning of the animation.
-`--logo=logo.png`: The path to a custom logo to use in the animation intro/outro.
-`--outro-top-text`: Custom text to display above the logo during the outro.
+`--speed=n`: Set the multiple of animation speed of the output simulation, `n` can be an integer or float, default is 1.  
+`--low-quality`: Render the animation in low quality to speed up creation time, recommended for non-presentation use.  
+`--show-intro`: Add an intro sequence with custom logo and title.  
+`--show-outro`: Add an outro sequence with custom logo and text.  
+`--title=title`: Custom title to display at the beginning of the animation.  
+`--logo=logo.png`: The path to a custom logo to use in the animation intro/outro.  
+`--outro-top-text`: Custom text to display above the logo during the outro.  
 `--outro-bottom-text`: Custom text to display below the logo during the outro.
 
 The `[subcommand options]` are like regular Git options specific to the specified subcommand (see below for a full list).
@@ -140,6 +141,7 @@ Usage: `git-sim commit -m "Commit message"`
 - Specify your commit message after the -m option
 - HEAD and the active branch will be moved to the new commit
 - Simulated output will show files in the staging area being included in the new commit
+- Supports amending the last commit with: `$ git-sim commit --amand -m "Amended commit message"
 
 ![git-sim-commit_01-05-23_22-10-21](https://user-images.githubusercontent.com/49353917/210941149-d83677a1-3ab7-4880-bc0f-871b1f150087.jpg)
 
