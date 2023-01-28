@@ -133,6 +133,11 @@ def main():
         type=str,
         default="New commit",
     )
+    commit.add_argument(
+        "--amend",
+        help="Amend the last commit message, must be used with the -m flag",
+        action="store_true",
+    )
 
     stash = subparsers.add_parser("stash", help="stash -h")
     stash.add_argument(

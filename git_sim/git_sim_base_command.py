@@ -13,6 +13,7 @@ class GitSimBaseCommand:
 
         self.drawnCommits = {}
         self.drawnRefs = {}
+        self.drawnCommitIds = {}
         self.commits = []
         self.zoomOuts = 0
         self.toFadeOut = m.Group()
@@ -218,6 +219,9 @@ class GitSimBaseCommand:
             commit, dots
         )
         commitId.next_to(circle, m.UP)
+
+        if commit != "dark":
+            self.drawnCommitIds[commit.hexsha] = commitId
 
         message = m.Text(
             "\n".join(
