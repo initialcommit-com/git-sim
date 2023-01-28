@@ -260,7 +260,11 @@ class GitSimBaseCommand:
                 "", font="Monospace", font_size=20, color=self.scene.fontColor
             )
             commitMessage = ""
-        elif dots and commit.hexsha == self.commits[-1].hexsha:
+        elif (
+            dots
+            and self.commits[-1] != "dark"
+            and commit.hexsha == self.commits[-1].hexsha
+        ):
             commitId = m.Text(
                 "...", font="Monospace", font_size=20, color=self.scene.fontColor
             )
