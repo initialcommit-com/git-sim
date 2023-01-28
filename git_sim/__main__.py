@@ -265,6 +265,9 @@ def main():
                 os.path.join(config.media_dir, "images"), image_file_name
             )
             cv2.imwrite(image_file_path, image)
+            print("Output image location:", image_file_path)
+    else:
+        print("Output video location:", scene.renderer.file_writer.movie_file_path)
 
     if not args.disable_auto_open:
         try:
