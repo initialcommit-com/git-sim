@@ -319,10 +319,10 @@ class GitSimBaseCommand:
             # Use forward slash to check if branch is local or remote tracking
             # and draw the branch label if its hexsha matches the current commit
             if (
-                "/" not in branch  # local branch
+                not self.is_remote_tracking_branch(branch)  # local branch
                 and commit.hexsha == self.repo.heads[branch].commit.hexsha
             ) or (
-                "/" in branch  # remote tracking branch
+                self.is_remote_tracking_branch(branch)  # remote tracking branch
                 and commit.hexsha == remote_tracking_branches[branch]
             ):
                 branchText = m.Text(
@@ -953,6 +953,15 @@ class GitSimBaseCommand:
                 if "HEAD" not in ref.name and ref.name not in remote_tracking_branches:
                     remote_tracking_branches[ref.name] = ref.commit.hexsha
         return remote_tracking_branches
+
+    def is_remote_tracking_branch(self, branch):
+        remote_refs = [remote.refs for remote in self.repo.remotes]
+        remote_tracking_branches = {}
+        for reflist in remote_refs:
+            for ref in reflist:
+                if "HEAD" not in ref.name and ref.name not in remote_tracking_branches:
+                    remote_tracking_branches[ref.name] = ref.commit.hexsha
+        return branch in remote_tracking_branches
 
 
 class DottedLine(m.Line):

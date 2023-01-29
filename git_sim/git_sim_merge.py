@@ -57,7 +57,7 @@ class GitSimMerge(GitSimBaseCommand):
         self.get_commits(start=self.scene.args.branch[0])
 
         # Use forward slash to determine if supplied branch arg is local or remote tracking branch
-        if "/" not in self.scene.args.branch[0]:
+        if not self.is_remote_tracking_branch(self.scene.args.branch[0]):
             if self.scene.args.branch[0] in self.repo.git.branch(
                 "--contains", self.orig_commits[0].hexsha
             ):
