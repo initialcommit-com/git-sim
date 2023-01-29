@@ -1,25 +1,18 @@
-import sys
-
-import git
-import manim as m
-import numpy
+from argparse import Namespace
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
 
 
 class GitSimLog(GitSimBaseCommand):
-    def __init__(self, scene):
-        super().__init__(scene)
-        self.numCommits = self.scene.args.commits
-        self.defaultNumCommits = self.scene.args.commits
-
+    def __init__(self, args: Namespace):
+        super().__init__(args=args)
         try:
             self.selected_branches.append(self.repo.active_branch.name)
         except TypeError:
             pass
 
-    def execute(self):
-        print("Simulating: git " + self.scene.args.subcommand)
+    def construct(self):
+        print("Simulating: git " + self.args.subcommand)
 
         self.show_intro()
         self.get_commits()
