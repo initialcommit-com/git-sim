@@ -1,4 +1,5 @@
 import sys
+from argparse import Namespace
 
 import git
 import manim as m
@@ -8,15 +9,15 @@ from git_sim.git_sim_base_command import GitSimBaseCommand
 
 
 class GitSimRevert(GitSimBaseCommand):
-    def __init__(self, scene):
-        super().__init__(scene)
+    def __init__(self, args: Namespace):
+        super().__init__(args=args)
 
         try:
-            self.revert = git.repo.fun.rev_parse(self.repo, self.scene.args.commit)
+            self.revert = git.repo.fun.rev_parse(self.repo, self.args.commit)
         except git.exc.BadName:
             print(
                 "git-sim error: '"
-                + self.scene.args.commit
+                + self.args.commit
                 + "' is not a valid Git ref or identifier."
             )
             sys.exit(1)
@@ -32,13 +33,8 @@ class GitSimRevert(GitSimBaseCommand):
         except TypeError:
             pass
 
-    def execute(self):
-        print(
-            "Simulating: git "
-            + self.scene.args.subcommand
-            + " "
-            + self.scene.args.commit
-        )
+    def construct(self):
+        print("Simulating: git " + self.args.subcommand + " " + self.args.commit)
 
         self.show_intro()
         self.get_commits()
@@ -60,15 +56,13 @@ class GitSimRevert(GitSimBaseCommand):
     def build_commit_id_and_message(self, commit, dots=False):
         hide_refs = False
         if commit == "dark":
-            commitId = m.Text(
-                "", font="Monospace", font_size=20, color=self.scene.fontColor
-            )
+            commitId = m.Text("", font="Monospace", font_size=20, color=self.fontColor)
             commitMessage = ""
         elif self.i == 2 and self.revert.hexsha not in [
             commit.hexsha for commit in self.commits
         ]:
             commitId = m.Text(
-                "...", font="Monospace", font_size=20, color=self.scene.fontColor
+                "...", font="Monospace", font_size=20, color=self.fontColor
             )
             commitMessage = "..."
             hide_refs = True
@@ -79,7 +73,7 @@ class GitSimRevert(GitSimBaseCommand):
                 self.revert.hexsha[:6],
                 font="Monospace",
                 font_size=20,
-                color=self.scene.fontColor,
+                color=self.fontColor,
             )
             commitMessage = self.revert.message.split("\n")[0][:40].replace("\n", " ")
             hide_refs = True
@@ -88,7 +82,7 @@ class GitSimRevert(GitSimBaseCommand):
                 commit.hexsha[:6],
                 font="Monospace",
                 font_size=20,
-                color=self.scene.fontColor,
+                color=self.fontColor,
             )
             commitMessage = commit.message.split("\n")[0][:40].replace("\n", " ")
         return commitId, commitMessage, commit, hide_refs
@@ -98,18 +92,18 @@ class GitSimRevert(GitSimBaseCommand):
         circle.height = 1
         circle.next_to(
             self.drawnCommits[self.commits[0].hexsha],
-            m.LEFT if self.scene.args.reverse else m.RIGHT,
+            m.LEFT if self.args.reverse else m.RIGHT,
             buff=1.5,
         )
 
         start = circle.get_center()
         end = self.drawnCommits[self.commits[0].hexsha].get_center()
-        arrow = m.Arrow(start, end, color=self.scene.fontColor)
+        arrow = m.Arrow(start, end, color=self.fontColor)
         length = numpy.linalg.norm(start - end) - (1.5 if start[1] == end[1] else 3)
         arrow.set_length(length)
 
         commitId = m.Text(
-            "abcdef", font="Monospace", font_size=20, color=self.scene.fontColor
+            "abcdef", font="Monospace", font_size=20, color=self.fontColor
         ).next_to(circle, m.UP)
         self.toFadeOut.add(commitId)
 
@@ -121,29 +115,29 @@ class GitSimRevert(GitSimBaseCommand):
             )[:100],
             font="Monospace",
             font_size=14,
-            color=self.scene.fontColor,
+            color=self.fontColor,
         ).next_to(circle, m.DOWN)
         self.toFadeOut.add(message)
 
-        if self.scene.args.animate:
-            self.scene.play(
-                self.scene.camera.frame.animate.move_to(circle.get_center()),
+        if self.args.animate:
+            self.play(
+                self.camera.frame.animate.move_to(circle.get_center()),
                 m.Create(circle),
                 m.AddTextLetterByLetter(commitId),
                 m.AddTextLetterByLetter(message),
-                run_time=1 / self.scene.args.speed,
+                run_time=1 / self.args.speed,
             )
         else:
-            self.scene.camera.frame.move_to(circle.get_center())
-            self.scene.add(circle, commitId, message)
+            self.camera.frame.move_to(circle.get_center())
+            self.add(circle, commitId, message)
 
         self.drawnCommits["abcdef"] = circle
         self.toFadeOut.add(circle)
 
-        if self.scene.args.animate:
-            self.scene.play(m.Create(arrow), run_time=1 / self.scene.args.speed)
+        if self.args.animate:
+            self.play(m.Create(arrow), run_time=1 / self.args.speed)
         else:
-            self.scene.add(arrow)
+            self.add(arrow)
 
         self.toFadeOut.add(arrow)
 

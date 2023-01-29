@@ -1,4 +1,5 @@
 import sys
+from argparse import Namespace
 
 import git
 import manim as m
@@ -8,8 +9,8 @@ from git_sim.git_sim_base_command import GitSimBaseCommand
 
 
 class GitSimStash(GitSimBaseCommand):
-    def __init__(self, scene):
-        super().__init__(scene)
+    def __init__(self, args: Namespace):
+        super().__init__(args=args)
         self.maxrefs = 2
         self.hide_first_tag = True
 
@@ -18,7 +19,7 @@ class GitSimStash(GitSimBaseCommand):
         except TypeError:
             pass
 
-        for name in self.scene.args.name:
+        for name in self.args.name:
             if name not in [x.a_path for x in self.repo.index.diff(None)] + [
                 y.a_path for y in self.repo.index.diff("HEAD")
             ]:
@@ -29,17 +30,14 @@ class GitSimStash(GitSimBaseCommand):
                 )
                 sys.exit()
 
-        if not self.scene.args.name:
-            self.scene.args.name = [x.a_path for x in self.repo.index.diff(None)] + [
+        if not self.args.name:
+            self.args.name = [x.a_path for x in self.repo.index.diff(None)] + [
                 y.a_path for y in self.repo.index.diff("HEAD")
             ]
 
-    def execute(self):
+    def construct(self):
         print(
-            "Simulating: git "
-            + self.scene.args.subcommand
-            + " "
-            + " ".join(self.scene.args.name)
+            "Simulating: git " + self.args.subcommand + " " + " ".join(self.args.name)
         )
 
         self.show_intro()
@@ -67,18 +65,18 @@ class GitSimStash(GitSimBaseCommand):
 
         for x in self.repo.index.diff(None):
             firstColumnFileNames.add(x.a_path)
-            for name in self.scene.args.name:
+            for name in self.args.name:
                 if name == x.a_path:
                     thirdColumnFileNames.add(x.a_path)
                     firstColumnArrowMap[x.a_path] = m.Arrow(
-                        stroke_width=3, color=self.scene.fontColor
+                        stroke_width=3, color=self.fontColor
                     )
 
         for y in self.repo.index.diff("HEAD"):
             secondColumnFileNames.add(y.a_path)
-            for name in self.scene.args.name:
+            for name in self.args.name:
                 if name == y.a_path:
                     thirdColumnFileNames.add(y.a_path)
                     secondColumnArrowMap[y.a_path] = m.Arrow(
-                        stroke_width=3, color=self.scene.fontColor
+                        stroke_width=3, color=self.fontColor
                     )

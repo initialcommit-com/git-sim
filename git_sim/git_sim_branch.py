@@ -1,20 +1,16 @@
-import sys
+from argparse import Namespace
 
-import git
 import manim as m
-import numpy
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
 
 
 class GitSimBranch(GitSimBaseCommand):
-    def __init__(self, scene):
-        super().__init__(scene)
+    def __init__(self, args: Namespace):
+        super().__init__(args=args)
 
-    def execute(self):
-        print(
-            "Simulating: git " + self.scene.args.subcommand + " " + self.scene.args.name
-        )
+    def construct(self):
+        print("Simulating: git " + self.args.subcommand + " " + self.args.name)
 
         self.show_intro()
         self.get_commits()
@@ -23,10 +19,10 @@ class GitSimBranch(GitSimBaseCommand):
         self.scale_frame()
 
         branchText = m.Text(
-            self.scene.args.name,
+            self.args.name,
             font="Monospace",
             font_size=20,
-            color=self.scene.fontColor,
+            color=self.fontColor,
         )
         branchRec = m.Rectangle(
             color=m.GREEN,
@@ -41,13 +37,13 @@ class GitSimBranch(GitSimBaseCommand):
 
         fullbranch = m.VGroup(branchRec, branchText)
 
-        if self.scene.args.animate:
-            self.scene.play(m.Create(fullbranch), run_time=1 / self.scene.args.speed)
+        if self.args.animate:
+            self.play(m.Create(fullbranch), run_time=1 / self.args.speed)
         else:
-            self.scene.add(fullbranch)
+            self.add(fullbranch)
 
         self.toFadeOut.add(branchRec, branchText)
-        self.drawnRefs[self.scene.args.name] = fullbranch
+        self.drawnRefs[self.args.name] = fullbranch
 
         self.fadeout()
         self.show_outro()
