@@ -140,6 +140,11 @@ def main():
         type=str,
         default="New commit",
     )
+    commit.add_argument(
+        "--amend",
+        help="Amend the last commit message, must be used with the -m flag",
+        action="store_true",
+    )
 
     stash = subparsers.add_parser("stash", help="stash -h")
     stash.add_argument(
@@ -279,6 +284,9 @@ def main():
                 os.path.join(config.media_dir, "images"), image_file_name
             )
             cv2.imwrite(image_file_path, image)
+            print("Output image location:", image_file_path)
+    else:
+        print("Output video location:", scene.renderer.file_writer.movie_file_path)
 
     if not args.disable_auto_open:
         try:

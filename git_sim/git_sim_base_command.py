@@ -13,6 +13,7 @@ class GitSimBaseCommand:
 
         self.drawnCommits = {}
         self.drawnRefs = {}
+        self.drawnCommitIds = {}
         self.commits = []
         self.zoomOuts = 0
         self.toFadeOut = m.Group()
@@ -219,6 +220,9 @@ class GitSimBaseCommand:
         )
         commitId.next_to(circle, m.UP)
 
+        if commit != "dark":
+            self.drawnCommitIds[commit.hexsha] = commitId
+
         message = m.Text(
             "\n".join(
                 commitMessage[j : j + 20] for j in range(0, len(commitMessage), 20)
@@ -256,7 +260,11 @@ class GitSimBaseCommand:
                 "", font="Monospace", font_size=20, color=self.scene.fontColor
             )
             commitMessage = ""
-        elif dots and commit.hexsha == self.commits[-1].hexsha:
+        elif (
+            dots
+            and self.commits[-1] != "dark"
+            and commit.hexsha == self.commits[-1].hexsha
+        ):
             commitId = m.Text(
                 "...", font="Monospace", font_size=20, color=self.scene.fontColor
             )
@@ -297,13 +305,26 @@ class GitSimBaseCommand:
 
     def draw_branch(self, commit):
         x = 0
-        branches = [branch.name for branch in self.repo.heads]
+
+        remote_tracking_branches = self.get_remote_tracking_branches()
+
+        branches = [branch.name for branch in self.repo.heads] + list(
+            remote_tracking_branches.keys()
+        )
+
         for selected_branch in self.selected_branches:
             branches.insert(0, branches.pop(branches.index(selected_branch)))
 
         for branch in branches:
-
-            if commit.hexsha == self.repo.heads[branch].commit.hexsha:
+            # Use forward slash to check if branch is local or remote tracking
+            # and draw the branch label if its hexsha matches the current commit
+            if (
+                "/" not in branch  # local branch
+                and commit.hexsha == self.repo.heads[branch].commit.hexsha
+            ) or (
+                "/" in branch  # remote tracking branch
+                and commit.hexsha == remote_tracking_branches[branch]
+            ):
                 branchText = m.Text(
                     branch, font="Monospace", font_size=20, color=self.scene.fontColor
                 )
@@ -923,6 +944,15 @@ class GitSimBaseCommand:
 
     def trim_path(self, path):
         return (path[:5] + "..." + path[-15:]) if len(path) > 20 else path
+
+    def get_remote_tracking_branches(self):
+        remote_refs = [remote.refs for remote in self.repo.remotes]
+        remote_tracking_branches = {}
+        for reflist in remote_refs:
+            for ref in reflist:
+                if "HEAD" not in ref.name and ref.name not in remote_tracking_branches:
+                    remote_tracking_branches[ref.name] = ref.commit.hexsha
+        return remote_tracking_branches
 
 
 class DottedLine(m.Line):

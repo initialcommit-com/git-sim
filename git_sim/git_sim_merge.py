@@ -56,10 +56,17 @@ class GitSimMerge(GitSimBaseCommand):
         self.orig_commits = self.commits
         self.get_commits(start=self.scene.args.branch[0])
 
-        if self.scene.args.branch[0] in self.repo.git.branch(
-            "--contains", self.orig_commits[0].hexsha
-        ):
-            self.ff = True
+        # Use forward slash to determine if supplied branch arg is local or remote tracking branch
+        if "/" not in self.scene.args.branch[0]:
+            if self.scene.args.branch[0] in self.repo.git.branch(
+                "--contains", self.orig_commits[0].hexsha
+            ):
+                self.ff = True
+        else:
+            if self.scene.args.branch[0] in self.repo.git.branch(
+                "-r", "--contains", self.orig_commits[0].hexsha
+            ):
+                self.ff = True
 
         if self.ff:
             self.get_commits(start=self.scene.args.branch[0])
@@ -83,7 +90,7 @@ class GitSimMerge(GitSimBaseCommand):
                 )
                 self.draw_ref(
                     self.commits[0],
-                    self.drawnRefs["HEAD"] if self.scene.args.no_ff else self.topref,
+                    self.drawnRefs["HEAD"],
                     text=self.repo.active_branch.name,
                     color=m.GREEN,
                 )
