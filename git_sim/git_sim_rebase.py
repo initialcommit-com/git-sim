@@ -1,4 +1,5 @@
 import sys
+from argparse import Namespace
 
 import git
 import manim as m
@@ -8,53 +9,48 @@ from git_sim.git_sim_base_command import GitSimBaseCommand
 
 
 class GitSimRebase(GitSimBaseCommand):
-    def __init__(self, scene):
-        super().__init__(scene)
+    def __init__(self, args: Namespace):
+        super().__init__(args=args)
 
         try:
-            git.repo.fun.rev_parse(self.repo, self.scene.args.branch[0])
+            git.repo.fun.rev_parse(self.repo, self.args.branch[0])
         except git.exc.BadName:
             print(
                 "git-sim error: '"
-                + self.scene.args.branch[0]
+                + self.args.branch[0]
                 + "' is not a valid Git ref or identifier."
             )
             sys.exit(1)
 
-        if self.scene.args.branch[0] in [branch.name for branch in self.repo.heads]:
-            self.selected_branches.append(self.scene.args.branch[0])
+        if self.args.branch[0] in [branch.name for branch in self.repo.heads]:
+            self.selected_branches.append(self.args.branch[0])
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
         except TypeError:
             pass
 
-    def execute(self):
-        print(
-            "Simulating: git "
-            + self.scene.args.subcommand
-            + " "
-            + self.scene.args.branch[0]
-        )
+    def construct(self):
+        print("Simulating: git " + self.args.subcommand + " " + self.args.branch[0])
 
-        if self.scene.args.branch[0] in self.repo.git.branch(
+        if self.args.branch[0] in self.repo.git.branch(
             "--contains", self.repo.active_branch.name
         ):
             print(
                 "git-sim error: Branch '"
                 + self.repo.active_branch.name
                 + "' is already included in the history of active branch '"
-                + self.scene.args.branch[0]
+                + self.args.branch[0]
                 + "'."
             )
             sys.exit(1)
 
         if self.repo.active_branch.name in self.repo.git.branch(
-            "--contains", self.scene.args.branch[0]
+            "--contains", self.args.branch[0]
         ):
             print(
                 "git-sim error: Branch '"
-                + self.scene.args.branch[0]
+                + self.args.branch[0]
                 + "' is already based on active branch '"
                 + self.repo.active_branch.name
                 + "'."
@@ -62,7 +58,7 @@ class GitSimRebase(GitSimBaseCommand):
             sys.exit(1)
 
         self.show_intro()
-        self.get_commits(start=self.scene.args.branch[0])
+        self.get_commits(start=self.args.branch[0])
         self.parse_commits(self.commits[0])
         self.orig_commits = self.commits
         self.i = 0
@@ -70,7 +66,7 @@ class GitSimRebase(GitSimBaseCommand):
 
         reached_base = False
         for commit in self.commits:
-            if self.scene.args.branch[0] in self.repo.git.branch("--contains", commit):
+            if self.args.branch[0] in self.repo.git.branch("--contains", commit):
                 reached_base = True
 
         self.parse_commits(
@@ -81,9 +77,7 @@ class GitSimRebase(GitSimBaseCommand):
         to_rebase = []
         i = 0
         current = self.commits[i]
-        while self.scene.args.branch[0] not in self.repo.git.branch(
-            "--contains", current
-        ):
+        while self.args.branch[0] not in self.repo.git.branch("--contains", current):
             to_rebase.append(current)
             i += 1
             if i >= len(self.commits):
@@ -117,14 +111,14 @@ class GitSimRebase(GitSimBaseCommand):
         circle.height = 1
         circle.next_to(
             self.drawnCommits[child],
-            m.LEFT if self.scene.args.reverse else m.RIGHT,
+            m.LEFT if self.args.reverse else m.RIGHT,
             buff=1.5,
         )
         circle.shift(shift)
 
         start = circle.get_center()
         end = self.drawnCommits[child].get_center()
-        arrow = m.Arrow(start, end, color=self.scene.fontColor)
+        arrow = m.Arrow(start, end, color=self.fontColor)
         length = numpy.linalg.norm(start - end) - (1.5 if start[1] == end[1] else 3)
         arrow.set_length(length)
 
@@ -141,7 +135,7 @@ class GitSimRebase(GitSimBaseCommand):
             sha if commitMessage != "..." else "...",
             font="Monospace",
             font_size=20,
-            color=self.scene.fontColor,
+            color=self.fontColor,
         ).next_to(circle, m.UP)
         self.toFadeOut.add(commitId)
 
@@ -152,30 +146,30 @@ class GitSimRebase(GitSimBaseCommand):
             )[:100],
             font="Monospace",
             font_size=14,
-            color=self.scene.fontColor,
+            color=self.fontColor,
         ).next_to(circle, m.DOWN)
         self.toFadeOut.add(message)
 
-        if self.scene.args.animate:
-            self.scene.play(
-                self.scene.camera.frame.animate.move_to(circle.get_center()),
+        if self.args.animate:
+            self.play(
+                self.camera.frame.animate.move_to(circle.get_center()),
                 m.Create(circle),
                 m.AddTextLetterByLetter(commitId),
                 m.AddTextLetterByLetter(message),
-                run_time=1 / self.scene.args.speed,
+                run_time=1 / self.args.speed,
             )
         else:
-            self.scene.camera.frame.move_to(circle.get_center())
-            self.scene.add(circle, commitId, message)
+            self.camera.frame.move_to(circle.get_center())
+            self.add(circle, commitId, message)
 
         self.drawnCommits[sha] = circle
         self.toFadeOut.add(circle)
 
         if draw_arrow:
-            if self.scene.args.animate:
-                self.scene.play(m.Create(arrow), run_time=1 / self.scene.args.speed)
+            if self.args.animate:
+                self.play(m.Create(arrow), run_time=1 / self.args.speed)
             else:
-                self.scene.add(arrow)
+                self.add(arrow)
             self.toFadeOut.add(arrow)
 
         return sha
