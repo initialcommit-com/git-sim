@@ -5,6 +5,7 @@ import pathlib
 import time, datetime
 import cv2
 import git
+import subprocess
 from manim import config, WHITE
 from manim.utils.file_ops import open_file as open_media_file
 
@@ -97,6 +98,12 @@ def main():
         "--reverse",
         help="Display commit history in the reverse direction",
         action="store_true",
+    )
+    parser.add_argument(
+        "--video-format",
+        help="Output format for the animation files. Supports mp4 and webm",
+        type=str,
+        default="mp4",
     )
 
     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
@@ -252,6 +259,18 @@ def main():
 
     scene = gs.GitSim(args)
     scene.render()
+
+    if args.video_format == "webm":
+        webm_file_path = str(scene.renderer.file_writer.movie_file_path)[:-3] + "webm"
+        cmd = f"ffmpeg -y -i {scene.renderer.file_writer.movie_file_path} -hide_banner -loglevel error -c:v libvpx-vp9 -crf 50 -b:v 0 -b:a 128k -c:a libopus {webm_file_path}"
+        print("Converting video output to .webm format...")
+        # Start ffmpeg conversion
+        p = subprocess.Popen(cmd, shell=True)
+        p.wait()
+        # if the conversion is successful, delete the .mp4
+        if os.path.exists(webm_file_path):
+            os.remove(scene.renderer.file_writer.movie_file_path)
+            scene.renderer.file_writer.movie_file_path = webm_file_path
 
     if not args.animate:
         video = cv2.VideoCapture(str(scene.renderer.file_writer.movie_file_path))
