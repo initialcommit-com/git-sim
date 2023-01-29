@@ -1,13 +1,64 @@
-import git_sim.git_sim as gs
-import os, sys
 import argparse
+import datetime
+import os
 import pathlib
-import time, datetime
+import subprocess
+import sys
+import time
+from argparse import Namespace
+from typing import Type
+
 import cv2
 import git
-import subprocess
-from manim import config, WHITE
+from manim import WHITE, config
 from manim.utils.file_ops import open_file as open_media_file
+
+from git_sim.git_sim_add import GitSimAdd
+from git_sim.git_sim_base_command import GitSimBaseCommand
+from git_sim.git_sim_branch import GitSimBranch
+from git_sim.git_sim_cherrypick import GitSimCherryPick
+from git_sim.git_sim_commit import GitSimCommit
+from git_sim.git_sim_log import GitSimLog
+from git_sim.git_sim_merge import GitSimMerge
+from git_sim.git_sim_rebase import GitSimRebase
+from git_sim.git_sim_reset import GitSimReset
+from git_sim.git_sim_restore import GitSimRestore
+from git_sim.git_sim_revert import GitSimRevert
+from git_sim.git_sim_stash import GitSimStash
+from git_sim.git_sim_status import GitSimStatus
+from git_sim.git_sim_tag import GitSimTag
+
+
+def get_scene_for_command(args: Namespace) -> Type[GitSimBaseCommand]:
+
+    if args.subcommand == "log":
+        return GitSimLog
+    elif args.subcommand == "status":
+        return GitSimStatus
+    elif args.subcommand == "add":
+        return GitSimAdd
+    elif args.subcommand == "restore":
+        return GitSimRestore
+    elif args.subcommand == "commit":
+        return GitSimCommit
+    elif args.subcommand == "stash":
+        return GitSimStash
+    elif args.subcommand == "branch":
+        return GitSimBranch
+    elif args.subcommand == "tag":
+        return GitSimTag
+    elif args.subcommand == "reset":
+        return GitSimReset
+    elif args.subcommand == "revert":
+        return GitSimRevert
+    elif args.subcommand == "merge":
+        return GitSimMerge
+    elif args.subcommand == "rebase":
+        return GitSimRebase
+    elif args.subcommand == "cherry-pick":
+        return GitSimCherryPick
+
+    raise NotImplementedError(f"command '{args.subcommand}' is not yet implemented.")
 
 
 def main():
@@ -257,7 +308,8 @@ def main():
     if args.light_mode:
         config.background_color = WHITE
 
-    scene = gs.GitSim(args)
+    scene_class = get_scene_for_command(args=args)
+    scene = scene_class(args=args)
     scene.render()
 
     if args.video_format == "webm":
