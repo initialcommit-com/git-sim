@@ -8,14 +8,14 @@ import time
 
 import typer
 
-from git_sim.log import log
+import git_sim.log
+import git_sim.status
 from git_sim.settings import Settings
-from git_sim.status import status
 
 app = typer.Typer()
-app.command()(log)
-app.command()(status)
 
+app.add_typer(git_sim.log.app)
+app.add_typer(git_sim.status.app)
 
 @app.callback()
 def main(

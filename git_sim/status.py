@@ -1,6 +1,10 @@
+import typer
+
 from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import Settings
+
+app = typer.Typer()
 
 
 class Status(GitSimBaseCommand):
@@ -24,7 +28,13 @@ class Status(GitSimBaseCommand):
         self.show_outro()
 
 
-def status():
+@app.callback(invoke_without_command=True)
+def status(
+    ctx: typer.Context,
+):
+    # return early if a subcommand is executed
+    if ctx.invoked_subcommand is not None:
+        return
     # Write required settings into the shared Config.
     Settings.hide_first_tag = True
     Settings.allow_no_commits = True
