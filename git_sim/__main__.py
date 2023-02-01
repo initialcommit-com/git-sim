@@ -81,28 +81,10 @@ if __name__ == "__main__":
 #         "git-sim", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 #     )
 #     parser.add_argument(
-#         "--title",
-#         help="Custom title to display at the beginning of the animation",
-#         type=str,
-#         default="Git Sim, by initialcommit.com",
-#     )
-#     parser.add_argument(
 #         "--logo",
 #         help="The path to a custom logo to use in the animation intro/outro",
 #         type=str,
 #         default=os.path.join(str(pathlib.Path(__file__).parent.resolve()), "logo.png"),
-#     )
-#     parser.add_argument(
-#         "--outro-top-text",
-#         help="Custom text to display above the logo during the outro",
-#         type=str,
-#         default="Thanks for using Initial Commit!",
-#     )
-#     parser.add_argument(
-#         "--outro-bottom-text",
-#         help="Custom text to display below the logo during the outro",
-#         type=str,
-#         default="Learn more at initialcommit.com",
 #     )
 #     parser.add_argument(
 #         "--show-intro",
@@ -121,25 +103,10 @@ if __name__ == "__main__":
 #         default=".",
 #     )
 #     parser.add_argument(
-#         "--low-quality",
-#         help="Render output video in low quality, useful for faster testing",
-#         action="store_true",
-#     )
-#     parser.add_argument(
-#         "--light-mode",
-#         help="Enable light-mode with white background",
-#         action="store_true",
-#     )
-#     parser.add_argument(
 #         "--speed",
 #         help="A multiple of the standard 1x animation speed (ex: 2 = twice as fast, 0.5 = half as fast)",
 #         type=float,
 #         default=1.5,
-#     )
-#     parser.add_argument(
-#         "--animate",
-#         help="Animate the simulation and output as an mp4 video",
-#         action="store_true",
 #     )
 #     parser.add_argument(
 #         "--max-branches-per-commit",
@@ -152,12 +119,6 @@ if __name__ == "__main__":
 #         help="Maximum number of tags to display for each commit",
 #         type=int,
 #         default=1,
-#     )
-#     parser.add_argument(
-#         "-d",
-#         "--disable-auto-open",
-#         help="Disable the automatic opening of the image/video file after generation",
-#         action="store_true",
 #     )
 #     parser.add_argument(
 #         "-r",
