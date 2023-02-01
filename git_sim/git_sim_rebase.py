@@ -66,7 +66,9 @@ class GitSimRebase(GitSimBaseCommand):
 
         reached_base = False
         for commit in self.commits:
-            if self.args.branch[0] in self.repo.git.branch("--contains", commit):
+            if commit != "dark" and self.args.branch[0] in self.repo.git.branch(
+                "--contains", commit
+            ):
                 reached_base = True
 
         self.parse_commits(
