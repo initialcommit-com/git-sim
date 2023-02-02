@@ -46,8 +46,7 @@ class GitSimCommit(GitSimBaseCommand):
                 tree,
                 self.args.message,
             )
-            self.com
-            self.commits[0] = str(amended)
+            self.commits[0] = amended
 
         self.parse_commits(self.commits[self.i])
         self.center_frame_on_commit(self.commits[0])
