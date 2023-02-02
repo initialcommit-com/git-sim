@@ -6,6 +6,8 @@ from git_sim.git_sim_base_command import GitSimBaseCommand
 class GitSimLog(GitSimBaseCommand):
     def __init__(self, args: Namespace):
         super().__init__(args=args)
+        self.numCommits = self.args.commits + 1
+        self.defaultNumCommits = self.args.commits + 1
         try:
             self.selected_branches.append(self.repo.active_branch.name)
         except TypeError:
