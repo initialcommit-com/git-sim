@@ -17,6 +17,7 @@ app = typer.Typer()
 app.add_typer(git_sim.log.app)
 app.add_typer(git_sim.status.app)
 
+
 @app.callback()
 def main(
     title: str = typer.Option(
@@ -46,6 +47,22 @@ def main(
     light_mode: bool = typer.Option(
         default=Settings.light_mode, help="Enable light-mode with white background"
     ),
+    logo: pathlib.Path = typer.Option(
+        default=Settings.logo,
+        help="The path to a custom logo to use in the animation intro/outro",
+    ),
+    show_intro: bool = typer.Option(
+        default=Settings.show_intro,
+        help="Add an intro sequence with custom logo and title",
+    ),
+    show_outtro: bool = typer.Option(
+        default=Settings.show_outro,
+        help="Add an outro sequence with custom logo and text",
+    ),
+    media_dir: pathlib.Path = typer.Option(
+        default=Settings.media_dir,
+        help="The path to output the animation data and video file",
+    ),
 ):
     Settings.animate = animate
     Settings.title = title
@@ -54,54 +71,21 @@ def main(
     Settings.low_quality = low_quality
     Settings.auto_open = auto_open
     Settings.light_mode = light_mode
+    Settings.logo = logo
+    Settings.show_intro = show_intro
+    Settings.show_outro = show_outtro
+    Settings.media_dir = media_dir
 
 
 if __name__ == "__main__":
     app()
 
 
-# import argparse
-# import datetime
-# import os
-# import pathlib
-# import sys
-# import time
-
-# import cv2
-# import git
-# from manim import WHITE, config
-# from manim.utils.file_ops import open_file as open_media_file
-
-# import git_sim.git_sim as gs
-# from git_sim.git_sim_log import GitSimLog
-
-
 # def main():
 #     parser = argparse.ArgumentParser(
 #         "git-sim", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 #     )
-#     parser.add_argument(
-#         "--logo",
-#         help="The path to a custom logo to use in the animation intro/outro",
-#         type=str,
-#         default=os.path.join(str(pathlib.Path(__file__).parent.resolve()), "logo.png"),
-#     )
-#     parser.add_argument(
-#         "--show-intro",
-#         help="Add an intro sequence with custom logo and title",
-#         action="store_true",
-#     )
-#     parser.add_argument(
-#         "--show-outro",
-#         help="Add an outro sequence with custom logo and text",
-#         action="store_true",
-#     )
-#     parser.add_argument(
-#         "--media-dir",
-#         help="The path to output the animation data and video file",
-#         type=str,
-#         default=".",
-#     )
+
 #     parser.add_argument(
 #         "--speed",
 #         help="A multiple of the standard 1x animation speed (ex: 2 = twice as fast, 0.5 = half as fast)",
