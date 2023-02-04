@@ -152,10 +152,17 @@ def main():
     )
     parser.add_argument(
         "--video-format",
-        help="Output format for the animation files. Supports mp4 and webm",
+        help="Output format for the animation files. Supports mp4 (default) and webm",
         type=str,
         default="mp4",
         choices=["mp4", "webm"],
+    )
+    parser.add_argument(
+        "--img-format",
+        help="Output format for the image files. Supports jpg (default) and png",
+        type=str,
+        default="jpg",
+        choices=["jpg", "png"],
     )
 
     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
@@ -332,7 +339,9 @@ def main():
         video = cv2.VideoCapture(str(scene.renderer.file_writer.movie_file_path))
         success, image = video.read()
         if success:
-            image_file_name = "git-sim-" + args.subcommand + "_" + t + ".jpg"
+            image_file_name = (
+                "git-sim-" + args.subcommand + "_" + t + "." + args.img_format
+            )
             image_file_path = os.path.join(
                 os.path.join(config.media_dir, "images"), image_file_name
             )
