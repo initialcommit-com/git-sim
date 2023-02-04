@@ -332,9 +332,6 @@ def main():
         video = cv2.VideoCapture(str(scene.renderer.file_writer.movie_file_path))
         success, image = video.read()
         if success:
-            t = datetime.datetime.fromtimestamp(time.time()).strftime(
-                "%m-%d-%y_%H-%M-%S"
-            )
             image_file_name = "git-sim-" + args.subcommand + "_" + t + ".jpg"
             image_file_path = os.path.join(
                 os.path.join(config.media_dir, "images"), image_file_name
