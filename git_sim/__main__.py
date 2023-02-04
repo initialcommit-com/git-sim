@@ -155,6 +155,7 @@ def main():
         help="Output format for the animation files. Supports mp4 and webm",
         type=str,
         default="mp4",
+        choices=["mp4", "webm"],
     )
 
     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
@@ -307,6 +308,9 @@ def main():
 
     if args.light_mode:
         config.background_color = WHITE
+
+    t = datetime.datetime.fromtimestamp(time.time()).strftime("%m-%d-%y_%H-%M-%S")
+    config.output_file = "git-sim-" + args.subcommand + "_" + t + ".mp4"
 
     scene_class = get_scene_for_command(args=args)
     scene = scene_class(args=args)
