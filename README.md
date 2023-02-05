@@ -87,14 +87,15 @@ $ git-sim [global options] <subcommand> [subcommand options]
 
 The `[global options]` apply to the overarching `git-sim` simulation itself, including:
 
-`--light-mode`: Use a light mode color scheme instead of default dark mode.
-`--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video. 
-`--disable-auto-open, -d`: Disable the automatic opening of the image/video file after generation.
-`--reverse, -r`: Display commit history in the reverse direction.
-`--video-format`: Output format for the video file, i.e. `mp4` or `webm`. Default output format is `mp4`.
+`--light-mode`: Use a light mode color scheme instead of default dark mode.  
+`--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video.  
+`--disable-auto-open, -d`: Disable the automatic opening of the image/video file after generation.  
+`--reverse, -r`: Display commit history in the reverse direction.  
+`--img-format`: Output format for the image file, i.e. `jpg` or `png`. Default output format is `jpg`.
 
 Animation-only global options (to be used in conjunction with `--animate`):
 
+`--video-format`: Output format for the video file, i.e. `mp4` or `webm`. Default output format is `mp4`.  
 `--speed=n`: Set the multiple of animation speed of the output simulation, `n` can be an integer or float, default is 1.  
 `--low-quality`: Render the animation in low quality to speed up creation time, recommended for non-presentation use.  
 `--show-intro`: Add an intro sequence with custom logo and title.  
