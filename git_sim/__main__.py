@@ -283,6 +283,12 @@ def main():
         type=str,
         help="The ref (branch/tag), or commit ID to simulate cherry-pick onto active branch",
     )
+    cherrypick.add_argument(
+        "-e",
+        "--edit",
+        help="Specify a new commit message for the cherry-picked commit",
+        type=str,
+    )
 
     if len(sys.argv) == 1:
         parser.print_help()

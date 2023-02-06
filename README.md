@@ -218,6 +218,7 @@ Usage: `git-sim rebase <new-base>`
 Usage: `git-sim cherry-pick <commit>`
 
 - Specify `<commit>` as a ref (branch name/tag) or commit ID to cherry-pick onto the active branch
+- Supports editing the cherry-picked commit message with: `$ git-sim cherry-pick <commit> -e "Edited commit message"`
 
 ![git-sim-cherry-pick_01-05-23_22-23-08](https://user-images.githubusercontent.com/49353917/210942811-fa5155b1-4c6f-4afc-bea2-d39b4cd594aa.jpg)
 

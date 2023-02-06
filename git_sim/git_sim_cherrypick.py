@@ -30,7 +30,13 @@ class GitSimCherryPick(GitSimBaseCommand):
             pass
 
     def construct(self):
-        print("Simulating: git " + self.args.subcommand + " " + self.args.commit[0])
+        print(
+            "Simulating: git "
+            + self.args.subcommand
+            + " "
+            + self.args.commit[0]
+            + ((' -e "' + self.args.edit + '"') if self.args.edit else "")
+        )
 
         if self.repo.active_branch.name in self.repo.git.branch(
             "--contains", self.args.commit[0]
@@ -51,7 +57,10 @@ class GitSimCherryPick(GitSimBaseCommand):
         self.get_commits(start=self.args.commit[0])
         self.parse_commits(self.commits[0], shift=4 * m.DOWN)
         self.center_frame_on_commit(self.orig_commits[0])
-        self.setup_and_draw_parent(self.orig_commits[0], self.commits[0].message)
+        self.setup_and_draw_parent(
+            self.orig_commits[0],
+            self.args.edit if self.args.edit else self.commits[0].message,
+        )
         self.draw_arrow_between_commits(self.commits[0].hexsha, "abcdef")
         self.recenter_frame()
         self.scale_frame()
