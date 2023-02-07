@@ -15,9 +15,11 @@ import git_sim.log
 import git_sim.restore
 import git_sim.stash
 import git_sim.status
+import git_sim.tag
 from git_sim.settings import Settings
 
 app = typer.Typer()
+
 app.command()(git_sim.log.log)
 app.command()(git_sim.status.status)
 app.command()(git_sim.add.add)
@@ -25,6 +27,7 @@ app.command()(git_sim.restore.restore)
 app.command()(git_sim.commit.commit)
 app.command()(git_sim.stash.stash)
 app.command()(git_sim.branch.branch)
+app.command()(git_sim.tag.tag)
 
 
 @app.callback()
@@ -118,9 +121,6 @@ if __name__ == "__main__":
 
 #     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
 
-
-#     tag = subparsers.add_parser("tag", help="tag -h")
-#     tag.add_argument("name", help="The name of the new tag", type=str)
 
 #     reset = subparsers.add_parser("reset", help="reset -h")
 #     reset.add_argument(
