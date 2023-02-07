@@ -13,9 +13,8 @@ import git_sim.status
 from git_sim.settings import Settings
 
 app = typer.Typer()
-
-app.add_typer(git_sim.log.app)
-app.add_typer(git_sim.status.app)
+app.command()(git_sim.log.log)
+# app.command()(git_sim.status.status)
 
 
 @app.callback()
