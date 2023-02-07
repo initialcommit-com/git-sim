@@ -9,6 +9,7 @@ import time
 import typer
 
 import git_sim.add
+import git_sim.branch
 import git_sim.commit
 import git_sim.log
 import git_sim.restore
@@ -23,6 +24,7 @@ app.command()(git_sim.add.add)
 app.command()(git_sim.restore.restore)
 app.command()(git_sim.commit.commit)
 app.command()(git_sim.stash.stash)
+app.command()(git_sim.branch.branch)
 
 
 @app.callback()
@@ -116,9 +118,6 @@ if __name__ == "__main__":
 
 #     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
 
-
-#     branch = subparsers.add_parser("branch", help="branch -h")
-#     branch.add_argument("name", help="The name of the new branch", type=str)
 
 #     tag = subparsers.add_parser("tag", help="tag -h")
 #     tag.add_argument("name", help="The name of the new tag", type=str)
