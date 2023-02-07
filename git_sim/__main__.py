@@ -12,6 +12,7 @@ import git_sim.add
 import git_sim.branch
 import git_sim.commit
 import git_sim.log
+import git_sim.reset
 import git_sim.restore
 import git_sim.stash
 import git_sim.status
@@ -28,6 +29,7 @@ app.command()(git_sim.commit.commit)
 app.command()(git_sim.stash.stash)
 app.command()(git_sim.branch.branch)
 app.command()(git_sim.tag.tag)
+app.command()(git_sim.reset.reset)
 
 
 @app.callback()
@@ -121,36 +123,6 @@ if __name__ == "__main__":
 
 #     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
 
-
-#     reset = subparsers.add_parser("reset", help="reset -h")
-#     reset.add_argument(
-#         "commit",
-#         nargs="?",
-#         help="The ref (branch/tag), or commit ID to simulate reset to",
-#         type=str,
-#         default="HEAD",
-#     )
-#     reset.add_argument(
-#         "--mode",
-#         help="Either mixed (default), soft, or hard",
-#         type=str,
-#         default="default",
-#     )
-#     reset.add_argument(
-#         "--soft",
-#         help="Simulate a soft reset, shortcut for --mode=soft",
-#         action="store_true",
-#     )
-#     reset.add_argument(
-#         "--mixed",
-#         help="Simulate a mixed reset, shortcut for --mode=mixed",
-#         action="store_true",
-#     )
-#     reset.add_argument(
-#         "--hard",
-#         help="Simulate a soft reset, shortcut for --mode=hard",
-#         action="store_true",
-#     )
 
 #     revert = subparsers.add_parser("revert", help="revert -h")
 #     revert.add_argument(
