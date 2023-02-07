@@ -8,6 +8,7 @@ import time
 
 import typer
 
+import git_sim.add
 import git_sim.log
 import git_sim.status
 from git_sim.settings import Settings
@@ -15,6 +16,7 @@ from git_sim.settings import Settings
 app = typer.Typer()
 app.command()(git_sim.log.log)
 app.command()(git_sim.status.status)
+app.command()(git_sim.add.add)
 
 
 @app.callback()
@@ -108,24 +110,6 @@ if __name__ == "__main__":
 
 #     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
 
-#     log = subparsers.add_parser("log", help="log -h")
-#     log.add_argument(
-#         "--commits",
-#         help="The number of commits to display in the simulated log output",
-#         type=int,
-#         default=5,
-#         choices=range(1, 13),
-#     )
-
-#     status = subparsers.add_parser("status", help="status -h")
-
-#     add = subparsers.add_parser("add", help="add -h")
-#     add.add_argument(
-#         "name",
-#         nargs="+",
-#         help="The names of one or more files to add to Git's staging area",
-#         type=str,
-#     )
 
 #     restore = subparsers.add_parser("restore", help="restore -h")
 #     restore.add_argument(

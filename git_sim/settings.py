@@ -1,5 +1,6 @@
 import pathlib
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
@@ -25,3 +26,4 @@ class Settings:
     # os.path.join(str(pathlib.Path(__file__).parent.resolve()), "logo.png")
     logo = pathlib.Path(__file__).parent.resolve() / "logo.png"
     media_dir = pathlib.Path().cwd()
+    files: list[pathlib.Path] | None = None
