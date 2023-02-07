@@ -17,7 +17,7 @@ import git_sim.restore
 import git_sim.stash
 import git_sim.status
 import git_sim.tag
-from git_sim.settings import Settings
+from git_sim.settings import ImgFormat, Settings, VideoFormat
 
 app = typer.Typer()
 
@@ -93,6 +93,15 @@ def main(
         default=Settings.reverse,
         help="Display commit history in the reverse direction",
     ),
+    video_format: VideoFormat = typer.Option(
+        default=Settings.video_format.value,
+        help="Output format for the animation files.",
+        case_sensitive=False,
+    ),
+    img_format: ImgFormat = typer.Option(
+        default=Settings.img_format.value,
+        help="Output format for the image files.",
+    ),
 ):
     Settings.animate = animate
     Settings.title = title
@@ -109,6 +118,8 @@ def main(
     Settings.max_branches_per_commit = max_branches_per_commit
     Settings.max_tags_per_commit = max_tags_per_commit
     Settings.reverse = reverse
+    Settings.video_format = video_format
+    Settings.img_format = img_format
 
 
 if __name__ == "__main__":
@@ -162,6 +173,14 @@ if __name__ == "__main__":
 #         help="The ref (branch/tag), or commit ID to simulate cherry-pick onto active branch",
 #     )
 
+    # cherrypick.add_argument(
+    #     "-e",
+    #     "--edit",
+    #     help="Specify a new commit message for the cherry-picked commit",
+    #     type=str,
+    # )
+
+
 #     if len(sys.argv) == 1:
 #         parser.print_help()
 #         sys.exit(1)
@@ -191,21 +210,26 @@ if __name__ == "__main__":
 #     if args.low_quality:
 #         config.quality = "low_quality"
 
-#     if args.light_mode:
-#         config.background_color = WHITE
+    # if args.light_mode:
+    #     config.background_color = WHITE
 
-#     scene = gs.get_scene_for_command(args=args)
+    # t = datetime.datetime.fromtimestamp(time.time()).strftime("%m-%d-%y_%H-%M-%S")
+    # config.output_file = "git-sim-" + args.subcommand + "_" + t + ".mp4"
 
-#     scene.render()
+    # scene_class = get_scene_for_command(args=args)
+    # scene = scene_class(args=args)
+    # scene.render()
+
 
 #     if not args.animate:
 #         video = cv2.VideoCapture(str(scene.renderer.file_writer.movie_file_path))
 #         success, image = video.read()
 #         if success:
-#             t = datetime.datetime.fromtimestamp(time.time()).strftime(
-#                 "%m-%d-%y_%H-%M-%S"
-#             )
-#             image_file_name = "git-sim-" + args.subcommand + "_" + t + ".jpg"
+
+            # image_file_name = (
+            #     "git-sim-" + args.subcommand + "_" + t + "." + args.img_format
+            # )
+
 #             image_file_path = os.path.join(
 #                 os.path.join(config.media_dir, "images"), image_file_name
 #             )

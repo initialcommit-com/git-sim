@@ -1,6 +1,16 @@
 import pathlib
 from dataclasses import dataclass
-from typing import Optional
+from enum import Enum
+
+
+class VideoFormat(str, Enum):
+    mp4 = "mp4"
+    webm = "webm"
+
+
+class ImgFormat(str, Enum):
+    jpg = "jpg"
+    png = "png"
 
 
 @dataclass
@@ -27,3 +37,5 @@ class Settings:
     logo = pathlib.Path(__file__).parent.resolve() / "logo.png"
     media_dir = pathlib.Path().cwd()
     files: list[pathlib.Path] | None = None
+    video_format: VideoFormat = VideoFormat.mp4
+    img_format: ImgFormat = ImgFormat.jpg

@@ -6,8 +6,10 @@ from git_sim.settings import Settings
 
 
 class Log(GitSimBaseCommand):
-    def __init__(self):
+    def __init__(self, commits: int):
         super().__init__()
+        self.numCommits = commits + 1
+        self.defaultNumCommits = commits + 1
         try:
             self.selected_branches.append(self.repo.active_branch.name)
         except TypeError:
@@ -32,7 +34,5 @@ def log(
         max=12,
     ),
 ):
-    Settings.commits = commits + 1
-
-    scene = Log()
+    scene = Log(commits=commits)
     handle_animations(scene=scene)
