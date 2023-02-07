@@ -10,6 +10,7 @@ import typer
 
 import git_sim.add
 import git_sim.log
+import git_sim.restore
 import git_sim.status
 from git_sim.settings import Settings
 
@@ -17,6 +18,7 @@ app = typer.Typer()
 app.command()(git_sim.log.log)
 app.command()(git_sim.status.status)
 app.command()(git_sim.add.add)
+app.command()(git_sim.restore.restore)
 
 
 @app.callback()
@@ -110,11 +112,6 @@ if __name__ == "__main__":
 
 #     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
 
-
-#     restore = subparsers.add_parser("restore", help="restore -h")
-#     restore.add_argument(
-#         "name", nargs="+", help="The names of one or more files to restore", type=str
-#     )
 
 #     commit = subparsers.add_parser("commit", help="commit -h")
 #     commit.add_argument(
