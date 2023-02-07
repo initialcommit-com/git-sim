@@ -12,6 +12,7 @@ from git_sim.settings import Settings
 
 class GitSimBaseCommand(m.MovingCameraScene):
     def __init__(self):
+
         super().__init__()
         self.init_repo()
 
@@ -35,8 +36,6 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.logo = m.ImageMobject(Settings.logo)
         self.logo.width = 3
 
-        print(f"Simulating: git {type(self).__name__.lower()}")
-
     def init_repo(self):
         try:
             self.repo = Repo(search_parent_directories=True)
@@ -45,6 +44,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             sys.exit(1)
 
     def execute(self):
+        print("Simulating: git " + Settings.subcommand)
         self.show_intro()
         self.get_commits()
         self.fadeout()
@@ -136,6 +136,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
     def show_outro(self):
         if Settings.animate and Settings.show_outro:
+
             self.play(m.Restore(self.camera.frame))
 
             self.play(self.logo.animate.scale(4).set_x(0).set_y(0))
@@ -363,6 +364,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             return
 
         for tag in self.repo.tags:
+
             try:
                 if commit.hexsha == tag.commit.hexsha:
                     tagText = m.Text(
@@ -739,6 +741,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         firstColumnArrowMap={},
         secondColumnArrowMap={},
     ):
+
         for x in self.repo.index.diff(None):
             if "git-sim_media" not in x.a_path:
                 secondColumnFileNames.add(x.a_path)
