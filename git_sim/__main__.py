@@ -9,6 +9,7 @@ import time
 import typer
 
 import git_sim.add
+import git_sim.commit
 import git_sim.log
 import git_sim.restore
 import git_sim.status
@@ -19,6 +20,7 @@ app.command()(git_sim.log.log)
 app.command()(git_sim.status.status)
 app.command()(git_sim.add.add)
 app.command()(git_sim.restore.restore)
+app.command()(git_sim.commit.commit)
 
 
 @app.callback()
@@ -112,15 +114,6 @@ if __name__ == "__main__":
 
 #     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
 
-
-#     commit = subparsers.add_parser("commit", help="commit -h")
-#     commit.add_argument(
-#         "-m",
-#         "--message",
-#         help="The commit message of the new commit",
-#         type=str,
-#         default="New commit",
-#     )
 
 #     stash = subparsers.add_parser("stash", help="stash -h")
 #     stash.add_argument(
