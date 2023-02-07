@@ -6,7 +6,7 @@ from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import Settings
 
 
-class GitSimBranch(GitSimBaseCommand):
+class Branch(GitSimBaseCommand):
     def __init__(self, name: str):
         super().__init__()
         self.name = name
@@ -57,5 +57,5 @@ def branch(
         help="The name of the new branch",
     )
 ):
-    scene = GitSimBranch(name=name)
+    scene = Branch(name=name)
     handle_animations(scene=scene)
