@@ -63,6 +63,22 @@ def main(
         default=Settings.media_dir,
         help="The path to output the animation data and video file",
     ),
+    speed: float = typer.Option(
+        default=Settings.speed,
+        help="A multiple of the standard 1x animation speed (ex: 2 = twice as fast, 0.5 = half as fast)",
+    ),
+    max_branches_per_commit: int = typer.Option(
+        default=Settings.max_branches_per_commit,
+        help="Maximum number of branch labels to display for each commit",
+    ),
+    max_tags_per_commit: int = typer.Option(
+        default=Settings.max_tags_per_commit,
+        help="Maximum number of tags to display for each commit",
+    ),
+    reverse: bool = typer.Option(
+        default=Settings.reverse,
+        help="Display commit history in the reverse direction",
+    ),
 ):
     Settings.animate = animate
     Settings.title = title
@@ -75,6 +91,10 @@ def main(
     Settings.show_intro = show_intro
     Settings.show_outro = show_outtro
     Settings.media_dir = media_dir
+    Settings.speed = speed
+    Settings.max_branches_per_commit = max_branches_per_commit
+    Settings.max_tags_per_commit = max_tags_per_commit
+    Settings.reverse = reverse
 
 
 if __name__ == "__main__":
@@ -86,30 +106,6 @@ if __name__ == "__main__":
 #         "git-sim", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 #     )
 
-#     parser.add_argument(
-#         "--speed",
-#         help="A multiple of the standard 1x animation speed (ex: 2 = twice as fast, 0.5 = half as fast)",
-#         type=float,
-#         default=1.5,
-#     )
-#     parser.add_argument(
-#         "--max-branches-per-commit",
-#         help="Maximum number of branch labels to display for each commit",
-#         type=int,
-#         default=1,
-#     )
-#     parser.add_argument(
-#         "--max-tags-per-commit",
-#         help="Maximum number of tags to display for each commit",
-#         type=int,
-#         default=1,
-#     )
-#     parser.add_argument(
-#         "-r",
-#         "--reverse",
-#         help="Display commit history in the reverse direction",
-#         action="store_true",
-#     )
 
 #     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
 
