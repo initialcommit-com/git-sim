@@ -12,6 +12,7 @@ import git_sim.add
 import git_sim.commit
 import git_sim.log
 import git_sim.restore
+import git_sim.stash
 import git_sim.status
 from git_sim.settings import Settings
 
@@ -21,6 +22,7 @@ app.command()(git_sim.status.status)
 app.command()(git_sim.add.add)
 app.command()(git_sim.restore.restore)
 app.command()(git_sim.commit.commit)
+app.command()(git_sim.stash.stash)
 
 
 @app.callback()
@@ -114,11 +116,6 @@ if __name__ == "__main__":
 
 #     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
 
-
-#     stash = subparsers.add_parser("stash", help="stash -h")
-#     stash.add_argument(
-#         "name", nargs="*", help="The name of the file to stash changes for", type=str
-#     )
 
 #     branch = subparsers.add_parser("branch", help="branch -h")
 #     branch.add_argument("name", help="The name of the new branch", type=str)
