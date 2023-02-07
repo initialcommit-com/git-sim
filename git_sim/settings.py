@@ -5,8 +5,7 @@ from dataclasses import dataclass
 @dataclass
 class Settings:
     commits = 5
-    logo = pathlib.Path(__file__).parent.resolve() / "logo.png"
-    subcommand = "log"
+    subcommand: str
     show_intro = False
     show_outro = False
     animate = False
