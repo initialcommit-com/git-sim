@@ -25,186 +25,118 @@ from git_sim.settings import ImgFormat, Settings, VideoFormat
 
 app = typer.Typer()
 
-app.command()(git_sim.log.log)
-app.command()(git_sim.status.status)
-app.command()(git_sim.add.add)
-app.command()(git_sim.restore.restore)
-app.command()(git_sim.commit.commit)
-app.command()(git_sim.stash.stash)
-app.command()(git_sim.cherrypick.cherrypick)
-app.command()(git_sim.branch.branch)
-app.command()(git_sim.tag.tag)
-app.command()(git_sim.reset.reset)
-app.command()(git_sim.revert.revert)
-app.command()(git_sim.merge.merge)
-app.command()(git_sim.rebase.rebase)
 
-
-@app.callback()
+@app.callback(no_args_is_help=True)
 def main(
-    title: str = typer.Option(
-        default=Settings.title,
-        help="Custom title to display at the beginning of the animation",
-    ),
     animate: bool = typer.Option(
-        default=Settings.animate,
+        Settings.animate,
         help="Animate the simulation and output as an mp4 video",
     ),
-    outro_top_text: str = typer.Option(
-        default=Settings.outro_top_text,
-        help="Custom text to display above the logo during the outro",
-    ),
-    outro_bottom_text: str = typer.Option(
-        default=Settings.outro_bottom_text,
-        help="Custom text to display below the logo during the outro",
-    ),
-    low_quality: bool = typer.Option(
-        default=Settings.low_quality,
-        help="Render output video in low quality, useful for faster testing",
-    ),
     auto_open: bool = typer.Option(
-        default=Settings.auto_open,
+        Settings.auto_open,
+        "--auto-open",
+        " /-d",
         help="Enable / disable the automatic opening of the image/video file after generation",
     ),
+    img_format: ImgFormat = typer.Option(
+        Settings.img_format,
+        help="Output format for the image files.",
+    ),
     light_mode: bool = typer.Option(
-        default=Settings.light_mode, help="Enable light-mode with white background"
+        Settings.light_mode,
+        "--light-mode",
+        help="Enable light-mode with white background",
     ),
     logo: pathlib.Path = typer.Option(
-        default=Settings.logo,
+        Settings.logo,
         help="The path to a custom logo to use in the animation intro/outro",
     ),
-    show_intro: bool = typer.Option(
-        default=Settings.show_intro,
-        help="Add an intro sequence with custom logo and title",
-    ),
-    show_outtro: bool = typer.Option(
-        default=Settings.show_outro,
-        help="Add an outro sequence with custom logo and text",
-    ),
-    media_dir: pathlib.Path = typer.Option(
-        default=Settings.media_dir,
-        help="The path to output the animation data and video file",
-    ),
-    speed: float = typer.Option(
-        default=Settings.speed,
-        help="A multiple of the standard 1x animation speed (ex: 2 = twice as fast, 0.5 = half as fast)",
+    low_quality: bool = typer.Option(
+        Settings.low_quality,
+        "--low-quality",
+        help="Render output video in low quality, useful for faster testing",
     ),
     max_branches_per_commit: int = typer.Option(
-        default=Settings.max_branches_per_commit,
+        Settings.max_branches_per_commit,
         help="Maximum number of branch labels to display for each commit",
     ),
     max_tags_per_commit: int = typer.Option(
-        default=Settings.max_tags_per_commit,
+        Settings.max_tags_per_commit,
         help="Maximum number of tags to display for each commit",
     ),
+    media_dir: pathlib.Path = typer.Option(
+        Settings.media_dir,
+        help="The path to output the animation data and video file",
+    ),
+    outro_bottom_text: str = typer.Option(
+        Settings.outro_bottom_text,
+        help="Custom text to display below the logo during the outro",
+    ),
+    outro_top_text: str = typer.Option(
+        Settings.outro_top_text,
+        help="Custom text to display above the logo during the outro",
+    ),
     reverse: bool = typer.Option(
-        default=Settings.reverse,
+        Settings.reverse,
+        "--reverse",
+        "-r",
         help="Display commit history in the reverse direction",
     ),
+    show_intro: bool = typer.Option(
+        Settings.show_intro,
+        help="Add an intro sequence with custom logo and title",
+    ),
+    show_outro: bool = typer.Option(
+        Settings.show_outro,
+        help="Add an outro sequence with custom logo and text",
+    ),
+    speed: float = typer.Option(
+        Settings.speed,
+        help="A multiple of the standard 1x animation speed (ex: 2 = twice as fast, 0.5 = half as fast)",
+    ),
+    title: str = typer.Option(
+        Settings.title,
+        help="Custom title to display at the beginning of the animation",
+    ),
     video_format: VideoFormat = typer.Option(
-        default=Settings.video_format.value,
+        Settings.video_format.value,
         help="Output format for the animation files.",
         case_sensitive=False,
     ),
-    img_format: ImgFormat = typer.Option(
-        default=Settings.img_format.value,
-        help="Output format for the image files.",
-    ),
 ):
     Settings.animate = animate
-    Settings.title = title
-    Settings.outro_top_text = outro_top_text
-    Settings.outro_bottom_text = outro_bottom_text
-    Settings.low_quality = low_quality
     Settings.auto_open = auto_open
+    Settings.img_format = img_format
     Settings.light_mode = light_mode
     Settings.logo = logo
-    Settings.show_intro = show_intro
-    Settings.show_outro = show_outtro
-    Settings.media_dir = media_dir
-    Settings.speed = speed
+    Settings.low_quality = low_quality
     Settings.max_branches_per_commit = max_branches_per_commit
     Settings.max_tags_per_commit = max_tags_per_commit
+    Settings.media_dir = media_dir
+    Settings.outro_bottom_text = outro_bottom_text
+    Settings.outro_top_text = outro_top_text
     Settings.reverse = reverse
+    Settings.show_intro = show_intro
+    Settings.show_outro = show_outro
+    Settings.speed = speed
+    Settings.title = title
     Settings.video_format = video_format
-    Settings.img_format = img_format
+
+
+app.command()(git_sim.add.add)
+app.command()(git_sim.branch.branch)
+app.command()(git_sim.cherrypick.cherrypick)
+app.command()(git_sim.commit.commit)
+app.command()(git_sim.log.log)
+app.command()(git_sim.merge.merge)
+app.command()(git_sim.rebase.rebase)
+app.command()(git_sim.reset.reset)
+app.command()(git_sim.restore.restore)
+app.command()(git_sim.revert.revert)
+app.command()(git_sim.stash.stash)
+app.command()(git_sim.status.status)
+app.command()(git_sim.tag.tag)
 
 
 if __name__ == "__main__":
     app()
-
-
-# def main():
-#     parser = argparse.ArgumentParser(
-#         "git-sim", formatter_class=argparse.ArgumentDefaultsHelpFormatter
-#     )
-
-
-#     if len(sys.argv) == 1:
-#         parser.print_help()
-#         sys.exit(1)
-
-#     args = parser.parse_args()
-
-#     if sys.platform == "linux" or sys.platform == "darwin":
-#         repo_name = git.Repo(search_parent_directories=True).working_tree_dir.split(
-#             "/"
-#         )[-1]
-#     elif sys.platform == "win32":
-#         repo_name = git.Repo(search_parent_directories=True).working_tree_dir.split(
-#             "\\"
-#         )[-1]
-
-#     config.media_dir = os.path.join(os.path.expanduser(args.media_dir), "git-sim_media")
-#     config.verbosity = "ERROR"
-
-#     # If the env variable is set and no argument provided, use the env variable value
-#     if os.getenv("git_sim_media_dir") and args.media_dir == ".":
-#         config.media_dir = os.path.join(
-#             os.path.expanduser(os.getenv("git_sim_media_dir")),
-#             "git-sim_media",
-#             repo_name,
-#         )
-
-#     if args.low_quality:
-#         config.quality = "low_quality"
-
-# if args.light_mode:
-#     config.background_color = WHITE
-
-# t = datetime.datetime.fromtimestamp(time.time()).strftime("%m-%d-%y_%H-%M-%S")
-# config.output_file = "git-sim-" + args.subcommand + "_" + t + ".mp4"
-
-# scene_class = get_scene_for_command(args=args)
-# scene = scene_class(args=args)
-# scene.render()
-
-
-#     if not args.animate:
-#         video = cv2.VideoCapture(str(scene.renderer.file_writer.movie_file_path))
-#         success, image = video.read()
-#         if success:
-
-# image_file_name = (
-#     "git-sim-" + args.subcommand + "_" + t + "." + args.img_format
-# )
-
-#             image_file_path = os.path.join(
-#                 os.path.join(config.media_dir, "images"), image_file_name
-#             )
-#             cv2.imwrite(image_file_path, image)
-
-#     if not args.disable_auto_open:
-#         try:
-#             if not args.animate:
-#                 open_media_file(image_file_path)
-#             else:
-#                 open_media_file(scene.renderer.file_writer.movie_file_path)
-#         except FileNotFoundError:
-#             print(
-#                 "Error automatically opening media, please manually open the image or video file to view."
-#             )
-
-
-# if __name__ == "__main__":
-#     main()
