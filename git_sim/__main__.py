@@ -10,6 +10,7 @@ import typer
 
 import git_sim.add
 import git_sim.branch
+import git_sim.cherrypick
 import git_sim.commit
 import git_sim.log
 import git_sim.merge
@@ -30,6 +31,7 @@ app.command()(git_sim.add.add)
 app.command()(git_sim.restore.restore)
 app.command()(git_sim.commit.commit)
 app.command()(git_sim.stash.stash)
+app.command()(git_sim.cherrypick.cherrypick)
 app.command()(git_sim.branch.branch)
 app.command()(git_sim.tag.tag)
 app.command()(git_sim.reset.reset)
@@ -136,25 +138,6 @@ if __name__ == "__main__":
 #     parser = argparse.ArgumentParser(
 #         "git-sim", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 #     )
-
-
-#     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
-
-
-#     cherrypick = subparsers.add_parser("cherry-pick", help="cherry-pick -h")
-#     cherrypick.add_argument(
-#         "commit",
-#         nargs=1,
-#         type=str,
-#         help="The ref (branch/tag), or commit ID to simulate cherry-pick onto active branch",
-#     )
-
-# cherrypick.add_argument(
-#     "-e",
-#     "--edit",
-#     help="Specify a new commit message for the cherry-picked commit",
-#     type=str,
-# )
 
 
 #     if len(sys.argv) == 1:
