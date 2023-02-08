@@ -13,6 +13,7 @@ import git_sim.branch
 import git_sim.commit
 import git_sim.log
 import git_sim.merge
+import git_sim.rebase
 import git_sim.reset
 import git_sim.restore
 import git_sim.revert
@@ -34,6 +35,7 @@ app.command()(git_sim.tag.tag)
 app.command()(git_sim.reset.reset)
 app.command()(git_sim.revert.revert)
 app.command()(git_sim.merge.merge)
+app.command()(git_sim.rebase.rebase)
 
 
 @app.callback()
@@ -138,14 +140,6 @@ if __name__ == "__main__":
 
 #     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
 
-
-#     rebase = subparsers.add_parser("rebase", help="rebase -h")
-#     rebase.add_argument(
-#         "branch",
-#         nargs=1,
-#         type=str,
-#         help="The branch to simulate rebasing the checked-out commit onto",
-#     )
 
 #     cherrypick = subparsers.add_parser("cherry-pick", help="cherry-pick -h")
 #     cherrypick.add_argument(
