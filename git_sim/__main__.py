@@ -14,6 +14,7 @@ import git_sim.commit
 import git_sim.log
 import git_sim.reset
 import git_sim.restore
+import git_sim.revert
 import git_sim.stash
 import git_sim.status
 import git_sim.tag
@@ -30,6 +31,7 @@ app.command()(git_sim.stash.stash)
 app.command()(git_sim.branch.branch)
 app.command()(git_sim.tag.tag)
 app.command()(git_sim.reset.reset)
+app.command()(git_sim.revert.revert)
 
 
 @app.callback()
@@ -134,15 +136,6 @@ if __name__ == "__main__":
 
 #     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
 
-
-#     revert = subparsers.add_parser("revert", help="revert -h")
-#     revert.add_argument(
-#         "commit",
-#         nargs="?",
-#         help="The ref (branch/tag), or commit ID to simulate revert",
-#         type=str,
-#         default="HEAD",
-#     )
 
 #     merge = subparsers.add_parser("merge", help="merge -h")
 #     merge.add_argument(
