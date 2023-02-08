@@ -12,6 +12,7 @@ import git_sim.add
 import git_sim.branch
 import git_sim.commit
 import git_sim.log
+import git_sim.merge
 import git_sim.reset
 import git_sim.restore
 import git_sim.revert
@@ -32,6 +33,7 @@ app.command()(git_sim.branch.branch)
 app.command()(git_sim.tag.tag)
 app.command()(git_sim.reset.reset)
 app.command()(git_sim.revert.revert)
+app.command()(git_sim.merge.merge)
 
 
 @app.callback()
@@ -137,19 +139,6 @@ if __name__ == "__main__":
 #     subparsers = parser.add_subparsers(dest="subcommand", help="subcommand help")
 
 
-#     merge = subparsers.add_parser("merge", help="merge -h")
-#     merge.add_argument(
-#         "branch",
-#         nargs=1,
-#         type=str,
-#         help="The name of the branch to merge into the active checked-out branch",
-#     )
-#     merge.add_argument(
-#         "--no-ff",
-#         help="Simulate creation of a merge commit in all cases, even when the merge could instead be resolved as a fast-forward",
-#         action="store_true",
-#     )
-
 #     rebase = subparsers.add_parser("rebase", help="rebase -h")
 #     rebase.add_argument(
 #         "branch",
@@ -166,12 +155,12 @@ if __name__ == "__main__":
 #         help="The ref (branch/tag), or commit ID to simulate cherry-pick onto active branch",
 #     )
 
-    # cherrypick.add_argument(
-    #     "-e",
-    #     "--edit",
-    #     help="Specify a new commit message for the cherry-picked commit",
-    #     type=str,
-    # )
+# cherrypick.add_argument(
+#     "-e",
+#     "--edit",
+#     help="Specify a new commit message for the cherry-picked commit",
+#     type=str,
+# )
 
 
 #     if len(sys.argv) == 1:
@@ -203,15 +192,15 @@ if __name__ == "__main__":
 #     if args.low_quality:
 #         config.quality = "low_quality"
 
-    # if args.light_mode:
-    #     config.background_color = WHITE
+# if args.light_mode:
+#     config.background_color = WHITE
 
-    # t = datetime.datetime.fromtimestamp(time.time()).strftime("%m-%d-%y_%H-%M-%S")
-    # config.output_file = "git-sim-" + args.subcommand + "_" + t + ".mp4"
+# t = datetime.datetime.fromtimestamp(time.time()).strftime("%m-%d-%y_%H-%M-%S")
+# config.output_file = "git-sim-" + args.subcommand + "_" + t + ".mp4"
 
-    # scene_class = get_scene_for_command(args=args)
-    # scene = scene_class(args=args)
-    # scene.render()
+# scene_class = get_scene_for_command(args=args)
+# scene = scene_class(args=args)
+# scene.render()
 
 
 #     if not args.animate:
@@ -219,9 +208,9 @@ if __name__ == "__main__":
 #         success, image = video.read()
 #         if success:
 
-            # image_file_name = (
-            #     "git-sim-" + args.subcommand + "_" + t + "." + args.img_format
-            # )
+# image_file_name = (
+#     "git-sim-" + args.subcommand + "_" + t + "." + args.img_format
+# )
 
 #             image_file_path = os.path.join(
 #                 os.path.join(config.media_dir, "images"), image_file_name
