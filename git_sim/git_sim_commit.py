@@ -3,7 +3,7 @@ import sys
 import git
 import manim as m
 import typer
-from animations import handle_animations
+from git_sim.animations import handle_animations
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
 
