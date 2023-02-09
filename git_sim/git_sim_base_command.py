@@ -1,20 +1,21 @@
 import platform
 import sys
-from argparse import Namespace
 
 import git
 import manim as m
 import numpy
+from git.exc import GitCommandError, InvalidGitRepositoryError
+from git.repo import Repo
+
+from git_sim.settings import Settings
 
 
 class GitSimBaseCommand(m.MovingCameraScene):
-    def __init__(self, args: Namespace):
-
+    def __init__(self):
         super().__init__()
         self.init_repo()
 
-        self.args = args
-        self.fontColor = m.BLACK if self.args.light_mode else m.WHITE
+        self.fontColor = m.BLACK if Settings.light_mode else m.WHITE
         self.drawnCommits = {}
         self.drawnRefs = {}
         self.drawnCommitIds = {}
@@ -24,28 +25,25 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.trimmed = False
         self.prevRef = None
         self.topref = None
-        self.maxrefs = None
         self.i = 0
-        self.numCommits = 5
-        self.defaultNumCommits = 5
+        self.numCommits = Settings.commits
+        self.defaultNumCommits = Settings.commits
         self.selected_branches = []
-        self.hide_first_tag = False
         self.stop = False
         self.zone_title_offset = 2.6 if platform.system() == "Windows" else 2.6
-        self.allow_no_commits = False
 
-        self.logo = m.ImageMobject(self.args.logo)
+        self.logo = m.ImageMobject(Settings.logo)
         self.logo.width = 3
 
     def init_repo(self):
         try:
-            self.repo = git.Repo(search_parent_directories=True)
-        except git.exc.InvalidGitRepositoryError:
+            self.repo = Repo(search_parent_directories=True)
+        except InvalidGitRepositoryError:
             print("git-sim error: No Git repository found at current path.")
             sys.exit(1)
 
     def execute(self):
-        print("Simulating: git " + self.args.subcommand)
+        print("Simulating: git " + Settings.subcommand)
         self.show_intro()
         self.get_commits()
         self.fadeout()
@@ -53,7 +51,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
     def get_commits(self, start="HEAD"):
         if not self.numCommits:
-            if self.allow_no_commits:
+            if Settings.allow_no_commits:
                 self.numCommits = self.defaultNumCommits
                 self.commits = ["dark"] * 5
                 self.zone_title_offset = 2
@@ -78,7 +76,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 self.commits.append(self.create_dark_commit())
             self.numCommits = self.defaultNumCommits
 
-        except git.exc.GitCommandError:
+        except GitCommandError:
             self.numCommits -= 1
             self.get_commits(start=start)
 
@@ -110,11 +108,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 self.i = 0
 
     def show_intro(self):
-        if self.args.animate and self.args.show_intro:
+        if Settings.animate and Settings.show_intro:
             self.add(self.logo)
 
             initialCommitText = m.Text(
-                self.args.title,
+                Settings.title,
                 font="Monospace",
                 font_size=36,
                 color=self.fontColor,
@@ -136,14 +134,13 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.camera.frame.save_state()
 
     def show_outro(self):
-        if self.args.animate and self.args.show_outro:
-
+        if Settings.animate and Settings.show_outro:
             self.play(m.Restore(self.camera.frame))
 
             self.play(self.logo.animate.scale(4).set_x(0).set_y(0))
 
             outroTopText = m.Text(
-                self.args.outro_top_text,
+                Settings.outro_top_text,
                 font="Monospace",
                 font_size=36,
                 color=self.fontColor,
@@ -151,7 +148,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.play(m.AddTextLetterByLetter(outroTopText))
 
             outroBottomText = m.Text(
-                self.args.outro_bottom_text,
+                Settings.outro_bottom_text,
                 font="Monospace",
                 font_size=36,
                 color=self.fontColor,
@@ -161,9 +158,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.wait(3)
 
     def fadeout(self):
-        if self.args.animate:
+        if Settings.animate:
             self.wait(3)
-            self.play(m.FadeOut(self.toFadeOut), run_time=1 / self.args.speed)
+            self.play(m.FadeOut(self.toFadeOut), run_time=1 / Settings.speed)
         else:
             self.wait(0.1)
 
@@ -177,7 +174,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self, commit, prevCircle, shift=numpy.array([0.0, 0.0, 0.0]), dots=False
     ):
         if commit == "dark":
-            commitFill = m.WHITE if self.args.light_mode else m.BLACK
+            commitFill = m.WHITE if Settings.light_mode else m.BLACK
         elif len(commit.parents) <= 1:
             commitFill = m.RED
         else:
@@ -193,19 +190,19 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         if prevCircle:
             circle.next_to(
-                prevCircle, m.RIGHT if self.args.reverse else m.LEFT, buff=1.5
+                prevCircle, m.RIGHT if Settings.reverse else m.LEFT, buff=1.5
             )
 
         start = (
             prevCircle.get_center()
             if prevCircle
-            else (m.LEFT if self.args.reverse else m.RIGHT)
+            else (m.LEFT if Settings.reverse else m.RIGHT)
         )
         end = circle.get_center()
 
         if commit == "dark":
             arrow = m.Arrow(
-                start, end, color=m.WHITE if self.args.light_mode else m.BLACK
+                start, end, color=m.WHITE if Settings.light_mode else m.BLACK
             )
         elif commit.hexsha in self.drawnCommits:
             end = self.drawnCommits[commit.hexsha].get_center()
@@ -234,13 +231,13 @@ class GitSimBaseCommand(m.MovingCameraScene):
             color=self.fontColor,
         ).next_to(circle, m.DOWN)
 
-        if self.args.animate and commit != "dark" and not self.stop:
+        if Settings.animate and commit != "dark" and not self.stop:
             self.play(
                 self.camera.frame.animate.move_to(circle.get_center()),
                 m.Create(circle),
                 m.AddTextLetterByLetter(commitId),
                 m.AddTextLetterByLetter(message),
-                run_time=1 / self.args.speed,
+                run_time=1 / Settings.speed,
             )
         elif not self.stop:
             self.add(circle, commitId, message)
@@ -291,8 +288,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
             head = m.VGroup(headbox, headText)
 
-            if self.args.animate:
-                self.play(m.Create(head), run_time=1 / self.args.speed)
+            if Settings.animate:
+                self.play(m.Create(head), run_time=1 / Settings.speed)
             else:
                 self.add(head)
 
@@ -343,8 +340,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
                 self.prevRef = fullbranch
 
-                if self.args.animate:
-                    self.play(m.Create(fullbranch), run_time=1 / self.args.speed)
+                if Settings.animate:
+                    self.play(m.Create(fullbranch), run_time=1 / Settings.speed)
                 else:
                     self.add(fullbranch)
 
@@ -355,17 +352,16 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     self.topref = self.prevRef
 
                 x += 1
-                if x >= self.args.max_branches_per_commit:
+                if x >= Settings.max_branches_per_commit:
                     return
 
     def draw_tag(self, commit):
         x = 0
 
-        if self.hide_first_tag and self.i == 0:
+        if Settings.hide_first_tag and self.i == 0:
             return
 
         for tag in self.repo.tags:
-
             try:
                 if commit.hexsha == tag.commit.hexsha:
                     tagText = m.Text(
@@ -387,11 +383,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
                     self.prevRef = tagRec
 
-                    if self.args.animate:
+                    if Settings.animate:
                         self.play(
                             m.Create(tagRec),
                             m.Create(tagText),
-                            run_time=1 / self.args.speed,
+                            run_time=1 / Settings.speed,
                         )
                     else:
                         self.add(tagRec, tagText)
@@ -402,43 +398,43 @@ class GitSimBaseCommand(m.MovingCameraScene):
                         self.topref = self.prevRef
 
                     x += 1
-                    if x >= self.args.max_tags_per_commit:
+                    if x >= Settings.max_tags_per_commit:
                         return
             except ValueError:
                 pass
 
     def draw_arrow(self, prevCircle, arrow):
         if prevCircle:
-            if self.args.animate:
-                self.play(m.Create(arrow), run_time=1 / self.args.speed)
+            if Settings.animate:
+                self.play(m.Create(arrow), run_time=1 / Settings.speed)
             else:
                 self.add(arrow)
 
             self.toFadeOut.add(arrow)
 
     def recenter_frame(self):
-        if self.args.animate:
+        if Settings.animate:
             self.play(
                 self.camera.frame.animate.move_to(self.toFadeOut.get_center()),
-                run_time=1 / self.args.speed,
+                run_time=1 / Settings.speed,
             )
         else:
             self.camera.frame.move_to(self.toFadeOut.get_center())
 
     def scale_frame(self):
-        if self.args.animate:
+        if Settings.animate:
             self.play(
                 self.camera.frame.animate.scale_to_fit_width(
                     self.toFadeOut.get_width() * 1.1
                 ),
-                run_time=1 / self.args.speed,
+                run_time=1 / Settings.speed,
             )
             if self.toFadeOut.get_height() >= self.camera.frame.get_height():
                 self.play(
                     self.camera.frame.animate.scale_to_fit_height(
                         self.toFadeOut.get_height() * 1.25
                     ),
-                    run_time=1 / self.args.speed,
+                    run_time=1 / Settings.speed,
                 )
         else:
             self.camera.frame.scale_to_fit_width(self.toFadeOut.get_width() * 1.1)
@@ -448,7 +444,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 )
 
     def vsplit_frame(self):
-        if self.args.animate:
+        if Settings.animate:
             self.play(
                 self.camera.frame.animate.scale_to_fit_height(
                     self.camera.frame.get_height() * 2
@@ -458,7 +454,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.camera.frame.scale_to_fit_height(self.camera.frame.get_height() * 2)
 
         try:
-            if self.args.animate:
+            if Settings.animate:
                 self.play(
                     self.toFadeOut.animate.align_to(self.camera.frame, m.UP).shift(
                         m.DOWN * 0.75
@@ -570,7 +566,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             thirdColumnTitle,
         )
 
-        if self.args.animate:
+        if Settings.animate:
             self.play(
                 m.Create(horizontal),
                 m.Create(horizontal2),
@@ -663,19 +659,19 @@ class GitSimBaseCommand(m.MovingCameraScene):
             thirdColumnFilesDict[f] = text
 
         if len(firstColumnFiles):
-            if self.args.animate:
+            if Settings.animate:
                 self.play(*[m.AddTextLetterByLetter(d) for d in firstColumnFiles])
             else:
                 self.add(*[d for d in firstColumnFiles])
 
         if len(secondColumnFiles):
-            if self.args.animate:
+            if Settings.animate:
                 self.play(*[m.AddTextLetterByLetter(w) for w in secondColumnFiles])
             else:
                 self.add(*[w for w in secondColumnFiles])
 
         if len(thirdColumnFiles):
-            if self.args.animate:
+            if Settings.animate:
                 self.play(*[m.AddTextLetterByLetter(s) for s in thirdColumnFiles])
             else:
                 self.add(*[s for s in thirdColumnFiles])
@@ -707,7 +703,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                         0,
                     ),
                 )
-            if self.args.animate:
+            if Settings.animate:
                 self.play(m.Create(firstColumnArrowMap[filename]))
             else:
                 self.add(firstColumnArrowMap[filename])
@@ -726,7 +722,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     0,
                 ),
             )
-            if self.args.animate:
+            if Settings.animate:
                 self.play(m.Create(secondColumnArrowMap[filename]))
             else:
                 self.add(secondColumnArrowMap[filename])
@@ -742,7 +738,6 @@ class GitSimBaseCommand(m.MovingCameraScene):
         firstColumnArrowMap={},
         secondColumnArrowMap={},
     ):
-
         for x in self.repo.index.diff(None):
             if "git-sim_media" not in x.a_path:
                 secondColumnFileNames.add(x.a_path)
@@ -761,7 +756,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 firstColumnFileNames.add(z)
 
     def center_frame_on_commit(self, commit):
-        if self.args.animate:
+        if Settings.animate:
             self.play(
                 self.camera.frame.animate.move_to(
                     self.drawnCommits[commit.hexsha].get_center()
@@ -771,7 +766,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.camera.frame.move_to(self.drawnCommits[commit.hexsha].get_center())
 
     def reset_head_branch(self, hexsha, shift=numpy.array([0.0, 0.0, 0.0])):
-        if self.args.animate:
+        if Settings.animate:
             self.play(
                 self.drawnRefs["HEAD"].animate.move_to(
                     (
@@ -805,7 +800,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             )
 
     def translate_frame(self, shift):
-        if self.args.animate:
+        if Settings.animate:
             self.play(self.camera.frame.animate.shift(shift))
         else:
             self.camera.frame.shift(shift)
@@ -822,7 +817,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         circle.height = 1
         circle.next_to(
             self.drawnCommits[child.hexsha],
-            m.LEFT if self.args.reverse else m.RIGHT,
+            m.LEFT if Settings.reverse else m.RIGHT,
             buff=1.5,
         )
         circle.shift(shift)
@@ -849,13 +844,13 @@ class GitSimBaseCommand(m.MovingCameraScene):
         ).next_to(circle, m.DOWN)
         self.toFadeOut.add(message)
 
-        if self.args.animate:
+        if Settings.animate:
             self.play(
                 self.camera.frame.animate.move_to(circle.get_center()),
                 m.Create(circle),
                 m.AddTextLetterByLetter(commitId),
                 m.AddTextLetterByLetter(message),
-                run_time=1 / self.args.speed,
+                run_time=1 / Settings.speed,
             )
         else:
             self.camera.frame.move_to(circle.get_center())
@@ -865,8 +860,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.toFadeOut.add(circle)
 
         if draw_arrow:
-            if self.args.animate:
-                self.play(m.Create(arrow), run_time=1 / self.args.speed)
+            if Settings.animate:
+                self.play(m.Create(arrow), run_time=1 / Settings.speed)
             else:
                 self.add(arrow)
             self.toFadeOut.add(arrow)
@@ -906,8 +901,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         ref = m.VGroup(refbox, refText)
 
-        if self.args.animate:
-            self.play(m.Create(ref), run_time=1 / self.args.speed)
+        if Settings.animate:
+            self.play(m.Create(ref), run_time=1 / Settings.speed)
         else:
             self.add(ref)
 
@@ -920,8 +915,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
     def draw_dark_ref(self):
         refRec = m.Rectangle(
-            color=m.WHITE if self.args.light_mode else m.BLACK,
-            fill_color=m.WHITE if self.args.light_mode else m.BLACK,
+            color=m.WHITE if Settings.light_mode else m.BLACK,
+            fill_color=m.WHITE if Settings.light_mode else m.BLACK,
             height=0.4,
             width=1,
         )

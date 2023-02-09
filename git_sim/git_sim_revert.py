@@ -1,28 +1,30 @@
 import sys
-from argparse import Namespace
 
 import git
 import manim as m
 import numpy
+import typer
 
+from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
+from git_sim.settings import Settings
 
 
-class GitSimRevert(GitSimBaseCommand):
-    def __init__(self, args: Namespace):
-        super().__init__(args=args)
+class Revert(GitSimBaseCommand):
+    def __init__(self, commit: str):
+        super().__init__()
+        self.commit = commit
 
         try:
-            self.revert = git.repo.fun.rev_parse(self.repo, self.args.commit)
+            self.revert = git.repo.fun.rev_parse(self.repo, self.commit)
         except git.exc.BadName:
             print(
                 "git-sim error: '"
-                + self.args.commit
+                + self.commit
                 + "' is not a valid Git ref or identifier."
             )
             sys.exit(1)
 
-        self.maxrefs = 2
         self.defaultNumCommits = 4
         self.numCommits = 4
         self.hide_first_tag = True
@@ -34,7 +36,7 @@ class GitSimRevert(GitSimBaseCommand):
             pass
 
     def construct(self):
-        print("Simulating: git " + self.args.subcommand + " " + self.args.commit)
+        print(Settings.INFO_STRING + "revert " + self.commit)
 
         self.show_intro()
         self.get_commits()
@@ -92,7 +94,7 @@ class GitSimRevert(GitSimBaseCommand):
         circle.height = 1
         circle.next_to(
             self.drawnCommits[self.commits[0].hexsha],
-            m.LEFT if self.args.reverse else m.RIGHT,
+            m.LEFT if Settings.reverse else m.RIGHT,
             buff=1.5,
         )
 
@@ -119,13 +121,13 @@ class GitSimRevert(GitSimBaseCommand):
         ).next_to(circle, m.DOWN)
         self.toFadeOut.add(message)
 
-        if self.args.animate:
+        if Settings.animate:
             self.play(
                 self.camera.frame.animate.move_to(circle.get_center()),
                 m.Create(circle),
                 m.AddTextLetterByLetter(commitId),
                 m.AddTextLetterByLetter(message),
-                run_time=1 / self.args.speed,
+                run_time=1 / Settings.speed,
             )
         else:
             self.camera.frame.move_to(circle.get_center())
@@ -134,8 +136,8 @@ class GitSimRevert(GitSimBaseCommand):
         self.drawnCommits["abcdef"] = circle
         self.toFadeOut.add(circle)
 
-        if self.args.animate:
-            self.play(m.Create(arrow), run_time=1 / self.args.speed)
+        if Settings.animate:
+            self.play(m.Create(arrow), run_time=1 / Settings.speed)
         else:
             self.add(arrow)
 
@@ -151,3 +153,13 @@ class GitSimRevert(GitSimBaseCommand):
     ):
         for filename in self.revert.stats.files:
             secondColumnFileNames.add(filename)
+
+
+def revert(
+    commit: str = typer.Argument(
+        default="HEAD",
+        help="The ref (branch/tag), or commit ID to simulate revert",
+    )
+):
+    scene = Revert(commit=commit)
+    handle_animations(scene=scene)

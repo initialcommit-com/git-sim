@@ -1,29 +1,32 @@
 import sys
-from argparse import Namespace
 
 import git
 import manim as m
 import numpy
+import typer
 
+from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
+from git_sim.settings import Settings
 
 
-class GitSimRebase(GitSimBaseCommand):
-    def __init__(self, args: Namespace):
-        super().__init__(args=args)
+class Rebase(GitSimBaseCommand):
+    def __init__(self, branch: str):
+        super().__init__()
+        self.branch = branch
 
         try:
-            git.repo.fun.rev_parse(self.repo, self.args.branch[0])
+            git.repo.fun.rev_parse(self.repo, self.branch)
         except git.exc.BadName:
             print(
                 "git-sim error: '"
-                + self.args.branch[0]
+                + self.branch
                 + "' is not a valid Git ref or identifier."
             )
             sys.exit(1)
 
-        if self.args.branch[0] in [branch.name for branch in self.repo.heads]:
-            self.selected_branches.append(self.args.branch[0])
+        if self.branch in [branch.name for branch in self.repo.heads]:
+            self.selected_branches.append(self.branch)
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
@@ -31,26 +34,26 @@ class GitSimRebase(GitSimBaseCommand):
             pass
 
     def construct(self):
-        print("Simulating: git " + self.args.subcommand + " " + self.args.branch[0])
+        print(Settings.INFO_STRING + "rebase  " + self.branch)
 
-        if self.args.branch[0] in self.repo.git.branch(
+        if self.branch in self.repo.git.branch(
             "--contains", self.repo.active_branch.name
         ):
             print(
                 "git-sim error: Branch '"
                 + self.repo.active_branch.name
                 + "' is already included in the history of active branch '"
-                + self.args.branch[0]
+                + self.branch
                 + "'."
             )
             sys.exit(1)
 
         if self.repo.active_branch.name in self.repo.git.branch(
-            "--contains", self.args.branch[0]
+            "--contains", self.branch
         ):
             print(
                 "git-sim error: Branch '"
-                + self.args.branch[0]
+                + self.branch
                 + "' is already based on active branch '"
                 + self.repo.active_branch.name
                 + "'."
@@ -58,7 +61,7 @@ class GitSimRebase(GitSimBaseCommand):
             sys.exit(1)
 
         self.show_intro()
-        self.get_commits(start=self.args.branch[0])
+        self.get_commits(start=self.branch)
         self.parse_commits(self.commits[0])
         self.orig_commits = self.commits
         self.i = 0
@@ -66,7 +69,7 @@ class GitSimRebase(GitSimBaseCommand):
 
         reached_base = False
         for commit in self.commits:
-            if commit != "dark" and self.args.branch[0] in self.repo.git.branch(
+            if commit != "dark" and self.branch in self.repo.git.branch(
                 "--contains", commit
             ):
                 reached_base = True
@@ -79,7 +82,7 @@ class GitSimRebase(GitSimBaseCommand):
         to_rebase = []
         i = 0
         current = self.commits[i]
-        while self.args.branch[0] not in self.repo.git.branch("--contains", current):
+        while self.branch not in self.repo.git.branch("--contains", current):
             to_rebase.append(current)
             i += 1
             if i >= len(self.commits):
@@ -113,7 +116,7 @@ class GitSimRebase(GitSimBaseCommand):
         circle.height = 1
         circle.next_to(
             self.drawnCommits[child],
-            m.LEFT if self.args.reverse else m.RIGHT,
+            m.LEFT if Settings.reverse else m.RIGHT,
             buff=1.5,
         )
         circle.shift(shift)
@@ -152,13 +155,13 @@ class GitSimRebase(GitSimBaseCommand):
         ).next_to(circle, m.DOWN)
         self.toFadeOut.add(message)
 
-        if self.args.animate:
+        if Settings.animate:
             self.play(
                 self.camera.frame.animate.move_to(circle.get_center()),
                 m.Create(circle),
                 m.AddTextLetterByLetter(commitId),
                 m.AddTextLetterByLetter(message),
-                run_time=1 / self.args.speed,
+                run_time=1 / Settings.speed,
             )
         else:
             self.camera.frame.move_to(circle.get_center())
@@ -168,10 +171,20 @@ class GitSimRebase(GitSimBaseCommand):
         self.toFadeOut.add(circle)
 
         if draw_arrow:
-            if self.args.animate:
-                self.play(m.Create(arrow), run_time=1 / self.args.speed)
+            if Settings.animate:
+                self.play(m.Create(arrow), run_time=1 / Settings.speed)
             else:
                 self.add(arrow)
             self.toFadeOut.add(arrow)
 
         return sha
+
+
+def rebase(
+    branch: str = typer.Argument(
+        ...,
+        help="The branch to simulate rebasing the checked-out commit onto",
+    )
+):
+    scene = Rebase(branch=branch)
+    handle_animations(scene=scene)

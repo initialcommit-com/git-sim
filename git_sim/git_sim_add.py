@@ -1,35 +1,35 @@
 import sys
-from argparse import Namespace
 
 import git
 import manim as m
+import typer
 
+from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
+from git_sim.settings import Settings
 
 
-class GitSimAdd(GitSimBaseCommand):
-    def __init__(self, args: Namespace):
-        super().__init__(args=args)
-        self.maxrefs = 2
+class Add(GitSimBaseCommand):
+    def __init__(self, files: list[str]):
+        super().__init__()
         self.hide_first_tag = True
         self.allow_no_commits = True
+        self.files = files
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
         except TypeError:
             pass
 
-        for name in self.args.name:
-            if name not in [x.a_path for x in self.repo.index.diff(None)] + [
+        for file in self.files:
+            if file not in [x.a_path for x in self.repo.index.diff(None)] + [
                 z for z in self.repo.untracked_files
             ]:
-                print("git-sim error: No modified file with name: '" + name + "'")
+                print(f"git-sim error: No modified file with name: '{file}'")
                 sys.exit()
 
     def construct(self):
-        print(
-            "Simulating: git " + self.args.subcommand + " " + " ".join(self.args.name)
-        )
+        print(Settings.INFO_STRING + "add " + " ".join(self.files))
 
         self.show_intro()
         self.get_commits()
@@ -49,12 +49,11 @@ class GitSimAdd(GitSimBaseCommand):
         firstColumnArrowMap,
         secondColumnArrowMap,
     ):
-
         for x in self.repo.index.diff(None):
             if "git-sim_media" not in x.a_path:
                 secondColumnFileNames.add(x.a_path)
-                for name in self.args.name:
-                    if name == x.a_path:
+                for file in self.files:
+                    if file == x.a_path:
                         thirdColumnFileNames.add(x.a_path)
                         secondColumnArrowMap[x.a_path] = m.Arrow(
                             stroke_width=3, color=self.fontColor
@@ -71,9 +70,19 @@ class GitSimAdd(GitSimBaseCommand):
         for z in self.repo.untracked_files:
             if "git-sim_media" not in z:
                 firstColumnFileNames.add(z)
-                for name in self.args.name:
-                    if name == z:
+                for file in self.files:
+                    if file == z:
                         thirdColumnFileNames.add(z)
                         firstColumnArrowMap[z] = m.Arrow(
                             stroke_width=3, color=self.fontColor
                         )
+
+
+def add(
+    files: list[str] = typer.Argument(
+        default=None,
+        help="The names of one or more files to add to Git's staging area",
+    )
+):
+    scene = Add(files=files)
+    handle_animations(scene=scene)

@@ -1,30 +1,39 @@
 import sys
-from argparse import Namespace
+from enum import Enum
 
 import git
 import manim as m
+import typer
 
+from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
+from git_sim.settings import Settings
 
 
-class GitSimReset(GitSimBaseCommand):
-    def __init__(self, args: Namespace):
-        super().__init__(args=args)
+class ResetMode(Enum):
+    DEFAULT = "mixed"
+    SOFT = "soft"
+    MIXED = "mixed"
+    HARD = "hard"
+
+
+class Reset(GitSimBaseCommand):
+    def __init__(
+        self, commit: str, mode: ResetMode, soft: bool, mixed: bool, hard: bool
+    ):
+        super().__init__()
+        self.commit = commit
+        self.mode = mode
 
         try:
-            self.resetTo = git.repo.fun.rev_parse(self.repo, self.args.commit)
+            self.resetTo = git.repo.fun.rev_parse(self.repo, self.commit)
         except git.exc.BadName:
             print(
-                "git-sim error: '"
-                + self.args.commit
-                + "' is not a valid Git ref or identifier."
+                f"git-sim error: '{self.commit}' is not a valid Git ref or identifier."
             )
             sys.exit(1)
 
-        self.commitsSinceResetTo = list(
-            self.repo.iter_commits(self.args.commit + "...HEAD")
-        )
-        self.maxrefs = 2
+        self.commitsSinceResetTo = list(self.repo.iter_commits(self.commit + "...HEAD"))
         self.hide_first_tag = True
 
         try:
@@ -32,20 +41,16 @@ class GitSimReset(GitSimBaseCommand):
         except TypeError:
             pass
 
-        if self.args.hard:
-            self.args.mode = "hard"
-        if self.args.mixed:
-            self.args.mode = "mixed"
-        if self.args.soft:
-            self.args.mode = "soft"
+        if hard:
+            self.mode = ResetMode.HARD
+        if mixed:
+            self.mode = ResetMode.MIXED
+        if soft:
+            self.mode = ResetMode.SOFT
 
     def construct(self):
         print(
-            "Simulating: git "
-            + self.args.subcommand
-            + (" --" + self.args.mode if self.args.mode != "default" else "")
-            + " "
-            + self.args.commit
+            f"{Settings.INFO_STRING} reset {' --' + self.mode.value if self.mode != ResetMode.DEFAULT else ''} {self.commit}",
         )
 
         self.show_intro()
@@ -114,27 +119,53 @@ class GitSimReset(GitSimBaseCommand):
             if commit.hexsha == self.resetTo.hexsha:
                 break
             for filename in commit.stats.files:
-                if self.args.mode == "soft":
+                if self.mode == ResetMode.SOFT:
                     thirdColumnFileNames.add(filename)
-                elif self.args.mode == "mixed" or self.args.mode == "default":
+                elif self.mode in (ResetMode.MIXED, ResetMode.DEFAULT):
                     secondColumnFileNames.add(filename)
-                elif self.args.mode == "hard":
+                elif self.mode == ResetMode.HARD:
                     firstColumnFileNames.add(filename)
 
         for x in self.repo.index.diff(None):
             if "git-sim_media" not in x.a_path:
-                if self.args.mode == "soft":
+                if self.mode == ResetMode.SOFT:
                     secondColumnFileNames.add(x.a_path)
-                elif self.args.mode == "mixed" or self.args.mode == "default":
+                elif self.mode in (ResetMode.MIXED, ResetMode.DEFAULT):
                     secondColumnFileNames.add(x.a_path)
-                elif self.args.mode == "hard":
+                elif self.mode == ResetMode.HARD:
                     firstColumnFileNames.add(x.a_path)
 
         for y in self.repo.index.diff("HEAD"):
             if "git-sim_media" not in y.a_path:
-                if self.args.mode == "soft":
+                if self.mode == ResetMode.SOFT:
                     thirdColumnFileNames.add(y.a_path)
-                elif self.args.mode == "mixed" or self.args.mode == "default":
+                elif self.mode in (ResetMode.MIXED, ResetMode.DEFAULT):
                     secondColumnFileNames.add(y.a_path)
-                elif self.args.mode == "hard":
+                elif self.mode == ResetMode.HARD:
                     firstColumnFileNames.add(y.a_path)
+
+
+def reset(
+    commit: str = typer.Argument(
+        default="HEAD",
+        help="The ref (branch/tag), or commit ID to simulate reset to",
+    ),
+    mode: ResetMode = typer.Option(
+        default=ResetMode.MIXED.value,
+        help="Either mixed, soft, or hard",
+    ),
+    soft: bool = typer.Option(
+        default=False,
+        help="Simulate a soft reset, shortcut for --mode=soft",
+    ),
+    mixed: bool = typer.Option(
+        default=False,
+        help="Simulate a mixed reset, shortcut for --mode=mixed",
+    ),
+    hard: bool = typer.Option(
+        default=False,
+        help="Simulate a soft reset, shortcut for --mode=hard",
+    ),
+):
+    scene = Reset(commit=commit, mode=mode, soft=soft, mixed=mixed, hard=hard)
+    handle_animations(scene=scene)

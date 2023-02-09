@@ -23,6 +23,7 @@ setuptools.setup(
         "gitpython",
         "manim",
         "opencv-python-headless",
+        "typer",
     ],
     keywords="git sim simulation simulate git-simulate git-simulation git-sim manim animation gitanimation image video dryrun dry-run",
     project_urls={
@@ -31,7 +32,7 @@ setuptools.setup(
     },
     entry_points={
         "console_scripts": [
-            "git-sim=git_sim.__main__:main",
+            "git-sim=git_sim.__main__:app",
         ],
     },
     include_package_data=True,

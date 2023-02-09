@@ -1,18 +1,21 @@
 import sys
-from argparse import Namespace
 
 import git
 import manim as m
+import typer
+from animations import handle_animations
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
 
 
-class GitSimCommit(GitSimBaseCommand):
-    def __init__(self, args: Namespace):
-        super().__init__(args=args)
-        self.maxrefs = 2
-        self.defaultNumCommits = 4 if not self.args.amend else 5
-        self.numCommits = 4 if not self.args.amend else 5
+class Commit(GitSimBaseCommand):
+    def __init__(self, message: str, amend: bool):
+        super().__init__()
+        self.message = message
+        self.amend = amend
+
+        self.defaultNumCommits = 4 if not self.amend else 5
+        self.numCommits = 4 if not self.amend else 5
         self.hide_first_tag = True
 
         try:
@@ -20,7 +23,7 @@ class GitSimCommit(GitSimBaseCommand):
         except TypeError:
             pass
 
-        if self.args.amend and self.args.message == "New commit":
+        if self.amend and self.message == "New commit":
             print(
                 "git-sim error: The --amend flag must be used with the -m flag to specify the amended commit message."
             )
@@ -28,31 +31,26 @@ class GitSimCommit(GitSimBaseCommand):
 
     def construct(self):
         print(
-            "Simulating: git "
-            + self.args.subcommand
-            + (" --amend" if self.args.amend else "")
-            + ' -m "'
-            + self.args.message
-            + '"'
+            f"Simulating: git commit {' --amend' if self.amend else ''} -m '{self.message}'"
         )
 
         self.show_intro()
         self.get_commits()
 
-        if self.args.amend:
+        if self.amend:
             tree = self.repo.tree()
             amended = git.Commit.create_from_tree(
                 self.repo,
                 tree,
-                self.args.message,
+                self.message,
             )
             self.commits[0] = amended
 
         self.parse_commits(self.commits[self.i])
         self.center_frame_on_commit(self.commits[0])
 
-        if not self.args.amend:
-            self.setup_and_draw_parent(self.commits[0], self.args.message)
+        if not self.amend:
+            self.setup_and_draw_parent(self.commits[0], self.message)
         else:
             self.draw_ref(self.commits[0], self.drawnCommitIds[amended.hexsha])
             self.draw_ref(
@@ -65,7 +63,7 @@ class GitSimCommit(GitSimBaseCommand):
         self.recenter_frame()
         self.scale_frame()
 
-        if not self.args.amend:
+        if not self.amend:
             self.reset_head_branch("abcdef")
             self.vsplit_frame()
             self.setup_and_draw_zones(
@@ -85,7 +83,6 @@ class GitSimCommit(GitSimBaseCommand):
         firstColumnArrowMap,
         secondColumnArrowMap,
     ):
-
         for x in self.repo.index.diff(None):
             if "git-sim_media" not in x.a_path:
                 firstColumnFileNames.add(x.a_path)
@@ -97,3 +94,17 @@ class GitSimCommit(GitSimBaseCommand):
                 secondColumnArrowMap[y.a_path] = m.Arrow(
                     stroke_width=3, color=self.fontColor
                 )
+
+
+def commit(
+    message: str = typer.Option(
+        default="New commit",
+        help="The commit message of the new commit",
+    ),
+    amend: bool = typer.Option(
+        default=False,
+        help="Amend the last commit message, must be used with the --message flag",
+    ),
+):
+    scene = Commit(message=message, amend=amend)
+    handle_animations(scene=scene)
