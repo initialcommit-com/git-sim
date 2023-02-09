@@ -10,7 +10,6 @@ from git_sim.git_sim_base_command import GitSimBaseCommand
 class GitSimCommit(GitSimBaseCommand):
     def __init__(self, args: Namespace):
         super().__init__(args=args)
-        self.maxrefs = 2
         self.defaultNumCommits = 4 if not self.args.amend else 5
         self.numCommits = 4 if not self.args.amend else 5
         self.hide_first_tag = True

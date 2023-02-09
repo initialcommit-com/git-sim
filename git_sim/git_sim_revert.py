@@ -22,7 +22,6 @@ class GitSimRevert(GitSimBaseCommand):
             )
             sys.exit(1)
 
-        self.maxrefs = 2
         self.defaultNumCommits = 4
         self.numCommits = 4
         self.hide_first_tag = True

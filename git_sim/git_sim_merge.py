@@ -23,7 +23,6 @@ class GitSimMerge(GitSimBaseCommand):
             sys.exit(1)
 
         self.ff = False
-        self.maxrefs = 2
         if self.args.branch[0] in [branch.name for branch in self.repo.heads]:
             self.selected_branches.append(self.args.branch[0])
 

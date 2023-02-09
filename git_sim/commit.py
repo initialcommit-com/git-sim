@@ -14,7 +14,6 @@ class Commit(GitSimBaseCommand):
         self.message = message
         self.amend = amend
 
-        self.maxrefs = 2
         self.defaultNumCommits = 4 if not self.amend else 5
         self.numCommits = 4 if not self.amend else 5
         self.hide_first_tag = True

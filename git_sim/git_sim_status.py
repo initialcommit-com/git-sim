@@ -6,7 +6,6 @@ from git_sim.git_sim_base_command import GitSimBaseCommand
 class GitSimStatus(GitSimBaseCommand):
     def __init__(self, args: Namespace):
         super().__init__(args=args)
-        self.maxrefs = 2
         self.hide_first_tag = True
         self.allow_no_commits = True
 

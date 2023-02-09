@@ -11,7 +11,6 @@ from git_sim.settings import Settings
 class Restore(GitSimBaseCommand):
     def __init__(self, files: list[str]):
         super().__init__()
-        self.maxrefs = 2
         self.hide_first_tag = True
         self.files = files
 

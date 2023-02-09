@@ -34,7 +34,6 @@ class Reset(GitSimBaseCommand):
             sys.exit(1)
 
         self.commitsSinceResetTo = list(self.repo.iter_commits(self.commit + "...HEAD"))
-        self.maxrefs = 2
         self.hide_first_tag = True
 
         try:

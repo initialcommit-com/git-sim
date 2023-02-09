@@ -12,7 +12,6 @@ from git_sim.settings import Settings
 class Add(GitSimBaseCommand):
     def __init__(self, files: list[str]):
         super().__init__()
-        self.maxrefs = 2
         self.hide_first_tag = True
         self.allow_no_commits = True
         self.files = files
