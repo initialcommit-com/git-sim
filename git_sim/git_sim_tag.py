@@ -1,16 +1,18 @@
-from argparse import Namespace
-
 import manim as m
+import typer
 
+from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
+from git_sim.settings import Settings
 
 
-class GitSimTag(GitSimBaseCommand):
-    def __init__(self, args: Namespace):
-        super().__init__(args=args)
+class Tag(GitSimBaseCommand):
+    def __init__(self, name: str):
+        super().__init__()
+        self.name = name
 
     def construct(self):
-        print("Simulating: git " + self.args.subcommand + " " + self.args.name)
+        print(f"{Settings.INFO_STRING} tag {self.name}")
 
         self.show_intro()
         self.get_commits()
@@ -19,7 +21,7 @@ class GitSimTag(GitSimBaseCommand):
         self.scale_frame()
 
         tagText = m.Text(
-            self.args.name,
+            self.name,
             font="Monospace",
             font_size=20,
             color=self.fontColor,
@@ -37,8 +39,8 @@ class GitSimTag(GitSimBaseCommand):
 
         fulltag = m.VGroup(tagRec, tagText)
 
-        if self.args.animate:
-            self.play(m.Create(fulltag), run_time=1 / self.args.speed)
+        if Settings.animate:
+            self.play(m.Create(fulltag), run_time=1 / Settings.speed)
         else:
             self.add(fulltag)
 
@@ -46,3 +48,13 @@ class GitSimTag(GitSimBaseCommand):
 
         self.fadeout()
         self.show_outro()
+
+
+def tag(
+    name: str = typer.Argument(
+        ...,
+        help="The name of the new tag",
+    )
+):
+    scene = Tag(name=name)
+    handle_animations(scene=scene)
