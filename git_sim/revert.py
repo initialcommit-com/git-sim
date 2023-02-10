@@ -7,7 +7,7 @@ import typer
 
 from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
-from git_sim.settings import Settings
+from git_sim.settings import settings
 
 
 class Revert(GitSimBaseCommand):
@@ -36,7 +36,7 @@ class Revert(GitSimBaseCommand):
             pass
 
     def construct(self):
-        print(f"{Settings.INFO_STRING} {type(self).__name__.lower()} {self.commit}")
+        print(f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.commit}")
 
         self.show_intro()
         self.get_commits()
@@ -94,7 +94,7 @@ class Revert(GitSimBaseCommand):
         circle.height = 1
         circle.next_to(
             self.drawnCommits[self.commits[0].hexsha],
-            m.LEFT if Settings.reverse else m.RIGHT,
+            m.LEFT if settings.reverse else m.RIGHT,
             buff=1.5,
         )
 
@@ -121,13 +121,13 @@ class Revert(GitSimBaseCommand):
         ).next_to(circle, m.DOWN)
         self.toFadeOut.add(message)
 
-        if Settings.animate:
+        if settings.animate:
             self.play(
                 self.camera.frame.animate.move_to(circle.get_center()),
                 m.Create(circle),
                 m.AddTextLetterByLetter(commitId),
                 m.AddTextLetterByLetter(message),
-                run_time=1 / Settings.speed,
+                run_time=1 / settings.speed,
             )
         else:
             self.camera.frame.move_to(circle.get_center())
@@ -136,8 +136,8 @@ class Revert(GitSimBaseCommand):
         self.drawnCommits["abcdef"] = circle
         self.toFadeOut.add(circle)
 
-        if Settings.animate:
-            self.play(m.Create(arrow), run_time=1 / Settings.speed)
+        if settings.animate:
+            self.play(m.Create(arrow), run_time=1 / settings.speed)
         else:
             self.add(arrow)
 

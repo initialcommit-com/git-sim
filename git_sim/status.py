@@ -1,6 +1,6 @@
 from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
-from git_sim.settings import Settings
+from git_sim.settings import settings
 
 
 class Status(GitSimBaseCommand):
@@ -12,7 +12,7 @@ class Status(GitSimBaseCommand):
             pass
 
     def construct(self):
-        print(f"{Settings.INFO_STRING} {type(self).__name__.lower()}")
+        print(f"{settings.INFO_STRING } {type(self).__name__.lower()}")
         self.show_intro()
         self.get_commits()
         self.parse_commits(self.commits[0])
@@ -25,8 +25,8 @@ class Status(GitSimBaseCommand):
 
 
 def status():
-    Settings.hide_first_tag = True
-    Settings.allow_no_commits = True
+    settings.hide_first_tag = True
+    settings.allow_no_commits = True
 
     scene = Status()
     handle_animations(scene=scene)

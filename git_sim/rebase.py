@@ -7,7 +7,7 @@ import typer
 
 from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
-from git_sim.settings import Settings
+from git_sim.settings import settings
 
 
 class Rebase(GitSimBaseCommand):
@@ -34,7 +34,7 @@ class Rebase(GitSimBaseCommand):
             pass
 
     def construct(self):
-        print(f"{Settings.INFO_STRING} {type(self).__name__.lower()} {self.branch}")
+        print(f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.branch}")
 
         if self.branch in self.repo.git.branch(
             "--contains", self.repo.active_branch.name
@@ -116,7 +116,7 @@ class Rebase(GitSimBaseCommand):
         circle.height = 1
         circle.next_to(
             self.drawnCommits[child],
-            m.LEFT if Settings.reverse else m.RIGHT,
+            m.LEFT if settings.reverse else m.RIGHT,
             buff=1.5,
         )
         circle.shift(shift)
@@ -155,13 +155,13 @@ class Rebase(GitSimBaseCommand):
         ).next_to(circle, m.DOWN)
         self.toFadeOut.add(message)
 
-        if Settings.animate:
+        if settings.animate:
             self.play(
                 self.camera.frame.animate.move_to(circle.get_center()),
                 m.Create(circle),
                 m.AddTextLetterByLetter(commitId),
                 m.AddTextLetterByLetter(message),
-                run_time=1 / Settings.speed,
+                run_time=1 / settings.speed,
             )
         else:
             self.camera.frame.move_to(circle.get_center())
@@ -171,8 +171,8 @@ class Rebase(GitSimBaseCommand):
         self.toFadeOut.add(circle)
 
         if draw_arrow:
-            if Settings.animate:
-                self.play(m.Create(arrow), run_time=1 / Settings.speed)
+            if settings.animate:
+                self.play(m.Create(arrow), run_time=1 / settings.speed)
             else:
                 self.add(arrow)
             self.toFadeOut.add(arrow)
