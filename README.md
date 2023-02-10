@@ -32,6 +32,7 @@ Example: `$ git-sim merge <branch>`
 - Animation only: Speed up or slow down animation speed as desired
 
 ## Quickstart
+Optional: If you prefer using Docker, skip steps (1) and (2) here and jump to the [Docker installation](#docker-installation) section below, then come back here to step (3).
 
 1) **Install Manim and its dependencies for your OS / environment:**
     - [Install Manim on Windows](https://docs.manim.community/en/stable/installation/windows.html)
@@ -375,6 +376,33 @@ See **Quickstart** section for details on installing manim and other dependencie
 ```console
 $ pip3 install git-sim
 ```
+
+## Docker installation
+
+1) Clone down the git-sim repository:
+
+```console
+$ git clone https://github.com/initialcommit-com/git-sim.git
+```
+
+2) Browse into the `git-sim` folder and build the Docker image:
+
+```console
+$ docker build -t git-sim .
+```
+
+3) Run git-sim commands as follows:
+    - Windows: `docker run --rm -v %cd%:/usr/src/git-sim git-sim [global options] <subcommand> [subcommand options]`
+    - MacOS / Linux: `docker run --rm -v $(pwd):/usr/src/git-sim git-sim [global options] <subcommand> [subcommand options]`
+    
+Optional: On MacOS / Linux / or GitBash in Windows, create an alias for the long docker command so your can run it as a normal `git-sim` command. To do so add the following to your `.bashrc` or equivalent (then restart your terminal):
+
+<h5 a><strong><code>.bashrc</code></strong></h5>
+```bash
+git-sim() { docker run --rm -v $(pwd):/usr/src/git-sim git-sim "$@" }
+```
+
+This will enable you to run git-sim subcommands as [described above](#commands).
 
 ## Learn More
 Learn more about this tool on the [git-sim project page](https://initialcommit.com/tools/git-sim).
