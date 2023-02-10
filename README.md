@@ -32,7 +32,7 @@ Example: `$ git-sim merge <branch>`
 - Animation only: Speed up or slow down animation speed as desired
 
 ## Quickstart
-&nbsp;&nbsp;&nbsp;&nbsp;\*Optional: If you prefer using Docker, skip steps (1) and (2) here and jump to the [Docker installation](#docker-installation) section below, then come back here to step (3).\*
+<p style="margin: 0 20px">Note: If you prefer using Docker, skip steps (1) and (2) here and jump to the [Docker installation](#docker-installation) section below, then come back here to step (3).</p>
 
 1) **Install Manim and its dependencies for your OS / environment:**
     - [Install Manim on Windows](https://docs.manim.community/en/stable/installation/windows.html)
