@@ -125,7 +125,7 @@ def main(
 
 app.command()(git_sim.add.add)
 app.command()(git_sim.branch.branch)
-app.command()(git_sim.cherrypick.cherrypick)
+app.command()(git_sim.cherrypick.cherry_pick)
 app.command()(git_sim.commit.commit)
 app.command()(git_sim.log.log)
 app.command()(git_sim.merge.merge)
