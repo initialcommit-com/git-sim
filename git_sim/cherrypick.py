@@ -35,7 +35,7 @@ class CherryPick(GitSimBaseCommand):
 
     def construct(self):
         print(
-            f"{settings.INFO_STRING} {type(self).__name__.lower()} {self.commit}"
+            f"{settings.INFO_STRING} cherry-pick {self.commit}"
             + ((' -e "' + self.edit + '"') if self.edit else "")
         )
 
