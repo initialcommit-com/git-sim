@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     video_format: VideoFormat = VideoFormat.mp4
 
     class Config:
-        env_prefix = "git_sim"
+        env_prefix = "git_sim_"
 
 
 settings = Settings()
