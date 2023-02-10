@@ -8,19 +8,19 @@ import time
 
 import typer
 
-import git_sim.git_sim_add
-import git_sim.git_sim_branch
-import git_sim.git_sim_cherrypick
-import git_sim.git_sim_commit
-import git_sim.git_sim_log
-import git_sim.git_sim_merge
-import git_sim.git_sim_rebase
-import git_sim.git_sim_reset
-import git_sim.git_sim_restore
-import git_sim.git_sim_revert
-import git_sim.git_sim_stash
-import git_sim.git_sim_status
-import git_sim.git_sim_tag
+import git_sim.add
+import git_sim.branch
+import git_sim.cherrypick
+import git_sim.commit
+import git_sim.log
+import git_sim.merge
+import git_sim.rebase
+import git_sim.reset
+import git_sim.restore
+import git_sim.revert
+import git_sim.stash
+import git_sim.status
+import git_sim.tag
 from git_sim.settings import ImgFormat, Settings, VideoFormat
 
 app = typer.Typer()
@@ -123,19 +123,19 @@ def main(
     Settings.video_format = video_format
 
 
-app.command()(git_sim.git_sim_add.add)
-app.command()(git_sim.git_sim_branch.branch)
-app.command()(git_sim.git_sim_cherrypick.cherrypick)
-app.command()(git_sim.git_sim_commit.commit)
-app.command()(git_sim.git_sim_log.log)
-app.command()(git_sim.git_sim_merge.merge)
-app.command()(git_sim.git_sim_rebase.rebase)
-app.command()(git_sim.git_sim_reset.reset)
-app.command()(git_sim.git_sim_restore.restore)
-app.command()(git_sim.git_sim_revert.revert)
-app.command()(git_sim.git_sim_stash.stash)
-app.command()(git_sim.git_sim_status.status)
-app.command()(git_sim.git_sim_tag.tag)
+app.command()(git_sim.add.add)
+app.command()(git_sim.branch.branch)
+app.command()(git_sim.cherrypick.cherrypick)
+app.command()(git_sim.commit.commit)
+app.command()(git_sim.log.log)
+app.command()(git_sim.merge.merge)
+app.command()(git_sim.rebase.rebase)
+app.command()(git_sim.reset.reset)
+app.command()(git_sim.restore.restore)
+app.command()(git_sim.revert.revert)
+app.command()(git_sim.stash.stash)
+app.command()(git_sim.status.status)
+app.command()(git_sim.tag.tag)
 
 
 if __name__ == "__main__":
