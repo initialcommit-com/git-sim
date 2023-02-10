@@ -70,7 +70,7 @@ class CherryPick(GitSimBaseCommand):
         self.show_outro()
 
 
-def cherrypick(
+def cherry_pick(
     commit: str = typer.Argument(
         ...,
         help="The ref (branch/tag), or commit ID to simulate cherry-pick onto active branch",
