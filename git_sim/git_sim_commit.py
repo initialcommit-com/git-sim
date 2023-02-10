@@ -4,6 +4,7 @@ import git
 import manim as m
 import typer
 from git_sim.animations import handle_animations
+from git_sim.settings import Settings
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
 
@@ -31,7 +32,10 @@ class Commit(GitSimBaseCommand):
 
     def construct(self):
         print(
-            f"Simulating: git commit {' --amend' if self.amend else ''} -m '{self.message}'"
+            f"{Settings.INFO_STRING} {type(self).__name__.lower()} {'--amend ' if self.amend else ''}"
+            + '-m "'
+            + self.message
+            + '"'
         )
 
         self.show_intro()

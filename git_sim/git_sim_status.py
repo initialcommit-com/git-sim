@@ -12,6 +12,7 @@ class Status(GitSimBaseCommand):
             pass
 
     def construct(self):
+        print(f"{Settings.INFO_STRING} {type(self).__name__.lower()}")
         self.show_intro()
         self.get_commits()
         self.parse_commits(self.commits[0])

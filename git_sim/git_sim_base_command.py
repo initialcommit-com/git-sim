@@ -42,8 +42,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
             print("git-sim error: No Git repository found at current path.")
             sys.exit(1)
 
-    def execute(self):
-        print("Simulating: git " + Settings.subcommand)
+    def construct(self):
+        print(f"{Settings.INFO_STRING} {type(self).__name__.lower()}")
         self.show_intro()
         self.get_commits()
         self.fadeout()

@@ -32,7 +32,7 @@ class Settings:
     allow_no_commits = False
     low_quality = False
     auto_open = True
-    INFO_STRING = "Simulating: git "
+    INFO_STRING = "Simulating: git"
     # os.path.join(str(pathlib.Path(__file__).parent.resolve()), "logo.png")
     logo = pathlib.Path(__file__).parent.resolve() / "logo.png"
     media_dir = pathlib.Path().cwd()

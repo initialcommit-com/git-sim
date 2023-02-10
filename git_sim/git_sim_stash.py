@@ -5,6 +5,7 @@ import typer
 
 from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
+from git_sim.settings import Settings
 
 
 class Stash(GitSimBaseCommand):
@@ -12,6 +13,7 @@ class Stash(GitSimBaseCommand):
         super().__init__()
         self.hide_first_tag = True
         self.files = files
+        self.no_files = True if not self.files else False
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
@@ -31,7 +33,9 @@ class Stash(GitSimBaseCommand):
             ]
 
     def construct(self):
-        print("Simulating: git stash " + " ".join(self.files))
+        print(
+            f"{Settings.INFO_STRING} {type(self).__name__.lower()} {' '.join(self.files) if not self.no_files else ''}"
+        )
 
         self.show_intro()
         self.get_commits()

@@ -34,10 +34,10 @@ class CherryPick(GitSimBaseCommand):
             pass
 
     def construct(self):
-        substring = ""
-        if self.edit:
-            substring = f' -e "{self.edit}"'
-        print(f"{Settings.INFO_STRING} cherrypick {self.commit}{substring}")
+        print(
+            f"{Settings.INFO_STRING} {type(self).__name__.lower()} {self.commit}"
+            + ((' -e "' + self.edit + '"') if self.edit else "")
+        )
 
         if self.repo.active_branch.name in self.repo.git.branch(
             "--contains", self.commit

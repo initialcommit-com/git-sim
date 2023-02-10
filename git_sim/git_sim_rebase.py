@@ -34,7 +34,7 @@ class Rebase(GitSimBaseCommand):
             pass
 
     def construct(self):
-        print(Settings.INFO_STRING + "rebase  " + self.branch)
+        print(f"{Settings.INFO_STRING} {type(self).__name__.lower()} {self.branch}")
 
         if self.branch in self.repo.git.branch(
             "--contains", self.repo.active_branch.name

@@ -12,7 +12,7 @@ class Branch(GitSimBaseCommand):
         self.name = name
 
     def construct(self):
-        print(f"{Settings.INFO_STRING} branch {self.name}")
+        print(f"{Settings.INFO_STRING} {type(self).__name__.lower()} {self.name}")
 
         self.show_intro()
         self.get_commits()

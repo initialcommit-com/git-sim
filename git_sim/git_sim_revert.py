@@ -36,7 +36,7 @@ class Revert(GitSimBaseCommand):
             pass
 
     def construct(self):
-        print(Settings.INFO_STRING + "revert " + self.commit)
+        print(f"{Settings.INFO_STRING} {type(self).__name__.lower()} {self.commit}")
 
         self.show_intro()
         self.get_commits()

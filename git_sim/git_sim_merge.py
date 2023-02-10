@@ -37,7 +37,9 @@ class Merge(GitSimBaseCommand):
             pass
 
     def construct(self):
-        print(Settings.INFO_STRING + "merge " + self.branch)
+        print(
+            f"{Settings.INFO_STRING} {type(self).__name__.lower()} {self.branch} {'--no-ff' if self.no_ff else ''}"
+        )
 
         if self.repo.active_branch.name in self.repo.git.branch(
             "--contains", self.branch
