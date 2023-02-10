@@ -7,7 +7,7 @@ import typer
 
 from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
-from git_sim.settings import Settings
+from git_sim.settings import settings
 
 
 class ResetMode(Enum):
@@ -50,7 +50,7 @@ class Reset(GitSimBaseCommand):
 
     def construct(self):
         print(
-            f"{Settings.INFO_STRING} {type(self).__name__.lower()}{' --' + self.mode.value if self.mode != ResetMode.DEFAULT else ''} {self.commit}",
+            f"{settings.INFO_STRING } {type(self).__name__.lower()}{' --' + self.mode.value if self.mode != ResetMode.DEFAULT else ''} {self.commit}",
         )
 
         self.show_intro()

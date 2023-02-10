@@ -3,7 +3,7 @@ import typer
 
 from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
-from git_sim.settings import Settings
+from git_sim.settings import settings
 
 
 class Tag(GitSimBaseCommand):
@@ -12,7 +12,7 @@ class Tag(GitSimBaseCommand):
         self.name = name
 
     def construct(self):
-        print(f"{Settings.INFO_STRING} {type(self).__name__.lower()} {self.name}")
+        print(f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.name}")
 
         self.show_intro()
         self.get_commits()
@@ -39,8 +39,8 @@ class Tag(GitSimBaseCommand):
 
         fulltag = m.VGroup(tagRec, tagText)
 
-        if Settings.animate:
-            self.play(m.Create(fulltag), run_time=1 / Settings.speed)
+        if settings.animate:
+            self.play(m.Create(fulltag), run_time=1 / settings.speed)
         else:
             self.add(fulltag)
 

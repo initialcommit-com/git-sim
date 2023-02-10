@@ -8,7 +8,7 @@ import typer
 
 from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
-from git_sim.settings import Settings
+from git_sim.settings import settings
 
 
 class Merge(GitSimBaseCommand):
@@ -38,7 +38,7 @@ class Merge(GitSimBaseCommand):
 
     def construct(self):
         print(
-            f"{Settings.INFO_STRING} {type(self).__name__.lower()} {self.branch} {'--no-ff' if self.no_ff else ''}"
+            f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.branch} {'--no-ff' if self.no_ff else ''}"
         )
 
         if self.repo.active_branch.name in self.repo.git.branch(

@@ -1,6 +1,7 @@
 import pathlib
-from dataclasses import dataclass
 from enum import Enum
+
+from pydantic import BaseSettings
 
 
 class VideoFormat(str, Enum):
@@ -13,29 +14,32 @@ class ImgFormat(str, Enum):
     png = "png"
 
 
-@dataclass
-class Settings:
-    commits = 5
-    subcommand: str
-    show_intro = False
-    show_outro = False
+class Settings(BaseSettings):
+    allow_no_commits = False
     animate = False
-    title = "Git Sim, by initialcommit.com"
-    outro_top_text = "Thanks for using Initial Commit!"
-    outro_bottom_text = "Learn more at initialcommit.com"
-    speed = 1.5
+    auto_open = True
+    commits = 5
+    files: list[pathlib.Path] | None = None
+    hide_first_tag = False
+    img_format: ImgFormat = ImgFormat.jpg
+    INFO_STRING = "Simulating: git"
     light_mode = False
-    reverse = False
+    logo = pathlib.Path(__file__).parent.resolve() / "logo.png"
+    low_quality = False
     max_branches_per_commit = 1
     max_tags_per_commit = 1
-    hide_first_tag = False
-    allow_no_commits = False
-    low_quality = False
-    auto_open = True
-    INFO_STRING = "Simulating: git"
-    # os.path.join(str(pathlib.Path(__file__).parent.resolve()), "logo.png")
-    logo = pathlib.Path(__file__).parent.resolve() / "logo.png"
     media_dir = pathlib.Path().cwd()
-    files: list[pathlib.Path] | None = None
+    outro_bottom_text = "Learn more at initialcommit.com"
+    outro_top_text = "Thanks for using Initial Commit!"
+    reverse = False
+    show_intro = False
+    show_outro = False
+    speed = 1.5
+    title = "Git Sim, by initialcommit.com"
     video_format: VideoFormat = VideoFormat.mp4
-    img_format: ImgFormat = ImgFormat.jpg
+
+    class Config:
+        env_prefix = "git_sim"
+
+
+settings = Settings()

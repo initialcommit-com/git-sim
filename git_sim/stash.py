@@ -5,7 +5,7 @@ import typer
 
 from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
-from git_sim.settings import Settings
+from git_sim.settings import settings
 
 
 class Stash(GitSimBaseCommand):
@@ -34,7 +34,7 @@ class Stash(GitSimBaseCommand):
 
     def construct(self):
         print(
-            f"{Settings.INFO_STRING} {type(self).__name__.lower()} {' '.join(self.files) if not self.no_files else ''}"
+            f"{settings.INFO_STRING } {type(self).__name__.lower()} {' '.join(self.files) if not self.no_files else ''}"
         )
 
         self.show_intro()

@@ -11,7 +11,7 @@ import git.repo
 from manim import WHITE, Scene, config
 from manim.utils.file_ops import open_file
 
-from git_sim.settings import Settings
+from git_sim.settings import settings
 
 
 def handle_animations(scene: Scene) -> None:
@@ -25,22 +25,22 @@ def handle_animations(scene: Scene) -> None:
         ).working_tree_dir.split("\\")[-1]
 
     config.media_dir = os.path.join(
-        os.path.expanduser(Settings.media_dir), "git-sim_media"
+        os.path.expanduser(settings.media_dir), "git-sim_media"
     )
     config.verbosity = "ERROR"
 
     # If the env variable is set and no argument provided, use the env variable value
-    if os.getenv("git_sim_media_dir") and Settings.media_dir == ".":
+    if os.getenv("git_sim_media_dir") and settings.media_dir == ".":
         config.media_dir = os.path.join(
             os.path.expanduser(os.getenv("git_sim_media_dir")),
             "git-sim_media",
             repo_name,
         )
 
-    if Settings.low_quality:
+    if settings.low_quality:
         config.quality = "low_quality"
 
-    if Settings.light_mode:
+    if settings.light_mode:
         config.background_color = WHITE
 
     t = datetime.datetime.fromtimestamp(time.time()).strftime("%m-%d-%y_%H-%M-%S")
@@ -48,7 +48,7 @@ def handle_animations(scene: Scene) -> None:
 
     scene.render()
 
-    if Settings.video_format == "webm":
+    if settings.video_format == "webm":
         webm_file_path = str(scene.renderer.file_writer.movie_file_path)[:-3] + "webm"
         cmd = f"ffmpeg -y -i {scene.renderer.file_writer.movie_file_path} -hide_banner -loglevel error -c:v libvpx-vp9 -crf 50 -b:v 0 -b:a 128k -c:a libopus {webm_file_path}"
         print("Converting video output to .webm format...")
@@ -60,7 +60,7 @@ def handle_animations(scene: Scene) -> None:
             os.remove(scene.renderer.file_writer.movie_file_path)
             scene.renderer.file_writer.movie_file_path = webm_file_path
 
-    if not Settings.animate:
+    if not settings.animate:
         video = cv2.VideoCapture(str(scene.renderer.file_writer.movie_file_path))
         success, image = video.read()
         if success:
@@ -70,7 +70,7 @@ def handle_animations(scene: Scene) -> None:
                 + "_"
                 + t
                 + "."
-                + Settings.img_format
+                + settings.img_format
             )
             image_file_path = os.path.join(
                 os.path.join(config.media_dir, "images"), image_file_name
@@ -80,9 +80,9 @@ def handle_animations(scene: Scene) -> None:
     else:
         print("Output video location:", scene.renderer.file_writer.movie_file_path)
 
-    if Settings.auto_open:
+    if settings.auto_open:
         try:
-            if not Settings.animate:
+            if not settings.animate:
                 open_file(image_file_path)
             else:
                 open_file(scene.renderer.file_writer.movie_file_path)

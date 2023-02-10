@@ -5,7 +5,7 @@ import typer
 
 from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
-from git_sim.settings import Settings
+from git_sim.settings import settings
 
 
 class Restore(GitSimBaseCommand):
@@ -28,7 +28,7 @@ class Restore(GitSimBaseCommand):
 
     def construct(self):
         print(
-            f"{Settings.INFO_STRING} {type(self).__name__.lower()} {' '.join(self.files)}"
+            f"{settings.INFO_STRING } {type(self).__name__.lower()} {' '.join(self.files)}"
         )
 
         self.show_intro()
