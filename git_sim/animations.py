@@ -29,14 +29,6 @@ def handle_animations(scene: Scene) -> None:
     )
     config.verbosity = "ERROR"
 
-    # If the env variable is set and no argument provided, use the env variable value
-    if os.getenv("git_sim_media_dir") and settings.media_dir == ".":
-        config.media_dir = os.path.join(
-            os.path.expanduser(os.getenv("git_sim_media_dir")),
-            "git-sim_media",
-            repo_name,
-        )
-
     if settings.low_quality:
         config.quality = "low_quality"
 
