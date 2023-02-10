@@ -102,7 +102,9 @@ class Commit(GitSimBaseCommand):
 
 def commit(
     message: str = typer.Option(
-        default="New commit",
+        "New commit",
+        "--message",
+        "-m",
         help="The commit message of the new commit",
     ),
     amend: bool = typer.Option(

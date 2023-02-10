@@ -1,10 +1,4 @@
-import argparse
-import datetime
-import os
 import pathlib
-import subprocess
-import sys
-import time
 
 import typer
 
@@ -23,7 +17,7 @@ import git_sim.status
 import git_sim.tag
 from git_sim.settings import ImgFormat, VideoFormat, settings
 
-app = typer.Typer()
+app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
 
 @app.callback(no_args_is_help=True)

@@ -76,7 +76,9 @@ def cherry_pick(
         help="The ref (branch/tag), or commit ID to simulate cherry-pick onto active branch",
     ),
     edit: str = typer.Option(
-        default=None,
+        None,
+        "--edit",
+        "-e",
         help="Specify a new commit message for the cherry-picked commit",
     ),
 ):
