@@ -29,9 +29,10 @@ class Add(GitSimBaseCommand):
                 sys.exit()
 
     def construct(self):
-        print(
-            f"{settings.INFO_STRING} {type(self).__name__.lower()} {' '.join(self.files)}"
-        )
+        if not settings.stdout:
+            print(
+                f"{settings.INFO_STRING} {type(self).__name__.lower()} {' '.join(self.files)}"
+            )
 
         self.show_intro()
         self.get_commits()

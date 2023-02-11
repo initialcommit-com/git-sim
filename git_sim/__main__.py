@@ -97,6 +97,10 @@ def main(
         help="Output format for the animation files.",
         case_sensitive=False,
     ),
+    stdout: bool = typer.Option(
+        settings.stdout,
+        help="Write raw image data to stdout while suppressing all other program output",
+    ),
 ):
     settings.animate = animate
     settings.auto_open = auto_open
@@ -115,6 +119,7 @@ def main(
     settings.speed = speed
     settings.title = title
     settings.video_format = video_format
+    settings.stdout = stdout
 
 
 app.command()(git_sim.add.add)

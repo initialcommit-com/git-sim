@@ -33,9 +33,10 @@ class Stash(GitSimBaseCommand):
             ]
 
     def construct(self):
-        print(
-            f"{settings.INFO_STRING } {type(self).__name__.lower()} {' '.join(self.files) if not self.no_files else ''}"
-        )
+        if not settings.stdout:
+            print(
+                f"{settings.INFO_STRING } {type(self).__name__.lower()} {' '.join(self.files) if not self.no_files else ''}"
+            )
 
         self.show_intro()
         self.get_commits()

@@ -16,7 +16,8 @@ class Log(GitSimBaseCommand):
             pass
 
     def construct(self):
-        print(f"{settings.INFO_STRING} {type(self).__name__.lower()}")
+        if not settings.stdout:
+            print(f"{settings.INFO_STRING} {type(self).__name__.lower()}")
         self.show_intro()
         self.get_commits()
         self.parse_commits(self.commits[0])

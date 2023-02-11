@@ -49,9 +49,10 @@ class Reset(GitSimBaseCommand):
             self.mode = ResetMode.SOFT
 
     def construct(self):
-        print(
-            f"{settings.INFO_STRING } {type(self).__name__.lower()}{' --' + self.mode.value if self.mode != ResetMode.DEFAULT else ''} {self.commit}",
-        )
+        if not settings.stdout:
+            print(
+                f"{settings.INFO_STRING } {type(self).__name__.lower()}{' --' + self.mode.value if self.mode != ResetMode.DEFAULT else ''} {self.commit}",
+            )
 
         self.show_intro()
         self.get_commits()

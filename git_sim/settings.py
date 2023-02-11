@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     speed = 1.5
     title = "Git Sim, by initialcommit.com"
     video_format: VideoFormat = VideoFormat.mp4
+    stdout = False
 
     class Config:
         env_prefix = "git_sim_"

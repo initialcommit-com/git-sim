@@ -12,7 +12,8 @@ class Branch(GitSimBaseCommand):
         self.name = name
 
     def construct(self):
-        print(f"{settings.INFO_STRING} {type(self).__name__.lower()} {self.name}")
+        if not settings.stdout:
+            print(f"{settings.INFO_STRING} {type(self).__name__.lower()} {self.name}")
 
         self.show_intro()
         self.get_commits()

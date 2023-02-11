@@ -68,11 +68,14 @@ def handle_animations(scene: Scene) -> None:
                 os.path.join(config.media_dir, "images"), image_file_name
             )
             cv2.imwrite(image_file_path, image)
-            print("Output image location:", image_file_path)
+            if not settings.stdout:
+                print("Output image location:", image_file_path)
+            if settings.stdout:
+                sys.stdout.buffer.write(cv2.imencode(".jpg", image)[1].tobytes())
     else:
         print("Output video location:", scene.renderer.file_writer.movie_file_path)
 
-    if settings.auto_open:
+    if settings.auto_open and not settings.stdout:
         try:
             if not settings.animate:
                 open_file(image_file_path)

@@ -34,10 +34,11 @@ class CherryPick(GitSimBaseCommand):
             pass
 
     def construct(self):
-        print(
-            f"{settings.INFO_STRING} cherry-pick {self.commit}"
-            + ((' -e "' + self.edit + '"') if self.edit else "")
-        )
+        if not settings.stdout:
+            print(
+                f"{settings.INFO_STRING} cherry-pick {self.commit}"
+                + ((' -e "' + self.edit + '"') if self.edit else "")
+            )
 
         if self.repo.active_branch.name in self.repo.git.branch(
             "--contains", self.commit

@@ -31,12 +31,13 @@ class Commit(GitSimBaseCommand):
             sys.exit(1)
 
     def construct(self):
-        print(
-            f"{settings.INFO_STRING } {type(self).__name__.lower()} {'--amend ' if self.amend else ''}"
-            + '-m "'
-            + self.message
-            + '"'
-        )
+        if not settings.stdout:
+            print(
+                f"{settings.INFO_STRING } {type(self).__name__.lower()} {'--amend ' if self.amend else ''}"
+                + '-m "'
+                + self.message
+                + '"'
+            )
 
         self.show_intro()
         self.get_commits()

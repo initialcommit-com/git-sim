@@ -92,7 +92,8 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 `--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video.  
 `--disable-auto-open, -d`: Disable the automatic opening of the image/video file after generation.  
 `--reverse, -r`: Display commit history in the reverse direction.  
-`--img-format`: Output format for the image file, i.e. `jpg` or `png`. Default output format is `jpg`.
+`--img-format`: Output format for the image file, i.e. `jpg` or `png`. Default output format is `jpg`.  
+`--stdout`: Write raw image data to stdout while suppressing all other program output.
 
 Animation-only global options (to be used in conjunction with `--animate`):
 
