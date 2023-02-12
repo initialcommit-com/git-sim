@@ -468,7 +468,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
     def setup_and_draw_zones(
         self,
         first_column_name="Untracked files",
-        second_column_name="Working directory modifications",
+        second_column_name="Working directory mods",
         third_column_name="Staging area",
         reverse=False,
     ):
@@ -507,7 +507,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             (self.camera.frame.get_left()[0], horizontal.get_start()[1], 0),
             dash_length=0.2,
             color=self.fontColor,
-        ).shift(m.RIGHT * 6.5)
+        ).shift(m.RIGHT * 8)
         vert2 = m.DashedLine(
             (
                 self.camera.frame.get_right()[0],
@@ -517,7 +517,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             (self.camera.frame.get_right()[0], horizontal.get_start()[1], 0),
             dash_length=0.2,
             color=self.fontColor,
-        ).shift(m.LEFT * 6.5)
+        ).shift(m.LEFT * 8)
 
         if reverse:
             first_column_name = "Staging area"
@@ -530,8 +530,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 font_size=28,
                 color=self.fontColor,
             )
-            .align_to(self.camera.frame, m.LEFT)
-            .shift(m.RIGHT * 0.65)
+            .move_to((vert1.get_center()[0] - 4, 0, 0))
             .shift(m.UP * self.zone_title_offset)
         )
         secondColumnTitle = (
@@ -551,8 +550,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 font_size=28,
                 color=self.fontColor,
             )
-            .align_to(self.camera.frame, m.RIGHT)
-            .shift(m.LEFT * 1.65)
+            .move_to((vert2.get_center()[0] + 4, 0, 0))
             .align_to(firstColumnTitle, m.UP)
         )
 
@@ -926,7 +924,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.prevRef = refRec
 
     def trim_path(self, path):
-        return (path[:5] + "..." + path[-15:]) if len(path) > 20 else path
+        return (path[:15] + "..." + path[-15:]) if len(path) > 30 else path
 
     def get_remote_tracking_branches(self):
         remote_refs = [remote.refs for remote in self.repo.remotes]
