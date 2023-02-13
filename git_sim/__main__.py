@@ -1,6 +1,10 @@
 import pathlib
-
 import typer
+import os
+import sys
+import datetime
+import time
+import git
 
 import git_sim.add
 import git_sim.branch
@@ -16,12 +20,14 @@ import git_sim.stash
 import git_sim.status
 import git_sim.tag
 from git_sim.settings import ImgFormat, VideoFormat, settings
+from manim import config, WHITE
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
 
 @app.callback(no_args_is_help=True)
 def main(
+    ctx: typer.Context,
     animate: bool = typer.Option(
         settings.animate,
         help="Animate the simulation and output as an mp4 video",
@@ -110,7 +116,7 @@ def main(
     settings.low_quality = low_quality
     settings.max_branches_per_commit = max_branches_per_commit
     settings.max_tags_per_commit = max_tags_per_commit
-    settings.media_dir = media_dir
+    settings.media_dir = os.path.join(os.path.expanduser(media_dir), "git-sim_media")
     settings.outro_bottom_text = outro_bottom_text
     settings.outro_top_text = outro_top_text
     settings.reverse = reverse
@@ -120,6 +126,29 @@ def main(
     settings.title = title
     settings.video_format = video_format
     settings.stdout = stdout
+
+    if sys.platform == "linux" or sys.platform == "darwin":
+        repo_name = git.repo.Repo(
+            search_parent_directories=True
+        ).working_tree_dir.split("/")[-1]
+    elif sys.platform == "win32":
+        repo_name = git.repo.Repo(
+            search_parent_directories=True
+        ).working_tree_dir.split("\\")[-1]
+
+    settings.media_dir = os.path.join(settings.media_dir, repo_name)
+
+    config.media_dir = settings.media_dir
+    config.verbosity = "ERROR"
+
+    if settings.low_quality:
+        config.quality = "low_quality"
+
+    if settings.light_mode:
+        config.background_color = WHITE
+
+    t = datetime.datetime.fromtimestamp(time.time()).strftime("%m-%d-%y_%H-%M-%S")
+    config.output_file = "git-sim-" + ctx.invoked_subcommand + "_" + t + ".mp4"
 
 
 app.command()(git_sim.add.add)

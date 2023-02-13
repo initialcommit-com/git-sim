@@ -1,43 +1,19 @@
 import datetime
 import inspect
 import os
-import pathlib
 import subprocess
 import sys
 import time
 
 import cv2
 import git.repo
-from manim import WHITE, Scene, config
+from manim import WHITE, Scene
 from manim.utils.file_ops import open_file
 
 from git_sim.settings import settings
 
 
 def handle_animations(scene: Scene) -> None:
-    if sys.platform == "linux" or sys.platform == "darwin":
-        repo_name = git.repo.Repo(
-            search_parent_directories=True
-        ).working_tree_dir.split("/")[-1]
-    elif sys.platform == "win32":
-        repo_name = git.repo.Repo(
-            search_parent_directories=True
-        ).working_tree_dir.split("\\")[-1]
-
-    config.media_dir = os.path.join(
-        os.path.expanduser(settings.media_dir), "git-sim_media"
-    )
-    config.verbosity = "ERROR"
-
-    if settings.low_quality:
-        config.quality = "low_quality"
-
-    if settings.light_mode:
-        config.background_color = WHITE
-
-    t = datetime.datetime.fromtimestamp(time.time()).strftime("%m-%d-%y_%H-%M-%S")
-    config.output_file = "git-sim-" + inspect.stack()[1].function + "_" + t + ".mp4"
-
     scene.render()
 
     if settings.video_format == "webm":
@@ -56,6 +32,9 @@ def handle_animations(scene: Scene) -> None:
         video = cv2.VideoCapture(str(scene.renderer.file_writer.movie_file_path))
         success, image = video.read()
         if success:
+            t = datetime.datetime.fromtimestamp(time.time()).strftime(
+                "%m-%d-%y_%H-%M-%S"
+            )
             image_file_name = (
                 "git-sim-"
                 + inspect.stack()[1].function
@@ -65,7 +44,7 @@ def handle_animations(scene: Scene) -> None:
                 + settings.img_format
             )
             image_file_path = os.path.join(
-                os.path.join(config.media_dir, "images"), image_file_name
+                os.path.join(settings.media_dir, "images"), image_file_name
             )
             cv2.imwrite(image_file_path, image)
             if not settings.stdout:
