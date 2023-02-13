@@ -870,7 +870,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         start = self.drawnCommits[startsha].get_center()
         end = self.drawnCommits[endsha].get_center()
 
-        arrow = DottedLine(start, end, color=self.fontColor).add_tip()
+        arrow = DottedLine(
+            start, end, color=self.fontColor, dot_kwargs={"color": self.fontColor}
+        ).add_tip()
         length = numpy.linalg.norm(start - end) - 1.65
         arrow.set_length(length)
         self.draw_arrow(True, arrow)
