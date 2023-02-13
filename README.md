@@ -119,7 +119,7 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 
 `--light-mode`: Use a light mode color scheme instead of default dark mode.  
 `--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video.  
-`--media-dir`: The path at which to store the simulated output media files.
+`--media-dir`: The path at which to store the simulated output media files.  
 `-d`: Disable the automatic opening of the image/video file after generation. Useful to avoid errors in console mode with no GUI.  
 `--reverse, -r`: Display commit history in the reverse direction.  
 `--img-format`: Output format for the image file, i.e. `jpg` or `png`. Default output format is `jpg`.  
