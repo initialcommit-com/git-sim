@@ -1,8 +1,9 @@
 import sys
-
 import git
 import manim as m
 import typer
+
+from typing import List
 
 from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
@@ -10,7 +11,7 @@ from git_sim.settings import settings
 
 
 class Add(GitSimBaseCommand):
-    def __init__(self, files: list[str]):
+    def __init__(self, files: List[str]):
         super().__init__()
         self.hide_first_tag = True
         self.allow_no_commits = True
@@ -82,7 +83,7 @@ class Add(GitSimBaseCommand):
 
 
 def add(
-    files: list[str] = typer.Argument(
+    files: List[str] = typer.Argument(
         default=None,
         help="The names of one or more files to add to Git's staging area",
     )

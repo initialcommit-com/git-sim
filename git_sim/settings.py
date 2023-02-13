@@ -1,6 +1,7 @@
 import pathlib
-from enum import Enum
 
+from enum import Enum
+from typing import List, Union
 from pydantic import BaseSettings
 
 
@@ -19,7 +20,7 @@ class Settings(BaseSettings):
     animate = False
     auto_open = True
     commits = 5
-    files: list[pathlib.Path] | None = None
+    files: Union[List[pathlib.Path], None] = None
     hide_first_tag = False
     img_format: ImgFormat = ImgFormat.jpg
     INFO_STRING = "Simulating: git"

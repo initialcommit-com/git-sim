@@ -1,7 +1,8 @@
 import sys
-
 import manim as m
 import typer
+
+from typing import List
 
 from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
@@ -9,7 +10,7 @@ from git_sim.settings import settings
 
 
 class Stash(GitSimBaseCommand):
-    def __init__(self, files: list[str]):
+    def __init__(self, files: List[str]):
         super().__init__()
         self.hide_first_tag = True
         self.files = files
@@ -80,7 +81,7 @@ class Stash(GitSimBaseCommand):
 
 
 def stash(
-    files: list[str] = typer.Argument(
+    files: List[str] = typer.Argument(
         default=None,
         help="The name of the file to stash changes for",
     )
