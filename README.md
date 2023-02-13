@@ -77,7 +77,13 @@ Similarly, the `--speed` option can be set like:
 $ export git_sim_speed=2
 ```
 
-Or, more generally:
+Boolean flags can be set like:
+
+```console
+$ export git_sim_light_mode=true
+```
+
+In general:
 
 ```console
 $ export git_sim_option_name=option_value
