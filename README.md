@@ -62,13 +62,35 @@ $ git-sim [global options] <subcommand> [subcommand options]
 
 5) Simulated output will be created as a `.jpg` file. Output files are named using the subcommand executed combined with a timestamp, and by default are stored in a subdirectory called `git-sim_media/`. The location of this subdirectory is customizable using the command line flag `--media-dir=path/to/output`. Note that when the `--animate` global flag is used, render times will be much longer and a `.mp4` video output file will be produced.
 
-6) See global help for list of global options/flags and subcommands:
+6) For convenience, environment variables can be set for any global command-line option available in git-sim. All environment variables start with `git_sim_` followed by the name of the option.
+
+For example, the `--media-dir` option can be set as an environment variable like:
+
+```console
+$ export git_sim_media_dir=~/Desktop
+```
+
+Similarly, the `--speed` option can be set like:
+
+```console
+$ export git_sim_speed=2
+```
+
+Or, more generally:
+
+```console
+$ export git_sim_option_name=option_value
+```
+
+Explicitly specifying options at the command-line takes precedence over the corresponding environment variable values.
+
+7) See global help for list of global options/flags and subcommands:
 
 ```console
 $ git-sim -h
 ```
 
-7) See subcommand help for list of options/flags for a specific subcommand:
+8) See subcommand help for list of options/flags for a specific subcommand:
 
 ```console
 $ git-sim <subcommand> -h
@@ -90,7 +112,7 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 
 `--light-mode`: Use a light mode color scheme instead of default dark mode.  
 `--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video.  
-`--disable-auto-open, -d`: Disable the automatic opening of the image/video file after generation.  
+`-d`: Disable the automatic opening of the image/video file after generation. Useful to avoid errors in console mode with no GUI.  
 `--reverse, -r`: Display commit history in the reverse direction.  
 `--img-format`: Output format for the image file, i.e. `jpg` or `png`. Default output format is `jpg`.  
 `--stdout`: Write raw image data to stdout while suppressing all other program output.
@@ -363,7 +385,7 @@ Optionally, set the environment variable `git_sim_media_dir` to set a global def
 $ export git_sim_media_dir=path/to/media/directory
 $ git-sim status
 ```
-Note: `--media-dir` takes precedence over the environment variable. If you set the environment and still provide the argument, you'll find the media in the path provided by `--media-dir`.
+Note: `--media-dir` takes precedence over the environment variable. If you set the environment variable and still provide the argument, you'll find the media in the path provided by `--media-dir`.
 
 Generate output video in low quality to speed up rendering time (useful for repeated testing, must include `--animate`):
 
