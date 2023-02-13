@@ -28,6 +28,7 @@ Example: `$ git-sim merge <branch>`
 - Supported commands: `log`, `status`, `add`, `restore`, `commit`, `stash`, `branch`, `tag`, `reset`, `revert`, `merge`, `rebase`, `cherry-pick`
 - Generate an animated video (.mp4) instead of a static image using the `--animate` flag (note: significant performance slowdown, it is recommended to use `--low-quality` to speed up testing and remove when ready to generate presentation-quality video)
 - Choose between dark mode (default) and light mode
+- Specify output formats of either jpg, png, mp4, or webm
 - Animation only: Add custom branded intro/outro sequences if desired
 - Animation only: Speed up or slow down animation speed as desired
 
@@ -120,7 +121,7 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 Animation-only global options (to be used in conjunction with `--animate`):
 
 `--video-format`: Output format for the video file, i.e. `mp4` or `webm`. Default output format is `mp4`.  
-`--speed=n`: Set the multiple of animation speed of the output simulation, `n` can be an integer or float, default is 1.  
+`--speed=n`: Set the multiple of animation speed of the output simulation, `n` can be an integer or float, default is 1.5.
 `--low-quality`: Render the animation in low quality to speed up creation time, recommended for non-presentation use.  
 `--show-intro`: Add an intro sequence with custom logo and title.  
 `--show-outro`: Add an outro sequence with custom logo and text.  

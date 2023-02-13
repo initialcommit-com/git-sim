@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     show_intro = False
     show_outro = False
     speed = 1.5
-    title = "Git Sim, by initialcommit.com"
+    title = "Git-Sim, by initialcommit.com"
     video_format: VideoFormat = VideoFormat.mp4
     stdout = False
 
