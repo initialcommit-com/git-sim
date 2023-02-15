@@ -591,6 +591,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         firstColumnArrowMap = {}
         secondColumnArrowMap = {}
+        thirdColumnArrowMap = {}
 
         self.populate_zones(
             firstColumnFileNames,
@@ -598,6 +599,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             thirdColumnFileNames,
             firstColumnArrowMap,
             secondColumnArrowMap,
+            thirdColumnArrowMap,
         )
 
         firstColumnFiles = m.VGroup()
@@ -608,53 +610,21 @@ class GitSimBaseCommand(m.MovingCameraScene):
         secondColumnFilesDict = {}
         thirdColumnFilesDict = {}
 
-        for i, f in enumerate(firstColumnFileNames):
-            text = (
-                m.Text(
-                    self.trim_path(f),
-                    font="Monospace",
-                    font_size=24,
-                    color=self.fontColor,
-                )
-                .move_to(
-                    (firstColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
-                )
-                .shift(m.DOWN * 0.5 * (i + 1))
-            )
-            firstColumnFiles.add(text)
-            firstColumnFilesDict[f] = text
-
-        for j, f in enumerate(secondColumnFileNames):
-            text = (
-                m.Text(
-                    self.trim_path(f),
-                    font="Monospace",
-                    font_size=24,
-                    color=self.fontColor,
-                )
-                .move_to(
-                    (secondColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
-                )
-                .shift(m.DOWN * 0.5 * (j + 1))
-            )
-            secondColumnFiles.add(text)
-            secondColumnFilesDict[f] = text
-
-        for h, f in enumerate(thirdColumnFileNames):
-            text = (
-                m.Text(
-                    self.trim_path(f),
-                    font="Monospace",
-                    font_size=24,
-                    color=self.fontColor,
-                )
-                .move_to(
-                    (thirdColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
-                )
-                .shift(m.DOWN * 0.5 * (h + 1))
-            )
-            thirdColumnFiles.add(text)
-            thirdColumnFilesDict[f] = text
+        self.create_zone_text(
+            firstColumnFileNames,
+            secondColumnFileNames,
+            thirdColumnFileNames,
+            firstColumnFiles,
+            secondColumnFiles,
+            thirdColumnFiles,
+            firstColumnFilesDict,
+            secondColumnFilesDict,
+            thirdColumnFilesDict,
+            firstColumnTitle,
+            secondColumnTitle,
+            thirdColumnTitle,
+            horizontal2,
+        )
 
         if len(firstColumnFiles):
             if settings.animate:
@@ -726,6 +696,26 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 self.add(secondColumnArrowMap[filename])
             self.toFadeOut.add(secondColumnArrowMap[filename])
 
+        for filename in thirdColumnArrowMap:
+            thirdColumnArrowMap[filename].put_start_and_end_on(
+                (
+                    thirdColumnFilesDict[filename].get_left()[0] - 0.25,
+                    thirdColumnFilesDict[filename].get_left()[1],
+                    0,
+                ),
+                (
+                    firstColumnFilesDict[filename].get_right()[0] + 0.25,
+                    firstColumnFilesDict[filename].get_right()[1],
+                    0,
+                ),
+            )
+
+            if settings.animate:
+                self.play(m.Create(thirdColumnArrowMap[filename]))
+            else:
+                self.add(thirdColumnArrowMap[filename])
+            self.toFadeOut.add(thirdColumnArrowMap[filename])
+
         self.toFadeOut.add(firstColumnFiles, secondColumnFiles, thirdColumnFiles)
 
     def populate_zones(
@@ -735,6 +725,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         thirdColumnFileNames,
         firstColumnArrowMap={},
         secondColumnArrowMap={},
+        thirdColumnArrowMap={},
     ):
         for x in self.repo.index.diff(None):
             if "git-sim_media" not in x.a_path:
@@ -945,6 +936,71 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 if "HEAD" not in ref.name and ref.name not in remote_tracking_branches:
                     remote_tracking_branches[ref.name] = ref.commit.hexsha
         return branch in remote_tracking_branches
+
+    def create_zone_text(
+        self,
+        firstColumnFileNames,
+        secondColumnFileNames,
+        thirdColumnFileNames,
+        firstColumnFiles,
+        secondColumnFiles,
+        thirdColumnFiles,
+        firstColumnFilesDict,
+        secondColumnFilesDict,
+        thirdColumnFilesDict,
+        firstColumnTitle,
+        secondColumnTitle,
+        thirdColumnTitle,
+        horizontal2,
+    ):
+
+        for i, f in enumerate(firstColumnFileNames):
+            text = (
+                m.Text(
+                    self.trim_path(f),
+                    font="Monospace",
+                    font_size=24,
+                    color=self.fontColor,
+                )
+                .move_to(
+                    (firstColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
+                )
+                .shift(m.DOWN * 0.5 * (i + 1))
+            )
+            firstColumnFiles.add(text)
+            firstColumnFilesDict[f] = text
+
+        for j, f in enumerate(secondColumnFileNames):
+            text = (
+                m.Text(
+                    self.trim_path(f),
+                    font="Monospace",
+                    font_size=24,
+                    color=self.fontColor,
+                )
+                .move_to(
+                    (secondColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
+                )
+                .shift(m.DOWN * 0.5 * (j + 1))
+            )
+            secondColumnFiles.add(text)
+            secondColumnFilesDict[f] = text
+
+        for h, f in enumerate(thirdColumnFileNames):
+            text = (
+                m.Text(
+                    self.trim_path(f),
+                    font="Monospace",
+                    font_size=24,
+                    color=self.fontColor,
+                )
+                .move_to(
+                    (thirdColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
+                )
+                .shift(m.DOWN * 0.5 * (h + 1))
+            )
+            thirdColumnFiles.add(text)
+            thirdColumnFilesDict[f] = text
 
 
 class DottedLine(m.Line):

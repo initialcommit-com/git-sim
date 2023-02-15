@@ -186,7 +186,7 @@ Usage: `git-sim commit -m "Commit message"`
 ![git-sim-commit_01-05-23_22-10-21](https://user-images.githubusercontent.com/49353917/210941149-d83677a1-3ab7-4880-bc0f-871b1f150087.jpg)
 
 ### git stash
-Usage: `git-sim stash <file>`
+Usage: `git-sim stash [push|pop|apply] <file>`
 
 - Specify one or more `<file>` as a *modified* working directory file, or staged file
 - If no `<file>` is specified, all available working directory and staged files will be included
