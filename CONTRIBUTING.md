@@ -46,7 +46,7 @@ so that you have a copy on GitHub that you can clone and work with
 $ pip uninstall git-sim
 ```
 
-5) To run the code locally from source, install the developement package by running:
+5) To run the code locally from source, install the development package by running:
 
 ```console
 $ cd path/to/git-sim
