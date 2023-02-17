@@ -85,8 +85,9 @@ class Commit(GitSimBaseCommand):
         firstColumnFileNames,
         secondColumnFileNames,
         thirdColumnFileNames,
-        firstColumnArrowMap,
-        secondColumnArrowMap,
+        firstColumnArrowMap={},
+        secondColumnArrowMap={},
+        thirdColumnArrowMap={},
     ):
         for x in self.repo.index.diff(None):
             if "git-sim_media" not in x.a_path:

@@ -115,6 +115,7 @@ class Reset(GitSimBaseCommand):
         thirdColumnFileNames,
         firstColumnArrowMap={},
         secondColumnArrowMap={},
+        thirdColumnArrowMap={},
     ):
         for commit in self.commitsSinceResetTo:
             if commit.hexsha == self.resetTo.hexsha:

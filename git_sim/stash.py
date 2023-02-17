@@ -144,9 +144,9 @@ class Stash(GitSimBaseCommand):
         firstColumnFileNames,
         secondColumnFileNames,
         thirdColumnFileNames,
-        firstColumnArrowMap,
-        secondColumnArrowMap,
-        thirdColumnArrowMap,
+        firstColumnArrowMap={},
+        secondColumnArrowMap={},
+        thirdColumnArrowMap={},
     ):
 
         if self.command in [StashSubCommand.POP, StashSubCommand.APPLY]:

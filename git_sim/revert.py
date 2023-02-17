@@ -153,6 +153,7 @@ class Revert(GitSimBaseCommand):
         thirdColumnFileNames,
         firstColumnArrowMap={},
         secondColumnArrowMap={},
+        thirdColumnArrowMap={},
     ):
         for filename in self.revert.stats.files:
             secondColumnFileNames.add(filename)
