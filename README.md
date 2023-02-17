@@ -189,8 +189,8 @@ Usage: `git-sim commit -m "Commit message"`
 Usage: `git-sim stash [push|pop|apply] <file>`
 
 - Specify one or more `<file>` as a *modified* working directory file, or staged file
-- If no `<file>` is specified, all available working directory and staged files will be included
-- Simulated output will show files being moved to the Git stash
+- If no `<file>` is specified, all available files will be included
+- Simulated output will show files being moved in/out of the Git stash
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
 ![git-sim-stash_01-05-23_22-11-18](https://user-images.githubusercontent.com/49353917/210941254-69c80b63-5c06-411a-a36a-1454b2906ee8.jpg)
