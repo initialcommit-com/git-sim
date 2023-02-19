@@ -22,6 +22,7 @@ Example: `$ git-sim merge <branch>`
 - Save visualizations as a part of your team documentation to document workflow and prevent recurring issues
 - Create static Git diagrams (jpg) or dynamic animated videos (mp4) to speed up content creation
 - Help visual learners understand how Git commands work
+- Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
 
 ## Features
 - Run a one-liner git-sim command in the terminal to generate a custom Git command visualization (.jpg) from your repo
@@ -29,6 +30,7 @@ Example: `$ git-sim merge <branch>`
 - Generate an animated video (.mp4) instead of a static image using the `--animate` flag (note: significant performance slowdown, it is recommended to use `--low-quality` to speed up testing and remove when ready to generate presentation-quality video)
 - Choose between dark mode (default) and light mode
 - Specify output formats of either jpg, png, mp4, or webm
+- Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
 - Animation only: Add custom branded intro/outro sequences if desired
 - Animation only: Speed up or slow down animation speed as desired
 
@@ -59,6 +61,20 @@ $ cd path/to/git/repo
 
 ```console
 $ git-sim [global options] <subcommand> [subcommand options]
+```
+
+Optional: If you don't have an existing Git repo to simulate commands on, use the bundled [git-dummy](https://github.com/initialcommit-com/git-dummy) command to generate a dummy Git repo with the desired number of branches and commits to simulate operations on with git-sim:
+
+```console
+$ git-dummy --name="dummy-repo" --branches=3 --commits=10
+$ cd dummy-repo
+$ git-sim [global options] <subcommand> [subcommand options]
+```
+
+Or if you want to do it all in a single command:
+
+```console
+$ git-dummy --no-subdir --branches=3 --commits=10 && git-sim [global options] <subcommand> [subcommand options]
 ```
 
 5) Simulated output will be created as a `.jpg` file. Output files are named using the subcommand executed combined with a timestamp, and by default are stored in a subdirectory called `git-sim_media/`. The location of this subdirectory is customizable using the command line flag `--media-dir=path/to/output`. Note that when the `--animate` global flag is used, render times will be much longer and a `.mp4` video output file will be produced.
