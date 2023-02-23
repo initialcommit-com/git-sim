@@ -788,6 +788,26 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 )
             )
 
+    def reset_head(self, hexsha, shift=numpy.array([0.0, 0.0, 0.0])):
+        if settings.animate:
+            self.play(
+                self.drawnRefs["HEAD"].animate.move_to(
+                    (
+                        self.drawnCommits[hexsha].get_center()[0] + shift[0],
+                        self.drawnCommits[hexsha].get_center()[1] + 2.0 + shift[1],
+                        0,
+                    )
+                ),
+            )
+        else:
+            self.drawnRefs["HEAD"].move_to(
+                (
+                    self.drawnCommits[hexsha].get_center()[0] + shift[0],
+                    self.drawnCommits[hexsha].get_center()[1] + 2.0 + shift[1],
+                    0,
+                )
+            )
+
     def translate_frame(self, shift):
         if settings.animate:
             self.play(self.camera.frame.animate.shift(shift))
