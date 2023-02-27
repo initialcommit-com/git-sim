@@ -8,7 +8,7 @@ import manim as m
 
 
 class Log(GitSimBaseCommand):
-    def __init__(self, commits: int):
+    def __init__(self, commits: int, all: bool):
         super().__init__()
         self.numCommits = commits + 1
         self.defaultNumCommits = commits + 1
@@ -17,6 +17,7 @@ class Log(GitSimBaseCommand):
         except TypeError:
             pass
         self.arrow_map = []
+        self.all = all
 
     def construct(self):
         if not settings.stdout:
@@ -24,6 +25,10 @@ class Log(GitSimBaseCommand):
         self.show_intro()
         self.get_commits()
         self.parse_commits(self.commits[0], 0)
+        if self.all:
+            for branch in self.repo.branches:
+                self.get_commits(start=branch.name)
+                self.parse_commits(self.commits[0], 0)
         self.recenter_frame()
         self.scale_frame()
         self.fadeout()
@@ -44,9 +49,21 @@ class Log(GitSimBaseCommand):
                     self.draw_head(commit, commitId)
                     self.draw_branch(commit)
                     self.draw_tag(commit)
-                if [arrow.start.tolist(), arrow.end.tolist()] not in self.arrow_map:
+                if (
+                    not isinstance(arrow, m.CurvedArrow)
+                    and [arrow.start.tolist(), arrow.end.tolist()] not in self.arrow_map
+                ):
                     self.draw_arrow(prevCircle, arrow)
                     self.arrow_map.append([arrow.start.tolist(), arrow.end.tolist()])
+                elif (
+                    isinstance(arrow, m.CurvedArrow)
+                    and [arrow.get_start().tolist(), arrow.get_end().tolist()]
+                    not in self.arrow_map
+                ):
+                    self.draw_arrow(prevCircle, arrow)
+                    self.arrow_map.append(
+                        [arrow.get_start().tolist(), arrow.get_end().tolist()]
+                    )
                 if i == 0 and len(self.drawnRefs) < 2:
                     self.draw_dark_ref()
 
@@ -102,7 +119,11 @@ class Log(GitSimBaseCommand):
             end = circle.get_center()
         else:
             circle.move_to(self.drawnCommits[commit.hexsha].get_center())
-            start = prevCircle.get_center()
+            start = (
+                prevCircle.get_center()
+                if prevCircle
+                else (m.LEFT if settings.reverse else m.RIGHT)
+            )
             end = self.drawnCommits[commit.hexsha].get_center()
 
         arrow = m.Arrow(start, end, color=self.fontColor)
@@ -126,9 +147,9 @@ class Log(GitSimBaseCommand):
             if inter.has_points():
                 arrow = m.CurvedArrow(start, end)
                 if start[1] == end[1]:
-                    arrow.shift(UP * 1.25)
+                    arrow.shift(m.UP * 1.25)
                 if start[0] < end[0] and start[1] == end[1]:
-                    arrow.flip(RIGHT).shift(UP)
+                    arrow.flip(m.RIGHT).shift(m.UP)
 
         commitId, commitMessage, commit, hide_refs = self.build_commit_id_and_message(
             commit, dots
@@ -175,6 +196,10 @@ def log(
         help="The number of commits to display in the simulated log output",
         min=1,
     ),
+    all: bool = typer.Option(
+        default=False,
+        help="Display all local branches in the log output",
+    ),
 ):
-    scene = Log(commits=commits)
+    scene = Log(commits=commits, all=all)
     handle_animations(scene=scene)
