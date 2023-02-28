@@ -30,7 +30,7 @@ class Add(GitSimBaseCommand):
                 sys.exit()
 
     def construct(self):
-        if not settings.stdout:
+        if not settings.stdout and not settings.output_only_path:
             print(
                 f"{settings.INFO_STRING} {type(self).__name__.lower()} {' '.join(self.files)}"
             )

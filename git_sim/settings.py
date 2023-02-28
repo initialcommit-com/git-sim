@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     title = "Git-Sim, by initialcommit.com"
     video_format: VideoFormat = VideoFormat.mp4
     stdout = False
+    output_only_path = False
 
     class Config:
         env_prefix = "git_sim_"

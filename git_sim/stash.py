@@ -44,13 +44,13 @@ class Stash(GitSimBaseCommand):
                     y.a_path for y in self.repo.index.diff("HEAD")
                 ]
         elif self.files:
-            if not settings.stdout:
+            if not settings.stdout and not settings.output_only_path:
                 print(
                     "Files are not required in apply/pop subcommand. Ignoring the file list....."
                 )
 
     def construct(self):
-        if not settings.stdout:
+        if not settings.stdout and not settings.output_only_path:
             print(
                 f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.command.value if self.command else ''} {' '.join(self.files) if not self.no_files else ''}"
             )

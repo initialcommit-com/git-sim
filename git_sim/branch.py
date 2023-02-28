@@ -12,7 +12,7 @@ class Branch(GitSimBaseCommand):
         self.name = name
 
     def construct(self):
-        if not settings.stdout:
+        if not settings.stdout and not settings.output_only_path:
             print(f"{settings.INFO_STRING} {type(self).__name__.lower()} {self.name}")
 
         self.show_intro()

@@ -139,7 +139,8 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 `-d`: Disable the automatic opening of the image/video file after generation. Useful to avoid errors in console mode with no GUI.  
 `--reverse, -r`: Display commit history in the reverse direction.  
 `--img-format`: Output format for the image file, i.e. `jpg` or `png`. Default output format is `jpg`.  
-`--stdout`: Write raw image data to stdout while suppressing all other program output.
+`--stdout`: Write raw image data to stdout while suppressing all other program output.  
+`--output-only-path`: Only output the path to the generated media file to stdout. Useful for other programs to ingest.
 
 Animation-only global options (to be used in conjunction with `--animate`):
 

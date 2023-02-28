@@ -107,6 +107,10 @@ def main(
         settings.stdout,
         help="Write raw image data to stdout while suppressing all other program output",
     ),
+    output_only_path: bool = typer.Option(
+        settings.output_only_path,
+        help="Only output the path to the generated media file to stdout (useful for other programs to ingest)",
+    ),
 ):
     settings.animate = animate
     settings.auto_open = auto_open
@@ -126,6 +130,7 @@ def main(
     settings.title = title
     settings.video_format = video_format
     settings.stdout = stdout
+    settings.output_only_path = output_only_path
 
     if sys.platform == "linux" or sys.platform == "darwin":
         repo_name = git.repo.Repo(
