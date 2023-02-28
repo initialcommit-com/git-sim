@@ -73,14 +73,14 @@ class Log(GitSimBaseCommand):
                 i += 1
                 commitParents = list(commit.parents)
                 if len(commitParents) > 0:
-                    #    if ( self.args.invert_branches ):
-                    #        commitParents.reverse()
+                    if settings.invert_branches:
+                        commitParents.reverse()
 
-                    #    if ( self.args.hide_merged_chains ):
-                    #        self.parseCommits(commitParents[0], i+1,  prevCircle, toFadeOut)
-                    # else:
-                    for p in range(len(commitParents)):
-                        self.parse_commits(commitParents[p], i, circle)
+                    if settings.hide_merged_chains:
+                        self.parse_commits(commitParents[0], i, circle)
+                    else:
+                        for p in range(len(commitParents)):
+                            self.parse_commits(commitParents[p], i, circle)
 
     def draw_commit(self, commit, prevCircle, shift=numpy.array([0.0, 0.0, 0.0])):
         if commit == "dark":

@@ -107,6 +107,14 @@ def main(
         settings.stdout,
         help="Write raw image data to stdout while suppressing all other program output",
     ),
+    invert_branches: bool = typer.Option(
+        settings.invert_branches,
+        help="Invert positioning of branches by reversing order of multiple parents where applicable",
+    ),
+    hide_merged_chains: bool = typer.Option(
+        settings.hide_merged_chains,
+        help="Hide commits from merged branches, i.e. only display mainline commits",
+    ),
 ):
     settings.animate = animate
     settings.auto_open = auto_open
@@ -126,6 +134,8 @@ def main(
     settings.title = title
     settings.video_format = video_format
     settings.stdout = stdout
+    settings.invert_branches = invert_branches
+    settings.hide_merged_chains = hide_merged_chains
 
     if sys.platform == "linux" or sys.platform == "darwin":
         repo_name = git.repo.Repo(
