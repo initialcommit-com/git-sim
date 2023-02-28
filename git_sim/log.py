@@ -10,8 +10,8 @@ import manim as m
 class Log(GitSimBaseCommand):
     def __init__(self, commits: int, all: bool):
         super().__init__()
-        self.numCommits = commits + 1
-        self.defaultNumCommits = commits + 1
+        self.numCommits = commits
+        self.defaultNumCommits = commits
         try:
             self.selected_branches.append(self.repo.active_branch.name)
         except TypeError:
@@ -26,7 +26,7 @@ class Log(GitSimBaseCommand):
         self.get_commits()
         self.parse_commits(self.commits[0], 0)
         if self.all:
-            for branch in self.repo.branches:
+            for branch in self.get_nonparent_branch_names():
                 self.get_commits(start=branch.name)
                 self.parse_commits(self.commits[0], 0)
         self.recenter_frame()
@@ -35,13 +35,13 @@ class Log(GitSimBaseCommand):
         self.show_outro()
 
     def parse_commits(
-        self, commit, i, prevCircle=None, shift=numpy.array([0.0, 0.0, 0.0]), dots=False
+        self, commit, i, prevCircle=None, shift=numpy.array([0.0, 0.0, 0.0])
     ):
         isNewCommit = commit.hexsha not in self.drawnCommits
 
         if i < self.numCommits and commit in self.commits:
             commitId, circle, arrow, hide_refs = self.draw_commit(
-                commit, prevCircle, shift, dots
+                commit, prevCircle, shift
             )
 
             if commit != "dark":
@@ -67,7 +67,7 @@ class Log(GitSimBaseCommand):
                 if i == 0 and len(self.drawnRefs) < 2:
                     self.draw_dark_ref()
 
-            if i < len(self.commits) - 1:
+            if i < self.numCommits:  # len(self.commits) - 1:
                 i += 1
                 commitParents = list(commit.parents)
                 if len(commitParents) > 0:
@@ -78,13 +78,9 @@ class Log(GitSimBaseCommand):
                     #        self.parseCommits(commitParents[0], i+1,  prevCircle, toFadeOut)
                     # else:
                     for p in range(len(commitParents)):
-                        self.parse_commits(commitParents[p], i, circle, dots=True)
-            else:
-                self.i = 0
+                        self.parse_commits(commitParents[p], i, circle)
 
-    def draw_commit(
-        self, commit, prevCircle, shift=numpy.array([0.0, 0.0, 0.0]), dots=False
-    ):
+    def draw_commit(self, commit, prevCircle, shift=numpy.array([0.0, 0.0, 0.0])):
         if commit == "dark":
             commitFill = m.WHITE if settings.light_mode else m.BLACK
         elif len(commit.parents) <= 1:
@@ -152,7 +148,7 @@ class Log(GitSimBaseCommand):
                     arrow.flip(m.RIGHT).shift(m.UP)
 
         commitId, commitMessage, commit, hide_refs = self.build_commit_id_and_message(
-            commit, dots
+            commit
         )
         commitId.next_to(circle, m.UP)
 
@@ -188,6 +184,16 @@ class Log(GitSimBaseCommand):
         self.prevRef = commitId
 
         return commitId, circle, arrow, hide_refs
+
+    def get_nonparent_branch_names(self):
+        branches = [b for b in self.repo.heads if not b.name.startswith("remotes/")]
+        exclude = []
+        for b1 in branches:
+            for b2 in branches:
+                if b1.name != b2.name:
+                    if self.repo.is_ancestor(b1.commit, b2.commit):
+                        exclude.append(b1.name)
+        return [b for b in branches if b.name not in exclude]
 
 
 def log(
