@@ -145,7 +145,7 @@ class Log(GitSimBaseCommand):
         for commitCircle in self.drawnCommits.values():
             inter = m.Intersection(lineRect, commitCircle)
             if inter.has_points():
-                arrow = m.CurvedArrow(start, end)
+                arrow = m.CurvedArrow(start, end, color=self.fontColor)
                 if start[1] == end[1]:
                     arrow.shift(m.UP * 1.25)
                 if start[0] < end[0] and start[1] == end[1]:
