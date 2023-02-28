@@ -111,6 +111,12 @@ def main(
         settings.output_only_path,
         help="Only output the path to the generated media file to stdout (useful for other programs to ingest)",
     ),
+    quiet: bool = typer.Option(
+        settings.quiet,
+        "--quiet",
+        "-q",
+        help="Suppress all output except errors",
+    ),
 ):
     settings.animate = animate
     settings.auto_open = auto_open
@@ -131,6 +137,7 @@ def main(
     settings.video_format = video_format
     settings.stdout = stdout
     settings.output_only_path = output_only_path
+    settings.quiet = quiet
 
     if sys.platform == "linux" or sys.platform == "darwin":
         repo_name = git.repo.Repo(

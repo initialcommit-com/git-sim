@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     video_format: VideoFormat = VideoFormat.mp4
     stdout = False
     output_only_path = False
+    quiet = False
 
     class Config:
         env_prefix = "git_sim_"

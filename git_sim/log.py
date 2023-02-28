@@ -16,7 +16,7 @@ class Log(GitSimBaseCommand):
             pass
 
     def construct(self):
-        if not settings.stdout and not settings.output_only_path:
+        if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(f"{settings.INFO_STRING} {type(self).__name__.lower()}")
         self.show_intro()
         self.get_commits()
