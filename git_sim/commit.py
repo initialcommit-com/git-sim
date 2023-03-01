@@ -18,6 +18,7 @@ class Commit(GitSimBaseCommand):
         self.defaultNumCommits = 4 if not self.amend else 5
         self.numCommits = 4 if not self.amend else 5
         self.hide_first_tag = True
+        settings.hide_merged_chains = True
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
@@ -51,7 +52,7 @@ class Commit(GitSimBaseCommand):
             )
             self.commits[0] = amended
 
-        self.parse_commits(self.commits[self.i])
+        self.parse_commits(self.commits[0], 0)
         self.center_frame_on_commit(self.commits[0])
 
         if not self.amend:

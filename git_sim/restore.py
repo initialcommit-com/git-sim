@@ -14,6 +14,7 @@ class Restore(GitSimBaseCommand):
         super().__init__()
         self.hide_first_tag = True
         self.files = files
+        settings.hide_merged_chains = True
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
@@ -35,7 +36,7 @@ class Restore(GitSimBaseCommand):
 
         self.show_intro()
         self.get_commits()
-        self.parse_commits(self.commits[0])
+        self.parse_commits(self.commits[0], 0)
         self.recenter_frame()
         self.scale_frame()
         self.vsplit_frame()

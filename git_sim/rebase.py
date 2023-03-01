@@ -65,9 +65,8 @@ class Rebase(GitSimBaseCommand):
 
         self.show_intro()
         self.get_commits(start=self.branch)
-        self.parse_commits(self.commits[0])
+        self.parse_commits(self.commits[0], 0)
         self.orig_commits = self.commits
-        self.i = 0
         self.get_commits()
 
         reached_base = False
@@ -77,9 +76,7 @@ class Rebase(GitSimBaseCommand):
             ):
                 reached_base = True
 
-        self.parse_commits(
-            self.commits[0], shift=4 * m.DOWN, dots=False if reached_base else True
-        )
+        self.parse_commits(self.commits[0], 0, shift=4 * m.DOWN)
         self.center_frame_on_commit(self.orig_commits[0])
 
         to_rebase = []

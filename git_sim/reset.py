@@ -24,6 +24,7 @@ class Reset(GitSimBaseCommand):
         super().__init__()
         self.commit = commit
         self.mode = mode
+        settings.hide_merged_chains = True
 
         try:
             self.resetTo = git.repo.fun.rev_parse(self.repo, self.commit)
@@ -56,7 +57,7 @@ class Reset(GitSimBaseCommand):
 
         self.show_intro()
         self.get_commits()
-        self.parse_commits(self.commits[self.i])
+        self.parse_commits(self.commits[0], 0)
         self.recenter_frame()
         self.scale_frame()
         self.reset_head_branch(self.resetTo.hexsha)
@@ -65,12 +66,12 @@ class Reset(GitSimBaseCommand):
         self.fadeout()
         self.show_outro()
 
-    def build_commit_id_and_message(self, commit, dots=False):
+    def build_commit_id_and_message(self, commit, i, dots=False):
         hide_refs = False
         if commit == "dark":
             commitId = m.Text("", font="Monospace", font_size=20, color=self.fontColor)
             commitMessage = ""
-        elif self.i == 3 and self.resetTo.hexsha not in [
+        elif i == 3 and self.resetTo.hexsha not in [
             commit.hexsha for commit in self.get_nondark_commits()
         ]:
             commitId = m.Text(
@@ -78,7 +79,7 @@ class Reset(GitSimBaseCommand):
             )
             commitMessage = "..."
             hide_refs = True
-        elif self.i == 4 and self.resetTo.hexsha not in [
+        elif i == 4 and self.resetTo.hexsha not in [
             commit.hexsha for commit in self.get_nondark_commits()
         ]:
             commitId = m.Text(

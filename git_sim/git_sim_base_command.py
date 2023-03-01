@@ -25,12 +25,12 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.trimmed = False
         self.prevRef = None
         self.topref = None
-        self.i = 0
         self.numCommits = settings.commits
         self.defaultNumCommits = settings.commits
         self.selected_branches = []
         self.stop = False
         self.zone_title_offset = 2.6 if platform.system() == "Windows" else 2.6
+        self.arrow_map = []
 
         self.logo = m.ImageMobject(settings.logo)
         self.logo.width = 3
@@ -81,31 +81,50 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.get_commits(start=start)
 
     def parse_commits(
-        self, commit, prevCircle=None, shift=numpy.array([0.0, 0.0, 0.0]), dots=False
+        self, commit, i, prevCircle=None, shift=numpy.array([0.0, 0.0, 0.0])
     ):
-        if self.stop:
-            return
-        if self.i < self.numCommits and commit in self.commits:
+        isNewCommit = commit.hexsha not in self.drawnCommits
+
+        if i < self.numCommits and commit in self.commits:
             commitId, circle, arrow, hide_refs = self.draw_commit(
-                commit, prevCircle, shift, dots
+                commit, i, prevCircle, shift
             )
 
             if commit != "dark":
-                if not hide_refs and not self.stop:
-                    self.draw_head(commit, commitId)
-                    self.draw_branch(commit)
-                    self.draw_tag(commit)
-                self.draw_arrow(prevCircle, arrow)
-                if self.stop:
-                    return
-                if self.i == 0 and len(self.drawnRefs) < 2:
+                if not hide_refs and isNewCommit:
+                    self.draw_head(commit, i, commitId)
+                    self.draw_branch(commit, i)
+                    self.draw_tag(commit, i)
+                if (
+                    not isinstance(arrow, m.CurvedArrow)
+                    and [arrow.start.tolist(), arrow.end.tolist()] not in self.arrow_map
+                ):
+                    self.draw_arrow(prevCircle, arrow)
+                    self.arrow_map.append([arrow.start.tolist(), arrow.end.tolist()])
+                elif (
+                    isinstance(arrow, m.CurvedArrow)
+                    and [arrow.get_start().tolist(), arrow.get_end().tolist()]
+                    not in self.arrow_map
+                ):
+                    self.draw_arrow(prevCircle, arrow)
+                    self.arrow_map.append(
+                        [arrow.get_start().tolist(), arrow.get_end().tolist()]
+                    )
+                if i == 0 and len(self.drawnRefs) < 2:
                     self.draw_dark_ref()
 
-            if self.i < len(self.commits) - 1:
-                self.i += 1
-                self.parse_commits(self.commits[self.i], circle, dots=True)
-            else:
-                self.i = 0
+            if i < self.numCommits:  # len(self.commits) - 1:
+                i += 1
+                commitParents = list(commit.parents)
+                if len(commitParents) > 0:
+                    if settings.invert_branches:
+                        commitParents.reverse()
+
+                    if settings.hide_merged_chains:
+                        self.parse_commits(commitParents[0], i, circle)
+                    else:
+                        for p in range(len(commitParents)):
+                            self.parse_commits(commitParents[p], i, circle)
 
     def show_intro(self):
         if settings.animate and settings.show_intro:
@@ -170,9 +189,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             centers.append(commit.get_center())
         return centers
 
-    def draw_commit(
-        self, commit, prevCircle, shift=numpy.array([0.0, 0.0, 0.0]), dots=False
-    ):
+    def draw_commit(self, commit, i, prevCircle, shift=numpy.array([0.0, 0.0, 0.0])):
         if commit == "dark":
             commitFill = m.WHITE if settings.light_mode else m.BLACK
         elif len(commit.parents) <= 1:
@@ -193,29 +210,54 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 prevCircle, m.RIGHT if settings.reverse else m.LEFT, buff=1.5
             )
 
-        start = (
-            prevCircle.get_center()
-            if prevCircle
-            else (m.LEFT if settings.reverse else m.RIGHT)
-        )
-        end = circle.get_center()
+        while any((circle.get_center() == c).all() for c in self.get_centers()):
+            circle.next_to(circle, m.DOWN, buff=3.5)
+
+        isNewCommit = commit.hexsha not in self.drawnCommits
+
+        if isNewCommit:
+            start = (
+                prevCircle.get_center()
+                if prevCircle
+                else (m.LEFT if settings.reverse else m.RIGHT)
+            )
+            end = circle.get_center()
+        else:
+            circle.move_to(self.drawnCommits[commit.hexsha].get_center())
+            start = (
+                prevCircle.get_center()
+                if prevCircle
+                else (m.LEFT if settings.reverse else m.RIGHT)
+            )
+            end = self.drawnCommits[commit.hexsha].get_center()
+
+        arrow = m.Arrow(start, end, color=self.fontColor)
 
         if commit == "dark":
             arrow = m.Arrow(
                 start, end, color=m.WHITE if settings.light_mode else m.BLACK
             )
-        elif commit.hexsha in self.drawnCommits:
-            end = self.drawnCommits[commit.hexsha].get_center()
-            arrow = m.Arrow(start, end, color=self.fontColor)
-            self.stop = True
-        else:
-            arrow = m.Arrow(start, end, color=self.fontColor)
 
         length = numpy.linalg.norm(start - end) - (1.5 if start[1] == end[1] else 3)
         arrow.set_length(length)
+        angle = arrow.get_angle()
+        lineRect = (
+            m.Rectangle(height=0.1, width=length, color="#123456")
+            .move_to(arrow.get_center())
+            .rotate(angle)
+        )
+
+        for commitCircle in self.drawnCommits.values():
+            inter = m.Intersection(lineRect, commitCircle)
+            if inter.has_points():
+                arrow = m.CurvedArrow(start, end, color=self.fontColor)
+                if start[1] == end[1]:
+                    arrow.shift(m.UP * 1.25)
+                if start[0] < end[0] and start[1] == end[1]:
+                    arrow.flip(m.RIGHT).shift(m.UP)
 
         commitId, commitMessage, commit, hide_refs = self.build_commit_id_and_message(
-            commit, dots
+            commit, i
         )
         commitId.next_to(circle, m.UP)
 
@@ -231,7 +273,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             color=self.fontColor,
         ).next_to(circle, m.DOWN)
 
-        if settings.animate and commit != "dark" and not self.stop:
+        if settings.animate and commit != "dark" and isNewCommit:
             self.play(
                 self.camera.frame.animate.move_to(circle.get_center()),
                 m.Create(circle),
@@ -239,7 +281,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 m.AddTextLetterByLetter(message),
                 run_time=1 / settings.speed,
             )
-        elif not self.stop:
+        elif isNewCommit:
             self.add(circle, commitId, message)
         else:
             return commitId, circle, arrow, hide_refs
@@ -252,7 +294,17 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         return commitId, circle, arrow, hide_refs
 
-    def build_commit_id_and_message(self, commit, dots=False):
+    def get_nonparent_branch_names(self):
+        branches = [b for b in self.repo.heads if not b.name.startswith("remotes/")]
+        exclude = []
+        for b1 in branches:
+            for b2 in branches:
+                if b1.name != b2.name:
+                    if self.repo.is_ancestor(b1.commit, b2.commit):
+                        exclude.append(b1.name)
+        return [b for b in branches if b.name not in exclude]
+
+    def build_commit_id_and_message(self, commit, i, dots=False):
         hide_refs = False
         if commit == "dark":
             commitId = m.Text("", font="Monospace", font_size=20, color=self.fontColor)
@@ -276,7 +328,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             commitMessage = commit.message.split("\n")[0][:40].replace("\n", " ")
         return commitId, commitMessage, commit, hide_refs
 
-    def draw_head(self, commit, commitId):
+    def draw_head(self, commit, i, commitId):
         if commit.hexsha == self.repo.head.commit.hexsha:
             headbox = m.Rectangle(color=m.BLUE, fill_color=m.BLUE, fill_opacity=0.25)
             headbox.width = 1
@@ -297,10 +349,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.drawnRefs["HEAD"] = head
             self.prevRef = head
 
-            if self.i == 0:
+            if i == 0:
                 self.topref = self.prevRef
 
-    def draw_branch(self, commit):
+    def draw_branch(self, commit, i):
         x = 0
 
         remote_tracking_branches = self.get_remote_tracking_branches()
@@ -348,17 +400,17 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 self.toFadeOut.add(branchRec, branchText)
                 self.drawnRefs[branch] = fullbranch
 
-                if self.i == 0:
+                if i == 0:
                     self.topref = self.prevRef
 
                 x += 1
                 if x >= settings.max_branches_per_commit:
                     return
 
-    def draw_tag(self, commit):
+    def draw_tag(self, commit, i):
         x = 0
 
-        if settings.hide_first_tag and self.i == 0:
+        if settings.hide_first_tag and i == 0:
             return
 
         for tag in self.repo.tags:
@@ -394,7 +446,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
                     self.toFadeOut.add(tagRec, tagText)
 
-                    if self.i == 0:
+                    if i == 0:
                         self.topref = self.prevRef
 
                     x += 1
@@ -878,7 +930,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 nondark_commits.append(commit)
         return nondark_commits
 
-    def draw_ref(self, commit, top, text="HEAD", color=m.BLUE):
+    def draw_ref(self, commit, i, top, text="HEAD", color=m.BLUE):
         refText = m.Text(text, font="Monospace", font_size=20, color=self.fontColor)
         refbox = m.Rectangle(
             color=color,
@@ -901,7 +953,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.drawnRefs[text] = ref
         self.prevRef = ref
 
-        if self.i == 0:
+        if i == 0:
             self.topref = self.prevRef
 
     def draw_dark_ref(self):

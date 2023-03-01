@@ -43,7 +43,7 @@ class Revert(GitSimBaseCommand):
 
         self.show_intro()
         self.get_commits()
-        self.parse_commits(self.commits[self.i])
+        self.parse_commits(self.commits[0], 0)
         self.center_frame_on_commit(self.commits[0])
         self.setup_and_draw_revert_commit()
         self.recenter_frame()
@@ -58,12 +58,12 @@ class Revert(GitSimBaseCommand):
         self.fadeout()
         self.show_outro()
 
-    def build_commit_id_and_message(self, commit, dots=False):
+    def build_commit_id_and_message(self, commit, i, dots=False):
         hide_refs = False
         if commit == "dark":
             commitId = m.Text("", font="Monospace", font_size=20, color=self.fontColor)
             commitMessage = ""
-        elif self.i == 2 and self.revert.hexsha not in [
+        elif i == 2 and self.revert.hexsha not in [
             commit.hexsha for commit in self.commits
         ]:
             commitId = m.Text(
@@ -71,7 +71,7 @@ class Revert(GitSimBaseCommand):
             )
             commitMessage = "..."
             hide_refs = True
-        elif self.i == 3 and self.revert.hexsha not in [
+        elif i == 3 and self.revert.hexsha not in [
             commit.hexsha for commit in self.commits
         ]:
             commitId = m.Text(

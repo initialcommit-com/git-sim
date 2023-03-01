@@ -10,13 +10,14 @@ class Status(GitSimBaseCommand):
             self.selected_branches.append(self.repo.active_branch.name)
         except TypeError:
             pass
+        settings.hide_merged_chains = True
 
     def construct(self):
         if not settings.stdout:
             print(f"{settings.INFO_STRING } {type(self).__name__.lower()}")
         self.show_intro()
         self.get_commits()
-        self.parse_commits(self.commits[0])
+        self.parse_commits(self.commits[0], 0)
         self.recenter_frame()
         self.scale_frame()
         self.vsplit_frame()
