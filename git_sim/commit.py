@@ -15,8 +15,9 @@ class Commit(GitSimBaseCommand):
         self.message = message
         self.amend = amend
 
-        self.defaultNumCommits = 4 if not self.amend else 5
-        self.numCommits = 4 if not self.amend else 5
+        self.n_default = 4 if not self.amend else 5
+        self.n = self.n_default
+
         self.hide_first_tag = True
         settings.hide_merged_chains = True
 

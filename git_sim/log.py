@@ -8,10 +8,18 @@ import manim as m
 
 
 class Log(GitSimBaseCommand):
-    def __init__(self, commits: int, all: bool):
+    def __init__(self, ctx: typer.Context, n: int, all: bool):
         super().__init__()
-        self.numCommits = commits
-        self.defaultNumCommits = commits
+
+        n_command = ctx.parent.params.get("n")
+        n_subcommand = n
+        if n_subcommand:
+            n = n_subcommand
+        else:
+            n = n_command
+        self.n = n
+        self.n_orig = self.n
+
         try:
             self.selected_branches.append(self.repo.active_branch.name)
         except TypeError:
@@ -37,15 +45,17 @@ class Log(GitSimBaseCommand):
 
 
 def log(
-    commits: int = typer.Option(
-        default=settings.commits,
-        help="The number of commits to display in the simulated log output",
+    ctx: typer.Context,
+    n: int = typer.Option(
+        settings.n_subcommand,
+        "-n",
+        help="Number of commits to display from branch heads",
         min=1,
     ),
     all: bool = typer.Option(
-        default=False,
+        False,
         help="Display all local branches in the log output",
     ),
 ):
-    scene = Log(commits=commits, all=all)
+    scene = Log(ctx=ctx, n=n, all=all)
     handle_animations(scene=scene)

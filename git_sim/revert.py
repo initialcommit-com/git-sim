@@ -25,8 +25,9 @@ class Revert(GitSimBaseCommand):
             )
             sys.exit(1)
 
-        self.defaultNumCommits = 4
-        self.numCommits = 4
+        self.n_default = 4
+        self.n = self.n_default
+
         self.hide_first_tag = True
         self.zone_title_offset += 0.1
 

@@ -19,7 +19,9 @@ class Settings(BaseSettings):
     allow_no_commits = False
     animate = False
     auto_open = True
-    commits = 5
+    n_default = 5
+    n = 5
+    n_subcommand: Union[int, None] = None
     files: Union[List[pathlib.Path], None] = None
     hide_first_tag = False
     img_format: ImgFormat = ImgFormat.jpg

@@ -32,6 +32,11 @@ def main(
         settings.animate,
         help="Animate the simulation and output as an mp4 video",
     ),
+    n: int = typer.Option(
+        settings.n,
+        "-n",
+        help="Number of commits to display from each branch head",
+    ),
     auto_open: bool = typer.Option(
         settings.auto_open,
         "--auto-open",
@@ -117,6 +122,7 @@ def main(
     ),
 ):
     settings.animate = animate
+    settings.n = n
     settings.auto_open = auto_open
     settings.img_format = img_format
     settings.light_mode = light_mode

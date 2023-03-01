@@ -25,8 +25,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.trimmed = False
         self.prevRef = None
         self.topref = None
-        self.numCommits = settings.commits
-        self.defaultNumCommits = settings.commits
+        self.n_default = settings.n_default
+        self.n = settings.n
+        self.n_orig = self.n
         self.selected_branches = []
         self.stop = False
         self.zone_title_offset = 2.6 if platform.system() == "Windows" else 2.6
@@ -50,9 +51,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.show_outro()
 
     def get_commits(self, start="HEAD"):
-        if not self.numCommits:
+        if not self.n:
             if settings.allow_no_commits:
-                self.numCommits = self.defaultNumCommits
+                self.n = self.n_default
                 self.commits = ["dark"] * 5
                 self.zone_title_offset = 2
                 return
@@ -63,21 +64,19 @@ class GitSimBaseCommand(m.MovingCameraScene):
         try:
             self.commits = (
                 list(self.repo.iter_commits(start))
-                if self.numCommits == 1
+                if self.n == 1
                 else list(
-                    self.repo.iter_commits(
-                        start + "~" + str(self.numCommits) + "..." + start
-                    )
+                    self.repo.iter_commits(start + "~" + str(self.n) + "..." + start)
                 )
             )
-            if len(self.commits) < self.defaultNumCommits:
+            if len(self.commits) < self.n_default:
                 self.commits = list(self.repo.iter_commits(start))
-            while len(self.commits) < self.defaultNumCommits:
+            while len(self.commits) < self.n_default:
                 self.commits.append(self.create_dark_commit())
-            self.numCommits = self.defaultNumCommits
+            self.n = self.n_orig
 
         except GitCommandError:
-            self.numCommits -= 1
+            self.n -= 1
             self.get_commits(start=start)
 
     def parse_commits(
@@ -85,7 +84,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
     ):
         isNewCommit = commit.hexsha not in self.drawnCommits
 
-        if i < self.numCommits and commit in self.commits:
+        if i < self.n and commit in self.commits:
             commitId, circle, arrow, hide_refs = self.draw_commit(
                 commit, i, prevCircle, shift
             )
@@ -113,7 +112,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 if i == 0 and len(self.drawnRefs) < 2:
                     self.draw_dark_ref()
 
-            if i < self.numCommits:  # len(self.commits) - 1:
+            if i < self.n:
                 i += 1
                 commitParents = list(commit.parents)
                 if len(commitParents) > 0:
