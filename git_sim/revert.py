@@ -27,6 +27,7 @@ class Revert(GitSimBaseCommand):
 
         self.n_default = 4
         self.n = self.n_default
+        settings.hide_merged_chains = True
 
         self.hide_first_tag = True
         self.zone_title_offset += 0.1
@@ -43,9 +44,8 @@ class Revert(GitSimBaseCommand):
             )
 
         self.show_intro()
-        self.get_commits()
-        self.parse_commits(self.commits[0], 0)
-        self.center_frame_on_commit(self.commits[0])
+        self.parse_commits()
+        self.center_frame_on_commit(self.get_commit())
         self.setup_and_draw_revert_commit()
         self.recenter_frame()
         self.scale_frame()
@@ -59,13 +59,13 @@ class Revert(GitSimBaseCommand):
         self.fadeout()
         self.show_outro()
 
-    def build_commit_id_and_message(self, commit, i, dots=False):
+    def build_commit_id_and_message(self, commit, i):
         hide_refs = False
         if commit == "dark":
             commitId = m.Text("", font="Monospace", font_size=20, color=self.fontColor)
             commitMessage = ""
         elif i == 2 and self.revert.hexsha not in [
-            commit.hexsha for commit in self.commits
+            commit.hexsha for commit in self.get_default_commits()
         ]:
             commitId = m.Text(
                 "...", font="Monospace", font_size=20, color=self.fontColor
@@ -73,7 +73,7 @@ class Revert(GitSimBaseCommand):
             commitMessage = "..."
             hide_refs = True
         elif i == 3 and self.revert.hexsha not in [
-            commit.hexsha for commit in self.commits
+            commit.hexsha for commit in self.get_default_commits()
         ]:
             commitId = m.Text(
                 self.revert.hexsha[:6],
@@ -97,13 +97,13 @@ class Revert(GitSimBaseCommand):
         circle = m.Circle(stroke_color=m.RED, fill_color=m.RED, fill_opacity=0.25)
         circle.height = 1
         circle.next_to(
-            self.drawnCommits[self.commits[0].hexsha],
+            self.drawnCommits[self.get_commit().hexsha],
             m.LEFT if settings.reverse else m.RIGHT,
             buff=1.5,
         )
 
         start = circle.get_center()
-        end = self.drawnCommits[self.commits[0].hexsha].get_center()
+        end = self.drawnCommits[self.get_commit().hexsha].get_center()
         arrow = m.Arrow(start, end, color=self.fontColor)
         length = numpy.linalg.norm(start - end) - (1.5 if start[1] == end[1] else 3)
         arrow.set_length(length)

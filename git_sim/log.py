@@ -12,9 +12,9 @@ class Log(GitSimBaseCommand):
         super().__init__()
 
         n_command = ctx.parent.params.get("n")
-        n_subcommand = n
-        if n_subcommand:
-            n = n_subcommand
+        self.n_subcommand = n
+        if self.n_subcommand:
+            n = self.n_subcommand
         else:
             n = n_command
         self.n = n
@@ -29,15 +29,13 @@ class Log(GitSimBaseCommand):
     def construct(self):
         if not settings.stdout:
             print(
-                f"{settings.INFO_STRING} {type(self).__name__.lower()}{' --all' if self.all else ''}"
+                f"{settings.INFO_STRING} {type(self).__name__.lower()}{' --all' if self.all else ''}{' -n ' + str(self.n) if self.n_subcommand else ''}"
             )
         self.show_intro()
-        self.get_commits()
-        self.parse_commits(self.commits[0], 0)
+        self.parse_commits()
         if self.all:
             for branch in self.get_nonparent_branch_names():
-                self.get_commits(start=branch.name)
-                self.parse_commits(self.commits[0], 0)
+                self.parse_commits(self.get_commit(branch.name))
         self.recenter_frame()
         self.scale_frame()
         self.fadeout()

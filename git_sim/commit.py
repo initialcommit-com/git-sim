@@ -42,7 +42,7 @@ class Commit(GitSimBaseCommand):
             )
 
         self.show_intro()
-        self.get_commits()
+        head_commit = self.get_commit()
 
         if self.amend:
             tree = self.repo.tree()
@@ -51,17 +51,17 @@ class Commit(GitSimBaseCommand):
                 tree,
                 self.message,
             )
-            self.commits[0] = amended
+            head_commit = amended
 
-        self.parse_commits(self.commits[0], 0)
-        self.center_frame_on_commit(self.commits[0])
+        self.parse_commits(head_commit)
+        self.center_frame_on_commit(head_commit)
 
         if not self.amend:
-            self.setup_and_draw_parent(self.commits[0], self.message)
+            self.setup_and_draw_parent(head_commit, self.message)
         else:
-            self.draw_ref(self.commits[0], self.drawnCommitIds[amended.hexsha])
+            self.draw_ref(head_commit, self.drawnCommitIds[amended.hexsha])
             self.draw_ref(
-                self.commits[0],
+                head_commit,
                 self.drawnRefs["HEAD"],
                 text=self.repo.active_branch.name,
                 color=m.GREEN,

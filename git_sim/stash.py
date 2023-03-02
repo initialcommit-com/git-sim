@@ -57,8 +57,7 @@ class Stash(GitSimBaseCommand):
             )
 
         self.show_intro()
-        self.get_commits()
-        self.parse_commits(self.commits[0], 0)
+        self.parse_commits()
         self.recenter_frame()
         self.scale_frame()
         self.vsplit_frame()

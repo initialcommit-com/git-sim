@@ -19,7 +19,6 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.drawnCommits = {}
         self.drawnRefs = {}
         self.drawnCommitIds = {}
-        self.commits = []
         self.zoomOuts = 0
         self.toFadeOut = m.Group()
         self.trimmed = False
@@ -46,45 +45,31 @@ class GitSimBaseCommand(m.MovingCameraScene):
     def construct(self):
         print(f"{settings.INFO_STRING} {type(self).__name__.lower()}")
         self.show_intro()
-        self.get_commits()
+        self.parse_commits()
         self.fadeout()
         self.show_outro()
 
-    def get_commits(self, start="HEAD"):
-        if not self.n:
-            if settings.allow_no_commits:
-                self.n = self.n_default
-                self.commits = ["dark"] * 5
-                self.zone_title_offset = 2
-                return
-            else:
-                print("git-sim error: No commits in current Git repository.")
-                sys.exit(1)
+    def get_commit(self, sha_or_ref="HEAD"):
+        return self.repo.commit(sha_or_ref)
 
-        try:
-            self.commits = (
-                list(self.repo.iter_commits(start))
-                if self.n == 1
-                else list(
-                    self.repo.iter_commits(start + "~" + str(self.n) + "..." + start)
-                )
-            )
-            if len(self.commits) < self.n_default:
-                self.commits = list(self.repo.iter_commits(start))
-            while len(self.commits) < self.n_default:
-                self.commits.append(self.create_dark_commit())
-            self.n = self.n_orig
-
-        except GitCommandError:
-            self.n -= 1
-            self.get_commits(start=start)
+    def get_default_commits(self):
+        defaultCommits = [self.get_commit()]
+        for x in range(self.n_default - 1):
+            defaultCommits.append(defaultCommits[-1].parents[0])
+        return defaultCommits
 
     def parse_commits(
-        self, commit, i, prevCircle=None, shift=numpy.array([0.0, 0.0, 0.0])
+        self,
+        commit=None,
+        i=0,
+        prevCircle=None,
+        shift=numpy.array([0.0, 0.0, 0.0]),
     ):
+        commit = commit or self.get_commit()
+
         isNewCommit = commit.hexsha not in self.drawnCommits
 
-        if i < self.n and commit in self.commits:
+        if i < self.n:
             commitId, circle, arrow, hide_refs = self.draw_commit(
                 commit, i, prevCircle, shift
             )
@@ -303,20 +288,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
                         exclude.append(b1.name)
         return [b for b in branches if b.name not in exclude]
 
-    def build_commit_id_and_message(self, commit, i, dots=False):
+    def build_commit_id_and_message(self, commit, i):
         hide_refs = False
         if commit == "dark":
             commitId = m.Text("", font="Monospace", font_size=20, color=self.fontColor)
             commitMessage = ""
-        elif (
-            dots
-            and self.commits[-1] != "dark"
-            and commit.hexsha == self.commits[-1].hexsha
-        ):
-            commitId = m.Text(
-                "...", font="Monospace", font_size=20, color=self.fontColor
-            )
-            commitMessage = "..."
         else:
             commitId = m.Text(
                 commit.hexsha[0:6],
@@ -924,9 +900,6 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
     def get_nondark_commits(self):
         nondark_commits = []
-        for commit in self.commits:
-            if commit != "dark":
-                nondark_commits.append(commit)
         return nondark_commits
 
     def draw_ref(self, commit, i, top, text="HEAD", color=m.BLUE):
