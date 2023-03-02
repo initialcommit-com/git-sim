@@ -24,7 +24,7 @@ class Reset(GitSimBaseCommand):
         super().__init__()
         self.commit = commit
         self.mode = mode
-        settings.hide_merged_chains = True
+        settings.hide_merged_branches = True
 
         try:
             self.resetTo = git.repo.fun.rev_parse(self.repo, self.commit)

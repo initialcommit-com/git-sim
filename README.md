@@ -141,7 +141,7 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 `--img-format`: Output format for the image file, i.e. `jpg` or `png`. Default output format is `jpg`.  
 `--stdout`: Write raw image data to stdout while suppressing all other program output.  
 `--invert-branches`: Invert positioning of branches by reversing order of multiple parents where applicable.  
-`--hide-merged-chains`: Hide commits from merged branches, i.e. only display mainline commits.
+`--hide-merged-branches`: Hide commits from merged branches, i.e. only display mainline commits.
 
 Animation-only global options (to be used in conjunction with `--animate`):
 

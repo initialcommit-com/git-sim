@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     video_format: VideoFormat = VideoFormat.mp4
     stdout = False
     invert_branches = False
-    hide_merged_chains = False
+    hide_merged_branches = False
 
     class Config:
         env_prefix = "git_sim_"

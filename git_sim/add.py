@@ -16,7 +16,7 @@ class Add(GitSimBaseCommand):
         self.hide_first_tag = True
         self.allow_no_commits = True
         self.files = files
-        settings.hide_merged_chains = True
+        settings.hide_merged_branches = True
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)

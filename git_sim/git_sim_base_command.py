@@ -104,7 +104,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     if settings.invert_branches:
                         commitParents.reverse()
 
-                    if settings.hide_merged_chains:
+                    if settings.hide_merged_branches:
                         self.parse_commits(commitParents[0], i, circle)
                     else:
                         for p in range(len(commitParents)):

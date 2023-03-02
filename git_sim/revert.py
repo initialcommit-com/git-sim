@@ -27,7 +27,7 @@ class Revert(GitSimBaseCommand):
 
         self.n_default = 4
         self.n = self.n_default
-        settings.hide_merged_chains = True
+        settings.hide_merged_branches = True
 
         self.hide_first_tag = True
         self.zone_title_offset += 0.1
