@@ -23,6 +23,7 @@ class Stash(GitSimBaseCommand):
         self.files = files
         self.no_files = True if not self.files else False
         self.command = command
+        settings.hide_merged_branches = True
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
@@ -60,8 +61,7 @@ class Stash(GitSimBaseCommand):
             )
 
         self.show_intro()
-        self.get_commits()
-        self.parse_commits(self.commits[0])
+        self.parse_commits()
         self.recenter_frame()
         self.scale_frame()
         self.vsplit_frame()

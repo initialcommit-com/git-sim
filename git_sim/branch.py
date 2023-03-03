@@ -16,10 +16,9 @@ class Branch(GitSimBaseCommand):
             print(f"{settings.INFO_STRING} {type(self).__name__.lower()} {self.name}")
 
         self.show_intro()
-        self.get_commits()
-        self.parse_commits(self.commits[0])
-        self.recenter_frame()
-        self.scale_frame()
+        self.parse_commits()
+        self.parse_all()
+        self.center_frame_on_commit(self.get_commit())
 
         branchText = m.Text(
             self.name,
@@ -48,6 +47,8 @@ class Branch(GitSimBaseCommand):
         self.toFadeOut.add(branchRec, branchText)
         self.drawnRefs[self.name] = fullbranch
 
+        self.recenter_frame()
+        self.scale_frame()
         self.fadeout()
         self.show_outro()
 

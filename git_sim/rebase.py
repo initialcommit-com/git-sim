@@ -64,35 +64,32 @@ class Rebase(GitSimBaseCommand):
             sys.exit(1)
 
         self.show_intro()
-        self.get_commits(start=self.branch)
-        self.parse_commits(self.commits[0])
-        self.orig_commits = self.commits
-        self.i = 0
-        self.get_commits()
+        branch_commit = self.get_commit(self.branch)
+        self.parse_commits(branch_commit)
+        head_commit = self.get_commit()
 
         reached_base = False
-        for commit in self.commits:
+        for commit in self.get_default_commits():
             if commit != "dark" and self.branch in self.repo.git.branch(
                 "--contains", commit
             ):
                 reached_base = True
 
-        self.parse_commits(
-            self.commits[0], shift=4 * m.DOWN, dots=False if reached_base else True
-        )
-        self.center_frame_on_commit(self.orig_commits[0])
+        self.parse_commits(head_commit, shift=4 * m.DOWN)
+        self.parse_all()
+        self.center_frame_on_commit(branch_commit)
 
         to_rebase = []
         i = 0
-        current = self.commits[i]
+        current = head_commit
         while self.branch not in self.repo.git.branch("--contains", current):
             to_rebase.append(current)
             i += 1
-            if i >= len(self.commits):
+            if i >= self.n:
                 break
-            current = self.commits[i]
+            current = self.get_default_commits()[i]
 
-        parent = self.orig_commits[0].hexsha
+        parent = branch_commit.hexsha
 
         for j, tr in enumerate(reversed(to_rebase)):
             if not reached_base and j == 0:
