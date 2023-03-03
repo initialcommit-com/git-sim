@@ -97,18 +97,17 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     self.draw_dark_ref()
 
             self.first_parse = False
-            if i < self.n:
-                i += 1
-                commitParents = list(commit.parents)
-                if len(commitParents) > 0:
-                    if settings.invert_branches:
-                        commitParents.reverse()
+            i += 1
+            commitParents = list(commit.parents)
+            if len(commitParents) > 0:
+                if settings.invert_branches:
+                    commitParents.reverse()
 
-                    if settings.hide_merged_branches:
-                        self.parse_commits(commitParents[0], i, circle)
-                    else:
-                        for p in range(len(commitParents)):
-                            self.parse_commits(commitParents[p], i, circle)
+                if settings.hide_merged_branches:
+                    self.parse_commits(commitParents[0], i, circle)
+                else:
+                    for p in range(len(commitParents)):
+                        self.parse_commits(commitParents[p], i, circle)
 
     def parse_all(self):
         if self.all:
