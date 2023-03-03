@@ -76,6 +76,7 @@ class Rebase(GitSimBaseCommand):
                 reached_base = True
 
         self.parse_commits(head_commit, shift=4 * m.DOWN)
+        self.parse_all()
         self.center_frame_on_commit(branch_commit)
 
         to_rebase = []

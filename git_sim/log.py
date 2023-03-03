@@ -20,22 +20,27 @@ class Log(GitSimBaseCommand):
         self.n = n
         self.n_orig = self.n
 
+        all_command = ctx.parent.params.get("all")
+        self.all_subcommand = all
+        if self.all_subcommand:
+            all = self.all_subcommand
+        else:
+            all = all_command
+        self.all = all
+
         try:
             self.selected_branches.append(self.repo.active_branch.name)
         except TypeError:
             pass
-        self.all = all
 
     def construct(self):
         if not settings.stdout:
             print(
-                f"{settings.INFO_STRING} {type(self).__name__.lower()}{' --all' if self.all else ''}{' -n ' + str(self.n) if self.n_subcommand else ''}"
+                f"{settings.INFO_STRING} {type(self).__name__.lower()}{' --all' if self.all_subcommand else ''}{' -n ' + str(self.n) if self.n_subcommand else ''}"
             )
         self.show_intro()
         self.parse_commits()
-        if self.all:
-            for branch in self.get_nonparent_branch_names():
-                self.parse_commits(self.get_commit(branch.name))
+        self.parse_all()
         self.recenter_frame()
         self.scale_frame()
         self.fadeout()
@@ -45,13 +50,13 @@ class Log(GitSimBaseCommand):
 def log(
     ctx: typer.Context,
     n: int = typer.Option(
-        settings.n_subcommand,
+        None,
         "-n",
         help="Number of commits to display from branch heads",
-        min=1,
     ),
     all: bool = typer.Option(
         False,
+        "--all",
         help="Display all local branches in the log output",
     ),
 ):

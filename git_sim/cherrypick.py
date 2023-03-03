@@ -57,6 +57,7 @@ class CherryPick(GitSimBaseCommand):
         self.parse_commits(head_commit)
         cherry_picked_commit = self.get_commit(self.commit)
         self.parse_commits(cherry_picked_commit, shift=4 * m.DOWN)
+        self.parse_all()
         self.center_frame_on_commit(head_commit)
         self.setup_and_draw_parent(
             head_commit,

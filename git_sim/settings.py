@@ -21,7 +21,6 @@ class Settings(BaseSettings):
     auto_open = True
     n_default = 5
     n = 5
-    n_subcommand: Union[int, None] = None
     files: Union[List[pathlib.Path], None] = None
     hide_first_tag = False
     img_format: ImgFormat = ImgFormat.jpg
@@ -43,6 +42,7 @@ class Settings(BaseSettings):
     stdout = False
     invert_branches = False
     hide_merged_branches = False
+    all = False
 
     class Config:
         env_prefix = "git_sim_"

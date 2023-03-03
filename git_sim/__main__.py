@@ -120,6 +120,10 @@ def main(
         settings.hide_merged_branches,
         help="Hide commits from merged branches, i.e. only display mainline commits",
     ),
+    all: bool = typer.Option(
+        settings.all,
+        help="Display all local branches in the log output",
+    ),
 ):
     settings.animate = animate
     settings.n = n
@@ -142,6 +146,7 @@ def main(
     settings.stdout = stdout
     settings.invert_branches = invert_branches
     settings.hide_merged_branches = hide_merged_branches
+    settings.all = all
 
     if sys.platform == "linux" or sys.platform == "darwin":
         repo_name = git.repo.Repo(

@@ -70,6 +70,7 @@ class Merge(GitSimBaseCommand):
 
         if self.ff:
             self.parse_commits(branch_commit)
+            self.parse_all()
             reset_head_to = branch_commit.hexsha
             shift = numpy.array([0.0, 0.6, 0.0])
 
@@ -95,6 +96,7 @@ class Merge(GitSimBaseCommand):
         else:
             self.parse_commits(head_commit)
             self.parse_commits(branch_commit, shift=4 * m.DOWN)
+            self.parse_all()
             self.center_frame_on_commit(head_commit)
             self.setup_and_draw_parent(
                 head_commit,

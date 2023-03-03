@@ -133,6 +133,8 @@ $ git-sim [global options] <subcommand> [subcommand options]
 
 The `[global options]` apply to the overarching `git-sim` simulation itself, including:
 
+`-n <number>`: Number of commits to display from each branch head.  
+`--all`: Display all local branches in the log output.  
 `--light-mode`: Use a light mode color scheme instead of default dark mode.  
 `--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video.  
 `--media-dir`: The path at which to store the simulated output media files.  
@@ -160,9 +162,11 @@ The `[subcommand options]` are like regular Git options specific to the specifie
 The following is a list of Git commands that can be simulated and their corresponding options/flags.
 
 ### git log
-Usage: `git-sim log`
+Usage: `git-sim log [-n <number>] [--all]`
 
 - Simulated output will show the most recent 5 commits on the active branch by default
+- Use `-n <number>` to set number of commits to display from each branch head
+- Set `--all` to display all local branches in the log output
 
 ![git-sim-log_01-05-23_22-02-39](https://user-images.githubusercontent.com/49353917/210940300-aadd14c6-72ab-4529-a1be-b494ed5dd4c9.jpg)
 

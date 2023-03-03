@@ -19,18 +19,17 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.drawnCommits = {}
         self.drawnRefs = {}
         self.drawnCommitIds = {}
-        self.zoomOuts = 0
         self.toFadeOut = m.Group()
-        self.trimmed = False
         self.prevRef = None
         self.topref = None
         self.n_default = settings.n_default
         self.n = settings.n
         self.n_orig = self.n
         self.selected_branches = []
-        self.stop = False
         self.zone_title_offset = 2.6 if platform.system() == "Windows" else 2.6
         self.arrow_map = []
+        self.all = settings.all
+        self.first_parse = True
 
         self.logo = m.ImageMobject(settings.logo)
         self.logo.width = 3
@@ -97,6 +96,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 if i == 0 and len(self.drawnRefs) < 2:
                     self.draw_dark_ref()
 
+            self.first_parse = False
             if i < self.n:
                 i += 1
                 commitParents = list(commit.parents)
@@ -109,6 +109,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     else:
                         for p in range(len(commitParents)):
                             self.parse_commits(commitParents[p], i, circle)
+
+    def parse_all(self):
+        if self.all:
+            for branch in self.get_nonparent_branch_names():
+                self.parse_commits(self.get_commit(branch.name))
 
     def show_intro(self):
         if settings.animate and settings.show_intro:
@@ -195,7 +200,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             )
 
         while any((circle.get_center() == c).all() for c in self.get_centers()):
-            circle.next_to(circle, m.DOWN, buff=3.5)
+            circle.shift(m.DOWN * 4)
 
         isNewCommit = commit.hexsha not in self.drawnCommits
 
@@ -324,7 +329,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.drawnRefs["HEAD"] = head
             self.prevRef = head
 
-            if i == 0:
+            if i == 0 and self.first_parse:
                 self.topref = self.prevRef
 
     def draw_branch(self, commit, i):
@@ -340,8 +345,6 @@ class GitSimBaseCommand(m.MovingCameraScene):
             branches.insert(0, branches.pop(branches.index(selected_branch)))
 
         for branch in branches:
-            # Use forward slash to check if branch is local or remote tracking
-            # and draw the branch label if its hexsha matches the current commit
             if (
                 not self.is_remote_tracking_branch(branch)  # local branch
                 and commit.hexsha == self.repo.heads[branch].commit.hexsha
@@ -375,7 +378,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 self.toFadeOut.add(branchRec, branchText)
                 self.drawnRefs[branch] = fullbranch
 
-                if i == 0:
+                if i == 0 and self.first_parse:
                     self.topref = self.prevRef
 
                 x += 1
@@ -421,7 +424,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
                     self.toFadeOut.add(tagRec, tagText)
 
-                    if i == 0:
+                    if i == 0 and self.first_parse:
                         self.topref = self.prevRef
 
                     x += 1
@@ -925,7 +928,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.drawnRefs[text] = ref
         self.prevRef = ref
 
-        if i == 0:
+        if i == 0 and self.first_parse:
             self.topref = self.prevRef
 
     def draw_dark_ref(self):

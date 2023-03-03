@@ -17,8 +17,8 @@ class Tag(GitSimBaseCommand):
 
         self.show_intro()
         self.parse_commits()
-        self.recenter_frame()
-        self.scale_frame()
+        self.parse_all()
+        self.center_frame_on_commit(self.get_commit())
 
         tagText = m.Text(
             self.name,
@@ -45,7 +45,10 @@ class Tag(GitSimBaseCommand):
             self.add(fulltag)
 
         self.toFadeOut.add(tagRec, tagText)
+        self.drawnRefs[self.name] = fulltag
 
+        self.recenter_frame()
+        self.scale_frame()
         self.fadeout()
         self.show_outro()
 
