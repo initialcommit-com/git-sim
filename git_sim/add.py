@@ -17,6 +17,7 @@ class Add(GitSimBaseCommand):
         self.allow_no_commits = True
         self.files = files
         settings.hide_merged_branches = True
+        self.n = self.n_default
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
@@ -89,5 +90,6 @@ def add(
         help="The names of one or more files to add to Git's staging area",
     )
 ):
+    settings.hide_first_tag = True
     scene = Add(files=files)
     handle_animations(scene=scene)

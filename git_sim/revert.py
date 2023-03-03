@@ -29,7 +29,6 @@ class Revert(GitSimBaseCommand):
         self.n = self.n_default
         settings.hide_merged_branches = True
 
-        self.hide_first_tag = True
         self.zone_title_offset += 0.1
 
         try:
@@ -166,5 +165,6 @@ def revert(
         help="The ref (branch/tag), or commit ID to simulate revert",
     )
 ):
+    settings.hide_first_tag = True
     scene = Revert(commit=commit)
     handle_animations(scene=scene)

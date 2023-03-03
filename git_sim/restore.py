@@ -12,9 +12,9 @@ from git_sim.settings import settings
 class Restore(GitSimBaseCommand):
     def __init__(self, files: List[str]):
         super().__init__()
-        self.hide_first_tag = True
         self.files = files
         settings.hide_merged_branches = True
+        self.n = self.n_default
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
@@ -79,5 +79,6 @@ def restore(
         help="The names of one or more files to restore",
     )
 ):
+    settings.hide_first_tag = True
     scene = Restore(files=files)
     handle_animations(scene=scene)

@@ -116,5 +116,6 @@ def commit(
         help="Amend the last commit message, must be used with the --message flag",
     ),
 ):
+    settings.hide_first_tag = True
     scene = Commit(message=message, amend=amend)
     handle_animations(scene=scene)

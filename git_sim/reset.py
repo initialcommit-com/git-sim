@@ -35,7 +35,7 @@ class Reset(GitSimBaseCommand):
             sys.exit(1)
 
         self.commitsSinceResetTo = list(self.repo.iter_commits(self.commit + "...HEAD"))
-        self.hide_first_tag = True
+        self.n = self.n_default
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
@@ -169,5 +169,6 @@ def reset(
         help="Simulate a soft reset, shortcut for --mode=hard",
     ),
 ):
+    settings.hide_first_tag = True
     scene = Reset(commit=commit, mode=mode, soft=soft, mixed=mixed, hard=hard)
     handle_animations(scene=scene)

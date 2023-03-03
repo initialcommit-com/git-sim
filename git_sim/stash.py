@@ -19,11 +19,11 @@ class StashSubCommand(Enum):
 class Stash(GitSimBaseCommand):
     def __init__(self, files: List[str], command: StashSubCommand):
         super().__init__()
-        self.hide_first_tag = True
         self.files = files
         self.no_files = True if not self.files else False
         self.command = command
         settings.hide_merged_branches = True
+        self.n = self.n_default
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
@@ -198,5 +198,6 @@ def stash(
         help="The name of the file to stash changes for",
     ),
 ):
+    settings.hide_first_tag = True
     scene = Stash(files=files, command=command)
     handle_animations(scene=scene)

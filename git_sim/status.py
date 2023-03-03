@@ -11,6 +11,7 @@ class Status(GitSimBaseCommand):
         except TypeError:
             pass
         settings.hide_merged_branches = True
+        self.n = self.n_default
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
