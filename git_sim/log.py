@@ -34,7 +34,6 @@ class Log(GitSimBaseCommand):
             pass
 
     def construct(self):
-<<<<<<< HEAD
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
                 f"{settings.INFO_STRING} {type(self).__name__.lower()}{' --all' if self.all_subcommand else ''}{' -n ' + str(self.n) if self.n_subcommand else ''}"

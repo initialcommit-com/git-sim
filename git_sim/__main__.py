@@ -121,6 +121,7 @@ def main(
         "--quiet",
         "-q",
         help="Suppress all output except errors",
+    ),
     invert_branches: bool = typer.Option(
         settings.invert_branches,
         help="Invert positioning of branches by reversing order of multiple parents where applicable",

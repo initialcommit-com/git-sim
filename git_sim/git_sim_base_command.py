@@ -905,7 +905,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         nondark_commits = []
         return nondark_commits
 
-    def draw_ref(self, commit, i, top, text="HEAD", color=m.BLUE):
+    def draw_ref(self, commit, top, i=0, text="HEAD", color=m.BLUE):
         refText = m.Text(text, font="Monospace", font_size=20, color=self.fontColor)
         refbox = m.Rectangle(
             color=color,
