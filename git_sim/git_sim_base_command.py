@@ -818,6 +818,20 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 )
             )
 
+    def reset_head_branch_to_ref(self, ref, shift=numpy.array([0.0, 0.0, 0.0])):
+        if settings.animate:
+            self.play(self.drawnRefs["HEAD"].animate.next_to(ref, m.UP))
+            self.play(
+                self.drawnRefs[self.repo.active_branch.name].animate.next_to(
+                    self.drawnRefs["HEAD"], m.UP
+                )
+            )
+        else:
+            self.drawnRefs["HEAD"].next_to(ref, m.UP)
+            self.drawnRefs[self.repo.active_branch.name].next_to(
+                self.drawnRefs["HEAD"], m.UP
+            )
+
     def translate_frame(self, shift):
         if settings.animate:
             self.play(self.camera.frame.animate.shift(shift))

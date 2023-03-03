@@ -58,7 +58,6 @@ class Merge(GitSimBaseCommand):
         head_commit = self.get_commit()
         branch_commit = self.get_commit(self.branch)
 
-        # Use forward slash to determine if supplied branch arg is local or remote tracking branch
         if not self.is_remote_tracking_branch(self.branch):
             if self.branch in self.repo.git.branch("--contains", head_commit.hexsha):
                 self.ff = True
@@ -82,8 +81,10 @@ class Merge(GitSimBaseCommand):
 
             self.recenter_frame()
             self.scale_frame()
-            if "HEAD" in self.drawnRefs:
+            if "HEAD" in self.drawnRefs and self.no_ff:
                 self.reset_head_branch(reset_head_to, shift=shift)
+            elif "HEAD" in self.drawnRefs:
+                self.reset_head_branch_to_ref(self.topref, shift=shift)
             else:
                 self.draw_ref(branch_commit, commitId if self.no_ff else self.topref)
                 self.draw_ref(
