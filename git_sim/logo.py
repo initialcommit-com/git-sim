@@ -99,7 +99,7 @@ class Logo(GitSimBaseCommand):
         message1 = m.Text("Visually", font="Monospace", font_size=6, color=m.WHITE)
         message2 = m.Text("simulate", font="Monospace", font_size=6, color=m.WHITE)
         message3 = m.Text("Git", font="Monospace", font_size=6, color=m.WHITE)
-        message4 = m.Text("commands.", font="Monospace", font_size=6, color=m.WHITE)
+        message4 = m.Text("commands", font="Monospace", font_size=6, color=m.WHITE)
 
         message1.move_to((circle4.get_center()[0], circle4.get_center()[1] + 0.25, 0))
         message2.move_to((circle5.get_center()[0], circle5.get_center()[1] + 0.25, 0))
