@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     invert_branches = False
     hide_merged_branches = False
     all = False
+    color_by: Union[str, None] = None
 
     class Config:
         env_prefix = "git_sim_"

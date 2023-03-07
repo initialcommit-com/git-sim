@@ -28,6 +28,7 @@ Example: `$ git-sim merge <branch>`
 - Run a one-liner git-sim command in the terminal to generate a custom Git command visualization (.jpg) from your repo
 - Supported commands: `log`, `status`, `add`, `restore`, `commit`, `stash`, `branch`, `tag`, `reset`, `revert`, `merge`, `rebase`, `cherry-pick`
 - Generate an animated video (.mp4) instead of a static image using the `--animate` flag (note: significant performance slowdown, it is recommended to use `--low-quality` to speed up testing and remove when ready to generate presentation-quality video)
+- Color commits by parameter, such as author the `--color-by=author` option
 - Choose between dark mode (default) and light mode
 - Specify output formats of either jpg, png, mp4, or webm
 - Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
@@ -136,6 +137,7 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 `-n <number>`: Number of commits to display from each branch head.  
 `--all`: Display all local branches in the log output.  
 `--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video.  
+`--color-by author`: Color commits by parameter, such as author.  
 `--invert-branches`: Invert positioning of branches by reversing order of multiple parents where applicable.  
 `--hide-merged-branches`: Hide commits from merged branches, i.e. only display mainline commits.  
 `--media-dir`: The path at which to store the simulated output media files.  

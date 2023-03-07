@@ -102,6 +102,7 @@ class Rebase(GitSimBaseCommand):
         self.recenter_frame()
         self.scale_frame()
         self.reset_head_branch(parent)
+        self.color_by(offset=2 * len(to_rebase))
         self.fadeout()
         self.show_outro()
 

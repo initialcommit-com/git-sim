@@ -28,8 +28,19 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.selected_branches = []
         self.zone_title_offset = 2.6 if platform.system() == "Windows" else 2.6
         self.arrow_map = []
+        self.arrows = []
         self.all = settings.all
         self.first_parse = True
+        self.author_groups = {}
+        self.colors = [
+            m.ORANGE,
+            m.YELLOW,
+            m.GREEN,
+            m.BLUE,
+            m.MAROON,
+            m.PURPLE,
+            m.GOLD,
+        ]
 
         self.logo = m.ImageMobject(settings.logo)
         self.logo.width = 3
@@ -276,6 +287,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         if commit != "dark":
             self.drawnCommits[commit.hexsha] = circle
+            group = m.Group(circle, commitId, message)
+            self.add_group_to_author_groups(commit.author.name, group)
 
         self.toFadeOut.add(circle, commitId, message)
         self.prevRef = commitId
@@ -374,7 +387,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 else:
                     self.add(fullbranch)
 
-                self.toFadeOut.add(branchRec, branchText)
+                self.toFadeOut.add(fullbranch)
                 self.drawnRefs[branch] = fullbranch
 
                 if i == 0 and self.first_parse:
@@ -410,18 +423,20 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     tagRec.next_to(self.prevRef, m.UP)
                     tagText.move_to(tagRec.get_center())
 
+                    fulltag = m.VGroup(tagRec, tagText)
+
                     self.prevRef = tagRec
 
                     if settings.animate:
                         self.play(
-                            m.Create(tagRec),
-                            m.Create(tagText),
+                            m.Create(fulltag),
                             run_time=1 / settings.speed,
                         )
                     else:
-                        self.add(tagRec, tagText)
+                        self.add(fulltag)
 
-                    self.toFadeOut.add(tagRec, tagText)
+                    self.toFadeOut.add(fulltag)
+                    self.drawnRefs[tag] = fulltag
 
                     if i == 0 and self.first_parse:
                         self.topref = self.prevRef
@@ -439,6 +454,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             else:
                 self.add(arrow)
 
+            self.arrows.append(arrow)
             self.toFadeOut.add(arrow)
 
     def recenter_frame(self):
@@ -896,6 +912,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 self.play(m.Create(arrow), run_time=1 / settings.speed)
             else:
                 self.add(arrow)
+            self.arrows.append(arrow)
             self.toFadeOut.add(arrow)
 
         return commitId
@@ -1041,6 +1058,45 @@ class GitSimBaseCommand(m.MovingCameraScene):
             )
             thirdColumnFiles.add(text)
             thirdColumnFilesDict[f] = text
+
+    def color_by(self, offset=0):
+        if settings.color_by == "author":
+            sorted_authors = sorted(
+                self.author_groups.keys(),
+                key=lambda k: len(self.author_groups[k]),
+                reverse=True,
+            )
+            for i, author in enumerate(sorted_authors):
+                authorText = m.Text(
+                    f"{author[:15]} ({str(len(self.author_groups[author]))})",
+                    font="Monospace",
+                    font_size=36,
+                    color=self.colors[int(i % 7)],
+                )
+                authorText.move_to(
+                    [(-5 - offset) if settings.reverse else (5 + offset), -i, 0]
+                )
+                self.toFadeOut.add(authorText)
+                if i == 0:
+                    self.recenter_frame()
+                    self.scale_frame()
+                if settings.animate:
+                    self.play(m.AddTextLetterByLetter(authorText))
+                else:
+                    self.add(authorText)
+                for g in self.author_groups[author]:
+                    g[0].set_color(self.colors[int(i % 7)])
+            self.recenter_frame()
+            self.scale_frame()
+
+        elif settings.color_by == "branch":
+            pass
+
+    def add_group_to_author_groups(self, author, group):
+        if author not in self.author_groups:
+            self.author_groups[author] = [group]
+        else:
+            self.author_groups[author].append(group)
 
 
 class DottedLine(m.Line):

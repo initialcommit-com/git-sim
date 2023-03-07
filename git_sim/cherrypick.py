@@ -67,6 +67,7 @@ class CherryPick(GitSimBaseCommand):
         self.recenter_frame()
         self.scale_frame()
         self.reset_head_branch("abcdef")
+        self.color_by(offset=2)
         self.fadeout()
         self.show_outro()
 

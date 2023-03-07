@@ -134,6 +134,10 @@ def main(
         settings.all,
         help="Display all local branches in the log output",
     ),
+    color_by: str = typer.Option(
+        settings.color_by,
+        help="Color commits by parameter, such as author",
+    ),
 ):
     settings.animate = animate
     settings.n = n
@@ -159,6 +163,7 @@ def main(
     settings.invert_branches = invert_branches
     settings.hide_merged_branches = hide_merged_branches
     settings.all = all
+    settings.color_by = color_by
 
     if sys.platform == "linux" or sys.platform == "darwin":
         repo_name = git.repo.Repo(

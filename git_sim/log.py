@@ -43,6 +43,7 @@ class Log(GitSimBaseCommand):
         self.parse_all()
         self.recenter_frame()
         self.scale_frame()
+        self.color_by()
         self.fadeout()
         self.show_outro()
 

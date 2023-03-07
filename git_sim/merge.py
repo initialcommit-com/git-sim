@@ -93,6 +93,10 @@ class Merge(GitSimBaseCommand):
                     text=self.repo.active_branch.name,
                     color=m.GREEN,
                 )
+            if self.no_ff:
+                self.color_by(offset=2)
+            else:
+                self.color_by()
 
         else:
             self.parse_commits(head_commit)
@@ -111,6 +115,7 @@ class Merge(GitSimBaseCommand):
             self.recenter_frame()
             self.scale_frame()
             self.reset_head_branch("abcdef")
+            self.color_by(offset=2)
 
         self.fadeout()
         self.show_outro()
