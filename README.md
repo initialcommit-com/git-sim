@@ -455,7 +455,7 @@ $ docker build -t git-sim .
 Optional: On MacOS / Linux / or GitBash in Windows, create an alias for the long docker command so your can run it as a normal `git-sim` command. To do so add the following line to your `.bashrc` or equivalent, then restart your terminal:
 
 ```bash
-git-sim() { docker run --rm -v $(pwd):/usr/src/git-sim git-sim "$@" }
+git-sim() { docker run --rm -v $(pwd):/usr/src/git-sim git-sim "$@"; }
 ```
 
 This will enable you to run git-sim subcommands as [described above](#commands).
