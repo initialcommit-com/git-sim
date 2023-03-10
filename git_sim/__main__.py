@@ -33,6 +33,11 @@ def main(
         settings.animate,
         help="Animate the simulation and output as an mp4 video",
     ),
+    n: int = typer.Option(
+        settings.n,
+        "-n",
+        help="Number of commits to display from each branch head",
+    ),
     auto_open: bool = typer.Option(
         settings.auto_open,
         "--auto-open",
@@ -108,8 +113,35 @@ def main(
         settings.stdout,
         help="Write raw image data to stdout while suppressing all other program output",
     ),
+    output_only_path: bool = typer.Option(
+        settings.output_only_path,
+        help="Only output the path to the generated media file to stdout (useful for other programs to ingest)",
+    ),
+    quiet: bool = typer.Option(
+        settings.quiet,
+        "--quiet",
+        "-q",
+        help="Suppress all output except errors",
+    ),
+    invert_branches: bool = typer.Option(
+        settings.invert_branches,
+        help="Invert positioning of branches by reversing order of multiple parents where applicable",
+    ),
+    hide_merged_branches: bool = typer.Option(
+        settings.hide_merged_branches,
+        help="Hide commits from merged branches, i.e. only display mainline commits",
+    ),
+    all: bool = typer.Option(
+        settings.all,
+        help="Display all local branches in the log output",
+    ),
+    color_by: str = typer.Option(
+        settings.color_by,
+        help="Color commits by parameter, such as author",
+    ),
 ):
     settings.animate = animate
+    settings.n = n
     settings.auto_open = auto_open
     settings.img_format = img_format
     settings.light_mode = light_mode
@@ -127,6 +159,12 @@ def main(
     settings.title = title
     settings.video_format = video_format
     settings.stdout = stdout
+    settings.output_only_path = output_only_path
+    settings.quiet = quiet
+    settings.invert_branches = invert_branches
+    settings.hide_merged_branches = hide_merged_branches
+    settings.all = all
+    settings.color_by = color_by
 
     if sys.platform == "linux" or sys.platform == "darwin":
         repo_name = git.repo.Repo(

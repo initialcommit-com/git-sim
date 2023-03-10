@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="git-sim",
-    version="0.2.5",
+    version="0.2.7",
     author="Jacob Stopak",
     author_email="jacob@initialcommit.io",
     description="Simulate Git commands on your own repos by generating an image (default) or video visualization depicting the command's behavior.",

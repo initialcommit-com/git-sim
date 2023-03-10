@@ -12,14 +12,13 @@ class Tag(GitSimBaseCommand):
         self.name = name
 
     def construct(self):
-        if not settings.stdout:
+        if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.name}")
 
         self.show_intro()
-        self.get_commits()
-        self.parse_commits(self.commits[0])
-        self.recenter_frame()
-        self.scale_frame()
+        self.parse_commits()
+        self.parse_all()
+        self.center_frame_on_commit(self.get_commit())
 
         tagText = m.Text(
             self.name,
@@ -46,7 +45,11 @@ class Tag(GitSimBaseCommand):
             self.add(fulltag)
 
         self.toFadeOut.add(tagRec, tagText)
+        self.drawnRefs[self.name] = fulltag
 
+        self.recenter_frame()
+        self.scale_frame()
+        self.color_by()
         self.fadeout()
         self.show_outro()
 

@@ -15,9 +15,11 @@ class Commit(GitSimBaseCommand):
         self.message = message
         self.amend = amend
 
-        self.defaultNumCommits = 4 if not self.amend else 5
-        self.numCommits = 4 if not self.amend else 5
+        self.n_default = 4 if not self.amend else 5
+        self.n = self.n_default
+
         self.hide_first_tag = True
+        settings.hide_merged_branches = True
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
@@ -31,7 +33,7 @@ class Commit(GitSimBaseCommand):
             sys.exit(1)
 
     def construct(self):
-        if not settings.stdout:
+        if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
                 f"{settings.INFO_STRING } {type(self).__name__.lower()} {'--amend ' if self.amend else ''}"
                 + '-m "'
@@ -40,7 +42,7 @@ class Commit(GitSimBaseCommand):
             )
 
         self.show_intro()
-        self.get_commits()
+        head_commit = self.get_commit()
 
         if self.amend:
             tree = self.repo.tree()
@@ -49,17 +51,17 @@ class Commit(GitSimBaseCommand):
                 tree,
                 self.message,
             )
-            self.commits[0] = amended
+            head_commit = amended
 
-        self.parse_commits(self.commits[self.i])
-        self.center_frame_on_commit(self.commits[0])
+        self.parse_commits(head_commit)
+        self.center_frame_on_commit(head_commit)
 
         if not self.amend:
-            self.setup_and_draw_parent(self.commits[0], self.message)
+            self.setup_and_draw_parent(head_commit, self.message)
         else:
-            self.draw_ref(self.commits[0], self.drawnCommitIds[amended.hexsha])
+            self.draw_ref(head_commit, self.drawnCommitIds[amended.hexsha])
             self.draw_ref(
-                self.commits[0],
+                head_commit,
                 self.drawnRefs["HEAD"],
                 text=self.repo.active_branch.name,
                 color=m.GREEN,
@@ -114,5 +116,6 @@ def commit(
         help="Amend the last commit message, must be used with the --message flag",
     ),
 ):
+    settings.hide_first_tag = True
     scene = Commit(message=message, amend=amend)
     handle_animations(scene=scene)

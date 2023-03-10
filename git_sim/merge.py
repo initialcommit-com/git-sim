@@ -37,7 +37,7 @@ class Merge(GitSimBaseCommand):
             pass
 
     def construct(self):
-        if not settings.stdout:
+        if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
                 f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.branch} {'--no-ff' if self.no_ff else ''}"
             )
@@ -55,66 +55,67 @@ class Merge(GitSimBaseCommand):
             sys.exit(1)
 
         self.show_intro()
-        self.get_commits()
-        self.orig_commits = self.commits
-        self.get_commits(start=self.branch)
+        head_commit = self.get_commit()
+        branch_commit = self.get_commit(self.branch)
 
-        # Use forward slash to determine if supplied branch arg is local or remote tracking branch
         if not self.is_remote_tracking_branch(self.branch):
-            if self.branch in self.repo.git.branch(
-                "--contains", self.orig_commits[0].hexsha
-            ):
+            if self.branch in self.repo.git.branch("--contains", head_commit.hexsha):
                 self.ff = True
         else:
             if self.branch in self.repo.git.branch(
-                "-r", "--contains", self.orig_commits[0].hexsha
+                "-r", "--contains", head_commit.hexsha
             ):
                 self.ff = True
 
         if self.ff:
-            self.get_commits(start=self.branch)
-            self.parse_commits(self.commits[0])
-            reset_head_to = self.commits[0].hexsha
+            self.parse_commits(branch_commit)
+            self.parse_all()
+            reset_head_to = branch_commit.hexsha
             shift = numpy.array([0.0, 0.6, 0.0])
 
             if self.no_ff:
-                self.center_frame_on_commit(self.commits[0])
-                commitId = self.setup_and_draw_parent(self.commits[0], "Merge commit")
+                self.center_frame_on_commit(branch_commit)
+                commitId = self.setup_and_draw_parent(branch_commit, "Merge commit")
                 reset_head_to = "abcdef"
                 shift = numpy.array([0.0, 0.0, 0.0])
 
             self.recenter_frame()
             self.scale_frame()
-            if "HEAD" in self.drawnRefs:
+            if "HEAD" in self.drawnRefs and self.no_ff:
                 self.reset_head_branch(reset_head_to, shift=shift)
+            elif "HEAD" in self.drawnRefs:
+                self.reset_head_branch_to_ref(self.topref, shift=shift)
             else:
-                self.draw_ref(self.commits[0], commitId if self.no_ff else self.topref)
+                self.draw_ref(branch_commit, commitId if self.no_ff else self.topref)
                 self.draw_ref(
-                    self.commits[0],
+                    branch_commit,
                     self.drawnRefs["HEAD"],
                     text=self.repo.active_branch.name,
                     color=m.GREEN,
                 )
+            if self.no_ff:
+                self.color_by(offset=2)
+            else:
+                self.color_by()
 
         else:
-            self.get_commits()
-            self.parse_commits(self.commits[0])
-            self.i = 0
-            self.get_commits(start=self.branch)
-            self.parse_commits(self.commits[0], shift=4 * m.DOWN)
-            self.center_frame_on_commit(self.orig_commits[0])
+            self.parse_commits(head_commit)
+            self.parse_commits(branch_commit, shift=4 * m.DOWN)
+            self.parse_all()
+            self.center_frame_on_commit(head_commit)
             self.setup_and_draw_parent(
-                self.orig_commits[0],
+                head_commit,
                 "Merge commit",
                 shift=2 * m.DOWN,
                 draw_arrow=False,
                 color=m.GRAY,
             )
-            self.draw_arrow_between_commits("abcdef", self.commits[0].hexsha)
-            self.draw_arrow_between_commits("abcdef", self.orig_commits[0].hexsha)
+            self.draw_arrow_between_commits("abcdef", branch_commit.hexsha)
+            self.draw_arrow_between_commits("abcdef", head_commit.hexsha)
             self.recenter_frame()
             self.scale_frame()
             self.reset_head_branch("abcdef")
+            self.color_by(offset=2)
 
         self.fadeout()
         self.show_outro()

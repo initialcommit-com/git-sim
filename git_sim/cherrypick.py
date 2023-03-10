@@ -34,7 +34,7 @@ class CherryPick(GitSimBaseCommand):
             pass
 
     def construct(self):
-        if not settings.stdout:
+        if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
                 f"{settings.INFO_STRING} cherry-pick {self.commit}"
                 + ((' -e "' + self.edit + '"') if self.edit else "")
@@ -53,20 +53,21 @@ class CherryPick(GitSimBaseCommand):
             sys.exit(1)
 
         self.show_intro()
-        self.get_commits()
-        self.parse_commits(self.commits[0])
-        self.orig_commits = self.commits
-        self.get_commits(start=self.commit)
-        self.parse_commits(self.commits[0], shift=4 * m.DOWN)
-        self.center_frame_on_commit(self.orig_commits[0])
+        head_commit = self.get_commit()
+        self.parse_commits(head_commit)
+        cherry_picked_commit = self.get_commit(self.commit)
+        self.parse_commits(cherry_picked_commit, shift=4 * m.DOWN)
+        self.parse_all()
+        self.center_frame_on_commit(head_commit)
         self.setup_and_draw_parent(
-            self.orig_commits[0],
-            self.edit if self.edit else self.commits[0].message,
+            head_commit,
+            self.edit if self.edit else cherry_picked_commit.message,
         )
-        self.draw_arrow_between_commits(self.commits[0].hexsha, "abcdef")
+        self.draw_arrow_between_commits(cherry_picked_commit.hexsha, "abcdef")
         self.recenter_frame()
         self.scale_frame()
         self.reset_head_branch("abcdef")
+        self.color_by(offset=2)
         self.fadeout()
         self.show_outro()
 

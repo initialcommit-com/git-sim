@@ -19,7 +19,8 @@ class Settings(BaseSettings):
     allow_no_commits = False
     animate = False
     auto_open = True
-    commits = 5
+    n_default = 5
+    n = 5
     files: Union[List[pathlib.Path], None] = None
     hide_first_tag = False
     img_format: ImgFormat = ImgFormat.jpg
@@ -39,6 +40,12 @@ class Settings(BaseSettings):
     title = "Git-Sim, by initialcommit.com"
     video_format: VideoFormat = VideoFormat.mp4
     stdout = False
+    output_only_path = False
+    quiet = False
+    invert_branches = False
+    hide_merged_branches = False
+    all = False
+    color_by: Union[str, None] = None
 
     class Config:
         env_prefix = "git_sim_"

@@ -28,6 +28,7 @@ Example: `$ git-sim merge <branch>`
 - Run a one-liner git-sim command in the terminal to generate a custom Git command visualization (.jpg) from your repo
 - Supported commands: `log`, `status`, `add`, `restore`, `commit`, `stash`, `branch`, `tag`, `reset`, `revert`, `merge`, `rebase`, `cherry-pick`
 - Generate an animated video (.mp4) instead of a static image using the `--animate` flag (note: significant performance slowdown, it is recommended to use `--low-quality` to speed up testing and remove when ready to generate presentation-quality video)
+- Color commits by parameter, such as author the `--color-by=author` option
 - Choose between dark mode (default) and light mode
 - Specify output formats of either jpg, png, mp4, or webm
 - Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
@@ -133,13 +134,20 @@ $ git-sim [global options] <subcommand> [subcommand options]
 
 The `[global options]` apply to the overarching `git-sim` simulation itself, including:
 
-`--light-mode`: Use a light mode color scheme instead of default dark mode.  
+`-n <number>`: Number of commits to display from each branch head.  
+`--all`: Display all local branches in the log output.  
 `--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video.  
+`--color-by author`: Color commits by parameter, such as author.  
+`--invert-branches`: Invert positioning of branches by reversing order of multiple parents where applicable.  
+`--hide-merged-branches`: Hide commits from merged branches, i.e. only display mainline commits.  
 `--media-dir`: The path at which to store the simulated output media files.  
 `-d`: Disable the automatic opening of the image/video file after generation. Useful to avoid errors in console mode with no GUI.  
+`--light-mode`: Use a light mode color scheme instead of default dark mode.  
 `--reverse, -r`: Display commit history in the reverse direction.  
 `--img-format`: Output format for the image file, i.e. `jpg` or `png`. Default output format is `jpg`.  
-`--stdout`: Write raw image data to stdout while suppressing all other program output.
+`--stdout`: Write raw image data to stdout while suppressing all other program output.  
+`--output-only-path`: Only output the path to the generated media file to stdout. Useful for other programs to ingest.  
+`--quiet, -q`: Suppress all output except errors.
 
 Animation-only global options (to be used in conjunction with `--animate`):
 
@@ -158,9 +166,11 @@ The `[subcommand options]` are like regular Git options specific to the specifie
 The following is a list of Git commands that can be simulated and their corresponding options/flags.
 
 ### git log
-Usage: `git-sim log`
+Usage: `git-sim log [-n <number>] [--all]`
 
 - Simulated output will show the most recent 5 commits on the active branch by default
+- Use `-n <number>` to set number of commits to display from each branch head
+- Set `--all` to display all local branches in the log output
 
 ![git-sim-log_01-05-23_22-02-39](https://user-images.githubusercontent.com/49353917/210940300-aadd14c6-72ab-4529-a1be-b494ed5dd4c9.jpg)
 
@@ -445,7 +455,7 @@ $ docker build -t git-sim .
 Optional: On MacOS / Linux / or GitBash in Windows, create an alias for the long docker command so your can run it as a normal `git-sim` command. To do so add the following line to your `.bashrc` or equivalent, then restart your terminal:
 
 ```bash
-git-sim() { docker run --rm -v $(pwd):/usr/src/git-sim git-sim "$@" }
+git-sim() { docker run --rm -v $(pwd):/usr/src/git-sim git-sim "$@"; }
 ```
 
 This will enable you to run git-sim subcommands as [described above](#commands).

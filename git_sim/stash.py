@@ -19,10 +19,11 @@ class StashSubCommand(Enum):
 class Stash(GitSimBaseCommand):
     def __init__(self, files: List[str], command: StashSubCommand):
         super().__init__()
-        self.hide_first_tag = True
         self.files = files
         self.no_files = True if not self.files else False
         self.command = command
+        settings.hide_merged_branches = True
+        self.n = self.n_default
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
@@ -44,20 +45,23 @@ class Stash(GitSimBaseCommand):
                     y.a_path for y in self.repo.index.diff("HEAD")
                 ]
         elif self.files:
-            if not settings.stdout:
+            if (
+                not settings.stdout
+                and not settings.output_only_path
+                and not settings.quiet
+            ):
                 print(
                     "Files are not required in apply/pop subcommand. Ignoring the file list....."
                 )
 
     def construct(self):
-        if not settings.stdout:
+        if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
                 f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.command.value if self.command else ''} {' '.join(self.files) if not self.no_files else ''}"
             )
 
         self.show_intro()
-        self.get_commits()
-        self.parse_commits(self.commits[0])
+        self.parse_commits()
         self.recenter_frame()
         self.scale_frame()
         self.vsplit_frame()
@@ -194,5 +198,6 @@ def stash(
         help="The name of the file to stash changes for",
     ),
 ):
+    settings.hide_first_tag = True
     scene = Stash(files=files, command=command)
     handle_animations(scene=scene)
