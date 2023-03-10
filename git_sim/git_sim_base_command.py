@@ -40,6 +40,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
             m.MAROON,
             m.PURPLE,
             m.GOLD,
+            m.TEAL,
+            m.RED,
+            m.PINK,
+            m.DARK_BLUE,
         ]
 
         self.logo = m.ImageMobject(settings.logo)
@@ -1071,7 +1075,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     f"{author[:15]} ({str(len(self.author_groups[author]))})",
                     font="Monospace",
                     font_size=36,
-                    color=self.colors[int(i % 7)],
+                    color=self.colors[int(i % 11)],
                 )
                 authorText.move_to(
                     [(-5 - offset) if settings.reverse else (5 + offset), -i, 0]
@@ -1085,7 +1089,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 else:
                     self.add(authorText)
                 for g in self.author_groups[author]:
-                    g[0].set_color(self.colors[int(i % 7)])
+                    g[0].set_color(self.colors[int(i % 11)])
             self.recenter_frame()
             self.scale_frame()
 
