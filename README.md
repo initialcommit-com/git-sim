@@ -26,7 +26,7 @@ Example: `$ git-sim merge <branch>`
 
 ## Features
 - Run a one-liner git-sim command in the terminal to generate a custom Git command visualization (.jpg) from your repo
-- Supported commands: `log`, `status`, `add`, `restore`, `commit`, `stash`, `branch`, `tag`, `reset`, `revert`, `merge`, `rebase`, `cherry-pick`
+- Supported commands: `log`, `status`, `add`, `restore`, `commit`, `stash`, `branch`, `tag`, `reset`, `revert`, `merge`, `rebase`, `cherry-pick`, `switch`
 - Generate an animated video (.mp4) instead of a static image using the `--animate` flag (note: significant performance slowdown, it is recommended to use `--low-quality` to speed up testing and remove when ready to generate presentation-quality video)
 - Color commits by parameter, such as author the `--color-by=author` option
 - Choose between dark mode (default) and light mode
@@ -126,7 +126,7 @@ $ git-sim <subcommand> -h
 * [Manim (Community version)](https://www.manim.community/)
 
 ## Commands
-Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "log", "status", "add", "restore", "commit", "stash", "branch", "tag", "reset", "revert", "merge", "rebase", "cherry-pick", along with corresponding options.
+Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "log", "status", "add", "restore", "commit", "stash", "branch", "tag", "reset", "revert", "merge", "rebase", "cherry-pick", "switch", along with corresponding options.
 
 ```console
 $ git-sim [global options] <subcommand> [subcommand options]
@@ -279,6 +279,12 @@ Usage: `git-sim cherry-pick <commit>`
 - Supports editing the cherry-picked commit message with: `$ git-sim cherry-pick <commit> -e "Edited commit message"`
 
 ![git-sim-cherry-pick_01-05-23_22-23-08](https://user-images.githubusercontent.com/49353917/210942811-fa5155b1-4c6f-4afc-bea2-d39b4cd594aa.jpg)
+
+### git switch
+Usage: `git-sim switch [-c] <branch>`
+
+- Switches the checked-out branch to `<branch>`, i.e. moves `HEAD` to the specified `<branch>`
+- The `-c` flag creates a new branch with the specified name `<branch>`, assuming it doesn't already exist
 
 ## Video animation examples
 ```console
