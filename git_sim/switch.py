@@ -26,7 +26,24 @@ class Switch(GitSimBaseCommand):
             )
             sys.exit(1)
 
-        self.ff = False
+        if self.branch == self.repo.active_branch.name:
+            print("git-sim error: already on branch '" + self.branch + "'")
+            sys.exit(1)
+
+        self.is_ancestor = False
+        self.is_descendant = False
+
+        # branch being switched to is behind HEAD
+        if self.repo.active_branch.name in self.repo.git.branch(
+            "--contains", self.branch
+        ):
+            self.is_ancestor = True
+        # HEAD is behind branch being switched to
+        elif self.branch in self.repo.git.branch(
+            "--contains", self.repo.active_branch.name
+        ):
+            self.is_descendant = True
+
         if self.branch in [branch.name for branch in self.repo.heads]:
             self.selected_branches.append(self.branch)
 
@@ -36,75 +53,52 @@ class Switch(GitSimBaseCommand):
             pass
 
     def construct(self):
-        if not settings.stdout:
+        if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
                 f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.branch}"
             )
 
-        if self.repo.active_branch.name in self.repo.git.branch(
-            "--contains", self.branch
-        ):
-            print(
-                "git-sim error: Branch '"
-                + self.branch
-                + "' is already included in the history of active branch '"
-                + self.repo.active_branch.name
-                + "'."
-            )
-            sys.exit(1)
-
         self.show_intro()
-        self.get_commits()
-        self.orig_commits = self.commits
-        self.get_commits(start=self.branch)
+        head_commit = self.get_commit()
+        branch_commit = self.get_commit(self.branch)
 
-        if not self.is_remote_tracking_branch(self.branch):
-            if self.branch in self.repo.git.branch(
-                "--contains", self.orig_commits[0].hexsha
-            ):
-                self.ff = True
-        else:
-            if self.branch in self.repo.git.branch(
-                "-r", "--contains", self.orig_commits[0].hexsha
-            ):
-                self.ff = True
+        if self.is_ancestor:
+            commits_in_range = list(self.repo.iter_commits(self.branch + '..HEAD'))
 
-        if self.ff:
-            self.get_commits(start=self.branch)
-            self.parse_commits(self.commits[0])
-            reset_head_to = self.commits[0].hexsha
-            shift = numpy.array([0.0, 0.6, 0.0])
+            # branch is reached from HEAD, so draw everything
+            if len(commits_in_range) <= self.n:
+                self.parse_commits(head_commit)
+                reset_head_to = branch_commit.hexsha
+                self.recenter_frame()
+                self.scale_frame()
+                self.reset_head(reset_head_to)
+                self.reset_branch(head_commit.hexsha)
 
-            if self.no_ff:
-                self.center_frame_on_commit(self.commits[0])
-                commitId = self.setup_and_draw_parent(self.commits[0], "Merge commit")
-                reset_head_to = "abcdef"
-                shift = numpy.array([0.0, 0.0, 0.0])
+            # branch is not reached, so start from branch
+            else:
+                self.parse_commits(branch_commit)
+                self.draw_ref(branch_commit, self.topref)
 
+        elif self.is_descendant:
+            self.parse_commits(branch_commit)
+            reset_head_to = branch_commit.hexsha
             self.recenter_frame()
             self.scale_frame()
             if "HEAD" in self.drawnRefs:
-                self.reset_head_branch(reset_head_to, shift=shift)
+                self.reset_head(reset_head_to)
+                self.reset_branch(head_commit.hexsha)
             else:
-                self.draw_ref(self.commits[0], commitId if self.no_ff else self.topref)
-                self.draw_ref(
-                    self.commits[0],
-                    self.drawnRefs["HEAD"],
-                    text=self.repo.active_branch.name,
-                    color=m.GREEN,
-                )
-
+                self.draw_ref(branch_commit, self.topref)
         else:
-            self.get_commits()
-            self.parse_commits(self.commits[0])
-            self.i = 0
-            self.get_commits(start=self.branch)
-            self.parse_commits(self.commits[0], shift=4 * m.DOWN)
-            self.center_frame_on_commit(self.orig_commits[0])
+            self.parse_commits(head_commit)
+            self.parse_commits(branch_commit, shift=4 * m.DOWN)
+            self.center_frame_on_commit(branch_commit)
             self.recenter_frame()
             self.scale_frame()
-            self.reset_head(self.commits[0].hexsha)
+            self.reset_head(branch_commit.hexsha)
+            self.reset_branch(head_commit.hexsha)
 
+        self.color_by()
         self.fadeout()
         self.show_outro()
 
