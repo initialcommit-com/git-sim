@@ -11,13 +11,13 @@ from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
 
 
-class Switch(GitSimBaseCommand):
-    def __init__(self, branch: str, c: bool):
+class Checkout(GitSimBaseCommand):
+    def __init__(self, branch: str, b: bool):
         super().__init__()
         self.branch = branch
-        self.c = c
+        self.b = b
 
-        if self.c:
+        if self.b:
             if self.branch in self.repo.heads:
                 print("git-sim error: can't create new branch '" + self.branch + "', it already exists")
                 sys.exit(1)
@@ -39,12 +39,12 @@ class Switch(GitSimBaseCommand):
             self.is_ancestor = False
             self.is_descendant = False
 
-            # branch being switched to is behind HEAD
+            # branch being checked out is behind HEAD
             if self.repo.active_branch.name in self.repo.git.branch(
                 "--contains", self.branch
             ):
                 self.is_ancestor = True
-            # HEAD is behind branch being switched to
+            # HEAD is behind branch being checked out
             elif self.branch in self.repo.git.branch(
                 "--contains", self.repo.active_branch.name
             ):
@@ -61,14 +61,14 @@ class Switch(GitSimBaseCommand):
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()}{' -c' if self.c else ''} {self.branch}"
+                f"{settings.INFO_STRING } {type(self).__name__.lower()}{' -b' if self.b else ''} {self.branch}"
             )
 
         self.show_intro()
         head_commit = self.get_commit()
 
-        # using -c flag, create new branch label and exit
-        if self.c:
+        # using -b flag, create new branch label and exit
+        if self.b:
             self.parse_commits(head_commit)
             self.draw_ref(head_commit, self.topref, text=self.branch, color=m.GREEN)
         else:
@@ -115,16 +115,16 @@ class Switch(GitSimBaseCommand):
         self.show_outro()
 
 
-def switch(
+def checkout(
     branch: str = typer.Argument(
         ...,
-        help="The name of the branch to switch to",
+        help="The name of the branch to checkout",
     ),
-    c: bool = typer.Option(
+    b: bool = typer.Option(
         False,
-        "-c",
+        "-b",
         help="Create the specified branch if it doesn't already exist",
     ),
 ):
-    scene = Switch(branch=branch, c=c)
+    scene = Checkout(branch=branch, b=b)
     handle_animations(scene=scene)

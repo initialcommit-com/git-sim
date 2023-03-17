@@ -20,6 +20,7 @@ import git_sim.stash
 import git_sim.status
 import git_sim.tag
 import git_sim.switch
+import git_sim.checkout
 from git_sim.settings import ImgFormat, VideoFormat, settings
 from manim import config, WHITE
 
@@ -204,6 +205,7 @@ app.command()(git_sim.stash.stash)
 app.command()(git_sim.status.status)
 app.command()(git_sim.tag.tag)
 app.command()(git_sim.switch.switch)
+app.command()(git_sim.checkout.checkout)
 
 
 if __name__ == "__main__":
