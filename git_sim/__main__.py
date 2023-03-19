@@ -21,6 +21,8 @@ import git_sim.status
 import git_sim.tag
 import git_sim.switch
 import git_sim.checkout
+import git_sim.fetch
+
 from git_sim.settings import ImgFormat, VideoFormat, settings
 from manim import config, WHITE
 
@@ -206,6 +208,7 @@ app.command()(git_sim.status.status)
 app.command()(git_sim.tag.tag)
 app.command()(git_sim.switch.switch)
 app.command()(git_sim.checkout.checkout)
+app.command()(git_sim.fetch.fetch)
 
 
 if __name__ == "__main__":
