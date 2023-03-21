@@ -26,7 +26,7 @@ Example: `$ git-sim merge <branch>`
 
 ## Features
 - Run a one-liner git-sim command in the terminal to generate a custom Git command visualization (.jpg) from your repo
-- Supported commands: `log`, `status`, `add`, `restore`, `commit`, `stash`, `branch`, `tag`, `reset`, `revert`, `merge`, `rebase`, `cherry-pick`, `switch`, `checkout`, `fetch`
+- Supported commands: `log`, `status`, `add`, `restore`, `commit`, `stash`, `branch`, `tag`, `reset`, `revert`, `merge`, `rebase`, `cherry-pick`, `switch`, `checkout`, `fetch`, `pull`
 - Generate an animated video (.mp4) instead of a static image using the `--animate` flag (note: significant performance slowdown, it is recommended to use `--low-quality` to speed up testing and remove when ready to generate presentation-quality video)
 - Color commits by parameter, such as author the `--color-by=author` option
 - Choose between dark mode (default) and light mode
@@ -126,7 +126,7 @@ $ git-sim <subcommand> -h
 * [Manim (Community version)](https://www.manim.community/)
 
 ## Commands
-Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "log", "status", "add", "restore", "commit", "stash", "branch", "tag", "reset", "revert", "merge", "rebase", "cherry-pick", "switch", "checkout", "fetch", along with corresponding options.
+Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "log", "status", "add", "restore", "commit", "stash", "branch", "tag", "reset", "revert", "merge", "rebase", "cherry-pick", "switch", "checkout", "fetch", "pull", along with corresponding options.
 
 ```console
 $ git-sim [global options] <subcommand> [subcommand options]
@@ -296,6 +296,12 @@ Usage: `git-sim checkout [-b] <branch>`
 Usage: `git-sim fetch <remote> <branch>`
 
 - Fetches the specified `<branch>` from the specified `<remote>` to the local repo
+
+### git pull
+Usage: `git-sim pull [<remote> <branch>]`
+
+- Pulls the specified `<branch>` from the specified `<remote>` to the local repo
+- If `<remote>` and `<branch>` are not specified, the active branch is pulled from the default remote
 
 ## Video animation examples
 ```console
