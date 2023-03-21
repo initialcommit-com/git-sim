@@ -81,6 +81,7 @@ class Pull(GitSimBaseCommand):
                 )
             else:
                 print(f"git-sim error: git pull failed for unhandled reason: {e.stdout}")
+                self.repo.git.clear_cache()
                 shutil.rmtree(new_dir, onerror=del_rw)
                 sys.exit(1)
 
