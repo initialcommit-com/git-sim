@@ -23,6 +23,7 @@ import git_sim.switch
 import git_sim.checkout
 import git_sim.fetch
 import git_sim.pull
+import git_sim.push
 
 from git_sim.settings import ImgFormat, VideoFormat, settings
 from manim import config, WHITE
@@ -211,6 +212,7 @@ app.command()(git_sim.switch.switch)
 app.command()(git_sim.checkout.checkout)
 app.command()(git_sim.fetch.fetch)
 app.command()(git_sim.pull.pull)
+app.command()(git_sim.push.push)
 
 
 if __name__ == "__main__":
