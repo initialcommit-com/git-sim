@@ -307,8 +307,9 @@ Usage: `git-sim pull [<remote> <branch>]`
 ### git push
 Usage: `git-sim push [<remote> <branch>]`
 
-- Pushes the specified `<branch>` to the specified `<remote>`
+- Pushes the specified `<branch>` to the specified `<remote>` and displays the local result
 - If `<remote>` and `<branch>` are not specified, the active branch is pushed to the default remote
+- If the push fails due to remote changes that don't exist in the local repo, a message is included telling the user to pull first, along with color coding which commits need to be pulled
 
 ## Video animation examples
 ```console
