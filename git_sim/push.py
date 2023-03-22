@@ -22,6 +22,7 @@ class Push(GitSimBaseCommand):
         self.remote = remote
         self.branch = branch
         settings.max_branches_per_commit = 2
+        settings.color_by = "notlocal"
 
         if self.remote and self.remote not in self.repo.remotes:
             print("git-sim error: no remote with name '" + self.remote + "'")
@@ -66,51 +67,75 @@ class Push(GitSimBaseCommand):
             self.repo.remotes[0].set_url(new_dir2)
 
         # Push the local clone into the local clone of the remote repo
+        push_result = 0
         try:
             self.repo.git.push(self.remote, self.branch)
-            head_commit = self.get_commit()
-            self.parse_commits(head_commit)
-            self.recenter_frame()
-            self.scale_frame()
-
-        # But if we get merge conflicts...
+        # If push fails...
         except git.GitCommandError as e:
-            if "CONFLICT" in e.stdout:
-                # Restrict to default number of commits since we'll show the table/zones
-                self.n = self.n_default 
+            print(f"git-sim error: git push failed: {e.stderr}")
+            if "rejected" in e.stderr and "fetch first" in e.stderr:
+                push_result = 1
+                self.orig_repo = self.repo
+                self.repo = self.remote_repo
 
-                # Get list of conflicted filenames
-                self.conflicted_files = re.findall(r"Merge conflict in (.+)", e.stdout)
-
-                head_commit = self.get_commit()
-                self.parse_commits(head_commit)
-                self.recenter_frame()
-                self.scale_frame()
-
-                # Show the conflicted files names in the table/zones
-                self.vsplit_frame()
-                self.setup_and_draw_zones(
-                    first_column_name="----",
-                    second_column_name="Conflicted files",
-                    third_column_name="----",
-                )
-            else:
-                print(f"git-sim error: git push failed: {e}")
-                self.repo.git.clear_cache()
-                shutil.rmtree(new_dir, onerror=del_rw)
-                shutil.rmtree(new_dir2, onerror=del_rw)
-                sys.exit(1)
-
+        head_commit = self.get_commit()
+        self.parse_commits(head_commit, make_branches_remote=(self.remote if self.remote else self.repo.remotes[0].name))
+        self.recenter_frame()
+        self.scale_frame()
+        self.failed_push(push_result)
         self.color_by()
         self.fadeout()
         self.show_outro()
 
         # Unlink the program from the filesystem
         self.repo.git.clear_cache()
+        if self.orig_repo:
+            self.orig_repo.git.clear_cache()
 
         # Delete the local clones
         shutil.rmtree(new_dir, onerror=del_rw)
         shutil.rmtree(new_dir2, onerror=del_rw)
+
+    def failed_push(self, push_result):
+        if push_result == 1:
+            text1 = m.Text(
+                f"'git push' failed since remote has commits that don't exist locally, run 'git pull' and try again",
+                font="Monospace",
+                font_size=20,
+                color=self.fontColor,
+                weight=m.BOLD,
+            )
+            text1.move_to([self.camera.frame.get_center()[0], 4, 0])
+
+            text2 = m.Text(
+                f"Gold commits exist in remote repo, but not locally (need to be pulled)",
+                font="Monospace",
+                font_size=20,
+                color=m.GOLD,
+                weight=m.BOLD,
+            )
+            text2.move_to(text1.get_center()).shift(m.DOWN / 2)
+
+            text3 = m.Text(
+                f"Red commits exist in both local and remote repos",
+                font="Monospace",
+                font_size=20,
+                color=m.RED,
+                weight=m.BOLD,
+            )
+            text3.move_to(text2.get_center()).shift(m.DOWN / 2)
+
+            self.toFadeOut.add(text1)
+            self.toFadeOut.add(text2)
+            self.toFadeOut.add(text3)
+            self.recenter_frame()
+            self.scale_frame()
+            if settings.animate:
+                self.play(m.AddTextLetterByLetter(text1), m.AddTextLetterByLetter(text2), m.AddTextLetterByLetter(text3))
+            else:
+                self.add(text1, text2, text3)
+
+
 
 def del_rw(action, name, exc):
     os.chmod(name, stat.S_IWRITE)

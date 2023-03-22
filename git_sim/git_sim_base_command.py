@@ -78,6 +78,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         i=0,
         prevCircle=None,
         shift=numpy.array([0.0, 0.0, 0.0]),
+        make_branches_remote=False,
     ):
         commit = commit or self.get_commit()
 
@@ -91,7 +92,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             if commit != "dark":
                 if not hide_refs and isNewCommit:
                     self.draw_head(commit, i, commitId)
-                    self.draw_branch(commit, i)
+                    self.draw_branch(commit, i, make_branches_remote=make_branches_remote)
                     self.draw_tag(commit, i)
                 if (
                     not isinstance(arrow, m.CurvedArrow)
@@ -348,7 +349,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             if i == 0 and self.first_parse:
                 self.topref = self.prevRef
 
-    def draw_branch(self, commit, i):
+    def draw_branch(self, commit, i, make_branches_remote=False):
         x = 0
 
         remote_tracking_branches = self.get_remote_tracking_branches()
@@ -369,7 +370,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 and commit.hexsha == remote_tracking_branches[branch]
             ):
                 branchText = m.Text(
-                    branch, font="Monospace", font_size=20, color=self.fontColor
+                    branch if not make_branches_remote else make_branches_remote + "/" + branch, font="Monospace", font_size=20, color=self.fontColor
                 )
                 branchRec = m.Rectangle(
                     color=m.GREEN,
@@ -1136,6 +1137,13 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         elif settings.color_by == "branch":
             pass
+
+        elif settings.color_by == "notlocal":
+            for commit_id in self.drawnCommits:
+                try:
+                    self.orig_repo.commit(commit_id)
+                except ValueError:
+                    self.drawnCommits[commit_id].set_color(m.GOLD)
 
     def add_group_to_author_groups(self, author, group):
         if author not in self.author_groups:
