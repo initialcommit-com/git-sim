@@ -24,6 +24,7 @@ import git_sim.checkout
 import git_sim.fetch
 import git_sim.pull
 import git_sim.push
+import git_sim.clone
 
 from git_sim.settings import ImgFormat, VideoFormat, settings
 from manim import config, WHITE
@@ -171,14 +172,17 @@ def main(
     settings.all = all
     settings.color_by = color_by
 
-    if sys.platform == "linux" or sys.platform == "darwin":
-        repo_name = git.repo.Repo(
-            search_parent_directories=True
-        ).working_tree_dir.split("/")[-1]
-    elif sys.platform == "win32":
-        repo_name = git.repo.Repo(
-            search_parent_directories=True
-        ).working_tree_dir.split("\\")[-1]
+    try:
+        if sys.platform == "linux" or sys.platform == "darwin":
+            repo_name = git.repo.Repo(
+                search_parent_directories=True
+            ).working_tree_dir.split("/")[-1]
+        elif sys.platform == "win32":
+            repo_name = git.repo.Repo(
+                search_parent_directories=True
+            ).working_tree_dir.split("\\")[-1]
+    except git.InvalidGitRepositoryError as e:
+        repo_name = ""
 
     settings.media_dir = os.path.join(settings.media_dir, repo_name)
 
@@ -213,6 +217,7 @@ app.command()(git_sim.checkout.checkout)
 app.command()(git_sim.fetch.fetch)
 app.command()(git_sim.pull.pull)
 app.command()(git_sim.push.push)
+app.command()(git_sim.clone.clone)
 
 
 if __name__ == "__main__":
