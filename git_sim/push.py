@@ -99,41 +99,51 @@ class Push(GitSimBaseCommand):
     def failed_push(self, push_result):
         if push_result == 1:
             text1 = m.Text(
-                f"'git push' failed since remote has commits that don't exist locally, run 'git pull' and try again",
+                f"'git push' failed since the remote repo has commits that don't exist locally.",
                 font="Monospace",
                 font_size=20,
                 color=self.fontColor,
                 weight=m.BOLD,
             )
-            text1.move_to([self.camera.frame.get_center()[0], 4, 0])
+            text1.move_to([self.camera.frame.get_center()[0], 5, 0])
 
             text2 = m.Text(
-                f"Gold commits exist in remote repo, but not locally (need to be pulled)",
+                f"Run 'git pull' (or 'git-sim pull' to simulate first) and then try again.",
                 font="Monospace",
                 font_size=20,
-                color=m.GOLD,
+                color=self.fontColor,
                 weight=m.BOLD,
             )
             text2.move_to(text1.get_center()).shift(m.DOWN / 2)
 
             text3 = m.Text(
-                f"Red commits exist in both local and remote repos",
+                f"Gold commits exist in remote repo, but not locally (need to be pulled).",
+                font="Monospace",
+                font_size=20,
+                color=m.GOLD,
+                weight=m.BOLD,
+            )
+            text3.move_to(text2.get_center()).shift(m.DOWN / 2)
+
+            text4 = m.Text(
+                f"Red commits exist in both local and remote repos.",
                 font="Monospace",
                 font_size=20,
                 color=m.RED,
                 weight=m.BOLD,
             )
-            text3.move_to(text2.get_center()).shift(m.DOWN / 2)
+            text4.move_to(text3.get_center()).shift(m.DOWN / 2)
 
             self.toFadeOut.add(text1)
             self.toFadeOut.add(text2)
             self.toFadeOut.add(text3)
+            self.toFadeOut.add(text4)
             self.recenter_frame()
             self.scale_frame()
             if settings.animate:
-                self.play(m.AddTextLetterByLetter(text1), m.AddTextLetterByLetter(text2), m.AddTextLetterByLetter(text3))
+                self.play(m.AddTextLetterByLetter(text2), m.AddTextLetterByLetter(text2), m.AddTextLetterByLetter(text3), m.AddTextLetterByLetter(text4))
             else:
-                self.add(text1, text2, text3)
+                self.add(text1, text2, text3, text4)
 
 
 
