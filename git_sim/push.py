@@ -72,11 +72,12 @@ class Push(GitSimBaseCommand):
             self.repo.git.push(self.remote, self.branch)
         # If push fails...
         except git.GitCommandError as e:
-            print(f"git-sim error: git push failed: {e.stderr}")
             if "rejected" in e.stderr and "fetch first" in e.stderr:
                 push_result = 1
                 self.orig_repo = self.repo
                 self.repo = self.remote_repo
+            else:
+                print(f"git-sim error: git push failed: {e.stderr}")
 
         head_commit = self.get_commit()
         self.parse_commits(head_commit, make_branches_remote=(self.remote if self.remote else self.repo.remotes[0].name))
