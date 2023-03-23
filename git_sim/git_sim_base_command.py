@@ -82,7 +82,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
     ):
         commit = commit or self.get_commit()
 
-        isNewCommit = commit.hexsha not in self.drawnCommits
+        if commit != "dark":
+            isNewCommit = commit.hexsha not in self.drawnCommits
+        else:
+            isNewCommit = True
 
         if i < self.n:
             commitId, circle, arrow, hide_refs = self.draw_commit(
@@ -114,7 +117,12 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
             self.first_parse = False
             i += 1
-            commitParents = list(commit.parents)
+            try:
+                commitParents = list(commit.parents)
+            except AttributeError:
+                self.parse_commits(self.create_dark_commit(), i, circle)
+                return
+
             if len(commitParents) > 0:
                 if settings.invert_branches:
                     commitParents.reverse()
@@ -124,6 +132,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 else:
                     for p in range(len(commitParents)):
                         self.parse_commits(commitParents[p], i, circle)
+            else:
+                self.parse_commits(self.create_dark_commit(), i, circle)
 
     def parse_all(self):
         if self.all:
@@ -217,7 +227,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
         while any((circle.get_center() == c).all() for c in self.get_centers()):
             circle.shift(m.DOWN * 4)
 
-        isNewCommit = commit.hexsha not in self.drawnCommits
+        if commit != "dark":
+            isNewCommit = commit.hexsha not in self.drawnCommits
+        else:
+            isNewCommit = True
 
         if isNewCommit:
             start = (
