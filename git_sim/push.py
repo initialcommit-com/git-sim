@@ -22,7 +22,6 @@ class Push(GitSimBaseCommand):
         self.remote = remote
         self.branch = branch
         settings.max_branches_per_commit = 2
-        settings.color_by = "notlocal"
 
         if self.remote and self.remote not in self.repo.remotes:
             print("git-sim error: no remote with name '" + self.remote + "'")
@@ -68,19 +67,30 @@ class Push(GitSimBaseCommand):
 
         # Push the local clone into the local clone of the remote repo
         push_result = 0
+        self.orig_repo = None
         try:
             self.repo.git.push(self.remote, self.branch)
         # If push fails...
         except git.GitCommandError as e:
-            if "rejected" in e.stderr and "fetch first" in e.stderr:
+            if "rejected" in e.stderr and ("fetch first" in e.stderr):
                 push_result = 1
                 self.orig_repo = self.repo
                 self.repo = self.remote_repo
+                settings.color_by = "notlocal1"
+            elif "rejected" in e.stderr and ("non-fast-forward" in e.stderr):
+                push_result = 2
+                self.orig_repo = self.repo
+                self.repo = self.remote_repo
+                settings.color_by = "notlocal2"
             else:
                 print(f"git-sim error: git push failed: {e.stderr}")
+                return
 
         head_commit = self.get_commit()
-        self.parse_commits(head_commit, make_branches_remote=(self.remote if self.remote else self.repo.remotes[0].name))
+        if push_result > 0:
+            self.parse_commits(head_commit, make_branches_remote=(self.remote if self.remote else self.repo.remotes[0].name))
+        else:
+            self.parse_commits(head_commit)
         self.recenter_frame()
         self.scale_frame()
         self.failed_push(push_result)
@@ -134,17 +144,53 @@ class Push(GitSimBaseCommand):
                 weight=m.BOLD,
             )
             text4.move_to(text3.get_center()).shift(m.DOWN / 2)
+            texts = [text1, text2, text3, text4]
 
-            self.toFadeOut.add(text1)
-            self.toFadeOut.add(text2)
-            self.toFadeOut.add(text3)
-            self.toFadeOut.add(text4)
-            self.recenter_frame()
-            self.scale_frame()
-            if settings.animate:
-                self.play(m.AddTextLetterByLetter(text2), m.AddTextLetterByLetter(text2), m.AddTextLetterByLetter(text3), m.AddTextLetterByLetter(text4))
-            else:
-                self.add(text1, text2, text3, text4)
+        elif push_result == 2:
+            text1 = m.Text(
+                f"'git push' failed since the tip of your current branch is behind the remote.",
+                font="Monospace",
+                font_size=20,
+                color=self.fontColor,
+                weight=m.BOLD,
+            )
+            text1.move_to([self.camera.frame.get_center()[0], 5, 0])
+
+            text2 = m.Text(
+                f"Run 'git pull' (or 'git-sim pull' to simulate first) and then try again.",
+                font="Monospace",
+                font_size=20,
+                color=self.fontColor,
+                weight=m.BOLD,
+            )
+            text2.move_to(text1.get_center()).shift(m.DOWN / 2)
+
+            text3 = m.Text(
+                f"Gold commits exist are ahead of your current branch tip (need to be pulled).",
+                font="Monospace",
+                font_size=20,
+                color=m.GOLD,
+                weight=m.BOLD,
+            )
+            text3.move_to(text2.get_center()).shift(m.DOWN / 2)
+
+            text4 = m.Text(
+                f"Red commits are up to date in both local and remote branches.",
+                font="Monospace",
+                font_size=20,
+                color=m.RED,
+                weight=m.BOLD,
+            )
+            text4.move_to(text3.get_center()).shift(m.DOWN / 2)
+            texts = [text1, text2, text3, text4]
+
+        self.toFadeOut.add(*texts)
+        self.recenter_frame()
+        self.scale_frame()
+        if settings.animate:
+            self.play(*[m.AddTextLetterByLetter(t) for t in texts])
+        else:
+            self.add(*texts)
 
 
 

@@ -382,8 +382,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 self.is_remote_tracking_branch(branch)  # remote tracking branch
                 and commit.hexsha == remote_tracking_branches[branch]
             ):
+                text = (make_branches_remote + "/" + branch) if (make_branches_remote and not self.is_remote_tracking_branch(branch)) else branch
+
                 branchText = m.Text(
-                    branch if not make_branches_remote else make_branches_remote + "/" + branch, font="Monospace", font_size=20, color=self.fontColor
+                    text, font="Monospace", font_size=20, color=self.fontColor
                 )
                 branchRec = m.Rectangle(
                     color=m.GREEN,
@@ -1151,11 +1153,16 @@ class GitSimBaseCommand(m.MovingCameraScene):
         elif settings.color_by == "branch":
             pass
 
-        elif settings.color_by == "notlocal":
+        elif settings.color_by == "notlocal1":
             for commit_id in self.drawnCommits:
                 try:
                     self.orig_repo.commit(commit_id)
                 except ValueError:
+                    self.drawnCommits[commit_id].set_color(m.GOLD)
+
+        elif settings.color_by == "notlocal2":
+            for commit_id in self.drawnCommits:
+                if not self.orig_repo.is_ancestor(commit_id, "HEAD"):
                     self.drawnCommits[commit_id].set_color(m.GOLD)
 
     def add_group_to_author_groups(self, author, group):
