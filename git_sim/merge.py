@@ -4,9 +4,7 @@ from argparse import Namespace
 import git
 import manim as m
 import numpy
-import typer
 
-from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
 
@@ -119,18 +117,3 @@ class Merge(GitSimBaseCommand):
 
         self.fadeout()
         self.show_outro()
-
-
-def merge(
-    branch: str = typer.Argument(
-        ...,
-        help="The name of the branch to merge into the active checked-out branch",
-    ),
-    no_ff: bool = typer.Option(
-        False,
-        "--no-ff",
-        help="Simulate creation of a merge commit in all cases, even when the merge could instead be resolved as a fast-forward",
-    ),
-):
-    scene = Merge(branch=branch, no_ff=no_ff)
-    handle_animations(scene=scene)

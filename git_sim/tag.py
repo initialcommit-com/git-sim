@@ -1,7 +1,5 @@
 import manim as m
-import typer
 
-from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
 
@@ -52,13 +50,3 @@ class Tag(GitSimBaseCommand):
         self.color_by()
         self.fadeout()
         self.show_outro()
-
-
-def tag(
-    name: str = typer.Argument(
-        ...,
-        help="The name of the new tag",
-    )
-):
-    scene = Tag(name=name)
-    handle_animations(scene=scene)

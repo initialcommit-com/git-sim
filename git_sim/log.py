@@ -1,6 +1,5 @@
 import typer
 
-from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
 import numpy
@@ -46,20 +45,3 @@ class Log(GitSimBaseCommand):
         self.color_by()
         self.fadeout()
         self.show_outro()
-
-
-def log(
-    ctx: typer.Context,
-    n: int = typer.Option(
-        None,
-        "-n",
-        help="Number of commits to display from branch heads",
-    ),
-    all: bool = typer.Option(
-        False,
-        "--all",
-        help="Display all local branches in the log output",
-    ),
-):
-    scene = Log(ctx=ctx, n=n, all=all)
-    handle_animations(scene=scene)

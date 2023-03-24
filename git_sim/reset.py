@@ -3,18 +3,10 @@ from enum import Enum
 
 import git
 import manim as m
-import typer
 
-from git_sim.animations import handle_animations
+from git_sim.enums import ResetMode
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
-
-
-class ResetMode(Enum):
-    DEFAULT = "mixed"
-    SOFT = "soft"
-    MIXED = "mixed"
-    HARD = "hard"
 
 
 class Reset(GitSimBaseCommand):
@@ -145,30 +137,3 @@ class Reset(GitSimBaseCommand):
                     secondColumnFileNames.add(y.a_path)
                 elif self.mode == ResetMode.HARD:
                     firstColumnFileNames.add(y.a_path)
-
-
-def reset(
-    commit: str = typer.Argument(
-        default="HEAD",
-        help="The ref (branch/tag), or commit ID to simulate reset to",
-    ),
-    mode: ResetMode = typer.Option(
-        default=ResetMode.MIXED.value,
-        help="Either mixed, soft, or hard",
-    ),
-    soft: bool = typer.Option(
-        default=False,
-        help="Simulate a soft reset, shortcut for --mode=soft",
-    ),
-    mixed: bool = typer.Option(
-        default=False,
-        help="Simulate a mixed reset, shortcut for --mode=mixed",
-    ),
-    hard: bool = typer.Option(
-        default=False,
-        help="Simulate a soft reset, shortcut for --mode=hard",
-    ),
-):
-    settings.hide_first_tag = True
-    scene = Reset(commit=commit, mode=mode, soft=soft, mixed=mixed, hard=hard)
-    handle_animations(scene=scene)

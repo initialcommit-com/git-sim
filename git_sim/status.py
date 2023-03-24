@@ -1,4 +1,3 @@
-from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
 
@@ -24,11 +23,3 @@ class Status(GitSimBaseCommand):
         self.setup_and_draw_zones()
         self.fadeout()
         self.show_outro()
-
-
-def status():
-    settings.hide_first_tag = True
-    settings.allow_no_commits = True
-
-    scene = Status()
-    handle_animations(scene=scene)

@@ -2,9 +2,7 @@ import sys
 
 import git
 import manim as m
-import typer
 
-from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
 
@@ -102,20 +100,3 @@ class Commit(GitSimBaseCommand):
                 secondColumnArrowMap[y.a_path] = m.Arrow(
                     stroke_width=3, color=self.fontColor
                 )
-
-
-def commit(
-    message: str = typer.Option(
-        "New commit",
-        "--message",
-        "-m",
-        help="The commit message of the new commit",
-    ),
-    amend: bool = typer.Option(
-        default=False,
-        help="Amend the last commit message, must be used with the --message flag",
-    ),
-):
-    settings.hide_first_tag = True
-    scene = Commit(message=message, amend=amend)
-    handle_animations(scene=scene)

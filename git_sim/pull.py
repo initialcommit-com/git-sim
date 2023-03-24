@@ -5,13 +5,11 @@ from argparse import Namespace
 import git
 import manim as m
 import numpy
-import typer
 import tempfile
 import shutil
 import stat
 import re
 
-from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
 
@@ -34,7 +32,7 @@ class Pull(GitSimBaseCommand):
             )
 
         self.show_intro()
-        
+
         # Configure paths to make local clone to run networked commands in
         git_root = self.repo.git.rev_parse("--show-toplevel")
         repo_name = os.path.basename(self.repo.working_dir)
@@ -62,7 +60,7 @@ class Pull(GitSimBaseCommand):
         except git.GitCommandError as e:
             if "CONFLICT" in e.stdout:
                 # Restrict to default number of commits since we'll show the table/zones
-                self.n = self.n_default 
+                self.n = self.n_default
 
                 # Get list of conflicted filenames
                 self.conflicted_files = re.findall(r"Merge conflict in (.+)", e.stdout)
@@ -80,7 +78,9 @@ class Pull(GitSimBaseCommand):
                     third_column_name="----",
                 )
             else:
-                print(f"git-sim error: git pull failed for unhandled reason: {e.stdout}")
+                print(
+                    f"git-sim error: git pull failed for unhandled reason: {e.stdout}"
+                )
                 self.repo.git.clear_cache()
                 shutil.rmtree(new_dir, onerror=del_rw)
                 sys.exit(1)
@@ -108,19 +108,7 @@ class Pull(GitSimBaseCommand):
         for filename in self.conflicted_files:
             secondColumnFileNames.add(filename)
 
+
 def del_rw(action, name, exc):
     os.chmod(name, stat.S_IWRITE)
     os.remove(name)
-
-def pull(
-    remote: str = typer.Argument(
-        default=None,
-        help="The name of the remote to pull from",
-    ),
-    branch: str = typer.Argument(
-        default=None,
-        help="The name of the branch to pull",
-    ),
-):
-    scene = Pull(remote=remote, branch=branch)
-    handle_animations(scene=scene)

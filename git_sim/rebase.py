@@ -3,9 +3,7 @@ import sys
 import git
 import manim as m
 import numpy
-import typer
 
-from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
 
@@ -179,13 +177,3 @@ class Rebase(GitSimBaseCommand):
             self.toFadeOut.add(arrow)
 
         return sha
-
-
-def rebase(
-    branch: str = typer.Argument(
-        ...,
-        help="The branch to simulate rebasing the checked-out commit onto",
-    )
-):
-    scene = Rebase(branch=branch)
-    handle_animations(scene=scene)
