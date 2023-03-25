@@ -5,13 +5,11 @@ from argparse import Namespace
 import git
 import manim as m
 import numpy
-import typer
 import tempfile
 import shutil
 import stat
 import re
 
-from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
 
@@ -34,7 +32,7 @@ class Push(GitSimBaseCommand):
             )
 
         self.show_intro()
-        
+
         # Configure paths to make local clone to run networked commands in
         git_root = self.repo.git.rev_parse("--show-toplevel")
         repo_name = os.path.basename(self.repo.working_dir)
@@ -55,7 +53,9 @@ class Push(GitSimBaseCommand):
             remote_url = orig_remotes[0].url
 
         # Create local clone of remote repo to simulate push to so we don't touch the real remote
-        self.remote_repo = git.Repo.clone_from(remote_url, new_dir2, no_hardlinks=True, bare=True)
+        self.remote_repo = git.Repo.clone_from(
+            remote_url, new_dir2, no_hardlinks=True, bare=True
+        )
 
         # Reset local clone remote to the local clone of remote repo
         if self.remote:
@@ -88,7 +88,12 @@ class Push(GitSimBaseCommand):
 
         head_commit = self.get_commit()
         if push_result > 0:
-            self.parse_commits(head_commit, make_branches_remote=(self.remote if self.remote else self.repo.remotes[0].name))
+            self.parse_commits(
+                head_commit,
+                make_branches_remote=(
+                    self.remote if self.remote else self.repo.remotes[0].name
+                ),
+            )
         else:
             self.parse_commits(head_commit)
         self.recenter_frame()
@@ -193,20 +198,6 @@ class Push(GitSimBaseCommand):
             self.add(*texts)
 
 
-
 def del_rw(action, name, exc):
     os.chmod(name, stat.S_IWRITE)
     os.remove(name)
-
-def push(
-    remote: str = typer.Argument(
-        default=None,
-        help="The name of the remote to push to",
-    ),
-    branch: str = typer.Argument(
-        default=None,
-        help="The name of the branch to push",
-    ),
-):
-    scene = Push(remote=remote, branch=branch)
-    handle_animations(scene=scene)

@@ -3,9 +3,7 @@ import sys
 import git
 import manim as m
 import numpy
-import typer
 
-from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
 
@@ -157,14 +155,3 @@ class Revert(GitSimBaseCommand):
     ):
         for filename in self.revert.stats.files:
             secondColumnFileNames.add(filename)
-
-
-def revert(
-    commit: str = typer.Argument(
-        default="HEAD",
-        help="The ref (branch/tag), or commit ID to simulate revert",
-    )
-):
-    settings.hide_first_tag = True
-    scene = Revert(commit=commit)
-    handle_animations(scene=scene)

@@ -2,9 +2,7 @@ import sys
 
 import git
 import manim as m
-import typer
 
-from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
 
@@ -70,19 +68,3 @@ class CherryPick(GitSimBaseCommand):
         self.color_by(offset=2)
         self.fadeout()
         self.show_outro()
-
-
-def cherry_pick(
-    commit: str = typer.Argument(
-        ...,
-        help="The ref (branch/tag), or commit ID to simulate cherry-pick onto active branch",
-    ),
-    edit: str = typer.Option(
-        None,
-        "--edit",
-        "-e",
-        help="Specify a new commit message for the cherry-picked commit",
-    ),
-):
-    scene = CherryPick(commit=commit, edit=edit)
-    handle_animations(scene=scene)

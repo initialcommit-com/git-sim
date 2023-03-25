@@ -4,9 +4,7 @@ from argparse import Namespace
 import git
 import manim as m
 import numpy
-import typer
 
-from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
 
@@ -19,7 +17,11 @@ class Switch(GitSimBaseCommand):
 
         if self.c:
             if self.branch in self.repo.heads:
-                print("git-sim error: can't create new branch '" + self.branch + "', it already exists")
+                print(
+                    "git-sim error: can't create new branch '"
+                    + self.branch
+                    + "', it already exists"
+                )
                 sys.exit(1)
         else:
             try:
@@ -75,7 +77,7 @@ class Switch(GitSimBaseCommand):
             branch_commit = self.get_commit(self.branch)
 
             if self.is_ancestor:
-                commits_in_range = list(self.repo.iter_commits(self.branch + '..HEAD'))
+                commits_in_range = list(self.repo.iter_commits(self.branch + "..HEAD"))
 
                 # branch is reached from HEAD, so draw everything
                 if len(commits_in_range) <= self.n:
@@ -113,18 +115,3 @@ class Switch(GitSimBaseCommand):
         self.color_by()
         self.fadeout()
         self.show_outro()
-
-
-def switch(
-    branch: str = typer.Argument(
-        ...,
-        help="The name of the branch to switch to",
-    ),
-    c: bool = typer.Option(
-        False,
-        "-c",
-        help="Create the specified branch if it doesn't already exist",
-    ),
-):
-    scene = Switch(branch=branch, c=c)
-    handle_animations(scene=scene)

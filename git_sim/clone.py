@@ -5,13 +5,11 @@ from argparse import Namespace
 import git
 import manim as m
 import numpy
-import typer
 import tempfile
 import shutil
 import stat
 import re
 
-from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
 
@@ -28,12 +26,10 @@ class Clone(GitSimBaseCommand):
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
-            print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.url}"
-            )
+            print(f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.url}")
 
         self.show_intro()
-        
+
         # Configure paths to make local clone to run networked commands in
         repo_name = re.search(r"/([^/]+)/?$", self.url)
         if repo_name:
@@ -41,7 +37,9 @@ class Clone(GitSimBaseCommand):
             if repo_name.endswith(".git"):
                 repo_name = repo_name[:-4]
         else:
-            print(f"git-sim error: Invalid repo URL, please confirm repo URL and try again")
+            print(
+                f"git-sim error: Invalid repo URL, please confirm repo URL and try again"
+            )
             sys.exit(1)
         new_dir = os.path.join(tempfile.gettempdir(), "git_sim", repo_name)
 
@@ -49,7 +47,9 @@ class Clone(GitSimBaseCommand):
         try:
             self.repo = git.Repo.clone_from(self.url, new_dir, no_hardlinks=True)
         except git.GitCommandError as e:
-            print(f"git-sim error: Invalid repo URL, please confirm repo URL and try again")
+            print(
+                f"git-sim error: Invalid repo URL, please confirm repo URL and try again"
+            )
             sys.exit(1)
 
         head_commit = self.get_commit()
@@ -69,7 +69,7 @@ class Clone(GitSimBaseCommand):
 
     def add_details(self, repo_name):
         text1 = m.Text(
-            f"Successfully cloned from {self.url} into ./{repo_name}", 
+            f"Successfully cloned from {self.url} into ./{repo_name}",
             font="Monospace",
             font_size=20,
             color=self.fontColor,
@@ -100,12 +100,3 @@ class Clone(GitSimBaseCommand):
 def del_rw(action, name, exc):
     os.chmod(name, stat.S_IWRITE)
     os.remove(name)
-
-def clone(
-    url: str = typer.Argument(
-        ...,
-        help="The web URL or filesystem path of the Git repo to clone",
-    ),
-):
-    scene = Clone(url=url)
-    handle_animations(scene=scene)

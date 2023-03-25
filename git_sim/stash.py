@@ -1,19 +1,12 @@
 import sys
 from enum import Enum
 import manim as m
-import typer
 
 from typing import List
 
-from git_sim.animations import handle_animations
+from git_sim.enums import StashSubCommand
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
-
-
-class StashSubCommand(Enum):
-    POP = "pop"
-    APPLY = "apply"
-    PUSH = "push"
 
 
 class Stash(GitSimBaseCommand):
@@ -186,18 +179,3 @@ class Stash(GitSimBaseCommand):
                         secondColumnArrowMap[y.a_path] = m.Arrow(
                             stroke_width=3, color=self.fontColor
                         )
-
-
-def stash(
-    command: StashSubCommand = typer.Argument(
-        default=None,
-        help="Stash subcommand (push, pop, apply)",
-    ),
-    files: List[str] = typer.Argument(
-        default=None,
-        help="The name of the file to stash changes for",
-    ),
-):
-    settings.hide_first_tag = True
-    scene = Stash(files=files, command=command)
-    handle_animations(scene=scene)

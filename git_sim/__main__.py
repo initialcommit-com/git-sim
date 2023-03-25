@@ -4,30 +4,10 @@ import os
 import sys
 import datetime
 import time
-import git
 
-import git_sim.add
-import git_sim.branch
-import git_sim.cherrypick
-import git_sim.commit
-import git_sim.log
-import git_sim.merge
-import git_sim.rebase
-import git_sim.reset
-import git_sim.restore
-import git_sim.revert
-import git_sim.stash
-import git_sim.status
-import git_sim.tag
-import git_sim.switch
-import git_sim.checkout
-import git_sim.fetch
-import git_sim.pull
-import git_sim.push
-import git_sim.clone
+import git_sim.commands
 
 from git_sim.settings import ImgFormat, VideoFormat, settings
-from manim import config, WHITE
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
@@ -146,6 +126,9 @@ def main(
         help="Color commits by parameter, such as author",
     ),
 ):
+    import git
+    from manim import config, WHITE
+
     settings.animate = animate
     settings.n = n
     settings.auto_open = auto_open
@@ -199,25 +182,25 @@ def main(
     config.output_file = "git-sim-" + ctx.invoked_subcommand + "_" + t + ".mp4"
 
 
-app.command()(git_sim.add.add)
-app.command()(git_sim.branch.branch)
-app.command()(git_sim.cherrypick.cherry_pick)
-app.command()(git_sim.commit.commit)
-app.command()(git_sim.log.log)
-app.command()(git_sim.merge.merge)
-app.command()(git_sim.rebase.rebase)
-app.command()(git_sim.reset.reset)
-app.command()(git_sim.restore.restore)
-app.command()(git_sim.revert.revert)
-app.command()(git_sim.stash.stash)
-app.command()(git_sim.status.status)
-app.command()(git_sim.tag.tag)
-app.command()(git_sim.switch.switch)
-app.command()(git_sim.checkout.checkout)
-app.command()(git_sim.fetch.fetch)
-app.command()(git_sim.pull.pull)
-app.command()(git_sim.push.push)
-app.command()(git_sim.clone.clone)
+app.command()(git_sim.commands.add)
+app.command()(git_sim.commands.branch)
+app.command()(git_sim.commands.checkout)
+app.command()(git_sim.commands.cherry_pick)
+app.command()(git_sim.commands.clone)
+app.command()(git_sim.commands.commit)
+app.command()(git_sim.commands.fetch)
+app.command()(git_sim.commands.log)
+app.command()(git_sim.commands.merge)
+app.command()(git_sim.commands.pull)
+app.command()(git_sim.commands.push)
+app.command()(git_sim.commands.rebase)
+app.command()(git_sim.commands.reset)
+app.command()(git_sim.commands.restore)
+app.command()(git_sim.commands.revert)
+app.command()(git_sim.commands.stash)
+app.command()(git_sim.commands.status)
+app.command()(git_sim.commands.switch)
+app.command()(git_sim.commands.tag)
 
 
 if __name__ == "__main__":

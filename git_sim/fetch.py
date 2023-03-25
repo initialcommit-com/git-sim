@@ -5,12 +5,10 @@ from argparse import Namespace
 import git
 import manim as m
 import numpy
-import typer
 import tempfile
 import shutil
 import stat
 
-from git_sim.animations import handle_animations
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
 
@@ -76,19 +74,7 @@ class Fetch(GitSimBaseCommand):
         self.repo.git.clear_cache()
         shutil.rmtree(new_dir, onerror=del_rw)
 
+
 def del_rw(action, name, exc):
     os.chmod(name, stat.S_IWRITE)
     os.remove(name)
-
-def fetch(
-    remote: str = typer.Argument(
-        ...,
-        help="The name of the remote to fetch from",
-    ),
-    branch: str = typer.Argument(
-        ...,
-        help="The name of the branch to fetch",
-    ),
-):
-    scene = Fetch(remote=remote, branch=branch)
-    handle_animations(scene=scene)
