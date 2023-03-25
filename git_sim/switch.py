@@ -72,6 +72,8 @@ class Switch(GitSimBaseCommand):
         # using -c flag, create new branch label and exit
         if self.c:
             self.parse_commits(head_commit)
+            self.recenter_frame()
+            self.scale_frame()
             self.draw_ref(head_commit, self.topref, text=self.branch, color=m.GREEN)
         else:
             branch_commit = self.get_commit(self.branch)
