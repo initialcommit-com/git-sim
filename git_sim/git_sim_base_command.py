@@ -95,7 +95,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
             if commit != "dark":
                 if not hide_refs and isNewCommit:
                     self.draw_head(commit, i, commitId)
-                    self.draw_branch(commit, i, make_branches_remote=make_branches_remote)
+                    self.draw_branch(
+                        commit, i, make_branches_remote=make_branches_remote
+                    )
                     self.draw_tag(commit, i)
                 if (
                     not isinstance(arrow, m.CurvedArrow)
@@ -382,7 +384,14 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 self.is_remote_tracking_branch(branch)  # remote tracking branch
                 and commit.hexsha == remote_tracking_branches[branch]
             ):
-                text = (make_branches_remote + "/" + branch) if (make_branches_remote and not self.is_remote_tracking_branch(branch)) else branch
+                text = (
+                    (make_branches_remote + "/" + branch)
+                    if (
+                        make_branches_remote
+                        and not self.is_remote_tracking_branch(branch)
+                    )
+                    else branch
+                )
 
                 branchText = m.Text(
                     text, font="Monospace", font_size=20, color=self.fontColor
@@ -893,7 +902,6 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 )
             )
 
-
     def reset_head_branch_to_ref(self, ref, shift=numpy.array([0.0, 0.0, 0.0])):
         if settings.animate:
             self.play(self.drawnRefs["HEAD"].animate.next_to(ref, m.UP))
@@ -1071,7 +1079,6 @@ class GitSimBaseCommand(m.MovingCameraScene):
         thirdColumnTitle,
         horizontal2,
     ):
-
         for i, f in enumerate(firstColumnFileNames):
             text = (
                 m.Text(
