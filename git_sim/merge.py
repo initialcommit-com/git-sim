@@ -1,9 +1,12 @@
 import sys
-from argparse import Namespace
+import os
 
 import git
 import manim as m
 import numpy
+import tempfile
+import shutil
+import stat
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
@@ -105,23 +108,85 @@ class Merge(GitSimBaseCommand):
                 self.color_by()
 
         else:
-            self.parse_commits(head_commit)
-            self.parse_commits(branch_commit, shift=4 * m.DOWN)
-            self.parse_all()
-            self.center_frame_on_commit(head_commit)
-            self.setup_and_draw_parent(
-                head_commit,
-                "Merge commit",
-                shift=2 * m.DOWN,
-                draw_arrow=False,
-                color=m.GRAY,
-            )
-            self.draw_arrow_between_commits("abcdef", branch_commit.hexsha)
-            self.draw_arrow_between_commits("abcdef", head_commit.hexsha)
-            self.recenter_frame()
-            self.scale_frame()
-            self.reset_head_branch("abcdef")
-            self.color_by(offset=2)
+            merge_result, new_dir = self.check_merge_conflict(self.repo.active_branch.name, self.branch)
+            if merge_result:
+                self.parse_commits(head_commit)
+                self.recenter_frame()
+                self.scale_frame()
+
+                # Show the conflicted files names in the table/zones
+                self.vsplit_frame()
+                self.setup_and_draw_zones(
+                    first_column_name="----",
+                    second_column_name="Conflicted files",
+                    third_column_name="----",
+                )
+                self.color_by()
+            else:
+                self.parse_commits(head_commit)
+                self.parse_commits(branch_commit, shift=4 * m.DOWN)
+                self.parse_all()
+                self.center_frame_on_commit(head_commit)
+                self.setup_and_draw_parent(
+                    head_commit,
+                    "Merge commit",
+                    shift=2 * m.DOWN,
+                    draw_arrow=False,
+                    color=m.GRAY,
+                )
+                self.draw_arrow_between_commits("abcdef", branch_commit.hexsha)
+                self.draw_arrow_between_commits("abcdef", head_commit.hexsha)
+                self.recenter_frame()
+                self.scale_frame()
+                self.reset_head_branch("abcdef")
+                self.color_by(offset=2)
 
         self.fadeout()
         self.show_outro()
+
+        # Unlink the program from the filesystem
+        self.repo.git.clear_cache()
+
+        # Delete the local clone
+        shutil.rmtree(new_dir, onerror=del_rw)
+
+
+    def check_merge_conflict(self, branch1, branch2):
+        git_root = self.repo.git.rev_parse("--show-toplevel")
+        repo_name = os.path.basename(self.repo.working_dir)
+        new_dir = os.path.join(tempfile.gettempdir(), "git_sim", repo_name)
+
+        orig_remotes = self.repo.remotes
+        self.repo = git.Repo.clone_from(git_root, new_dir, no_hardlinks=True)
+        self.repo.git.checkout(branch2)
+        self.repo.git.checkout(branch1)
+
+        try:
+            self.repo.git.merge(branch2)
+        except git.GitCommandError as e:
+            if "CONFLICT" in e.stdout:
+                self.conflicted_files = []
+                self.n = 5
+                for entry in self.repo.index.entries:
+                    if len(entry) == 2 and entry[1] > 0:
+                        self.conflicted_files.append(entry[0])
+            return 1, new_dir
+        return 0, new_dir
+
+    # Override to display conflicted filenames
+    def populate_zones(
+        self,
+        firstColumnFileNames,
+        secondColumnFileNames,
+        thirdColumnFileNames,
+        firstColumnArrowMap={},
+        secondColumnArrowMap={},
+        thirdColumnArrowMap={},
+    ):
+        for filename in self.conflicted_files:
+            secondColumnFileNames.add(filename)
+
+
+def del_rw(action, name, exc):
+    os.chmod(name, stat.S_IWRITE)
+    os.remove(name)
