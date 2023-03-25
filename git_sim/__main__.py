@@ -4,7 +4,6 @@ import os
 import sys
 import datetime
 import time
-import git
 
 import git_sim.commands
 
@@ -127,6 +126,7 @@ def main(
         help="Color commits by parameter, such as author",
     ),
 ):
+    import git
     from manim import config, WHITE
 
     settings.animate = animate
