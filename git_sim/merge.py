@@ -74,6 +74,14 @@ class Merge(GitSimBaseCommand):
             if self.no_ff:
                 self.center_frame_on_commit(branch_commit)
                 commitId = self.setup_and_draw_parent(branch_commit, "Merge commit")
+
+                # If pre-merge HEAD is on screen, drawn an arrow to it as 2nd parent
+                if head_commit.hexsha in self.drawnCommits:
+                    start = self.drawnCommits["abcdef"].get_center()
+                    end = self.drawnCommits[head_commit.hexsha].get_center()
+                    arrow = m.CurvedArrow(start, end, color=self.fontColor)
+                    self.draw_arrow(True, arrow)
+
                 reset_head_to = "abcdef"
                 shift = numpy.array([0.0, 0.0, 0.0])
 
