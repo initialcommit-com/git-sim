@@ -65,7 +65,7 @@ class Clone(GitSimBaseCommand):
         self.repo.git.clear_cache()
 
         # Delete the local clones
-        shutil.rmtree(new_dir, onerror=del_rw)
+        shutil.rmtree(new_dir, onerror=self.del_rw)
 
     def add_details(self, repo_name):
         text1 = m.Text(
@@ -95,8 +95,3 @@ class Clone(GitSimBaseCommand):
             self.play(m.AddTextLetterByLetter(text1), m.AddTextLetterByLetter(text2))
         else:
             self.add(text1, text2)
-
-
-def del_rw(action, name, exc):
-    os.chmod(name, stat.S_IWRITE)
-    os.remove(name)

@@ -72,9 +72,4 @@ class Fetch(GitSimBaseCommand):
         self.fadeout()
         self.show_outro()
         self.repo.git.clear_cache()
-        shutil.rmtree(new_dir, onerror=del_rw)
-
-
-def del_rw(action, name, exc):
-    os.chmod(name, stat.S_IWRITE)
-    os.remove(name)
+        shutil.rmtree(new_dir, onerror=self.del_rw)

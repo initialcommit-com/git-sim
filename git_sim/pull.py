@@ -82,7 +82,7 @@ class Pull(GitSimBaseCommand):
                     f"git-sim error: git pull failed for unhandled reason: {e.stdout}"
                 )
                 self.repo.git.clear_cache()
-                shutil.rmtree(new_dir, onerror=del_rw)
+                shutil.rmtree(new_dir, onerror=self.del_rw)
                 sys.exit(1)
 
         self.color_by()
@@ -93,7 +93,7 @@ class Pull(GitSimBaseCommand):
         self.repo.git.clear_cache()
 
         # Delete the local clone
-        shutil.rmtree(new_dir, onerror=del_rw)
+        shutil.rmtree(new_dir, onerror=self.del_rw)
 
     # Override to display conflicted filenames
     def populate_zones(
@@ -107,8 +107,3 @@ class Pull(GitSimBaseCommand):
     ):
         for filename in self.conflicted_files:
             secondColumnFileNames.add(filename)
-
-
-def del_rw(action, name, exc):
-    os.chmod(name, stat.S_IWRITE)
-    os.remove(name)

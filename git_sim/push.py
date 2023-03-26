@@ -109,8 +109,8 @@ class Push(GitSimBaseCommand):
             self.orig_repo.git.clear_cache()
 
         # Delete the local clones
-        shutil.rmtree(new_dir, onerror=del_rw)
-        shutil.rmtree(new_dir2, onerror=del_rw)
+        shutil.rmtree(new_dir, onerror=self.del_rw)
+        shutil.rmtree(new_dir2, onerror=self.del_rw)
 
     def failed_push(self, push_result):
         if push_result == 1:
@@ -196,8 +196,3 @@ class Push(GitSimBaseCommand):
             self.play(*[m.AddTextLetterByLetter(t) for t in texts])
         else:
             self.add(*texts)
-
-
-def del_rw(action, name, exc):
-    os.chmod(name, stat.S_IWRITE)
-    os.remove(name)

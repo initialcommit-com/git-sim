@@ -1,5 +1,9 @@
 import platform
 import sys
+import os
+import tempfile
+import shutil
+import stat
 
 import git
 import manim as m
@@ -52,6 +56,17 @@ class GitSimBaseCommand(m.MovingCameraScene):
     def init_repo(self):
         try:
             self.repo = Repo(search_parent_directories=True)
+            repo_name = os.path.basename(self.repo.working_dir)
+            new_dir = os.path.join(tempfile.gettempdir(), "git_sim", repo_name)
+            new_dir2 = os.path.join(tempfile.gettempdir(), "git_sim", repo_name + "2")
+            try:
+                shutil.rmtree(new_dir, onerror=self.del_rw)
+            except FileNotFoundError:
+                pass
+            try:
+                shutil.rmtree(new_dir2, onerror=self.del_rw)
+            except FileNotFoundError:
+                pass
         except InvalidGitRepositoryError:
             print("git-sim error: No Git repository found at current path.")
             sys.exit(1)
@@ -1179,6 +1194,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.author_groups[author] = [group]
         else:
             self.author_groups[author].append(group)
+
+    def del_rw(self, action, name, exc):
+        os.chmod(name, stat.S_IWRITE)
+        os.remove(name)
 
 
 class DottedLine(m.Line):
