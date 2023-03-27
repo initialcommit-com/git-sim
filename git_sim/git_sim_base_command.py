@@ -235,9 +235,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
             commit_fill = m.RED
         else:
             commit_fill = m.GRAY
-        
+
         circle = m.Circle(
-            stroke_color=commit_fill, fill_color=commit_fill, fill_opacity=self.fill_opacity
+            stroke_color=commit_fill,
+            fill_color=commit_fill,
+            fill_opacity=self.fill_opacity,
         )
         circle.height = 1
 
@@ -320,14 +322,25 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.play(
                 self.camera.frame.animate.move_to(circle.get_center()),
                 m.Create(circle),
-                m.Text("") if settings.highlight_commit_messages else m.AddTextLetterByLetter(commitId),
+                m.Text("")
+                if settings.highlight_commit_messages
+                else m.AddTextLetterByLetter(commitId),
                 m.AddTextLetterByLetter(message),
                 run_time=1 / settings.speed,
             )
         elif isNewCommit:
-            self.add(circle, m.Text("") if settings.highlight_commit_messages else commitId, message)
+            self.add(
+                circle,
+                m.Text("") if settings.highlight_commit_messages else commitId,
+                message,
+            )
         else:
-            return m.Text("") if settings.highlight_commit_messages else commitId, circle, arrow, hide_refs
+            return (
+                m.Text("") if settings.highlight_commit_messages else commitId,
+                circle,
+                arrow,
+                hide_refs,
+            )
 
         if commit != "dark":
             self.drawnCommits[commit.hexsha] = circle
@@ -369,7 +382,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
     def draw_head(self, commit, i, commitId):
         if commit.hexsha == self.repo.head.commit.hexsha:
-            headbox = m.Rectangle(color=m.BLUE, fill_color=m.BLUE, fill_opacity=self.ref_fill_opacity)
+            headbox = m.Rectangle(
+                color=m.BLUE, fill_color=m.BLUE, fill_opacity=self.ref_fill_opacity
+            )
             headbox.width = 1
             headbox.height = 0.4
             if settings.highlight_commit_messages:
@@ -960,7 +975,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         draw_arrow=True,
         color=m.RED,
     ):
-        circle = m.Circle(stroke_color=color, fill_color=color, fill_opacity=self.ref_fill_opacity)
+        circle = m.Circle(
+            stroke_color=color, fill_color=color, fill_opacity=self.ref_fill_opacity
+        )
         circle.height = 1
         circle.next_to(
             self.drawnCommits[child.hexsha],

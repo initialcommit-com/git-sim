@@ -109,7 +109,9 @@ class Merge(GitSimBaseCommand):
                 self.color_by()
 
         else:
-            merge_result, new_dir = self.check_merge_conflict(self.repo.active_branch.name, self.branch)
+            merge_result, new_dir = self.check_merge_conflict(
+                self.repo.active_branch.name, self.branch
+            )
             if merge_result:
                 self.parse_commits(head_commit)
                 self.recenter_frame()
@@ -150,7 +152,6 @@ class Merge(GitSimBaseCommand):
 
         # Delete the local clone
         shutil.rmtree(new_dir, onerror=self.del_rw)
-
 
     def check_merge_conflict(self, branch1, branch2):
         git_root = self.repo.git.rev_parse("--show-toplevel")
