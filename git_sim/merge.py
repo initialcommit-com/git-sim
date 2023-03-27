@@ -156,6 +156,7 @@ class Merge(GitSimBaseCommand):
         repo_name = os.path.basename(self.repo.working_dir)
         new_dir = os.path.join(tempfile.gettempdir(), "git_sim", repo_name)
 
+        orig_repo = self.repo
         orig_remotes = self.repo.remotes
         self.repo = git.Repo.clone_from(git_root, new_dir, no_hardlinks=True)
         self.repo.git.checkout(branch2)
@@ -171,6 +172,7 @@ class Merge(GitSimBaseCommand):
                     if len(entry) == 2 and entry[1] > 0:
                         self.conflicted_files.append(entry[0])
             return 1, new_dir
+        self.repo = orig_repo
         return 0, new_dir
 
     # Override to display conflicted filenames
