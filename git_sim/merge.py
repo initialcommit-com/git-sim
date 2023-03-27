@@ -13,10 +13,11 @@ from git_sim.settings import settings
 
 
 class Merge(GitSimBaseCommand):
-    def __init__(self, branch: str, no_ff: bool):
+    def __init__(self, branch: str, no_ff: bool, message: str):
         super().__init__()
         self.branch = branch
         self.no_ff = no_ff
+        self.message = message
 
         try:
             git.repo.fun.rev_parse(self.repo, self.branch)
@@ -76,7 +77,7 @@ class Merge(GitSimBaseCommand):
 
             if self.no_ff:
                 self.center_frame_on_commit(branch_commit)
-                commitId = self.setup_and_draw_parent(branch_commit, "Merge commit")
+                commitId = self.setup_and_draw_parent(branch_commit, self.message)
 
                 # If pre-merge HEAD is on screen, drawn an arrow to it as 2nd parent
                 if head_commit.hexsha in self.drawnCommits:
@@ -129,7 +130,7 @@ class Merge(GitSimBaseCommand):
                 self.center_frame_on_commit(head_commit)
                 self.setup_and_draw_parent(
                     head_commit,
-                    "Merge commit",
+                    self.message,
                     shift=2 * m.DOWN,
                     draw_arrow=False,
                     color=m.GRAY,

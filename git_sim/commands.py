@@ -153,10 +153,16 @@ def merge(
         "--no-ff",
         help="Simulate creation of a merge commit in all cases, even when the merge could instead be resolved as a fast-forward",
     ),
+    message: str = typer.Option(
+        "Merge commit",
+        "--message",
+        "-m",
+        help="The commit message of the new merge commit",
+    ),
 ):
     from git_sim.merge import Merge
 
-    scene = Merge(branch=branch, no_ff=no_ff)
+    scene = Merge(branch=branch, no_ff=no_ff, message=message)
     handle_animations(scene=scene)
 
 

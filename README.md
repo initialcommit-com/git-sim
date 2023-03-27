@@ -204,7 +204,7 @@ Usage: `git-sim restore <file 1> <file 2> ... <file n>`
 Usage: `git-sim commit -m "Commit message"`
 
 - Simulated output will show the new commit added to the tip of the active branch
-- Specify your commit message after the -m option
+- Specify a commit message with the `-m` option
 - HEAD and the active branch will be moved to the new commit
 - Simulated output will show files in the staging area being included in the new commit
 - Supports amending the last commit with: `$ git-sim commit --amend -m "Amended commit message"`
@@ -256,12 +256,14 @@ Usage: `git-sim revert <to-revert>`
 ![git-sim-revert_01-05-23_22-16-59](https://user-images.githubusercontent.com/49353917/210941979-6db8b55c-2881-41d8-9e2e-6263b1dece13.jpg)
 
 ### git merge
-Usage: `git-sim merge <branch>`
+Usage: `git-sim merge <branch> [-m "Commit message"] [--no-ff]`
 
 - Specify `<branch>` as the branch name to merge into the active branch
+- If desired, specify a commit message with the `-m` option
 - Simulated output will depict a fast-forward merge if possible
 - Otherwise, a three-way merge will be depicted
 - To force a merge commit when a fast-forward is possible, use `--no-ff`
+- If merge fails due to merge conflicts, the conflicting files are displayed
 
 ![git-sim-merge_01-05-23_09-44-46](https://user-images.githubusercontent.com/49353917/210942030-c7229488-571a-4943-a1f4-c6e4a0c8ccf3.jpg)
 
