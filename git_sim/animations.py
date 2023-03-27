@@ -37,7 +37,7 @@ def handle_animations(scene: Scene) -> None:
             )
             image_file_name = (
                 "git-sim-"
-                + inspect.stack()[1].function
+                + inspect.stack()[2].function
                 + "_"
                 + t
                 + "."
