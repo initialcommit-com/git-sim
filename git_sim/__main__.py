@@ -39,6 +39,11 @@ def main(
         "--light-mode",
         help="Enable light-mode with white background",
     ),
+    transparent_bg: bool = typer.Option(
+        settings.transparent_bg,
+        "--transparent-bg",
+        help="Make background transparent",
+    ),
     logo: pathlib.Path = typer.Option(
         settings.logo,
         help="The path to a custom logo to use in the animation intro/outro",
@@ -138,6 +143,7 @@ def main(
     settings.auto_open = auto_open
     settings.img_format = img_format
     settings.light_mode = light_mode
+    settings.transparent_bg = transparent_bg
     settings.logo = logo
     settings.low_quality = low_quality
     settings.max_branches_per_commit = max_branches_per_commit
@@ -182,6 +188,9 @@ def main(
 
     if settings.light_mode:
         config.background_color = WHITE
+
+    if settings.transparent_bg:
+        settings.img_format = ImgFormat.png
 
     t = datetime.datetime.fromtimestamp(time.time()).strftime("%m-%d-%y_%H-%M-%S")
     config.output_file = "git-sim-" + ctx.invoked_subcommand + "_" + t + ".mp4"

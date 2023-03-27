@@ -53,6 +53,12 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.logo = m.ImageMobject(settings.logo)
         self.logo.width = 3
 
+        self.fill_opacity = 0.25
+        self.ref_fill_opacity = 0.25
+        if settings.transparent_bg:
+            self.fill_opacity = 0.5
+            self.ref_fill_opacity = 1.0
+
     def init_repo(self):
         try:
             self.repo = Repo(search_parent_directories=True)
@@ -224,14 +230,14 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
     def draw_commit(self, commit, i, prevCircle, shift=numpy.array([0.0, 0.0, 0.0])):
         if commit == "dark":
-            commitFill = m.WHITE if settings.light_mode else m.BLACK
+            commit_fill = m.WHITE if settings.light_mode else m.BLACK
         elif len(commit.parents) <= 1:
-            commitFill = m.RED
+            commit_fill = m.RED
         else:
-            commitFill = m.GRAY
-
+            commit_fill = m.GRAY
+        
         circle = m.Circle(
-            stroke_color=commitFill, fill_color=commitFill, fill_opacity=0.25
+            stroke_color=commit_fill, fill_color=commit_fill, fill_opacity=self.fill_opacity
         )
         circle.height = 1
 
@@ -363,7 +369,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
     def draw_head(self, commit, i, commitId):
         if commit.hexsha == self.repo.head.commit.hexsha:
-            headbox = m.Rectangle(color=m.BLUE, fill_color=m.BLUE, fill_opacity=0.25)
+            headbox = m.Rectangle(color=m.BLUE, fill_color=m.BLUE, fill_opacity=self.ref_fill_opacity)
             headbox.width = 1
             headbox.height = 0.4
             if settings.highlight_commit_messages:
@@ -423,7 +429,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 branchRec = m.Rectangle(
                     color=m.GREEN,
                     fill_color=m.GREEN,
-                    fill_opacity=0.25,
+                    fill_opacity=self.ref_fill_opacity,
                     height=0.4,
                     width=branchText.width + 0.25,
                 )
@@ -468,7 +474,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     tagRec = m.Rectangle(
                         color=m.YELLOW,
                         fill_color=m.YELLOW,
-                        fill_opacity=0.25,
+                        fill_opacity=self.ref_fill_opacity,
                         height=0.4,
                         width=tagText.width + 0.25,
                     )
@@ -954,7 +960,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         draw_arrow=True,
         color=m.RED,
     ):
-        circle = m.Circle(stroke_color=color, fill_color=color, fill_opacity=0.25)
+        circle = m.Circle(stroke_color=color, fill_color=color, fill_opacity=self.ref_fill_opacity)
         circle.height = 1
         circle.next_to(
             self.drawnCommits[child.hexsha],
@@ -1033,7 +1039,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         refbox = m.Rectangle(
             color=color,
             fill_color=color,
-            fill_opacity=0.25,
+            fill_opacity=self.ref_fill_opacity,
             height=0.4,
             width=refText.width + 0.25,
         )

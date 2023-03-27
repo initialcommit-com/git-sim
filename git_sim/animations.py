@@ -46,6 +46,18 @@ def handle_animations(scene: Scene) -> None:
             image_file_path = os.path.join(
                 os.path.join(settings.media_dir, "images"), image_file_name
             )
+            if settings.transparent_bg:
+                unsharp_image = cv2.GaussianBlur(image, (0, 0), 3)
+                image = cv2.addWeighted(image, 1.5, unsharp_image, -0.5, 0)
+
+                tmp = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                if settings.light_mode:
+                    _, alpha = cv2.threshold(tmp, 225, 255, cv2.THRESH_BINARY_INV)
+                else:
+                    _, alpha = cv2.threshold(tmp, 25, 255, cv2.THRESH_BINARY)
+                b, g, r = cv2.split(image)
+                rgba = [b, g, r, alpha]
+                image = cv2.merge(rgba, 4)
             cv2.imwrite(image_file_path, image)
             if (
                 not settings.stdout

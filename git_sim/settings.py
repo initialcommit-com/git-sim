@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     img_format: ImgFormat = ImgFormat.jpg
     INFO_STRING = "Simulating: git"
     light_mode = False
+    transparent_bg = False
     logo = pathlib.Path(__file__).parent.resolve() / "logo.png"
     low_quality = False
     max_branches_per_commit = 1
