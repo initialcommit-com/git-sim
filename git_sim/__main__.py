@@ -125,6 +125,10 @@ def main(
         settings.color_by,
         help="Color commits by parameter, such as author",
     ),
+    highlight_commit_messages: bool = typer.Option(
+        settings.highlight_commit_messages,
+        help="Make the displayed commit messages more prominent",
+    ),
 ):
     import git
     from manim import config, WHITE
@@ -154,6 +158,7 @@ def main(
     settings.hide_merged_branches = hide_merged_branches
     settings.all = all
     settings.color_by = color_by
+    settings.highlight_commit_messages = highlight_commit_messages
 
     try:
         if sys.platform == "linux" or sys.platform == "darwin":

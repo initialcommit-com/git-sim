@@ -305,22 +305,23 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 commitMessage[j : j + 20] for j in range(0, len(commitMessage), 20)
             )[:100],
             font="Monospace",
-            font_size=14,
+            font_size=20 if settings.highlight_commit_messages else 14,
             color=self.fontColor,
+            weight=m.BOLD if settings.highlight_commit_messages else m.NORMAL,
         ).next_to(circle, m.DOWN)
 
         if settings.animate and commit != "dark" and isNewCommit:
             self.play(
                 self.camera.frame.animate.move_to(circle.get_center()),
                 m.Create(circle),
-                m.AddTextLetterByLetter(commitId),
+                m.Text("") if settings.highlight_commit_messages else m.AddTextLetterByLetter(commitId),
                 m.AddTextLetterByLetter(message),
                 run_time=1 / settings.speed,
             )
         elif isNewCommit:
-            self.add(circle, commitId, message)
+            self.add(circle, m.Text("") if settings.highlight_commit_messages else commitId, message)
         else:
-            return commitId, circle, arrow, hide_refs
+            return m.Text("") if settings.highlight_commit_messages else commitId, circle, arrow, hide_refs
 
         if commit != "dark":
             self.drawnCommits[commit.hexsha] = circle
@@ -328,7 +329,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.add_group_to_author_groups(commit.author.name, group)
 
         self.toFadeOut.add(circle, commitId, message)
-        self.prevRef = commitId
+        if settings.highlight_commit_messages:
+            self.prevRef = circle
+        else:
+            self.prevRef = commitId
 
         return commitId, circle, arrow, hide_refs
 
@@ -362,7 +366,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
             headbox = m.Rectangle(color=m.BLUE, fill_color=m.BLUE, fill_opacity=0.25)
             headbox.width = 1
             headbox.height = 0.4
-            headbox.next_to(commitId, m.UP)
+            if settings.highlight_commit_messages:
+                headbox.next_to(self.drawnCommits[commit.hexsha], m.UP)
+            else:
+                headbox.next_to(commitId, m.UP)
             headText = m.Text(
                 "HEAD", font="Monospace", font_size=20, color=self.fontColor
             ).move_to(headbox.get_center())

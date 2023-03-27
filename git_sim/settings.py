@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     hide_merged_branches = False
     all = False
     color_by: Union[str, None] = None
+    highlight_commit_messages = False
 
     class Config:
         env_prefix = "git_sim_"

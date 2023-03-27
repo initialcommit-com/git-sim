@@ -147,7 +147,8 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 `--img-format`: Output format for the image file, i.e. `jpg` or `png`. Default output format is `jpg`.  
 `--stdout`: Write raw image data to stdout while suppressing all other program output.  
 `--output-only-path`: Only output the path to the generated media file to stdout. Useful for other programs to ingest.  
-`--quiet, -q`: Suppress all output except errors.
+`--quiet, -q`: Suppress all output except errors.  
+`--highlight-commit-messages`: Make commit message text bigger and bold, and hide commit ids.
 
 Animation-only global options (to be used in conjunction with `--animate`):
 
