@@ -20,15 +20,20 @@ class Fetch(GitSimBaseCommand):
         self.branch = branch
         settings.max_branches_per_commit = 2
 
-        if self.remote not in self.repo.remotes:
+        if self.remote and self.remote not in self.repo.remotes:
             print("git-sim error: no remote with name '" + self.remote + "'")
             sys.exit(1)
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.remote} {self.branch}"
+                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.remote if self.remote else ''} {self.branch if self.branch else ''}"
             )
+
+        if not self.remote:
+            self.remote = "origin"
+        if not self.branch:
+            self.branch = self.repo.active_branch.name
 
         self.show_intro()
 
@@ -42,7 +47,12 @@ class Fetch(GitSimBaseCommand):
             for r2 in self.repo.remotes:
                 if r1.name == r2.name:
                     r2.set_url(r1.url)
-        self.repo.git.fetch(self.remote, self.branch)
+
+        try:
+            self.repo.git.fetch(self.remote, self.branch)
+        except git.GitCommandError as e:
+            print(e)
+            sys.exit(1)
 
         # local branch doesn't exist
         if self.branch not in self.repo.heads:

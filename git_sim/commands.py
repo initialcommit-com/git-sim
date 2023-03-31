@@ -110,11 +110,11 @@ def commit(
 
 def fetch(
     remote: str = typer.Argument(
-        ...,
+        default=None,
         help="The name of the remote to fetch from",
     ),
     branch: str = typer.Argument(
-        ...,
+        default=None,
         help="The name of the branch to fetch",
     ),
 ):
