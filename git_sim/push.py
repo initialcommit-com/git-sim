@@ -96,6 +96,7 @@ class Push(GitSimBaseCommand):
             )
         else:
             self.parse_commits(head_commit)
+
         self.recenter_frame()
         self.scale_frame()
         self.failed_push(push_result)
@@ -113,6 +114,7 @@ class Push(GitSimBaseCommand):
         shutil.rmtree(new_dir2, onerror=self.del_rw)
 
     def failed_push(self, push_result):
+        texts = []
         if push_result == 1:
             text1 = m.Text(
                 f"'git push' failed since the remote repo has commits that don't exist locally.",
