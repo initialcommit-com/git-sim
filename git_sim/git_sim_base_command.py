@@ -53,6 +53,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         self.logo = m.ImageMobject(settings.logo)
         self.logo.width = 3
+        self.hide_first_tag = settings.hide_first_tag
 
         self.fill_opacity = 0.25
         self.ref_fill_opacity = 0.25
@@ -477,7 +478,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
     def draw_tag(self, commit, i):
         x = 0
 
-        if settings.hide_first_tag and i == 0:
+        if self.hide_first_tag and i == 0:
             return
 
         for tag in self.repo.tags:

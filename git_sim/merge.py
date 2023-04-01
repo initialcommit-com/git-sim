@@ -113,6 +113,7 @@ class Merge(GitSimBaseCommand):
                 self.repo.active_branch.name, self.branch
             )
             if merge_result:
+                self.hide_first_tag = True
                 self.parse_commits(head_commit)
                 self.recenter_frame()
                 self.scale_frame()
