@@ -61,6 +61,7 @@ class Pull(GitSimBaseCommand):
             if "CONFLICT" in e.stdout:
                 # Restrict to default number of commits since we'll show the table/zones
                 self.n = self.n_default
+                settings.hide_merged_branches = True
 
                 # Get list of conflicted filenames
                 self.conflicted_files = re.findall(r"Merge conflict in (.+)", e.stdout)
