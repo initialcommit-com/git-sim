@@ -29,6 +29,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.n_default = settings.n_default
         self.n = settings.n
         self.n_orig = self.n
+        self.n_dark_commits = 0
         self.selected_branches = []
         self.zone_title_offset = 2.6 if platform.system() == "Windows" else 2.6
         self.arrow_map = []
@@ -143,7 +144,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
             try:
                 commitParents = list(commit.parents)
             except AttributeError:
-                if len(self.drawnCommits) < self.n_default:
+                if ((len(self.drawnCommits) + self.n_dark_commits) < self.n_default):
+                    self.n_dark_commits += 1
                     self.parse_commits(self.create_dark_commit(), i, circle)
                 return
 
@@ -157,7 +159,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     for p in range(len(commitParents)):
                         self.parse_commits(commitParents[p], i, circle)
             else:
-                if len(self.drawnCommits) < self.n_default:
+                if ((len(self.drawnCommits) + self.n_dark_commits) < self.n_default):
+                    self.n_dark_commits += 1
                     self.parse_commits(self.create_dark_commit(), i, circle)
 
     def parse_all(self):
