@@ -94,6 +94,8 @@ class Checkout(GitSimBaseCommand):
                 else:
                     self.parse_commits(branch_commit)
                     self.draw_ref(branch_commit, self.topref)
+                    self.recenter_frame()
+                    self.scale_frame()
 
             elif self.is_descendant:
                 self.parse_commits(branch_commit)
