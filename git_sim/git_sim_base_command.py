@@ -144,7 +144,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             try:
                 commitParents = list(commit.parents)
             except AttributeError:
-                if ((len(self.drawnCommits) + self.n_dark_commits) < self.n_default):
+                if (len(self.drawnCommits) + self.n_dark_commits) < self.n_default:
                     self.n_dark_commits += 1
                     self.parse_commits(self.create_dark_commit(), i, circle)
                 return
@@ -159,7 +159,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     for p in range(len(commitParents)):
                         self.parse_commits(commitParents[p], i, circle)
             else:
-                if ((len(self.drawnCommits) + self.n_dark_commits) < self.n_default):
+                if (len(self.drawnCommits) + self.n_dark_commits) < self.n_default:
                     self.n_dark_commits += 1
                     self.parse_commits(self.create_dark_commit(), i, circle)
 
