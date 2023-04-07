@@ -1,18 +1,9 @@
 import pathlib
+from typing import List, Optional
 
-from enum import Enum
-from typing import List, Union
 from pydantic import BaseSettings
 
-
-class VideoFormat(str, Enum):
-    mp4 = "mp4"
-    webm = "webm"
-
-
-class ImgFormat(str, Enum):
-    jpg = "jpg"
-    png = "png"
+from git_sim.enums import ColorByOptions, ImgFormat, VideoFormat
 
 
 class Settings(BaseSettings):
@@ -21,7 +12,7 @@ class Settings(BaseSettings):
     auto_open = True
     n_default = 5
     n = 5
-    files: Union[List[pathlib.Path], None] = None
+    files: Optional[List[pathlib.Path]] = None
     hide_first_tag = False
     img_format: ImgFormat = ImgFormat.jpg
     INFO_STRING = "Simulating: git"
@@ -46,7 +37,7 @@ class Settings(BaseSettings):
     invert_branches = False
     hide_merged_branches = False
     all = False
-    color_by: Union[str, None] = None
+    color_by: Optional[ColorByOptions] = None
     highlight_commit_messages = False
 
     class Config:

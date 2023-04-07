@@ -1,13 +1,13 @@
-import pathlib
-import typer
-import os
-import sys
 import datetime
+import os
+import pathlib
+import sys
 import time
 
-import git_sim.commands
+import typer
 
-from git_sim.settings import ImgFormat, VideoFormat, settings
+import git_sim.commands
+from git_sim.settings import ColorByOptions, ImgFormat, VideoFormat, settings
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
@@ -126,7 +126,7 @@ def main(
         settings.all,
         help="Display all local branches in the log output",
     ),
-    color_by: str = typer.Option(
+    color_by: ColorByOptions = typer.Option(
         settings.color_by,
         help="Color commits by parameter, such as author",
     ),
@@ -136,7 +136,7 @@ def main(
     ),
 ):
     import git
-    from manim import config, WHITE
+    from manim import WHITE, config
 
     settings.animate = animate
     settings.n = n
