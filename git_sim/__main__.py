@@ -128,7 +128,7 @@ def main(
     ),
     color_by: ColorByOptions = typer.Option(
         settings.color_by,
-        help="Color commits by parameter, such as author",
+        help="Color commits by parameter",
     ),
     highlight_commit_messages: bool = typer.Option(
         settings.highlight_commit_messages,
