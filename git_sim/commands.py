@@ -265,6 +265,19 @@ def revert(
     handle_animations(scene=scene)
 
 
+def rm(
+    files: List[str] = typer.Argument(
+        default=None,
+        help="The names of one or more files to remove from Git's index",
+    )
+):
+    from git_sim.rm import Rm
+
+    settings.hide_first_tag = True
+    scene = Rm(files=files)
+    handle_animations(scene=scene)
+
+
 def stash(
     command: StashSubCommand = typer.Argument(
         default=None,
