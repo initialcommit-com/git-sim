@@ -1,18 +1,9 @@
 import pathlib
-
-from enum import Enum
 from typing import List, Union
+
 from pydantic import BaseSettings
 
-
-class VideoFormat(str, Enum):
-    mp4 = "mp4"
-    webm = "webm"
-
-
-class ImgFormat(str, Enum):
-    jpg = "jpg"
-    png = "png"
+from git_sim.enums import ColorByOptions, ImgFormat, VideoFormat
 
 
 class Settings(BaseSettings):
@@ -46,7 +37,7 @@ class Settings(BaseSettings):
     invert_branches = False
     hide_merged_branches = False
     all = False
-    color_by: Union[str, None] = None
+    color_by: Union[ColorByOptions, None] = None
     highlight_commit_messages = False
 
     class Config:

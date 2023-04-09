@@ -1,9 +1,9 @@
-import platform
-import sys
 import os
-import tempfile
+import platform
 import shutil
 import stat
+import sys
+import tempfile
 
 import git
 import manim as m
@@ -11,6 +11,7 @@ import numpy
 from git.exc import GitCommandError, InvalidGitRepositoryError
 from git.repo import Repo
 
+from git_sim.enums import ColorByOptions
 from git_sim.settings import settings
 
 
@@ -1179,7 +1180,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             thirdColumnFilesDict[f] = text
 
     def color_by(self, offset=0):
-        if settings.color_by == "author":
+        if settings.color_by == ColorByOptions.author:
             sorted_authors = sorted(
                 self.author_groups.keys(),
                 key=lambda k: len(self.author_groups[k]),
@@ -1208,17 +1209,17 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.recenter_frame()
             self.scale_frame()
 
-        elif settings.color_by == "branch":
+        elif settings.color_by == ColorByOptions.branch:
             pass
 
-        elif settings.color_by == "notlocal1":
+        elif settings.color_by == ColorByOptions.notlocal1:
             for commit_id in self.drawnCommits:
                 try:
                     self.orig_repo.commit(commit_id)
                 except ValueError:
                     self.drawnCommits[commit_id].set_color(m.GOLD)
 
-        elif settings.color_by == "notlocal2":
+        elif settings.color_by == ColorByOptions.notlocal2:
             for commit_id in self.drawnCommits:
                 if not self.orig_repo.is_ancestor(commit_id, "HEAD"):
                     self.drawnCommits[commit_id].set_color(m.GOLD)
