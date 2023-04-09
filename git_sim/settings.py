@@ -1,5 +1,5 @@
 import pathlib
-from typing import List, Optional
+from typing import List, Union
 
 from pydantic import BaseSettings
 
@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     auto_open = True
     n_default = 5
     n = 5
-    files: Optional[List[pathlib.Path]] = None
+    files: Union[List[pathlib.Path], None] = None
     hide_first_tag = False
     img_format: ImgFormat = ImgFormat.jpg
     INFO_STRING = "Simulating: git"
@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     invert_branches = False
     hide_merged_branches = False
     all = False
-    color_by: Optional[ColorByOptions] = None
+    color_by: Union[ColorByOptions, None] = None
     highlight_commit_messages = False
 
     class Config:
