@@ -842,6 +842,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         self.toFadeOut.add(firstColumnFiles, secondColumnFiles, thirdColumnFiles)
 
+        self.firstColumnFiles = firstColumnFiles
+        self.secondColumnFiles = secondColumnFiles
+        self.thirdColumnFiles = thirdColumnFiles
+
     def populate_zones(
         self,
         firstColumnFileNames,

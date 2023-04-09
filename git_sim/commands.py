@@ -166,6 +166,23 @@ def merge(
     handle_animations(scene=scene)
 
 
+def mv(
+    file: str = typer.Argument(
+        default=None,
+        help="The name of the file to change the name/path of",
+    ),
+    new_file: str = typer.Argument(
+        default=None,
+        help="The new name/path of the file",
+    ),
+):
+    from git_sim.mv import Mv
+
+    settings.hide_first_tag = True
+    scene = Mv(file=file, new_file=new_file)
+    handle_animations(scene=scene)
+
+
 def pull(
     remote: str = typer.Argument(
         default=None,
