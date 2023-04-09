@@ -77,6 +77,14 @@ def cherry_pick(
     handle_animations(scene=scene)
 
 
+def clean():
+    from git_sim.clean import Clean
+
+    settings.hide_first_tag = True
+    scene = Clean()
+    handle_animations(scene=scene)
+
+
 def clone(
     url: str = typer.Argument(
         ...,
