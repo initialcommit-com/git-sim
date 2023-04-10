@@ -26,7 +26,7 @@ Example: `$ git-sim merge <branch>`
 
 ## Features
 - Run a one-liner git-sim command in the terminal to generate a custom Git command visualization (.jpg) from your repo
-- Supported commands: `log`, `status`, `add`, `restore`, `commit`, `stash`, `branch`, `tag`, `reset`, `revert`, `merge`, `rebase`, `cherry-pick`, `switch`, `checkout`, `fetch`, `pull`, `push`, `clone`
+- Supported commands: `log`, `status`, `add`, `restore`, `commit`, `stash`, `branch`, `tag`, `reset`, `revert`, `merge`, `rebase`, `cherry-pick`, `switch`, `checkout`, `fetch`, `pull`, `push`, `clone`, `rm`, `mv`, `clean`
 - Generate an animated video (.mp4) instead of a static image using the `--animate` flag (note: significant performance slowdown, it is recommended to use `--low-quality` to speed up testing and remove when ready to generate presentation-quality video)
 - Color commits by parameter, such as author the `--color-by=author` option
 - Choose between dark mode (default) and light mode
@@ -126,7 +126,7 @@ $ git-sim <subcommand> -h
 * [Manim (Community version)](https://www.manim.community/)
 
 ## Commands
-Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "log", "status", "add", "restore", "commit", "stash", "branch", "tag", "reset", "revert", "merge", "rebase", "cherry-pick", "switch", "checkout", "fetch", "pull", "push", "clone", along with corresponding options.
+Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "log", "status", "add", "restore", "commit", "stash", "branch", "tag", "reset", "revert", "merge", "rebase", "cherry-pick", "switch", "checkout", "fetch", "pull", "push", "clone", "rm", "mv", "clean" along with corresponding options.
 
 ```console
 $ git-sim [global options] <subcommand> [subcommand options]
@@ -319,6 +319,28 @@ Usage: `git-sim clone <url>`
 
 - Clone the remote repo from `<url>` (web URL or filesystem path) to a new folder in the current directory
 - Output will report if clone operation is successful and show log of local clone
+
+### git rm
+Usage: `git-sim rm <file 1> <file 2> ... <file n>`
+
+- Specify one or more `<file>` as a *tracked* file
+- Simulated output will show files being removed from Git tracking
+- Note that simulated output will also show the most recent 5 commits on the active branch
+
+### git mv
+Usage: `git-sim mv <file> <new file>`
+
+- Specify `<file>` as file to update name/path
+- Specify `<new file>` as new name/path of file 
+- Simulated output will show the name/path of the file being updated 
+- Note that simulated output will also show the most recent 5 commits on the active branch
+
+### git clean
+Usage: `git-sim clean`
+
+- Simulated output will show untracked files being deleted
+- Since this is just a simulation, no need to specify `-i`, `-n`, `-f` as in regular Git
+- Note that simulated output will also show the most recent 5 commits on the active branch
 
 ## Video animation examples
 ```console
