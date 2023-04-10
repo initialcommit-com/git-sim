@@ -40,13 +40,14 @@ steps:
 2) [Fork the Git-Sim codebase](https://github.com/initialcommit-com/git-sim/fork)
 so that you have a copy on GitHub that you can clone and work with
 3) Clone the codebase down to your local machine
-4) If you previously installed Git-Sim normally using pip, uninstall it first using:
+4) Checkout and commit new work to the `dev` branch
+5) If you previously installed Git-Sim normally using pip, uninstall it first using:
 
 ```console
 $ pip uninstall git-sim
 ```
 
-5) To run the code locally from source, install the development package by running:
+6) To run the code locally from source, install the development package by running:
 
 ```console
 $ cd path/to/git-sim
@@ -61,7 +62,7 @@ If you already have the dependencies, you can ignore those using the `--no-deps`
 $ python -m pip install --no-deps -e .
 ```
 
-6) You can run your local Git-Sim commands from within other local repos like this:
+7) You can run your local Git-Sim commands from within other local repos like this:
 
 ```console
 $ git-sim [global options] <subcommand> [subcommand options]
@@ -74,8 +75,8 @@ $ cd path/to/any/local/git/repo
 $ git-sim --animate add newfile.txt
 ```
 
-6) After pushing your code changes up to your fork, [submit a pull request](https://github.com/initialcommit-com/git-sim/compare) for me
-to review your code, provide feedback, and integrate it into the codebase!
+8) After pushing your code changes up to your fork, [submit a pull request to the `dev` branch](https://github.com/initialcommit-com/git-sim/compare) for me
+to review your code, provide feedback, and merge it into the codebase!
 
 ## Code style guide
 
