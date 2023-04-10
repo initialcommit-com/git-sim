@@ -1,11 +1,13 @@
 import setuptools
 
+from git_sim import __version__
+
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="git-sim",
-    version="0.2.9",
+    version=__version__,
     author="Jacob Stopak",
     author_email="jacob@initialcommit.io",
     description="Simulate Git commands on your own repos by generating an image (default) or video visualization depicting the command's behavior.",

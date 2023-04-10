@@ -12,6 +12,12 @@ from git_sim.settings import ColorByOptions, ImgFormat, VideoFormat, settings
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
 
+def version_callback(value: bool) -> None:
+    if value:
+        print(f"git-sim version {git_sim.__version__}")
+        raise typer.Exit()
+
+
 @app.callback(no_args_is_help=True)
 def main(
     ctx: typer.Context,
@@ -133,6 +139,13 @@ def main(
     highlight_commit_messages: bool = typer.Option(
         settings.highlight_commit_messages,
         help="Make the displayed commit messages more prominent",
+    ),
+    version: bool = typer.Option(
+        False,
+        "--version",
+        "-v",
+        help="Show the version of git-sim and exit.",
+        callback=version_callback,
     ),
 ):
     import git
