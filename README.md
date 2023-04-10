@@ -18,9 +18,9 @@ Example: `$ git-sim merge <branch>`
 ## Use cases
 - Visualize Git commands to understand their effects on your repo before actually running them
 - Prevent unexpected working directory and repository states by simulating before running
-- Share visualizations (jpg image or mp4 video) of your Git commands with your team, or the world
+- Share visualizations (jpg/png image or mp4/webm video) of your Git commands with your team, or the world
 - Save visualizations as a part of your team documentation to document workflow and prevent recurring issues
-- Create static Git diagrams (jpg) or dynamic animated videos (mp4) to speed up content creation
+- Create static Git diagrams (jpg/png) or dynamic animated videos (mp4/webm) to speed up content creation
 - Help visual learners understand how Git commands work
 - Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
 
@@ -289,16 +289,22 @@ Usage: `git-sim switch [-c] <branch>`
 - Switches the checked-out branch to `<branch>`, i.e. moves `HEAD` to the specified `<branch>`
 - The `-c` flag creates a new branch with the specified name `<branch>` and switches to it, assuming it doesn't already exist
 
+![git-sim-switch_04-09-23_21-42-43](https://user-images.githubusercontent.com/49353917/230827783-a8740ace-b66f-4cac-b94e-5d101d27e0b5.jpg)
+
 ### git checkout
 Usage: `git-sim checkout [-b] <branch>`
 
 - Checks out `<branch>` into the working directory, i.e. moves `HEAD` to the specified `<branch>`
 - The `-b` flag creates a new branch with the specified name `<branch>` and checks it out, assuming it doesn't already exist
 
+![git-sim-checkout_04-09-23_21-46-04](https://user-images.githubusercontent.com/49353917/230827836-e9f23a0e-2576-4716-b2fb-6327d3cf9b22.jpg)
+
 ### git fetch
 Usage: `git-sim fetch <remote> <branch>`
 
 - Fetches the specified `<branch>` from the specified `<remote>` to the local repo
+
+![git-sim-fetch_04-09-23_21-47-59](https://user-images.githubusercontent.com/49353917/230828090-acae8979-4097-43a8-96ea-525890e0e0a8.jpg)
 
 ### git pull
 Usage: `git-sim pull [<remote> <branch>]`
@@ -307,6 +313,8 @@ Usage: `git-sim pull [<remote> <branch>]`
 - If `<remote>` and `<branch>` are not specified, the active branch is pulled from the default remote
 - If merge conflicts occur, they are displayed in a table
 
+![git-sim-pull_04-09-23_21-50-15](https://user-images.githubusercontent.com/49353917/230828298-455c0a9d-cf94-499e-9e35-623e7b218772.jpg)
+
 ### git push
 Usage: `git-sim push [<remote> <branch>]`
 
@@ -314,11 +322,15 @@ Usage: `git-sim push [<remote> <branch>]`
 - If `<remote>` and `<branch>` are not specified, the active branch is pushed to the default remote
 - If the push fails due to remote changes that don't exist in the local repo, a message is included telling the user to pull first, along with color coding which commits need to be pulled
 
+![git-sim-push_04-09-23_21-50-53](https://user-images.githubusercontent.com/49353917/230828366-75b67945-ddc2-4fb7-b306-acba6e191730.jpg)
+
 ### git clone
 Usage: `git-sim clone <url>`
 
 - Clone the remote repo from `<url>` (web URL or filesystem path) to a new folder in the current directory
 - Output will report if clone operation is successful and show log of local clone
+
+![git-sim-clone_04-09-23_21-51-53](https://user-images.githubusercontent.com/49353917/230828521-80c8d2d1-2a31-46bb-aeed-746f0441c86e.jpg)
 
 ### git rm
 Usage: `git-sim rm <file 1> <file 2> ... <file n>`
@@ -326,6 +338,8 @@ Usage: `git-sim rm <file 1> <file 2> ... <file n>`
 - Specify one or more `<file>` as a *tracked* file
 - Simulated output will show files being removed from Git tracking
 - Note that simulated output will also show the most recent 5 commits on the active branch
+
+![git-sim-rm_04-09-23_22-01-29](https://user-images.githubusercontent.com/49353917/230829899-f5d688ea-bc8e-46f9-a54a-55d251c8915d.jpg)
 
 ### git mv
 Usage: `git-sim mv <file> <new file>`
@@ -335,12 +349,16 @@ Usage: `git-sim mv <file> <new file>`
 - Simulated output will show the name/path of the file being updated 
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
+![git-sim-mv_04-09-23_22-05-13](https://user-images.githubusercontent.com/49353917/230829978-0a64dbe2-d974-4cef-9c6e-ed26e987342f.jpg)
+
 ### git clean
 Usage: `git-sim clean`
 
 - Simulated output will show untracked files being deleted
 - Since this is just a simulation, no need to specify `-i`, `-n`, `-f` as in regular Git
 - Note that simulated output will also show the most recent 5 commits on the active branch
+
+![git-sim-clean_04-09-23_22-05-54](https://user-images.githubusercontent.com/49353917/230830043-779e7230-f439-461a-a408-b19b263e86e4.jpg)
 
 ## Video animation examples
 ```console
