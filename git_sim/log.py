@@ -1,4 +1,5 @@
 import typer
+import time
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
@@ -38,10 +39,14 @@ class Log(GitSimBaseCommand):
                 f"{settings.INFO_STRING} {type(self).__name__.lower()}{' --all' if self.all_subcommand else ''}{' -n ' + str(self.n) if self.n_subcommand else ''}"
             )
         self.show_intro()
-        self.parse_commits()
-        self.parse_all()
+        self.position_commits()
+        print(self.commit_positions)
+        self.multiprocess()
+        #self.parse_commits()
+        #self.parse_all()
         self.recenter_frame()
         self.scale_frame()
         self.color_by()
         self.fadeout()
-        self.show_outro()
+        #self.show_outro()
+        print("runtime: " + str(round(time.time() - self.start_time, 2)) + " seconds")

@@ -151,6 +151,8 @@ def main(
     import git
     from manim import WHITE, config
 
+    start_time = time.time()
+
     settings.animate = animate
     settings.n = n
     settings.auto_open = auto_open
@@ -195,6 +197,8 @@ def main(
 
     config.media_dir = settings.media_dir
     config.verbosity = "ERROR"
+    config.progress_bar = "none"
+    #config.ffmpeg_loglevel = "CRITICAL"
 
     if settings.low_quality:
         config.quality = "low_quality"

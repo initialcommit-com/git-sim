@@ -4,6 +4,12 @@ import shutil
 import stat
 import sys
 import tempfile
+import time
+import multiprocessing
+import dill
+dill.settings['recurse'] = True
+dill.settings['ignore'] = ['_abc']
+import abc
 
 import git
 import manim as m
@@ -14,9 +20,48 @@ from git.repo import Repo
 from git_sim.enums import ColorByOptions
 from git_sim.settings import settings
 
+class CustomScene(m.MovingCameraScene, metaclass=abc.ABCMeta):
+    def __init__(self, commit_positions):
+        super().__init__()
+        self.commit_positions = commit_positions
+        #print("\n\n", commit_positions, "\n\n")
+        
+    def construct(self):
+        for entry in self.commit_positions:
+            circle = m.Circle(color=m.BLUE, fill_color=m.RED, fill_opacity=1.0)
+            rect = m.Rectangle(color=m.GREEN, fill_color=m.YELLOW, fill_opacity=1.0)
+            rect.width = 1
+            rect.height = 0.4
+            circle.move_to(entry[1])
+            rect.move_to(entry[1])
+            #partial_scene.add(circle, rect)
+            self.play(m.Create(circle), m.Create(rect))
+            self.play(self.camera.frame.animate.move_to(circle.get_center()))
+
+    """
+        self.__dict__.update(kwargs)
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state.pop('_thread', None)
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+    """
+
+def parse_commits(chunk_index, commit_positions, make_branches_remote=False):
+    print(commit_positions)
+    with m.tempconfig({"verbosity": "ERROR", "progress_bar": "none", "background_color": m.PURPLE, }):
+        partial_scene = CustomScene(commit_positions)
+        partial_scene.render()
+        with open("partial_scene_" + str(chunk_index) + ".dill", "wb") as f:
+            serialized_scene = dill.dump(partial_scene, f)
+            print("ho: " + str(chunk_index))
+        return serialized_scene
 
 class GitSimBaseCommand(m.MovingCameraScene):
     def __init__(self):
+        self.start_time = time.time()
         super().__init__()
         self.init_repo()
 
@@ -24,6 +69,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.drawnCommits = {}
         self.drawnRefs = {}
         self.drawnCommitIds = {}
+        self.commit_positions = []
         self.toFadeOut = m.Group()
         self.prevRef = None
         self.topref = None
@@ -83,9 +129,48 @@ class GitSimBaseCommand(m.MovingCameraScene):
     def construct(self):
         print(f"{settings.INFO_STRING} {type(self).__name__.lower()}")
         self.show_intro()
+        self.position_commits()
+        self.multiprocess()
         self.parse_commits()
         self.fadeout()
         self.show_outro()
+
+    def multiprocess(self):
+        num_processes = multiprocessing.cpu_count()
+        if num_processes > len(self.commit_positions):
+            num_processes = len(self.commit_positions)
+            chunk_size = 1
+        else:
+            chunk_size = len(self.commit_positions) // num_processes
+        position_chunks = [self.commit_positions[i:i+chunk_size] for i in range(0, len(self.commit_positions), chunk_size)]
+
+        print(len(self.commit_positions))
+        print(num_processes)
+        print(chunk_size)
+        with multiprocessing.Pool(num_processes) as pool:
+            partial_scenes = pool.starmap(parse_commits, [(i+1, chunk,) for (i, chunk) in enumerate(position_chunks)])
+
+        print(partial_scenes)
+        for x in range(1, len(partial_scenes)):
+            print("hi1: " + str(x))
+            with open("partial_scene_" + str(x) + ".dill", "rb") as f:
+                print("hi2: " + str(x))
+                filename = "partial_scene_" + str(x) + ".dill"
+                print(os.path.isfile(filename))
+                child_scene = dill.load(f)
+                print("hi3: " + str(x))
+            self.add(*child_scene.mobjects)
+            print("hi4: " + str(x))
+            #print(partial_scene.animations)
+            #partial_scene.compile_animation_data()
+            #for a in partial_scene.animations:
+            #    self.add(a.mobject)
+            #    self.toFadeOut.add(a.mobject)
+            #    self.play(a)
+                #a.mobject = a.starting_mobject
+            self.play(*child_scene.animations)
+            self.toFadeOut.add(*child_scene.mobjects)
+            self.recenter_frame()
 
     def get_commit(self, sha_or_ref="HEAD"):
         return self.repo.commit(sha_or_ref)
@@ -96,33 +181,21 @@ class GitSimBaseCommand(m.MovingCameraScene):
             defaultCommits.append(defaultCommits[-1].parents[0])
         return defaultCommits
 
-    def parse_commits(
-        self,
-        commit=None,
-        i=0,
-        prevCircle=None,
-        shift=numpy.array([0.0, 0.0, 0.0]),
-        make_branches_remote=False,
-    ):
-        commit = commit or self.get_commit()
+    def parse_commits(self, commit_positions, make_branches_remote=False):
+        """
+        for entry in commit_positions:
+            commitId, circle, arrow, hide_refs = self.draw_commit(partial_scene, entry)
 
-        if commit != "dark":
-            isNewCommit = commit.hexsha not in self.drawnCommits
-        else:
-            isNewCommit = True
-
-        if i < self.n:
-            commitId, circle, arrow, hide_refs = self.draw_commit(
-                commit, i, prevCircle, shift
-            )
-
+            commit = entry[0]
+            
             if commit != "dark":
-                if not hide_refs and isNewCommit:
-                    self.draw_head(commit, i, commitId)
+                if not hide_refs:
+                    self.draw_head(partial_scene, commit, commitId)
                     self.draw_branch(
-                        commit, i, make_branches_remote=make_branches_remote
+                        partial_scene, commit, make_branches_remote=make_branches_remote
                     )
-                    self.draw_tag(commit, i)
+                    self.draw_tag(partial_scene, commit)
+
                 if (
                     not isinstance(arrow, m.CurvedArrow)
                     and [arrow.start.tolist(), arrow.end.tolist()] not in self.arrow_map
@@ -140,15 +213,45 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     )
                 if i == 0 and len(self.drawnRefs) < 2:
                     self.draw_dark_ref()
+                """
+
+    def parse_all(self):
+        if self.all:
+            for branch in self.get_nonparent_branch_names():
+                self.parse_commits(self.get_commit(branch.name))
+
+    def position_commits(
+        self,
+        commit=None,
+        i=0,
+        prev_commit=None,
+        pos=[0, 0, 0],
+        shift=numpy.array([0.0, 0.0, 0.0]),
+        make_branches_remote=False,
+    ):
+        pos = pos.copy()
+        commit = commit or self.get_commit()
+
+        if commit != "dark":
+            isNewCommit = commit.hexsha not in self.commit_positions
+        else:
+            isNewCommit = True
+
+        if i < self.n:
+            pos[0] += 2.5
+            positions = [x[1] for x in self.commit_positions]
+            while pos in positions:
+                pos[1] -= 4
+            self.commit_positions.append([commit, pos.copy()])
 
             self.first_parse = False
             i += 1
             try:
                 commitParents = list(commit.parents)
             except AttributeError:
-                if (len(self.drawnCommits) + self.n_dark_commits) < self.n_default:
+                if (len(self.commit_positions) + self.n_dark_commits) < self.n_default:
                     self.n_dark_commits += 1
-                    self.parse_commits(self.create_dark_commit(), i, circle)
+                    self.position_commits(self.create_dark_commit(), i, commit, pos)
                 return
 
             if len(commitParents) > 0:
@@ -156,19 +259,14 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     commitParents.reverse()
 
                 if settings.hide_merged_branches:
-                    self.parse_commits(commitParents[0], i, circle)
+                    self.position_commits(commitParents[0], i, commit, pos)
                 else:
                     for p in range(len(commitParents)):
-                        self.parse_commits(commitParents[p], i, circle)
+                        self.position_commits(commitParents[p], i, commit, pos)
             else:
                 if (len(self.drawnCommits) + self.n_dark_commits) < self.n_default:
                     self.n_dark_commits += 1
-                    self.parse_commits(self.create_dark_commit(), i, circle)
-
-    def parse_all(self):
-        if self.all:
-            for branch in self.get_nonparent_branch_names():
-                self.parse_commits(self.get_commit(branch.name))
+                    self.position_commits(self.create_dark_commit(), i, commit, pos)
 
     def show_intro(self):
         if settings.animate and settings.show_intro:
@@ -233,7 +331,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
             centers.append(commit.get_center())
         return centers
 
-    def draw_commit(self, commit, i, prevCircle, shift=numpy.array([0.0, 0.0, 0.0])):
+    def draw_commit(self, partial_scene, entry):
+        commit = entry[0]
+        pos = entry[1]
+
         if commit == "dark":
             commit_fill = m.WHITE if settings.light_mode else m.BLACK
         elif len(commit.parents) <= 1:
@@ -247,39 +348,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
             fill_opacity=self.fill_opacity,
         )
         circle.height = 1
+        circle.move_to(pos)
 
-        if shift.any():
-            circle.shift(shift)
-
-        if prevCircle:
-            circle.next_to(
-                prevCircle, m.RIGHT if settings.reverse else m.LEFT, buff=1.5
-            )
-
-        while any((circle.get_center() == c).all() for c in self.get_centers()):
-            circle.shift(m.DOWN * 4)
-
-        if commit != "dark":
-            isNewCommit = commit.hexsha not in self.drawnCommits
-        else:
-            isNewCommit = True
-
-        if isNewCommit:
-            start = (
-                prevCircle.get_center()
-                if prevCircle
-                else (m.LEFT if settings.reverse else m.RIGHT)
-            )
-            end = circle.get_center()
-        else:
-            circle.move_to(self.drawnCommits[commit.hexsha].get_center())
-            start = (
-                prevCircle.get_center()
-                if prevCircle
-                else (m.LEFT if settings.reverse else m.RIGHT)
-            )
-            end = self.drawnCommits[commit.hexsha].get_center()
-
+        start = numpy.array(pos)
+        end = numpy.array(pos)
         arrow = m.Arrow(start, end, color=self.fontColor)
 
         if commit == "dark":
@@ -305,9 +377,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 if start[0] < end[0] and start[1] == end[1]:
                     arrow.flip(m.RIGHT).shift(m.UP)
 
-        commitId, commitMessage, commit, hide_refs = self.build_commit_id_and_message(
-            commit, i
-        )
+        commitId, commitMessage, commit, hide_refs = self.build_commit_id_and_message(commit)
         commitId.next_to(circle, m.UP)
 
         if commit != "dark":
@@ -323,9 +393,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
             weight=m.BOLD if settings.highlight_commit_messages else m.NORMAL,
         ).next_to(circle, m.DOWN)
 
-        if settings.animate and commit != "dark" and isNewCommit:
-            self.play(
-                self.camera.frame.animate.move_to(circle.get_center()),
+        if settings.animate and commit != "dark":
+            partial_scene.play(
+                partial_scene.camera.frame.animate.move_to(circle.get_center()),
                 m.Create(circle),
                 m.Text("")
                 if settings.highlight_commit_messages
@@ -333,18 +403,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 m.AddTextLetterByLetter(message),
                 run_time=1 / settings.speed,
             )
-        elif isNewCommit:
-            self.add(
+        elif not settings.animate and commit != "dark":
+            partial_scene.add(
                 circle,
                 m.Text("") if settings.highlight_commit_messages else commitId,
                 message,
-            )
-        else:
-            return (
-                m.Text("") if settings.highlight_commit_messages else commitId,
-                circle,
-                arrow,
-                hide_refs,
             )
 
         if commit != "dark":
@@ -370,7 +433,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                         exclude.append(b1.name)
         return [b for b in branches if b.name not in exclude]
 
-    def build_commit_id_and_message(self, commit, i):
+    def build_commit_id_and_message(self, commit):
         hide_refs = False
         if commit == "dark":
             commitId = m.Text("", font="Monospace", font_size=20, color=self.fontColor)
@@ -385,7 +448,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             commitMessage = commit.message.split("\n")[0][:40].replace("\n", " ")
         return commitId, commitMessage, commit, hide_refs
 
-    def draw_head(self, commit, i, commitId):
+    def draw_head(self, partial_scene, commit, commitId):
         if commit.hexsha == self.repo.head.commit.hexsha:
             headbox = m.Rectangle(
                 color=m.BLUE, fill_color=m.BLUE, fill_opacity=self.ref_fill_opacity
@@ -403,18 +466,18 @@ class GitSimBaseCommand(m.MovingCameraScene):
             head = m.VGroup(headbox, headText)
 
             if settings.animate:
-                self.play(m.Create(head), run_time=1 / settings.speed)
+                partial_scene.play(m.Create(head), run_time=1 / settings.speed)
             else:
-                self.add(head)
+                partial_scene.add(head)
 
             self.toFadeOut.add(head)
             self.drawnRefs["HEAD"] = head
             self.prevRef = head
 
-            if i == 0 and self.first_parse:
+            if self.first_parse:
                 self.topref = self.prevRef
 
-    def draw_branch(self, commit, i, make_branches_remote=False):
+    def draw_branch(self, partial_scene, commit, make_branches_remote=False):
         x = 0
 
         remote_tracking_branches = self.get_remote_tracking_branches()
@@ -462,24 +525,24 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 self.prevRef = fullbranch
 
                 if settings.animate:
-                    self.play(m.Create(fullbranch), run_time=1 / settings.speed)
+                    partial_scene.play(m.Create(fullbranch), run_time=1 / settings.speed)
                 else:
-                    self.add(fullbranch)
+                    partial_scene.add(fullbranch)
 
                 self.toFadeOut.add(fullbranch)
                 self.drawnRefs[branch] = fullbranch
 
-                if i == 0 and self.first_parse:
+                if self.first_parse:
                     self.topref = self.prevRef
 
                 x += 1
                 if x >= settings.max_branches_per_commit:
                     return
 
-    def draw_tag(self, commit, i):
+    def draw_tag(self, commit):
         x = 0
 
-        if self.hide_first_tag and i == 0:
+        if self.hide_first_tag:
             return
 
         for tag in self.repo.tags:
@@ -517,7 +580,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     self.toFadeOut.add(fulltag)
                     self.drawnRefs[tag] = fulltag
 
-                    if i == 0 and self.first_parse:
+                    if self.first_parse:
                         self.topref = self.prevRef
 
                     x += 1
