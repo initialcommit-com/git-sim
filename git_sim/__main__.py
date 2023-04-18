@@ -174,6 +174,9 @@ def main(
 
     config.media_dir = settings.media_dir
     config.verbosity = "ERROR"
+    config.pixel_width = 1920
+    config.pixel_height = 500
+    config.format = "gif"
 
     if settings.low_quality:
         config.quality = "low_quality"

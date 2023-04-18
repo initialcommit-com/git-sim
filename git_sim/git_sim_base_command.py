@@ -166,8 +166,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
     def fadeout(self):
         if settings.animate:
-            self.wait(3)
-            self.play(m.FadeOut(self.toFadeOut), run_time=1 / settings.speed)
+            self.wait(2)
+            self.play(m.FadeOut(self.toFadeOut), run_time=1 / (settings.speed*2.5))
         else:
             self.wait(0.1)
 
