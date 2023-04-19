@@ -1,13 +1,13 @@
-import sys
 import os
+import shutil
+import stat
+import sys
+import tempfile
 from argparse import Namespace
 
 import git
 import manim as m
 import numpy
-import tempfile
-import shutil
-import stat
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
@@ -27,7 +27,7 @@ class Fetch(GitSimBaseCommand):
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.remote if self.remote else ''} {self.branch if self.branch else ''}"
+                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.remote if self.remote else ''} {self.branch if self.branch else ''}",
             )
 
         if not self.remote:
@@ -58,13 +58,16 @@ class Fetch(GitSimBaseCommand):
         if self.branch not in self.repo.heads:
             start_parse_from_remote = True
         # fetched branch is ahead of local branch
-        elif (self.remote + "/" + self.branch) in self.repo.git.branch(
-            "-r", "--contains", self.branch
+        elif self.remote + "/" + self.branch in self.repo.git.branch(
+            "-r",
+            "--contains",
+            self.branch,
         ):
             start_parse_from_remote = True
         # fetched branch is behind local branch
         elif self.branch in self.repo.git.branch(
-            "--contains", (self.remote + "/" + self.branch)
+            "--contains",
+            (self.remote + "/" + self.branch),
         ):
             start_parse_from_remote = False
         else:

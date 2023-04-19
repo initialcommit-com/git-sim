@@ -1,12 +1,12 @@
-import sys
 import os
+import shutil
+import stat
+import sys
+import tempfile
 
 import git
 import manim as m
 import numpy
-import tempfile
-import shutil
-import stat
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
@@ -25,7 +25,7 @@ class Merge(GitSimBaseCommand):
             print(
                 "git-sim error: '"
                 + self.branch
-                + "' is not a valid Git ref or identifier."
+                + "' is not a valid Git ref or identifier.",
             )
             sys.exit(1)
 
@@ -41,18 +41,19 @@ class Merge(GitSimBaseCommand):
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.branch} {'--no-ff' if self.no_ff else ''}"
+                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.branch} {'--no-ff' if self.no_ff else ''}",
             )
 
         if self.repo.active_branch.name in self.repo.git.branch(
-            "--contains", self.branch
+            "--contains",
+            self.branch,
         ):
             print(
                 "git-sim error: Branch '"
                 + self.branch
                 + "' is already included in the history of active branch '"
                 + self.repo.active_branch.name
-                + "'."
+                + "'.",
             )
             sys.exit(1)
 
@@ -65,7 +66,9 @@ class Merge(GitSimBaseCommand):
                 self.ff = True
         else:
             if self.branch in self.repo.git.branch(
-                "-r", "--contains", head_commit.hexsha
+                "-r",
+                "--contains",
+                head_commit.hexsha,
             ):
                 self.ff = True
 
@@ -110,7 +113,8 @@ class Merge(GitSimBaseCommand):
 
         else:
             merge_result, new_dir = self.check_merge_conflict(
-                self.repo.active_branch.name, self.branch
+                self.repo.active_branch.name,
+                self.branch,
             )
             if merge_result:
                 self.hide_first_tag = True

@@ -1,7 +1,7 @@
 import sys
-import manim as m
-
 from typing import List
+
+import manim as m
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
@@ -29,7 +29,7 @@ class Restore(GitSimBaseCommand):
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()} {' '.join(self.files)}"
+                f"{settings.INFO_STRING } {type(self).__name__.lower()} {' '.join(self.files)}",
             )
 
         self.show_intro()
@@ -57,7 +57,8 @@ class Restore(GitSimBaseCommand):
                     if file == x.a_path:
                         thirdColumnFileNames.add(x.a_path)
                         secondColumnArrowMap[x.a_path] = m.Arrow(
-                            stroke_width=3, color=self.fontColor
+                            stroke_width=3,
+                            color=self.fontColor,
                         )
 
         for y in self.repo.index.diff("HEAD"):
@@ -67,5 +68,6 @@ class Restore(GitSimBaseCommand):
                     if file == y.a_path:
                         secondColumnFileNames.add(y.a_path)
                         firstColumnArrowMap[y.a_path] = m.Arrow(
-                            stroke_width=3, color=self.fontColor
+                            stroke_width=3,
+                            color=self.fontColor,
                         )

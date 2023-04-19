@@ -19,7 +19,7 @@ class Revert(GitSimBaseCommand):
             print(
                 "git-sim error: '"
                 + self.commit
-                + "' is not a valid Git ref or identifier."
+                + "' is not a valid Git ref or identifier.",
             )
             sys.exit(1)
 
@@ -37,7 +37,7 @@ class Revert(GitSimBaseCommand):
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.commit}"
+                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.commit}",
             )
 
         self.show_intro()
@@ -65,7 +65,10 @@ class Revert(GitSimBaseCommand):
             commit.hexsha for commit in self.get_default_commits()
         ]:
             commitId = m.Text(
-                "...", font="Monospace", font_size=20, color=self.fontColor
+                "...",
+                font="Monospace",
+                font_size=20,
+                color=self.fontColor,
             )
             commitMessage = "..."
             hide_refs = True
@@ -106,7 +109,10 @@ class Revert(GitSimBaseCommand):
         arrow.set_length(length)
 
         commitId = m.Text(
-            "abcdef", font="Monospace", font_size=20, color=self.fontColor
+            "abcdef",
+            font="Monospace",
+            font_size=20,
+            color=self.fontColor,
         ).next_to(circle, m.UP)
         self.toFadeOut.add(commitId)
 

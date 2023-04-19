@@ -19,7 +19,7 @@ class CherryPick(GitSimBaseCommand):
             print(
                 "git-sim error: '"
                 + self.commit
-                + "' is not a valid Git ref or identifier."
+                + "' is not a valid Git ref or identifier.",
             )
             sys.exit(1)
 
@@ -35,18 +35,19 @@ class CherryPick(GitSimBaseCommand):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
                 f"{settings.INFO_STRING} cherry-pick {self.commit}"
-                + ((' -e "' + self.edit + '"') if self.edit else "")
+                + ((' -e "' + self.edit + '"') if self.edit else ""),
             )
 
         if self.repo.active_branch.name in self.repo.git.branch(
-            "--contains", self.commit
+            "--contains",
+            self.commit,
         ):
             print(
                 "git-sim error: Commit '"
                 + self.commit
                 + "' is already included in the history of active branch '"
                 + self.repo.active_branch.name
-                + "'."
+                + "'.",
             )
             sys.exit(1)
 

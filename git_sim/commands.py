@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import typer
+from typing import TYPE_CHECKING, List
 
-from typing import List, TYPE_CHECKING
+import typer
 
 from git_sim.enums import ResetMode, StashSubCommand
 from git_sim.settings import settings
@@ -21,7 +21,7 @@ def add(
     files: List[str] = typer.Argument(
         default=None,
         help="The names of one or more files to add to Git's staging area",
-    )
+    ),
 ):
     from git_sim.add import Add
 
@@ -34,7 +34,7 @@ def branch(
     name: str = typer.Argument(
         ...,
         help="The name of the new branch",
-    )
+    ),
 ):
     from git_sim.branch import Branch
 
@@ -202,7 +202,7 @@ def rebase(
     branch: str = typer.Argument(
         ...,
         help="The branch to simulate rebasing the checked-out commit onto",
-    )
+    ),
 ):
     from git_sim.rebase import Rebase
 
@@ -243,7 +243,7 @@ def restore(
     files: List[str] = typer.Argument(
         default=None,
         help="The names of one or more files to restore",
-    )
+    ),
 ):
     from git_sim.restore import Restore
 
@@ -256,7 +256,7 @@ def revert(
     commit: str = typer.Argument(
         default="HEAD",
         help="The ref (branch/tag), or commit ID to simulate revert",
-    )
+    ),
 ):
     from git_sim.revert import Revert
 
@@ -313,7 +313,7 @@ def tag(
     name: str = typer.Argument(
         ...,
         help="The name of the new tag",
-    )
+    ),
 ):
     from git_sim.tag import Tag
 

@@ -1,12 +1,12 @@
-import pathlib
-import typer
-import os
-import sys
 import datetime
+import os
+import pathlib
+import sys
 import time
 
-import git_sim.commands
+import typer
 
+import git_sim.commands
 from git_sim.settings import ImgFormat, VideoFormat, settings
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
@@ -136,7 +136,7 @@ def main(
     ),
 ):
     import git
-    from manim import config, WHITE
+    from manim import WHITE, config
 
     settings.animate = animate
     settings.n = n
@@ -169,11 +169,11 @@ def main(
     try:
         if sys.platform == "linux" or sys.platform == "darwin":
             repo_name = git.repo.Repo(
-                search_parent_directories=True
+                search_parent_directories=True,
             ).working_tree_dir.split("/")[-1]
         elif sys.platform == "win32":
             repo_name = git.repo.Repo(
-                search_parent_directories=True
+                search_parent_directories=True,
             ).working_tree_dir.split("\\")[-1]
     except git.InvalidGitRepositoryError as e:
         repo_name = ""

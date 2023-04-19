@@ -1,9 +1,9 @@
-import platform
-import sys
 import os
-import tempfile
+import platform
 import shutil
 import stat
+import sys
+import tempfile
 
 import git
 import manim as m
@@ -112,14 +112,19 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         if i < self.n:
             commitId, circle, arrow, hide_refs = self.draw_commit(
-                commit, i, prevCircle, shift
+                commit,
+                i,
+                prevCircle,
+                shift,
             )
 
             if commit != "dark":
                 if not hide_refs and isNewCommit:
                     self.draw_head(commit, i, commitId)
                     self.draw_branch(
-                        commit, i, make_branches_remote=make_branches_remote
+                        commit,
+                        i,
+                        make_branches_remote=make_branches_remote,
                     )
                     self.draw_tag(commit, i)
                 if (
@@ -135,7 +140,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 ):
                     self.draw_arrow(prevCircle, arrow)
                     self.arrow_map.append(
-                        [arrow.get_start().tolist(), arrow.get_end().tolist()]
+                        [arrow.get_start().tolist(), arrow.get_end().tolist()],
                     )
                 if i == 0 and len(self.drawnRefs) < 2:
                     self.draw_dark_ref()
@@ -185,7 +190,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.play(
                 self.logo.animate.scale(0.25)
                 .to_edge(m.UP, buff=0)
-                .to_edge(m.RIGHT, buff=0)
+                .to_edge(m.RIGHT, buff=0),
             )
 
             self.camera.frame.save_state()
@@ -252,7 +257,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         if prevCircle:
             circle.next_to(
-                prevCircle, m.RIGHT if settings.reverse else m.LEFT, buff=1.5
+                prevCircle,
+                m.RIGHT if settings.reverse else m.LEFT,
+                buff=1.5,
             )
 
         while any((circle.get_center() == c).all() for c in self.get_centers()):
@@ -283,7 +290,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         if commit == "dark":
             arrow = m.Arrow(
-                start, end, color=m.WHITE if settings.light_mode else m.BLACK
+                start,
+                end,
+                color=m.WHITE if settings.light_mode else m.BLACK,
             )
 
         length = numpy.linalg.norm(start - end) - (1.5 if start[1] == end[1] else 3)
@@ -305,7 +314,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     arrow.flip(m.RIGHT).shift(m.UP)
 
         commitId, commitMessage, commit, hide_refs = self.build_commit_id_and_message(
-            commit, i
+            commit,
+            i,
         )
         commitId.next_to(circle, m.UP)
 
@@ -387,7 +397,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
     def draw_head(self, commit, i, commitId):
         if commit.hexsha == self.repo.head.commit.hexsha:
             headbox = m.Rectangle(
-                color=m.BLUE, fill_color=m.BLUE, fill_opacity=self.ref_fill_opacity
+                color=m.BLUE,
+                fill_color=m.BLUE,
+                fill_opacity=self.ref_fill_opacity,
             )
             headbox.width = 1
             headbox.height = 0.4
@@ -396,7 +408,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
             else:
                 headbox.next_to(commitId, m.UP)
             headText = m.Text(
-                "HEAD", font="Monospace", font_size=20, color=self.fontColor
+                "HEAD",
+                font="Monospace",
+                font_size=20,
+                color=self.fontColor,
             ).move_to(headbox.get_center())
 
             head = m.VGroup(headbox, headText)
@@ -419,7 +434,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         remote_tracking_branches = self.get_remote_tracking_branches()
 
         branches = [branch.name for branch in self.repo.heads] + list(
-            remote_tracking_branches.keys()
+            remote_tracking_branches.keys(),
         )
 
         for selected_branch in self.selected_branches:
@@ -443,7 +458,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 )
 
                 branchText = m.Text(
-                    text, font="Monospace", font_size=20, color=self.fontColor
+                    text,
+                    font="Monospace",
+                    font_size=20,
+                    color=self.fontColor,
                 )
                 branchRec = m.Rectangle(
                     color=m.GREEN,
@@ -548,14 +566,14 @@ class GitSimBaseCommand(m.MovingCameraScene):
         if settings.animate:
             self.play(
                 self.camera.frame.animate.scale_to_fit_width(
-                    self.toFadeOut.get_width() * 1.1
+                    self.toFadeOut.get_width() * 1.1,
                 ),
                 run_time=1 / settings.speed,
             )
             if self.toFadeOut.get_height() >= self.camera.frame.get_height():
                 self.play(
                     self.camera.frame.animate.scale_to_fit_height(
-                        self.toFadeOut.get_height() * 1.25
+                        self.toFadeOut.get_height() * 1.25,
                     ),
                     run_time=1 / settings.speed,
                 )
@@ -563,15 +581,15 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.camera.frame.scale_to_fit_width(self.toFadeOut.get_width() * 1.1)
             if self.toFadeOut.get_height() >= self.camera.frame.get_height():
                 self.camera.frame.scale_to_fit_height(
-                    self.toFadeOut.get_height() * 1.25
+                    self.toFadeOut.get_height() * 1.25,
                 )
 
     def vsplit_frame(self):
         if settings.animate:
             self.play(
                 self.camera.frame.animate.scale_to_fit_height(
-                    self.camera.frame.get_height() * 2
-                )
+                    self.camera.frame.get_height() * 2,
+                ),
             )
         else:
             self.camera.frame.scale_to_fit_height(self.camera.frame.get_height() * 2)
@@ -580,8 +598,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
             if settings.animate:
                 self.play(
                     self.toFadeOut.animate.align_to(self.camera.frame, m.UP).shift(
-                        m.DOWN * 0.75
-                    )
+                        m.DOWN * 0.75,
+                    ),
                 )
             else:
                 self.toFadeOut.align_to(self.camera.frame, m.UP).shift(m.DOWN * 0.75)
@@ -871,8 +889,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
         if settings.animate:
             self.play(
                 self.camera.frame.animate.move_to(
-                    self.drawnCommits[commit.hexsha].get_center()
-                )
+                    self.drawnCommits[commit.hexsha].get_center(),
+                ),
             )
         else:
             self.camera.frame.move_to(self.drawnCommits[commit.hexsha].get_center())
@@ -885,14 +903,14 @@ class GitSimBaseCommand(m.MovingCameraScene):
                         self.drawnCommits[hexsha].get_center()[0] + shift[0],
                         self.drawnCommits[hexsha].get_center()[1] + 1.4 + shift[1],
                         0,
-                    )
+                    ),
                 ),
                 self.drawnRefs[self.repo.active_branch.name].animate.move_to(
                     (
                         self.drawnCommits[hexsha].get_center()[0] + shift[0],
                         self.drawnCommits[hexsha].get_center()[1] + 2 + shift[1],
                         0,
-                    )
+                    ),
                 ),
             )
         else:
@@ -901,14 +919,14 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     self.drawnCommits[hexsha].get_center()[0] + shift[0],
                     self.drawnCommits[hexsha].get_center()[1] + 1.4 + shift[1],
                     0,
-                )
+                ),
             )
             self.drawnRefs[self.repo.active_branch.name].move_to(
                 (
                     self.drawnCommits[hexsha].get_center()[0] + shift[0],
                     self.drawnCommits[hexsha].get_center()[1] + 2 + shift[1],
                     0,
-                )
+                ),
             )
 
     def reset_head(self, hexsha, shift=numpy.array([0.0, 0.0, 0.0])):
@@ -919,7 +937,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                         self.drawnCommits[hexsha].get_center()[0] + shift[0],
                         self.drawnCommits[hexsha].get_center()[1] + 2.0 + shift[1],
                         0,
-                    )
+                    ),
                 ),
             )
         else:
@@ -928,7 +946,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     self.drawnCommits[hexsha].get_center()[0] + shift[0],
                     self.drawnCommits[hexsha].get_center()[1] + 2.0 + shift[1],
                     0,
-                )
+                ),
             )
 
     def reset_branch(self, hexsha, shift=numpy.array([0.0, 0.0, 0.0])):
@@ -939,7 +957,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                         self.drawnCommits[hexsha].get_center()[0] + shift[0],
                         self.drawnCommits[hexsha].get_center()[1] + 1.4 + shift[1],
                         0,
-                    )
+                    ),
                 ),
             )
         else:
@@ -948,7 +966,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     self.drawnCommits[hexsha].get_center()[0] + shift[0],
                     self.drawnCommits[hexsha].get_center()[1] + 1.4 + shift[1],
                     0,
-                )
+                ),
             )
 
     def reset_head_branch_to_ref(self, ref, shift=numpy.array([0.0, 0.0, 0.0])):
@@ -956,13 +974,15 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.play(self.drawnRefs["HEAD"].animate.next_to(ref, m.UP))
             self.play(
                 self.drawnRefs[self.repo.active_branch.name].animate.next_to(
-                    self.drawnRefs["HEAD"], m.UP
-                )
+                    self.drawnRefs["HEAD"],
+                    m.UP,
+                ),
             )
         else:
             self.drawnRefs["HEAD"].next_to(ref, m.UP)
             self.drawnRefs[self.repo.active_branch.name].next_to(
-                self.drawnRefs["HEAD"], m.UP
+                self.drawnRefs["HEAD"],
+                m.UP,
             )
 
     def translate_frame(self, shift):
@@ -980,7 +1000,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         color=m.RED,
     ):
         circle = m.Circle(
-            stroke_color=color, fill_color=color, fill_opacity=self.ref_fill_opacity
+            stroke_color=color,
+            fill_color=color,
+            fill_opacity=self.ref_fill_opacity,
         )
         circle.height = 1
         circle.next_to(
@@ -997,7 +1019,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
         arrow.set_length(length)
 
         commitId = m.Text(
-            "abcdef", font="Monospace", font_size=20, color=self.fontColor
+            "abcdef",
+            font="Monospace",
+            font_size=20,
+            color=self.fontColor,
         ).next_to(circle, m.UP)
         self.toFadeOut.add(commitId)
 
@@ -1042,7 +1067,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
         end = self.drawnCommits[endsha].get_center()
 
         arrow = DottedLine(
-            start, end, color=self.fontColor, dot_kwargs={"color": self.fontColor}
+            start,
+            end,
+            color=self.fontColor,
+            dot_kwargs={"color": self.fontColor},
         ).add_tip()
         length = numpy.linalg.norm(start - end) - 1.65
         arrow.set_length(length)
@@ -1139,7 +1167,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     color=self.fontColor,
                 )
                 .move_to(
-                    (firstColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
+                    (firstColumnTitle.get_center()[0], horizontal2.get_center()[1], 0),
                 )
                 .shift(m.DOWN * 0.5 * (i + 1))
             )
@@ -1155,7 +1183,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     color=self.fontColor,
                 )
                 .move_to(
-                    (secondColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
+                    (secondColumnTitle.get_center()[0], horizontal2.get_center()[1], 0),
                 )
                 .shift(m.DOWN * 0.5 * (j + 1))
             )
@@ -1171,7 +1199,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     color=self.fontColor,
                 )
                 .move_to(
-                    (thirdColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
+                    (thirdColumnTitle.get_center()[0], horizontal2.get_center()[1], 0),
                 )
                 .shift(m.DOWN * 0.5 * (h + 1))
             )
@@ -1193,7 +1221,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     color=self.colors[int(i % 11)],
                 )
                 authorText.move_to(
-                    [(-5 - offset) if settings.reverse else (5 + offset), -i, 0]
+                    [(-5 - offset) if settings.reverse else (5 + offset), -i, 0],
                 )
                 self.toFadeOut.add(authorText)
                 if i == 0:

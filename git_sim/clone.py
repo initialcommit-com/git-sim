@@ -1,14 +1,14 @@
-import sys
 import os
+import re
+import shutil
+import stat
+import sys
+import tempfile
 from argparse import Namespace
 
 import git
 import manim as m
 import numpy
-import tempfile
-import shutil
-import stat
-import re
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
@@ -38,7 +38,7 @@ class Clone(GitSimBaseCommand):
                 repo_name = repo_name[:-4]
         else:
             print(
-                f"git-sim error: Invalid repo URL, please confirm repo URL and try again"
+                "git-sim error: Invalid repo URL, please confirm repo URL and try again",
             )
             sys.exit(1)
         new_dir = os.path.join(tempfile.gettempdir(), "git_sim", repo_name)
@@ -48,7 +48,7 @@ class Clone(GitSimBaseCommand):
             self.repo = git.Repo.clone_from(self.url, new_dir, no_hardlinks=True)
         except git.GitCommandError as e:
             print(
-                f"git-sim error: Invalid repo URL, please confirm repo URL and try again"
+                "git-sim error: Invalid repo URL, please confirm repo URL and try again",
             )
             sys.exit(1)
 
@@ -78,7 +78,7 @@ class Clone(GitSimBaseCommand):
         text1.move_to([self.camera.frame.get_center()[0], 4, 0])
 
         text2 = m.Text(
-            f"Cloned repo log:",
+            "Cloned repo log:",
             font="Monospace",
             font_size=20,
             color=self.fontColor,

@@ -1,14 +1,14 @@
-import sys
 import os
+import re
+import shutil
+import stat
+import sys
+import tempfile
 from argparse import Namespace
 
 import git
 import manim as m
 import numpy
-import tempfile
-import shutil
-import stat
-import re
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
@@ -28,7 +28,7 @@ class Pull(GitSimBaseCommand):
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.remote if self.remote else ''} {self.branch if self.branch else ''}"
+                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.remote if self.remote else ''} {self.branch if self.branch else ''}",
             )
 
         self.show_intro()
@@ -80,7 +80,7 @@ class Pull(GitSimBaseCommand):
                 )
             else:
                 print(
-                    f"git-sim error: git pull failed for unhandled reason: {e.stdout}"
+                    f"git-sim error: git pull failed for unhandled reason: {e.stdout}",
                 )
                 self.repo.git.clear_cache()
                 shutil.rmtree(new_dir, onerror=self.del_rw)

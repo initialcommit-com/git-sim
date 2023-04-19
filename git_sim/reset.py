@@ -11,7 +11,12 @@ from git_sim.settings import settings
 
 class Reset(GitSimBaseCommand):
     def __init__(
-        self, commit: str, mode: ResetMode, soft: bool, mixed: bool, hard: bool
+        self,
+        commit: str,
+        mode: ResetMode,
+        soft: bool,
+        mixed: bool,
+        hard: bool,
     ):
         super().__init__()
         self.commit = commit
@@ -22,7 +27,7 @@ class Reset(GitSimBaseCommand):
             self.resetTo = git.repo.fun.rev_parse(self.repo, self.commit)
         except git.exc.BadName:
             print(
-                f"git-sim error: '{self.commit}' is not a valid Git ref or identifier."
+                f"git-sim error: '{self.commit}' is not a valid Git ref or identifier.",
             )
             sys.exit(1)
 
@@ -66,7 +71,10 @@ class Reset(GitSimBaseCommand):
             c.hexsha for c in self.get_default_commits()
         ]:
             commitId = m.Text(
-                "...", font="Monospace", font_size=20, color=self.fontColor
+                "...",
+                font="Monospace",
+                font_size=20,
+                color=self.fontColor,
             )
             commitMessage = "..."
             hide_refs = True

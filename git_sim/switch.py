@@ -20,7 +20,7 @@ class Switch(GitSimBaseCommand):
                 print(
                     "git-sim error: can't create new branch '"
                     + self.branch
-                    + "', it already exists"
+                    + "', it already exists",
                 )
                 sys.exit(1)
         else:
@@ -30,7 +30,7 @@ class Switch(GitSimBaseCommand):
                 print(
                     "git-sim error: '"
                     + self.branch
-                    + "' is not a valid Git ref or identifier."
+                    + "' is not a valid Git ref or identifier.",
                 )
                 sys.exit(1)
 
@@ -43,12 +43,14 @@ class Switch(GitSimBaseCommand):
 
             # branch being switched to is behind HEAD
             if self.repo.active_branch.name in self.repo.git.branch(
-                "--contains", self.branch
+                "--contains",
+                self.branch,
             ):
                 self.is_ancestor = True
             # HEAD is behind branch being switched to
             elif self.branch in self.repo.git.branch(
-                "--contains", self.repo.active_branch.name
+                "--contains",
+                self.repo.active_branch.name,
             ):
                 self.is_descendant = True
 
@@ -63,7 +65,7 @@ class Switch(GitSimBaseCommand):
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()}{' -c' if self.c else ''} {self.branch}"
+                f"{settings.INFO_STRING } {type(self).__name__.lower()}{' -c' if self.c else ''} {self.branch}",
             )
 
         self.show_intro()

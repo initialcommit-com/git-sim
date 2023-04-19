@@ -33,7 +33,7 @@ def handle_animations(scene: Scene) -> None:
         success, image = video.read()
         if success:
             t = datetime.datetime.fromtimestamp(time.time()).strftime(
-                "%m-%d-%y_%H-%M-%S"
+                "%m-%d-%y_%H-%M-%S",
             )
             image_file_name = (
                 "git-sim-"
@@ -44,7 +44,8 @@ def handle_animations(scene: Scene) -> None:
                 + settings.img_format
             )
             image_file_path = os.path.join(
-                os.path.join(settings.media_dir, "images"), image_file_name
+                os.path.join(settings.media_dir, "images"),
+                image_file_name,
             )
             if settings.transparent_bg:
                 unsharp_image = cv2.GaussianBlur(image, (0, 0), 3)
@@ -85,5 +86,5 @@ def handle_animations(scene: Scene) -> None:
                 open_file(scene.renderer.file_writer.movie_file_path)
         except FileNotFoundError:
             print(
-                "Error automatically opening media, please manually open the image or video file to view."
+                "Error automatically opening media, please manually open the image or video file to view.",
             )

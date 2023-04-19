@@ -26,7 +26,7 @@ class Commit(GitSimBaseCommand):
 
         if self.amend and self.message == "New commit":
             print(
-                "git-sim error: The --amend flag must be used with the -m flag to specify the amended commit message."
+                "git-sim error: The --amend flag must be used with the -m flag to specify the amended commit message.",
             )
             sys.exit(1)
 
@@ -36,7 +36,7 @@ class Commit(GitSimBaseCommand):
                 f"{settings.INFO_STRING } {type(self).__name__.lower()} {'--amend ' if self.amend else ''}"
                 + '-m "'
                 + self.message
-                + '"'
+                + '"',
             )
 
         self.show_intro()
@@ -98,5 +98,6 @@ class Commit(GitSimBaseCommand):
                 secondColumnFileNames.add(y.a_path)
                 thirdColumnFileNames.add(y.a_path)
                 secondColumnArrowMap[y.a_path] = m.Arrow(
-                    stroke_width=3, color=self.fontColor
+                    stroke_width=3,
+                    color=self.fontColor,
                 )

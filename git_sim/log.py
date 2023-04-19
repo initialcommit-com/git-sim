@@ -1,9 +1,9 @@
+import manim as m
+import numpy
 import typer
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
-import numpy
-import manim as m
 
 
 class Log(GitSimBaseCommand):
@@ -35,7 +35,7 @@ class Log(GitSimBaseCommand):
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
-                f"{settings.INFO_STRING} {type(self).__name__.lower()}{' --all' if self.all_subcommand else ''}{' -n ' + str(self.n) if self.n_subcommand else ''}"
+                f"{settings.INFO_STRING} {type(self).__name__.lower()}{' --all' if self.all_subcommand else ''}{' -n ' + str(self.n) if self.n_subcommand else ''}",
             )
         self.show_intro()
         self.parse_commits()

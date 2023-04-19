@@ -1,4 +1,7 @@
-import unittest, git, argparse
+import argparse
+import unittest
+
+import git
 from manim import *
 
 

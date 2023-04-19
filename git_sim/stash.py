@@ -1,8 +1,8 @@
 import sys
 from enum import Enum
-import manim as m
-
 from typing import List
+
+import manim as m
 
 from git_sim.enums import StashSubCommand
 from git_sim.git_sim_base_command import GitSimBaseCommand
@@ -13,7 +13,7 @@ class Stash(GitSimBaseCommand):
     def __init__(self, files: List[str], command: StashSubCommand):
         super().__init__()
         self.files = files
-        self.no_files = True if not self.files else False
+        self.no_files = not self.files
         self.command = command
         settings.hide_merged_branches = True
         self.n = self.n_default
@@ -29,7 +29,7 @@ class Stash(GitSimBaseCommand):
                     y.a_path for y in self.repo.index.diff("HEAD")
                 ]:
                     print(
-                        f"git-sim error: No modified or staged file with name: '{file}'"
+                        f"git-sim error: No modified or staged file with name: '{file}'",
                     )
                     sys.exit()
 
@@ -44,13 +44,13 @@ class Stash(GitSimBaseCommand):
                 and not settings.quiet
             ):
                 print(
-                    "Files are not required in apply/pop subcommand. Ignoring the file list....."
+                    "Files are not required in apply/pop subcommand. Ignoring the file list.....",
                 )
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.command.value if self.command else ''} {' '.join(self.files) if not self.no_files else ''}"
+                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.command.value if self.command else ''} {' '.join(self.files) if not self.no_files else ''}",
             )
 
         self.show_intro()
@@ -91,7 +91,7 @@ class Stash(GitSimBaseCommand):
                     color=self.fontColor,
                 )
                 .move_to(
-                    (firstColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
+                    (firstColumnTitle.get_center()[0], horizontal2.get_center()[1], 0),
                 )
                 .shift(m.DOWN * 0.5 * (i + 1))
             )
@@ -107,7 +107,7 @@ class Stash(GitSimBaseCommand):
                     color=self.fontColor,
                 )
                 .move_to(
-                    (secondColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
+                    (secondColumnTitle.get_center()[0], horizontal2.get_center()[1], 0),
                 )
                 .shift(m.DOWN * 0.5 * (j + 1))
             )
@@ -129,7 +129,7 @@ class Stash(GitSimBaseCommand):
                     color=self.fontColor,
                 )
                 .move_to(
-                    (thirdColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
+                    (thirdColumnTitle.get_center()[0], horizontal2.get_center()[1], 0),
                 )
                 .shift(m.DOWN * 0.5 * (h + 1))
             )
@@ -150,14 +150,16 @@ class Stash(GitSimBaseCommand):
                 thirdColumnFileNames.add(x.a_path)
                 firstColumnFileNames.add(x.a_path)
                 thirdColumnArrowMap[x.a_path] = m.Arrow(
-                    stroke_width=3, color=self.fontColor
+                    stroke_width=3,
+                    color=self.fontColor,
                 )
 
             for y in self.repo.index.diff("HEAD"):
                 firstColumnFileNames.add(y.a_path)
                 thirdColumnFileNames.add(y.a_path)
                 thirdColumnArrowMap[y.a_path] = m.Arrow(
-                    stroke_width=3, color=self.fontColor
+                    stroke_width=3,
+                    color=self.fontColor,
                 )
 
         else:
@@ -167,7 +169,8 @@ class Stash(GitSimBaseCommand):
                     if file == x.a_path:
                         thirdColumnFileNames.add(x.a_path)
                         firstColumnArrowMap[x.a_path] = m.Arrow(
-                            stroke_width=3, color=self.fontColor
+                            stroke_width=3,
+                            color=self.fontColor,
                         )
 
             for y in self.repo.index.diff("HEAD"):
@@ -176,5 +179,6 @@ class Stash(GitSimBaseCommand):
                     if file == y.a_path:
                         thirdColumnFileNames.add(y.a_path)
                         secondColumnArrowMap[y.a_path] = m.Arrow(
-                            stroke_width=3, color=self.fontColor
+                            stroke_width=3,
+                            color=self.fontColor,
                         )

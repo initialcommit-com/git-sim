@@ -1,14 +1,14 @@
-import sys
 import os
+import re
+import shutil
+import stat
+import sys
+import tempfile
 from argparse import Namespace
 
 import git
 import manim as m
 import numpy
-import tempfile
-import shutil
-import stat
-import re
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
@@ -28,7 +28,7 @@ class Push(GitSimBaseCommand):
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.remote if self.remote else ''} {self.branch if self.branch else ''}"
+                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.remote if self.remote else ''} {self.branch if self.branch else ''}",
             )
 
         self.show_intro()
@@ -54,7 +54,10 @@ class Push(GitSimBaseCommand):
 
         # Create local clone of remote repo to simulate push to so we don't touch the real remote
         self.remote_repo = git.Repo.clone_from(
-            remote_url, new_dir2, no_hardlinks=True, bare=True
+            remote_url,
+            new_dir2,
+            no_hardlinks=True,
+            bare=True,
         )
 
         # Reset local clone remote to the local clone of remote repo
@@ -117,7 +120,7 @@ class Push(GitSimBaseCommand):
         texts = []
         if push_result == 1:
             text1 = m.Text(
-                f"'git push' failed since the remote repo has commits that don't exist locally.",
+                "'git push' failed since the remote repo has commits that don't exist locally.",
                 font="Monospace",
                 font_size=20,
                 color=self.fontColor,
@@ -126,7 +129,7 @@ class Push(GitSimBaseCommand):
             text1.move_to([self.camera.frame.get_center()[0], 5, 0])
 
             text2 = m.Text(
-                f"Run 'git pull' (or 'git-sim pull' to simulate first) and then try again.",
+                "Run 'git pull' (or 'git-sim pull' to simulate first) and then try again.",
                 font="Monospace",
                 font_size=20,
                 color=self.fontColor,
@@ -135,7 +138,7 @@ class Push(GitSimBaseCommand):
             text2.move_to(text1.get_center()).shift(m.DOWN / 2)
 
             text3 = m.Text(
-                f"Gold commits exist in remote repo, but not locally (need to be pulled).",
+                "Gold commits exist in remote repo, but not locally (need to be pulled).",
                 font="Monospace",
                 font_size=20,
                 color=m.GOLD,
@@ -144,7 +147,7 @@ class Push(GitSimBaseCommand):
             text3.move_to(text2.get_center()).shift(m.DOWN / 2)
 
             text4 = m.Text(
-                f"Red commits exist in both local and remote repos.",
+                "Red commits exist in both local and remote repos.",
                 font="Monospace",
                 font_size=20,
                 color=m.RED,
@@ -155,7 +158,7 @@ class Push(GitSimBaseCommand):
 
         elif push_result == 2:
             text1 = m.Text(
-                f"'git push' failed since the tip of your current branch is behind the remote.",
+                "'git push' failed since the tip of your current branch is behind the remote.",
                 font="Monospace",
                 font_size=20,
                 color=self.fontColor,
@@ -164,7 +167,7 @@ class Push(GitSimBaseCommand):
             text1.move_to([self.camera.frame.get_center()[0], 5, 0])
 
             text2 = m.Text(
-                f"Run 'git pull' (or 'git-sim pull' to simulate first) and then try again.",
+                "Run 'git pull' (or 'git-sim pull' to simulate first) and then try again.",
                 font="Monospace",
                 font_size=20,
                 color=self.fontColor,
@@ -173,7 +176,7 @@ class Push(GitSimBaseCommand):
             text2.move_to(text1.get_center()).shift(m.DOWN / 2)
 
             text3 = m.Text(
-                f"Gold commits exist are ahead of your current branch tip (need to be pulled).",
+                "Gold commits exist are ahead of your current branch tip (need to be pulled).",
                 font="Monospace",
                 font_size=20,
                 color=m.GOLD,
@@ -182,7 +185,7 @@ class Push(GitSimBaseCommand):
             text3.move_to(text2.get_center()).shift(m.DOWN / 2)
 
             text4 = m.Text(
-                f"Red commits are up to date in both local and remote branches.",
+                "Red commits are up to date in both local and remote branches.",
                 font="Monospace",
                 font_size=20,
                 color=m.RED,

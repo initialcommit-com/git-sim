@@ -19,7 +19,7 @@ class Rebase(GitSimBaseCommand):
             print(
                 "git-sim error: '"
                 + self.branch
-                + "' is not a valid Git ref or identifier."
+                + "' is not a valid Git ref or identifier.",
             )
             sys.exit(1)
 
@@ -34,30 +34,32 @@ class Rebase(GitSimBaseCommand):
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.branch}"
+                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.branch}",
             )
 
         if self.branch in self.repo.git.branch(
-            "--contains", self.repo.active_branch.name
+            "--contains",
+            self.repo.active_branch.name,
         ):
             print(
                 "git-sim error: Branch '"
                 + self.repo.active_branch.name
                 + "' is already included in the history of active branch '"
                 + self.branch
-                + "'."
+                + "'.",
             )
             sys.exit(1)
 
         if self.repo.active_branch.name in self.repo.git.branch(
-            "--contains", self.branch
+            "--contains",
+            self.branch,
         ):
             print(
                 "git-sim error: Branch '"
                 + self.branch
                 + "' is already based on active branch '"
                 + self.repo.active_branch.name
-                + "'."
+                + "'.",
             )
             sys.exit(1)
 
@@ -69,7 +71,8 @@ class Rebase(GitSimBaseCommand):
         reached_base = False
         for commit in self.get_default_commits():
             if commit != "dark" and self.branch in self.repo.git.branch(
-                "--contains", commit
+                "--contains",
+                commit,
             ):
                 reached_base = True
 
