@@ -1,5 +1,5 @@
 # git-sim
-![git-sim-logo-with-tagline-v3 gif](https://user-images.githubusercontent.com/49353917/232981734-86bd44dd-0c5b-466d-866a-7462cc75c18f.gif)
+![git-sim-logo-with-tagline-1440x376p30](https://user-images.githubusercontent.com/49353917/232989939-e2a062fa-39db-4cb2-bf39-a4955618e2e0.gif)
 
 [![GitHub license](https://img.shields.io/github/license/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/blob/main/LICENSE)
 [![GitHub tag](https://img.shields.io/github/v/release/initialcommit-com/git-sim)](https://img.shields.io/github/v/release/initialcommit-com/git-sim)
