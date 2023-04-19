@@ -83,7 +83,13 @@ class Merge(GitSimBaseCommand):
                 if head_commit.hexsha in self.drawnCommits:
                     start = self.drawnCommits["abcdef"].get_center()
                     end = self.drawnCommits[head_commit.hexsha].get_center()
-                    arrow = m.CurvedArrow(start, end, color=self.fontColor, stroke_width=self.arrow_stroke_width, tip_shape=self.arrow_tip_shape)
+                    arrow = m.CurvedArrow(
+                        start,
+                        end,
+                        color=self.fontColor,
+                        stroke_width=self.arrow_stroke_width,
+                        tip_shape=self.arrow_tip_shape,
+                    )
                     self.draw_arrow(True, arrow)
 
                 reset_head_to = "abcdef"

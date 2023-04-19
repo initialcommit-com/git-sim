@@ -23,9 +23,7 @@ class Clean(GitSimBaseCommand):
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
-            print(
-                f"{settings.INFO_STRING} {type(self).__name__.lower()}"
-            )
+            print(f"{settings.INFO_STRING} {type(self).__name__.lower()}")
 
         self.show_intro()
         self.parse_commits()
@@ -121,6 +119,4 @@ class Clean(GitSimBaseCommand):
             if "git-sim_media" not in z:
                 firstColumnFileNames.add(z)
                 thirdColumnFileNames.add(z)
-                firstColumnArrowMap[z] = m.Arrow(
-                    stroke_width=3, color=self.fontColor
-                )
+                firstColumnArrowMap[z] = m.Arrow(stroke_width=3, color=self.fontColor)

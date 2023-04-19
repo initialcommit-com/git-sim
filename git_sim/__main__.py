@@ -7,7 +7,13 @@ import time
 import typer
 
 import git_sim.commands
-from git_sim.settings import ColorByOptions, StyleOptions, ImgFormat, VideoFormat, settings
+from git_sim.settings import (
+    ColorByOptions,
+    StyleOptions,
+    ImgFormat,
+    VideoFormat,
+    settings,
+)
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 

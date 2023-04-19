@@ -111,7 +111,12 @@ class Rebase(GitSimBaseCommand):
         shift=numpy.array([0.0, 0.0, 0.0]),
         draw_arrow=True,
     ):
-        circle = m.Circle(stroke_color=m.RED, stroke_width=self.commit_stroke_width, fill_color=m.RED, fill_opacity=0.25)
+        circle = m.Circle(
+            stroke_color=m.RED,
+            stroke_width=self.commit_stroke_width,
+            fill_color=m.RED,
+            fill_opacity=0.25,
+        )
         circle.height = 1
         circle.next_to(
             self.drawnCommits[child],
@@ -122,7 +127,14 @@ class Rebase(GitSimBaseCommand):
 
         start = circle.get_center()
         end = self.drawnCommits[child].get_center()
-        arrow = m.Arrow(start, end, color=self.fontColor, stroke_width=self.arrow_stroke_width, tip_shape=self.arrow_tip_shape, max_stroke_width_to_length_ratio=1000)
+        arrow = m.Arrow(
+            start,
+            end,
+            color=self.fontColor,
+            stroke_width=self.arrow_stroke_width,
+            tip_shape=self.arrow_tip_shape,
+            max_stroke_width_to_length_ratio=1000,
+        )
         length = numpy.linalg.norm(start - end) - (1.5 if start[1] == end[1] else 3)
         arrow.set_length(length)
 
