@@ -11,12 +11,13 @@ from manim import WHITE, Scene
 from manim.utils.file_ops import open_file
 
 from git_sim.settings import settings
+from git_sim.enums import VideoFormat
 
 
 def handle_animations(scene: Scene) -> None:
     scene.render()
 
-    if settings.video_format == "webm":
+    if settings.video_format == VideoFormat.WEBM:
         webm_file_path = str(scene.renderer.file_writer.movie_file_path)[:-3] + "webm"
         cmd = f"ffmpeg -y -i {scene.renderer.file_writer.movie_file_path} -hide_banner -loglevel error -c:v libvpx-vp9 -crf 50 -b:v 0 -b:a 128k -c:a libopus {webm_file_path}"
         print("Converting video output to .webm format...")

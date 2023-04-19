@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     n = 5
     files: Union[List[pathlib.Path], None] = None
     hide_first_tag = False
-    img_format: ImgFormat = ImgFormat.jpg
+    img_format: ImgFormat = ImgFormat.JPG
     INFO_STRING = "Simulating: git"
     light_mode = False
     transparent_bg = False
@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     show_outro = False
     speed = 1.5
     title = "Git-Sim, by initialcommit.com"
-    video_format: VideoFormat = VideoFormat.mp4
+    video_format: VideoFormat = VideoFormat.MP4
     stdout = False
     output_only_path = False
     quiet = False

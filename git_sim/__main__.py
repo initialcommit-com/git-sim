@@ -208,7 +208,7 @@ def main(
         config.background_color = WHITE
 
     if settings.transparent_bg:
-        settings.img_format = ImgFormat.png
+        settings.img_format = ImgFormat.PNG
 
     t = datetime.datetime.fromtimestamp(time.time()).strftime("%m-%d-%y_%H-%M-%S")
     config.output_file = "git-sim-" + ctx.invoked_subcommand + "_" + t + ".mp4"

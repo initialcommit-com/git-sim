@@ -27,10 +27,10 @@ class StyleOptions(Enum):
 
 
 class VideoFormat(str, Enum):
-    mp4 = "mp4"
-    webm = "webm"
+    MP4 = "mp4"
+    WEBM = "webm"
 
 
 class ImgFormat(str, Enum):
-    jpg = "jpg"
-    png = "png"
+    JPG = "jpg"
+    PNG = "png"
