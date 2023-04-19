@@ -83,7 +83,7 @@ class Merge(GitSimBaseCommand):
                 if head_commit.hexsha in self.drawnCommits:
                     start = self.drawnCommits["abcdef"].get_center()
                     end = self.drawnCommits[head_commit.hexsha].get_center()
-                    arrow = m.CurvedArrow(start, end, color=self.fontColor)
+                    arrow = m.CurvedArrow(start, end, color=self.fontColor, stroke_width=self.arrow_stroke_width, tip_shape=self.arrow_tip_shape)
                     self.draw_arrow(True, arrow)
 
                 reset_head_to = "abcdef"
@@ -152,7 +152,10 @@ class Merge(GitSimBaseCommand):
         self.repo.git.clear_cache()
 
         # Delete the local clone
-        shutil.rmtree(new_dir, onerror=self.del_rw)
+        try:
+            shutil.rmtree(new_dir, onerror=self.del_rw)
+        except (FileNotFoundError, UnboundLocalError):
+            pass
 
     def check_merge_conflict(self, branch1, branch2):
         git_root = self.repo.git.rev_parse("--show-toplevel")

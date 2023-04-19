@@ -21,6 +21,11 @@ class ColorByOptions(Enum):
     notlocal2 = "notlocal2"
 
 
+class StyleOptions(Enum):
+    CLEAN = "clean"
+    THICK = "thick"
+
+
 class VideoFormat(str, Enum):
     mp4 = "mp4"
     webm = "webm"

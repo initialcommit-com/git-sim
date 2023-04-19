@@ -7,7 +7,7 @@ import time
 import typer
 
 import git_sim.commands
-from git_sim.settings import ColorByOptions, ImgFormat, VideoFormat, settings
+from git_sim.settings import ColorByOptions, StyleOptions, ImgFormat, VideoFormat, settings
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
@@ -144,8 +144,12 @@ def main(
         False,
         "--version",
         "-v",
-        help="Show the version of git-sim and exit.",
+        help="Show the version of git-sim and exit",
         callback=version_callback,
+    ),
+    style: StyleOptions = typer.Option(
+        settings.style.value,
+        help="Graphical style of the output image or animated video",
     ),
 ):
     import git
@@ -178,6 +182,7 @@ def main(
     settings.all = all
     settings.color_by = color_by
     settings.highlight_commit_messages = highlight_commit_messages
+    settings.style = style
 
     try:
         if sys.platform == "linux" or sys.platform == "darwin":

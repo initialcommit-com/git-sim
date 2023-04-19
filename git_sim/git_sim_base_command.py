@@ -11,7 +11,7 @@ import numpy
 from git.exc import GitCommandError, InvalidGitRepositoryError
 from git.repo import Repo
 
-from git_sim.enums import ColorByOptions
+from git_sim.enums import ColorByOptions, StyleOptions
 from git_sim.settings import settings
 
 
@@ -62,6 +62,17 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.fill_opacity = 0.5
             self.ref_fill_opacity = 1.0
 
+        if settings.style == StyleOptions.CLEAN:
+            self.commit_stroke_width = 5
+            self.arrow_stroke_width = 5
+            self.arrow_tip_shape = m.ArrowTriangleFilledTip
+            self.font_weight = m.NORMAL
+        elif settings.style == StyleOptions.THICK:
+            self.commit_stroke_width = 30
+            self.arrow_stroke_width = 10
+            self.arrow_tip_shape = m.StealthTip
+            self.font_weight = m.BOLD
+            
     def init_repo(self):
         try:
             self.repo = Repo(search_parent_directories=True)
@@ -243,6 +254,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         circle = m.Circle(
             stroke_color=commit_fill,
+            stroke_width=self.commit_stroke_width,
             fill_color=commit_fill,
             fill_opacity=self.fill_opacity,
         )
@@ -280,7 +292,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             )
             end = self.drawnCommits[commit.hexsha].get_center()
 
-        arrow = m.Arrow(start, end, color=self.fontColor)
+        arrow = m.Arrow(start, end, color=self.fontColor, stroke_width=self.arrow_stroke_width, tip_shape=self.arrow_tip_shape, max_stroke_width_to_length_ratio=1000)
 
         if commit == "dark":
             arrow = m.Arrow(
@@ -299,7 +311,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         for commitCircle in self.drawnCommits.values():
             inter = m.Intersection(lineRect, commitCircle)
             if inter.has_points():
-                arrow = m.CurvedArrow(start, end, color=self.fontColor)
+                arrow = m.CurvedArrow(start, end, color=self.fontColor, stroke_width=self.arrow_stroke_width, tip_shape=self.arrow_tip_shape)
                 if start[1] == end[1]:
                     arrow.shift(m.UP * 1.25)
                 if start[0] < end[0] and start[1] == end[1]:
@@ -320,7 +332,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             font="Monospace",
             font_size=20 if settings.highlight_commit_messages else 14,
             color=self.fontColor,
-            weight=m.BOLD if settings.highlight_commit_messages else m.NORMAL,
+            weight=m.BOLD if settings.highlight_commit_messages or settings.style == StyleOptions.THICK else m.NORMAL,
         ).next_to(circle, m.DOWN)
 
         if settings.animate and commit != "dark" and isNewCommit:
@@ -373,7 +385,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
     def build_commit_id_and_message(self, commit, i):
         hide_refs = False
         if commit == "dark":
-            commitId = m.Text("", font="Monospace", font_size=20, color=self.fontColor)
+            commitId = m.Text("", font="Monospace", font_size=20, color=self.fontColor, weight=self.font_weight)
             commitMessage = ""
         else:
             commitId = m.Text(
@@ -381,6 +393,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 font="Monospace",
                 font_size=20,
                 color=self.fontColor,
+                weight=self.font_weight,
             )
             commitMessage = commit.message.split("\n")[0][:40].replace("\n", " ")
         return commitId, commitMessage, commit, hide_refs
@@ -397,7 +410,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             else:
                 headbox.next_to(commitId, m.UP)
             headText = m.Text(
-                "HEAD", font="Monospace", font_size=20, color=self.fontColor
+                "HEAD", font="Monospace", font_size=20, color=self.fontColor, weight=self.font_weight,
             ).move_to(headbox.get_center())
 
             head = m.VGroup(headbox, headText)
@@ -444,7 +457,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 )
 
                 branchText = m.Text(
-                    text, font="Monospace", font_size=20, color=self.fontColor
+                    text, font="Monospace", font_size=20, color=self.fontColor, weight=self.font_weight,
                 )
                 branchRec = m.Rectangle(
                     color=m.GREEN,
@@ -490,6 +503,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                         font="Monospace",
                         font_size=20,
                         color=self.fontColor,
+                        weight=self.font_weight,
                     )
                     tagRec = m.Rectangle(
                         color=m.YELLOW,
@@ -653,6 +667,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 font="Monospace",
                 font_size=28,
                 color=self.fontColor,
+                weight=m.BOLD,
             )
             .move_to((vert1.get_center()[0] - 4, 0, 0))
             .shift(m.UP * self.zone_title_offset)
@@ -663,6 +678,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 font="Monospace",
                 font_size=28,
                 color=self.fontColor,
+                weight=m.BOLD,
             )
             .move_to(self.camera.frame.get_center())
             .align_to(firstColumnTitle, m.UP)
@@ -673,6 +689,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 font="Monospace",
                 font_size=28,
                 color=self.fontColor,
+                weight=m.BOLD,
             )
             .move_to((vert2.get_center()[0] + 4, 0, 0))
             .align_to(firstColumnTitle, m.UP)
@@ -985,7 +1002,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         color=m.RED,
     ):
         circle = m.Circle(
-            stroke_color=color, fill_color=color, fill_opacity=self.ref_fill_opacity
+            stroke_color=color, stroke_width=self.commit_stroke_width, fill_color=color, fill_opacity=self.ref_fill_opacity
         )
         circle.height = 1
         circle.next_to(
@@ -997,12 +1014,12 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         start = circle.get_center()
         end = self.drawnCommits[child.hexsha].get_center()
-        arrow = m.Arrow(start, end, color=self.fontColor)
+        arrow = m.Arrow(start, end, color=self.fontColor, stroke_width=self.arrow_stroke_width, tip_shape=self.arrow_tip_shape, max_stroke_width_to_length_ratio=1000)
         length = numpy.linalg.norm(start - end) - (1.5 if start[1] == end[1] else 3)
         arrow.set_length(length)
 
         commitId = m.Text(
-            "abcdef", font="Monospace", font_size=20, color=self.fontColor
+            "abcdef", font="Monospace", font_size=20, color=self.fontColor, weight=self.font_weight,
         ).next_to(circle, m.UP)
         self.toFadeOut.add(commitId)
 
@@ -1014,6 +1031,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             font="Monospace",
             font_size=14,
             color=self.fontColor,
+            weight=self.font_weight,
         ).next_to(circle, m.DOWN)
         self.toFadeOut.add(message)
 
@@ -1061,7 +1079,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         return nondark_commits
 
     def draw_ref(self, commit, top, i=0, text="HEAD", color=m.BLUE):
-        refText = m.Text(text, font="Monospace", font_size=20, color=self.fontColor)
+        refText = m.Text(text, font="Monospace", font_size=20, color=self.fontColor, weight=self.font_weight)
         refbox = m.Rectangle(
             color=color,
             fill_color=color,
@@ -1196,6 +1214,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     font="Monospace",
                     font_size=36,
                     color=self.colors[int(i % 11)],
+                    weight=self.font_weight,
                 )
                 authorText.move_to(
                     [(-5 - offset) if settings.reverse else (5 + offset), -i, 0]

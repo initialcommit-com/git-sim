@@ -150,7 +150,8 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 `--stdout`: Write raw image data to stdout while suppressing all other program output.  
 `--output-only-path`: Only output the path to the generated media file to stdout. Useful for other programs to ingest.  
 `--quiet, -q`: Suppress all output except errors.  
-`--highlight-commit-messages`: Make commit message text bigger and bold, and hide commit ids.
+`--highlight-commit-messages`: Make commit message text bigger and bold, and hide commit ids.  
+`--style`: Graphical style of the output image or animated video, i.e. `clean` (default) or `thick`.
 
 Animation-only global options (to be used in conjunction with `--animate`):
 

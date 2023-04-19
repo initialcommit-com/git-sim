@@ -3,7 +3,7 @@ from typing import List, Union
 
 from pydantic import BaseSettings
 
-from git_sim.enums import ColorByOptions, ImgFormat, VideoFormat
+from git_sim.enums import StyleOptions, ColorByOptions, ImgFormat, VideoFormat
 
 
 class Settings(BaseSettings):
@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     all = False
     color_by: Union[ColorByOptions, None] = None
     highlight_commit_messages = False
+    style: Union[StyleOptions, None] = StyleOptions.CLEAN
 
     class Config:
         env_prefix = "git_sim_"
