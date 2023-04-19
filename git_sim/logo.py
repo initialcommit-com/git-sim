@@ -103,10 +103,10 @@ class Logo(GitSimBaseCommand):
             circle5,
             circle6,
             circle7,
-            title,
             arc1,
             arc2,
             arc3,
+            title,
             arrow1,
             arrow2,
             arrow3,
@@ -118,11 +118,12 @@ class Logo(GitSimBaseCommand):
         )
 
         if settings.animate:
-            self.camera.frame.move_to(self.toFadeOut.get_center()),
-            self.camera.frame.scale_to_fit_width(self.toFadeOut.get_width() * 1.1)
+            self.camera.frame.move_to(self.toFadeOut.get_center())
+            self.toFadeOut.remove(circle2, circle3, arc1, arc2, arc3)
+            self.camera.frame.scale_to_fit_width(self.toFadeOut.get_width() * 1.25)
             if self.toFadeOut.get_height() >= self.camera.frame.get_height():
                 self.camera.frame.scale_to_fit_height(self.toFadeOut.get_height() * 1.25)
-            self.play(m.AddTextLetterByLetter(title), m.Create(circle1), m.Create(arc1), m.Create(circle2), m.Create(arc2), m.Create(circle3), m.Create(arc3), run_time=1/settings.speed)
+            self.play(m.AddTextLetterByLetter(title), m.Create(circle1))
             self.play(m.Create(arrow1), run_time=1/(settings.speed*2.5))
             self.play(m.Create(circle4), m.AddTextLetterByLetter(message1), run_time=1/(settings.speed*2.5))
             self.play(m.Create(arrow2), run_time=1/(settings.speed*2.5))
@@ -131,6 +132,17 @@ class Logo(GitSimBaseCommand):
             self.play(m.Create(circle6), m.AddTextLetterByLetter(message3), run_time=1/(settings.speed*2.5))
             self.play(m.Create(arrow4), run_time=1/(settings.speed*2.5))
             self.play(m.Create(circle7), m.AddTextLetterByLetter(message4), run_time=1/(settings.speed*2.5))
+            self.toFadeOut.add(circle2, circle3, arc1, arc2, arc3)
+            self.play(self.camera.frame.animate.move_to(self.toFadeOut.get_center()))
+            self.play(
+                    self.camera.frame.animate.scale_to_fit_width(self.toFadeOut.get_width() * 1.1),
+                    self.camera.frame.animate.scale_to_fit_height(self.toFadeOut.get_height() * 1.25),
+                    m.Create(circle2),
+                    m.Create(circle3),
+                    m.Create(arc1),
+                    m.Create(arc2),
+                    m.Create(arc3)
+                    )
         else:
             self.add(
                 circle1,
