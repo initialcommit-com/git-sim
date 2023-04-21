@@ -12,6 +12,7 @@ import re
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
+from git_sim.enums import ColorByOptions
 
 
 class Push(GitSimBaseCommand):
@@ -76,12 +77,12 @@ class Push(GitSimBaseCommand):
                 push_result = 1
                 self.orig_repo = self.repo
                 self.repo = self.remote_repo
-                settings.color_by = "notlocal1"
+                settings.color_by = ColorByOptions.NOTLOCAL1
             elif "rejected" in e.stderr and ("non-fast-forward" in e.stderr):
                 push_result = 2
                 self.orig_repo = self.repo
                 self.repo = self.remote_repo
-                settings.color_by = "notlocal2"
+                settings.color_by = ColorByOptions.NOTLOCAL2
             else:
                 print(f"git-sim error: git push failed: {e.stderr}")
                 return
@@ -173,7 +174,7 @@ class Push(GitSimBaseCommand):
             text2.move_to(text1.get_center()).shift(m.DOWN / 2)
 
             text3 = m.Text(
-                f"Gold commits exist are ahead of your current branch tip (need to be pulled).",
+                f"Gold commits are ahead of your current branch tip (need to be pulled).",
                 font="Monospace",
                 font_size=20,
                 color=m.GOLD,

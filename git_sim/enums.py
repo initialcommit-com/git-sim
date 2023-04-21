@@ -15,10 +15,10 @@ class StashSubCommand(Enum):
 
 
 class ColorByOptions(Enum):
-    author = "author"
-    branch = "branch"
-    notlocal1 = "notlocal1"
-    notlocal2 = "notlocal2"
+    AUTHOR = "author"
+    BRANCH = "branch"
+    NOTLOCAL1 = "notlocal1"
+    NOTLOCAL2 = "notlocal2"
 
 
 class StyleOptions(Enum):
