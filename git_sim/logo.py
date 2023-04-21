@@ -85,9 +85,9 @@ class Logo(GitSimBaseCommand):
         arrow3 = m.Arrow(circle5.get_center(), circle6.get_center(), color=m.WHITE, stroke_width=3, max_stroke_width_to_length_ratio=1000, max_tip_length_to_length_ratio=1000, tip_length=0.025, tip_shape=m.StealthTip, buff=0.21).shift(m.LEFT * 0.015)
         arrow4 = m.Arrow(circle6.get_center(), circle7.get_center(), color=m.WHITE, stroke_width=3, max_stroke_width_to_length_ratio=1000, max_tip_length_to_length_ratio=1000, tip_length=0.025, tip_shape=m.StealthTip, buff=0.21).shift(m.LEFT * 0.015)
 
-        message1 = m.Text("Visually", font="Monospace", font_size=6, color=m.WHITE, weight=m.BOLD)
+        message1 = m.Text("visually", font="Monospace", font_size=6, color=m.WHITE, weight=m.BOLD)
         message2 = m.Text("simulate", font="Monospace", font_size=6, color=m.WHITE, weight=m.BOLD)
-        message3 = m.Text("Git", font="Monospace", font_size=6, color=m.WHITE, weight=m.BOLD)
+        message3 = m.Text("git", font="Monospace", font_size=6, color=m.WHITE, weight=m.BOLD)
         message4 = m.Text("commands", font="Monospace", font_size=6, color=m.WHITE, weight=m.BOLD)
 
         message1.move_to((circle4.get_center()[0], circle4.get_center()[1] + 0.25, 0))
