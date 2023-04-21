@@ -325,7 +325,7 @@ Usage: `git-sim push [<remote> <branch>]`
 - If `<remote>` and `<branch>` are not specified, the active branch is pushed to the default remote
 - If the push fails due to remote changes that don't exist in the local repo, a message is included telling the user to pull first, along with color coding which commits need to be pulled
 
-![git-sim-push_04-09-23_21-50-53](https://user-images.githubusercontent.com/49353917/230828366-75b67945-ddc2-4fb7-b306-acba6e191730.jpg)
+![git-sim-push_04-21-23_13-41-57](https://user-images.githubusercontent.com/49353917/233731005-51fd7887-ae14-4ceb-a5d5-e5aed79e9fd8.jpg)
 
 ### git clone
 Usage: `git-sim clone <url>`
