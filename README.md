@@ -14,8 +14,8 @@ This generates an image (default) or video visualization depicting the Git comma
 Command syntax is based directly on Git's command-line syntax, so using git-sim is as familiar as possible.
 
 Example: `$ git-sim merge <branch>`
-
-![git-sim-merge_04-22-23_21-04-32](https://user-images.githubusercontent.com/49353917/233819299-79ed57a5-ef46-49e5-9441-901185457877.jpg)
+<br/><br/>
+![git-sim-merge_04-22-23_21-04-32_cropped](https://user-images.githubusercontent.com/49353917/233821875-a7bb640d-10be-4433-a8fb-bd25646eeff4.jpg)
 
 ## Use cases
 - Visualize Git commands to understand their effects on your repo before actually running them
