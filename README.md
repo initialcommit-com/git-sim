@@ -15,7 +15,7 @@ Command syntax is based directly on Git's command-line syntax, so using git-sim 
 
 Example: `$ git-sim merge <branch>`
 
-![git-sim-merge_01-05-23_09-44-46](https://user-images.githubusercontent.com/49353917/210939840-1d51493a-6cac-43fd-9d12-3d2948d32c61.jpg)
+![git-sim-merge_04-22-23_21-04-32](https://user-images.githubusercontent.com/49353917/233819299-79ed57a5-ef46-49e5-9441-901185457877.jpg)
 
 ## Use cases
 - Visualize Git commands to understand their effects on your repo before actually running them
