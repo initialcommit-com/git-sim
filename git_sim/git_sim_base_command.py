@@ -467,17 +467,17 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         for branch in branches:
             if (
-                not self.is_remote_tracking_branch(branch)  # local branch
+                branch not in remote_tracking_branches # local branch
                 and commit.hexsha == self.repo.heads[branch].commit.hexsha
             ) or (
-                self.is_remote_tracking_branch(branch)  # remote tracking branch
+                branch in remote_tracking_branches # remote tracking branch
                 and commit.hexsha == remote_tracking_branches[branch]
             ):
                 text = (
                     (make_branches_remote + "/" + branch)
                     if (
                         make_branches_remote
-                        and not self.is_remote_tracking_branch(branch)
+                        and branch not in remote_tracking_branches 
                     )
                     else branch
                 )
@@ -1177,15 +1177,6 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 if "HEAD" not in ref.name and ref.name not in remote_tracking_branches:
                     remote_tracking_branches[ref.name] = ref.commit.hexsha
         return remote_tracking_branches
-
-    def is_remote_tracking_branch(self, branch):
-        remote_refs = [remote.refs for remote in self.repo.remotes]
-        remote_tracking_branches = {}
-        for reflist in remote_refs:
-            for ref in reflist:
-                if "HEAD" not in ref.name and ref.name not in remote_tracking_branches:
-                    remote_tracking_branches[ref.name] = ref.commit.hexsha
-        return branch in remote_tracking_branches
 
     def create_zone_text(
         self,
