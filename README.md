@@ -14,8 +14,8 @@ This generates an image (default) or video visualization depicting the Git comma
 Command syntax is based directly on Git's command-line syntax, so using git-sim is as familiar as possible.
 
 Example: `$ git-sim merge <branch>`
-
-![git-sim-merge_01-05-23_09-44-46](https://user-images.githubusercontent.com/49353917/210939840-1d51493a-6cac-43fd-9d12-3d2948d32c61.jpg)
+<br/><br/>
+![git-sim-merge_04-22-23_21-04-32_cropped](https://user-images.githubusercontent.com/49353917/233821875-a7bb640d-10be-4433-a8fb-bd25646eeff4.jpg)
 
 ## Use cases
 - Visualize Git commands to understand their effects on your repo before actually running them
@@ -30,7 +30,7 @@ Example: `$ git-sim merge <branch>`
 - Run a one-liner git-sim command in the terminal to generate a custom Git command visualization (.jpg) from your repo
 - Supported commands: `log`, `status`, `add`, `restore`, `commit`, `stash`, `branch`, `tag`, `reset`, `revert`, `merge`, `rebase`, `cherry-pick`, `switch`, `checkout`, `fetch`, `pull`, `push`, `clone`, `rm`, `mv`, `clean`
 - Generate an animated video (.mp4) instead of a static image using the `--animate` flag (note: significant performance slowdown, it is recommended to use `--low-quality` to speed up testing and remove when ready to generate presentation-quality video)
-- Color commits by parameter, such as author the `--color-by=author` option
+- Color commits by parameter, such as author with the `--color-by=author` option
 - Choose between dark mode (default) and light mode
 - Specify output formats of either jpg, png, mp4, or webm
 - Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
