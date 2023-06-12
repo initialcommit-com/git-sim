@@ -60,7 +60,7 @@ class Merge(GitSimBaseCommand):
         head_commit = self.get_commit()
         branch_commit = self.get_commit(self.branch)
 
-        if not self.is_remote_tracking_branch(self.branch):
+        if self.branch not in self.get_remote_tracking_branches():
             if self.branch in self.repo.git.branch("--contains", head_commit.hexsha):
                 self.ff = True
         else:
