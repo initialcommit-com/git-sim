@@ -1,6 +1,9 @@
 """Tests for the core commands implemented in git-sim.
 
 All test runs use the -d flag to prevent images from opening automatically.
+
+To induce failure, include a call to `run_git_reset()` in one of the
+  test functions.
 """
 
 import os, subprocess

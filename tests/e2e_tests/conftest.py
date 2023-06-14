@@ -1,8 +1,10 @@
-import subprocess, sys, os, shutil
+import subprocess, os
 from pathlib import Path
 from shlex import split
 
 import pytest
+
+import utils
 
 
 @pytest.fixture(scope="session")
@@ -17,13 +19,13 @@ def tmp_repo(tmp_path_factory):
     # To see where tmp_repo_dir is located, run pytest with the `-s` flag.
     print(f"\n\nTemp repo directory:\n  {tmp_repo_dir}\n")
 
-    # Copy the sample repo to the tmp dir.
-    sample_repo_dir = Path(__file__).parent / "sample_repo"
-    shutil.copytree(sample_repo_dir, tmp_repo_dir, dirs_exist_ok=True)
+    # Create the sample repo for testing.
+    os.chdir(tmp_repo_dir)
 
-    # Rename the .git_not_a_submodule dir to .git.
-    #   If the sample repo has a .git/ dir, it makes the overall project
-    #   think the sample repo is a submodule. Headaches ensue.
-    os.rename(f"{tmp_repo_dir}/.git_not_a_submodule", f"{tmp_repo_dir}/.git")
+    # When defining cmd, as_posix() is required for Windows compatibility.
+    git_dummy_path = utils.get_venv_path() / "git-dummy"
+    cmd = f"{git_dummy_path.as_posix()} --commits=10 --branches=4 --merge=1 --constant-sha --name=sample_repo --diverge-at=2"
+    cmd_parts = split(cmd)
+    subprocess.run(cmd_parts)
 
-    return tmp_repo_dir
+    return tmp_repo_dir / "sample_repo"

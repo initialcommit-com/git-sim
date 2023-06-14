@@ -44,7 +44,7 @@ Temp repo directory:
 
 To add another test:
 
-- Work in `tests/e2e_tests/test_core_commands.py.
+- Work in `tests/e2e_tests/test_core_commands.py`.
 - Duplicate one of the existing test functions.
 - Replace the value of `raw_cmd` with the command you want to test.
 - Run the test suite once with `pytest -sx`. The test should fail, but it will generate the output you need to finish the process.

@@ -65,25 +65,17 @@ def get_cmd_parts(raw_command):
 
     Returns: list of command parts, ready to be run with subprocess.run()
     """
-    # Use the appropriate path to the git-sim binary.
-    if os.name == "nt":
-        git_sim_path = Path(os.environ.get("VIRTUAL_ENV")) / "Scripts/git-sim"
-    else:
-        git_sim_path = Path(os.environ.get("VIRTUAL_ENV")) / "bin/git-sim"
-
     # Add the global flags needed for testing.
     cmd = raw_command.replace(
         "git-sim", "git-sim -d --output-only-path --img-format=png"
     )
 
-    # Get rid of git-sim, because we'll use the full path to the binary.
-    cmd = cmd.replace("git-sim", "")
+    # Replace `git-sim` with the full path to the binary.
+    #  as_posix() is needed for Windows compatibility.
+    git_sim_path = get_venv_path() / "git-sim"
+    cmd = cmd.replace("git-sim", git_sim_path.as_posix())
 
-    # Build a list of command parts.
-    cmd_parts = [git_sim_path]
-    cmd_parts += split(cmd)
-
-    return cmd_parts
+    return split(cmd)
 
 
 def run_git_reset(tmp_repo):
@@ -102,3 +94,14 @@ def run_git_reset(tmp_repo):
 
     os.chdir(tmp_repo)
     subprocess.run(cmd_parts)
+
+
+def get_venv_path():
+    """Get the path to the active virtual environment.
+
+    We actually need the bin/ or Scripts/ dir, not just the path to venv/.
+    """
+    if os.name == "nt":
+        return Path(os.environ.get("VIRTUAL_ENV")) / "Scripts"
+    else:
+        return Path(os.environ.get("VIRTUAL_ENV")) / "bin"
