@@ -1,0 +1,31 @@
+9cfb0b2dfdbd022961fe704835fd62d2cac91f81 9cfb0b2dfdbd022961fe704835fd62d2cac91f81 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	commit: Switching to main
+9cfb0b2dfdbd022961fe704835fd62d2cac91f81 2abab5a329537710565c840a33e75d857815eff5 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #2 on main
+2abab5a329537710565c840a33e75d857815eff5 50266094e106dfe4d95cb24f359c916a57cbf4a7 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #3 on main
+50266094e106dfe4d95cb24f359c916a57cbf4a7 e1ce5a376e5c422abae25a0e596660226e893c7c Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #4 on main
+e1ce5a376e5c422abae25a0e596660226e893c7c e163c2dd28671d106ff438eb5c33392bd5a30638 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #5 on main
+e163c2dd28671d106ff438eb5c33392bd5a30638 1f0283739d70b901f0e5b1ba8d9377c6394cc91b Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #6 on main
+1f0283739d70b901f0e5b1ba8d9377c6394cc91b a6cd67ce38301b1736019e550a8f48f6eac5fb8f Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #7 on main
+a6cd67ce38301b1736019e550a8f48f6eac5fb8f 60bce95465a890960adcacdcd7fa726d6fad4cf3 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #8 on main
+60bce95465a890960adcacdcd7fa726d6fad4cf3 c0e2a263d0bd3261378588372e3f3607740b7027 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #9 on main
+c0e2a263d0bd3261378588372e3f3607740b7027 660dc567ec9ca4f612afa9dda8359eed5d545f19 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #10 on main
+660dc567ec9ca4f612afa9dda8359eed5d545f19 660dc567ec9ca4f612afa9dda8359eed5d545f19 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	checkout: moving from main to main
+660dc567ec9ca4f612afa9dda8359eed5d545f19 c0e2a263d0bd3261378588372e3f3607740b7027 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	checkout: moving from main to HEAD~1
+c0e2a263d0bd3261378588372e3f3607740b7027 c0e2a263d0bd3261378588372e3f3607740b7027 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	checkout: moving from c0e2a263d0bd3261378588372e3f3607740b7027 to branch3
+c0e2a263d0bd3261378588372e3f3607740b7027 cb9e5f86caf0eea0dd4f5146be7799c558cdc3d8 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #10 on branch3
+cb9e5f86caf0eea0dd4f5146be7799c558cdc3d8 660dc567ec9ca4f612afa9dda8359eed5d545f19 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	checkout: moving from branch3 to main
+660dc567ec9ca4f612afa9dda8359eed5d545f19 1f0283739d70b901f0e5b1ba8d9377c6394cc91b Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	checkout: moving from main to HEAD~4
+1f0283739d70b901f0e5b1ba8d9377c6394cc91b 1f0283739d70b901f0e5b1ba8d9377c6394cc91b Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	checkout: moving from 1f0283739d70b901f0e5b1ba8d9377c6394cc91b to branch2
+1f0283739d70b901f0e5b1ba8d9377c6394cc91b bf1b7fcef7dc4d3425c5ce9b05768aa181233f00 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #7 on branch2
+bf1b7fcef7dc4d3425c5ce9b05768aa181233f00 3ae2716aaf49ace4e6f562811fcc74523404dba7 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #8 on branch2
+3ae2716aaf49ace4e6f562811fcc74523404dba7 a63c37578ce64f254a31d7904bf6c54e5d94ea2a Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #9 on branch2
+a63c37578ce64f254a31d7904bf6c54e5d94ea2a 318dbbd47571a3fc977a4349923595ceba3b3642 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #10 on branch2
+318dbbd47571a3fc977a4349923595ceba3b3642 660dc567ec9ca4f612afa9dda8359eed5d545f19 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	checkout: moving from branch2 to main
+660dc567ec9ca4f612afa9dda8359eed5d545f19 e1ce5a376e5c422abae25a0e596660226e893c7c Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	checkout: moving from main to HEAD~6
+e1ce5a376e5c422abae25a0e596660226e893c7c e1ce5a376e5c422abae25a0e596660226e893c7c Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	checkout: moving from e1ce5a376e5c422abae25a0e596660226e893c7c to branch1
+e1ce5a376e5c422abae25a0e596660226e893c7c 1c780c72c4febabfd0bd33b7844a70510fb0e3fe Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #5 on branch1
+1c780c72c4febabfd0bd33b7844a70510fb0e3fe 9c8e28a1d433a108274b4cee7b82c03c1eff5083 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #6 on branch1
+9c8e28a1d433a108274b4cee7b82c03c1eff5083 6775396fe2045d3dd8a374e4fba3c926aa851bb3 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #7 on branch1
+6775396fe2045d3dd8a374e4fba3c926aa851bb3 4604c9f5d1c86b02c844486be62e37d8275da3e1 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #8 on branch1
+4604c9f5d1c86b02c844486be62e37d8275da3e1 60718306bd66e45c522ec8b5c023db47c300612f Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #9 on branch1
+60718306bd66e45c522ec8b5c023db47c300612f 6912e0ab2505ca17edf8110910b21d79a4672628 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	Dummy commit #10 on branch1
+6912e0ab2505ca17edf8110910b21d79a4672628 660dc567ec9ca4f612afa9dda8359eed5d545f19 Eric Matthes <eric@Erics-Mac-Studio.local> 1686597011 -0800	checkout: moving from branch1 to main

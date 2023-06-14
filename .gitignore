@@ -6,3 +6,5 @@ git-sim_media/
 build/
 dist/
 git_sim.egg-info/
+
+.venv/
