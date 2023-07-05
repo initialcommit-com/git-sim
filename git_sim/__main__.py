@@ -157,6 +157,10 @@ def main(
         settings.style.value,
         help="Graphical style of the output image or animated video",
     ),
+    font: str = typer.Option(
+        settings.font,
+        help="Font family used to display rendered text",
+    ),
 ):
     import git
     from manim import WHITE, config
@@ -189,6 +193,7 @@ def main(
     settings.color_by = color_by
     settings.highlight_commit_messages = highlight_commit_messages
     settings.style = style
+    settings.font = font
 
     try:
         if sys.platform == "linux" or sys.platform == "darwin":

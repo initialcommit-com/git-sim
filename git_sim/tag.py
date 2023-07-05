@@ -20,7 +20,7 @@ class Tag(GitSimBaseCommand):
 
         tagText = m.Text(
             self.name,
-            font="Monospace",
+            font=self.font,
             font_size=20,
             color=self.fontColor,
         )

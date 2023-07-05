@@ -59,13 +59,13 @@ class Revert(GitSimBaseCommand):
     def build_commit_id_and_message(self, commit, i):
         hide_refs = False
         if commit == "dark":
-            commitId = m.Text("", font="Monospace", font_size=20, color=self.fontColor)
+            commitId = m.Text("", font=self.font, font_size=20, color=self.fontColor)
             commitMessage = ""
         elif i == 2 and self.revert.hexsha not in [
             commit.hexsha for commit in self.get_default_commits()
         ]:
             commitId = m.Text(
-                "...", font="Monospace", font_size=20, color=self.fontColor
+                "...", font=self.font, font_size=20, color=self.fontColor
             )
             commitMessage = "..."
             hide_refs = True
@@ -74,7 +74,7 @@ class Revert(GitSimBaseCommand):
         ]:
             commitId = m.Text(
                 self.revert.hexsha[:6],
-                font="Monospace",
+                font=self.font,
                 font_size=20,
                 color=self.fontColor,
             )
@@ -83,7 +83,7 @@ class Revert(GitSimBaseCommand):
         else:
             commitId = m.Text(
                 commit.hexsha[:6],
-                font="Monospace",
+                font=self.font,
                 font_size=20,
                 color=self.fontColor,
             )
@@ -118,7 +118,7 @@ class Revert(GitSimBaseCommand):
         arrow.set_length(length)
 
         commitId = m.Text(
-            "abcdef", font="Monospace", font_size=20, color=self.fontColor
+            "abcdef", font=self.font, font_size=20, color=self.fontColor
         ).next_to(circle, m.UP)
         self.toFadeOut.add(commitId)
 
@@ -128,7 +128,7 @@ class Revert(GitSimBaseCommand):
             "\n".join(
                 commitMessage[j : j + 20] for j in range(0, len(commitMessage), 20)
             )[:100],
-            font="Monospace",
+            font=self.font,
             font_size=14,
             color=self.fontColor,
         ).next_to(circle, m.DOWN)

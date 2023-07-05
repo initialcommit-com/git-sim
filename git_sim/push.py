@@ -119,7 +119,7 @@ class Push(GitSimBaseCommand):
         if push_result == 1:
             text1 = m.Text(
                 f"'git push' failed since the remote repo has commits that don't exist locally.",
-                font="Monospace",
+                font=self.font,
                 font_size=20,
                 color=self.fontColor,
                 weight=m.BOLD,
@@ -128,7 +128,7 @@ class Push(GitSimBaseCommand):
 
             text2 = m.Text(
                 f"Run 'git pull' (or 'git-sim pull' to simulate first) and then try again.",
-                font="Monospace",
+                font=self.font,
                 font_size=20,
                 color=self.fontColor,
                 weight=m.BOLD,
@@ -137,7 +137,7 @@ class Push(GitSimBaseCommand):
 
             text3 = m.Text(
                 f"Gold commits exist in remote repo, but not locally (need to be pulled).",
-                font="Monospace",
+                font=self.font,
                 font_size=20,
                 color=m.GOLD,
                 weight=m.BOLD,
@@ -146,7 +146,7 @@ class Push(GitSimBaseCommand):
 
             text4 = m.Text(
                 f"Red commits exist in both local and remote repos.",
-                font="Monospace",
+                font=self.font,
                 font_size=20,
                 color=m.RED,
                 weight=m.BOLD,
@@ -157,7 +157,7 @@ class Push(GitSimBaseCommand):
         elif push_result == 2:
             text1 = m.Text(
                 f"'git push' failed since the tip of your current branch is behind the remote.",
-                font="Monospace",
+                font=self.font,
                 font_size=20,
                 color=self.fontColor,
                 weight=m.BOLD,
@@ -166,7 +166,7 @@ class Push(GitSimBaseCommand):
 
             text2 = m.Text(
                 f"Run 'git pull' (or 'git-sim pull' to simulate first) and then try again.",
-                font="Monospace",
+                font=self.font,
                 font_size=20,
                 color=self.fontColor,
                 weight=m.BOLD,
@@ -175,7 +175,7 @@ class Push(GitSimBaseCommand):
 
             text3 = m.Text(
                 f"Gold commits are ahead of your current branch tip (need to be pulled).",
-                font="Monospace",
+                font=self.font,
                 font_size=20,
                 color=m.GOLD,
                 weight=m.BOLD,
@@ -184,7 +184,7 @@ class Push(GitSimBaseCommand):
 
             text4 = m.Text(
                 f"Red commits are up to date in both local and remote branches.",
-                font="Monospace",
+                font=self.font,
                 font_size=20,
                 color=m.RED,
                 weight=m.BOLD,

@@ -70,4 +70,4 @@ These issues are mostly addressed by checking that image files are similar withi
 
 The differences across OSes is even greater. I believe this may have something to do with which fonts are available on each system.
 
-This is dealt with by having Windows-specific reference files.
+This is dealt with by having Windows-specific reference files and by using Courier New as the font for all test reference images.

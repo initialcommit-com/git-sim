@@ -20,6 +20,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         super().__init__()
         self.init_repo()
 
+        self.font = settings.font
         self.fontColor = m.BLACK if settings.light_mode else m.WHITE
         self.drawnCommits = {}
         self.drawnRefs = {}
@@ -187,7 +188,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
             initialCommitText = m.Text(
                 settings.title,
-                font="Monospace",
+                font=self.font,
                 font_size=36,
                 color=self.fontColor,
             ).to_edge(m.UP, buff=1)
@@ -215,7 +216,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
             outroTopText = m.Text(
                 settings.outro_top_text,
-                font="Monospace",
+                font=self.font,
                 font_size=36,
                 color=self.fontColor,
             ).to_edge(m.UP, buff=1)
@@ -223,7 +224,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
             outroBottomText = m.Text(
                 settings.outro_bottom_text,
-                font="Monospace",
+                font=self.font,
                 font_size=36,
                 color=self.fontColor,
             ).to_edge(m.DOWN, buff=1)
@@ -342,7 +343,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             "\n".join(
                 commitMessage[j : j + 20] for j in range(0, len(commitMessage), 20)
             )[:100],
-            font="Monospace",
+            font=self.font,
             font_size=20 if settings.highlight_commit_messages else 14,
             color=self.fontColor,
             weight=m.BOLD
@@ -403,7 +404,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         if commit == "dark":
             commitId = m.Text(
                 "",
-                font="Monospace",
+                font=self.font,
                 font_size=20,
                 color=self.fontColor,
                 weight=self.font_weight,
@@ -412,7 +413,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         else:
             commitId = m.Text(
                 commit.hexsha[0:6],
-                font="Monospace",
+                font=self.font,
                 font_size=20,
                 color=self.fontColor,
                 weight=self.font_weight,
@@ -433,7 +434,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 headbox.next_to(commitId, m.UP)
             headText = m.Text(
                 "HEAD",
-                font="Monospace",
+                font=self.font,
                 font_size=20,
                 color=self.fontColor,
                 weight=self.font_weight,
@@ -484,7 +485,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
                 branchText = m.Text(
                     text,
-                    font="Monospace",
+                    font=self.font,
                     font_size=20,
                     color=self.fontColor,
                     weight=self.font_weight,
@@ -530,7 +531,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 if commit.hexsha == tag.commit.hexsha:
                     tagText = m.Text(
                         tag.name,
-                        font="Monospace",
+                        font=self.font,
                         font_size=20,
                         color=self.fontColor,
                         weight=self.font_weight,
@@ -694,7 +695,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         firstColumnTitle = (
             m.Text(
                 first_column_name,
-                font="Monospace",
+                font=self.font,
                 font_size=28,
                 color=self.fontColor,
                 weight=m.BOLD,
@@ -705,7 +706,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         secondColumnTitle = (
             m.Text(
                 second_column_name,
-                font="Monospace",
+                font=self.font,
                 font_size=28,
                 color=self.fontColor,
                 weight=m.BOLD,
@@ -716,7 +717,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         thirdColumnTitle = (
             m.Text(
                 third_column_name,
-                font="Monospace",
+                font=self.font,
                 font_size=28,
                 color=self.fontColor,
                 weight=m.BOLD,
@@ -1060,7 +1061,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         commitId = m.Text(
             "abcdef",
-            font="Monospace",
+            font=self.font,
             font_size=20,
             color=self.fontColor,
             weight=self.font_weight,
@@ -1072,7 +1073,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             "\n".join(
                 commitMessage[j : j + 20] for j in range(0, len(commitMessage), 20)
             )[:100],
-            font="Monospace",
+            font=self.font,
             font_size=14,
             color=self.fontColor,
             weight=self.font_weight,
@@ -1125,7 +1126,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
     def draw_ref(self, commit, top, i=0, text="HEAD", color=m.BLUE):
         refText = m.Text(
             text,
-            font="Monospace",
+            font=self.font,
             font_size=20,
             color=self.fontColor,
             weight=self.font_weight,
@@ -1198,7 +1199,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             text = (
                 m.Text(
                     self.trim_path(f),
-                    font="Monospace",
+                    font=self.font,
                     font_size=24,
                     color=self.fontColor,
                 )
@@ -1214,7 +1215,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             text = (
                 m.Text(
                     self.trim_path(f),
-                    font="Monospace",
+                    font=self.font,
                     font_size=24,
                     color=self.fontColor,
                 )
@@ -1230,7 +1231,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             text = (
                 m.Text(
                     self.trim_path(f),
-                    font="Monospace",
+                    font=self.font,
                     font_size=24,
                     color=self.fontColor,
                 )
@@ -1252,7 +1253,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             for i, author in enumerate(sorted_authors):
                 authorText = m.Text(
                     f"{author[:15]} ({str(len(self.author_groups[author]))})",
-                    font="Monospace",
+                    font=self.font,
                     font_size=36,
                     color=self.colors[int(i % 11)],
                     weight=self.font_weight,

@@ -75,7 +75,7 @@ class Mv(GitSimBaseCommand):
         for file in self.thirdColumnFiles:
             new_file = m.Text(
                 self.trim_path(self.new_file),
-                font="Monospace",
+                font=self.font,
                 font_size=24,
                 color=self.fontColor,
             )

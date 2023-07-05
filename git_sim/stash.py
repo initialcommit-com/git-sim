@@ -86,7 +86,7 @@ class Stash(GitSimBaseCommand):
             text = (
                 m.Text(
                     self.trim_path(f),
-                    font="Monospace",
+                    font=self.font,
                     font_size=24,
                     color=self.fontColor,
                 )
@@ -102,7 +102,7 @@ class Stash(GitSimBaseCommand):
             text = (
                 m.Text(
                     self.trim_path(f),
-                    font="Monospace",
+                    font=self.font,
                     font_size=24,
                     color=self.fontColor,
                 )
@@ -124,7 +124,7 @@ class Stash(GitSimBaseCommand):
                     + "</span>"
                     if self.command == StashSubCommand.POP
                     else self.trim_path(f),
-                    font="Monospace",
+                    font=self.font,
                     font_size=24,
                     color=self.fontColor,
                 )

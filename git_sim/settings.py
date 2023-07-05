@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     color_by: Union[ColorByOptions, None] = None
     highlight_commit_messages: bool = False
     style: Union[StyleOptions, None] = StyleOptions.CLEAN
+    font: str = "Monospace"
 
     class Config:
         env_prefix = "git_sim_"

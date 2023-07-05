@@ -70,7 +70,7 @@ class Clone(GitSimBaseCommand):
     def add_details(self, repo_name):
         text1 = m.Text(
             f"Successfully cloned from {self.url} into ./{repo_name}",
-            font="Monospace",
+            font=self.font,
             font_size=20,
             color=self.fontColor,
             weight=m.BOLD,
@@ -79,7 +79,7 @@ class Clone(GitSimBaseCommand):
 
         text2 = m.Text(
             f"Cloned repo log:",
-            font="Monospace",
+            font=self.font,
             font_size=20,
             color=self.fontColor,
             weight=m.BOLD,

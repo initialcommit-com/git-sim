@@ -68,7 +68,7 @@ class Rm(GitSimBaseCommand):
             text = (
                 m.Text(
                     self.trim_path(f),
-                    font="Monospace",
+                    font=self.font,
                     font_size=24,
                     color=self.fontColor,
                 )
@@ -84,7 +84,7 @@ class Rm(GitSimBaseCommand):
             text = (
                 m.Text(
                     self.trim_path(f),
-                    font="Monospace",
+                    font=self.font,
                     font_size=24,
                     color=self.fontColor,
                 )
@@ -104,7 +104,7 @@ class Rm(GitSimBaseCommand):
                     + "'>"
                     + self.trim_path(f)
                     + "</span>",
-                    font="Monospace",
+                    font=self.font,
                     font_size=24,
                     color=self.fontColor,
                 )

@@ -67,7 +67,7 @@ def get_cmd_parts(raw_command):
     """
     # Add the global flags needed for testing.
     cmd = raw_command.replace(
-        "git-sim", "git-sim -d --output-only-path --img-format=png"
+        "git-sim", "git-sim -d --output-only-path --img-format=png --font='Courier New'"
     )
 
     # Replace `git-sim` with the full path to the binary.

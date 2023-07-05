@@ -149,7 +149,7 @@ class Rebase(GitSimBaseCommand):
         )
         commitId = m.Text(
             sha if commitMessage != "..." else "...",
-            font="Monospace",
+            font=self.font,
             font_size=20,
             color=self.fontColor,
         ).next_to(circle, m.UP)
@@ -160,7 +160,7 @@ class Rebase(GitSimBaseCommand):
             "\n".join(
                 commitMessage[j : j + 20] for j in range(0, len(commitMessage), 20)
             )[:100],
-            font="Monospace",
+            font=self.font,
             font_size=14,
             color=self.fontColor,
         ).next_to(circle, m.DOWN)

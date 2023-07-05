@@ -163,7 +163,8 @@ Animation-only global options (to be used in conjunction with `--animate`):
 `--title=title`: Custom title to display at the beginning of the animation.  
 `--logo=logo.png`: The path to a custom logo to use in the animation intro/outro.  
 `--outro-top-text`: Custom text to display above the logo during the outro.  
-`--outro-bottom-text`: Custom text to display below the logo during the outro.
+`--outro-bottom-text`: Custom text to display below the logo during the outro.  
+`--font`: Font family used to display rendered text.
 
 The `[subcommand options]` are like regular Git options specific to the specified subcommand (see below for a full list).
 
