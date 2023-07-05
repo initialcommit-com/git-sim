@@ -26,7 +26,7 @@ setuptools.setup(
         "manim",
         "opencv-python-headless",
         "typer",
-        "pydantic",
+        "pydantic_settings",
         "git-dummy",
     ],
     keywords="git sim simulation simulate git-simulate git-simulation git-sim manim animation gitanimation image video dryrun dry-run",
