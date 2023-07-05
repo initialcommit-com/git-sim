@@ -1,5 +1,5 @@
 import pathlib
-from typing import List, Union, ClassVar
+from typing import List, Union
 
 from pydantic_settings import BaseSettings
 
