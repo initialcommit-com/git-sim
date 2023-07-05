@@ -23,6 +23,7 @@ def test_log(tmp_repo):
     fp_generated = Path(output.stdout.decode().strip())
     fp_reference = Path(__file__).parent / "reference_files/git-sim-log.png"
 
+    assert "git-sim-log" in str(fp_generated)
     assert compare_images(fp_generated, fp_reference)
 
 
@@ -37,6 +38,7 @@ def test_status(tmp_repo):
     fp_generated = Path(output.stdout.decode().strip())
     fp_reference = Path(__file__).parent / "reference_files/git-sim-status.png"
 
+    assert "git-sim-status" in str(fp_generated)
     assert compare_images(fp_generated, fp_reference)
 
 
@@ -51,4 +53,5 @@ def test_merge(tmp_repo):
     fp_generated = Path(output.stdout.decode().strip())
     fp_reference = Path(__file__).parent / "reference_files/git-sim-merge.png"
 
+    assert "git-sim-merge" in str(fp_generated)
     assert compare_images(fp_generated, fp_reference)
