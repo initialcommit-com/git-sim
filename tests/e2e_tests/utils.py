@@ -17,7 +17,7 @@ def compare_images(path_gen, path_ref):
     Returns: True/ False
     """
     # Verify that the path to the generated file exists.
-    assert '.png' in str(path_gen)
+    assert ".png" in str(path_gen)
     assert path_gen.exists()
 
     img_gen = Image.open(path_gen)
