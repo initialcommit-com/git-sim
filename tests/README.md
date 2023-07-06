@@ -38,7 +38,8 @@ Temp repo directory:
 
 ## Helpful pytest notes
 
-- `pytest -x`: Stop after the first test fails
+- `pytest -x`: Stop after the first test fails.  
+- `pytest -n auto`: Tests can be executed in parallel to dramatically speed up performance (up to ~70%). To do this first run `pip install pytest-xdist` then run `pytest -n auto`. Note that test output is not supported when executing tests in parallel. If a failure occurs and you need output for troubleshooting, execute tests in series as outlined above.
 
 ## Adding more tests
 
