@@ -16,9 +16,9 @@ def compare_images(path_gen, path_ref):
     Parameters: file path to generated and reference image files
     Returns: True/ False
     """
-    if os.name == "nt":
-        # Use Windows-specific reference files.
-        path_ref = path_ref.with_name(path_ref.stem + "_windows" + path_ref.suffix)
+    # Verify that the path to the generated file exists.
+    assert ".png" in str(path_gen)
+    assert path_gen.exists()
 
     img_gen = Image.open(path_gen)
     img_ref = Image.open(path_ref)
