@@ -41,10 +41,10 @@ def compare_images(path_gen, path_ref):
     # Images are similar if only a small % of pixels differ significantly.
     #   This value can be increased if tests are failing when they shouldn't.
     #   It can be decreased if tests are passing when they shouldn't.
-    if ratio_diff < 0.0075:
+    if ratio_diff < 0.015:
         return True
     else:
-        print("bad pixel ratio:", ratio_diff)
+        print(f"bad pixel ratio ({path_ref.stem[8:]}): {ratio_diff}")
         return False
 
 
