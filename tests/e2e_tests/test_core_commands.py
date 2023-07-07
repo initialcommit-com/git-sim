@@ -24,7 +24,7 @@ def test_add(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-add.png"
 
     assert "git-sim-add" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 
 def test_branch(tmp_repo):
@@ -39,7 +39,7 @@ def test_branch(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-branch.png"
 
     assert "git-sim-branch" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 
 def test_checkout(tmp_repo):
@@ -54,7 +54,7 @@ def test_checkout(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-checkout.png"
 
     assert "git-sim-checkout" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 
 def test_cherrypick(tmp_repo):
@@ -69,7 +69,7 @@ def test_cherrypick(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-cherry_pick.png"
 
     assert "git-sim-cherry_pick" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 
 def test_clean(tmp_repo):
@@ -84,7 +84,7 @@ def test_clean(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-clean.png"
 
     assert "git-sim-clean" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 
 def test_commit(tmp_repo):
@@ -99,7 +99,7 @@ def test_commit(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-commit.png"
 
     assert "git-sim-commit" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 
 def test_log(tmp_repo):
@@ -114,7 +114,7 @@ def test_log(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-log.png"
 
     assert "git-sim-log" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 
 def test_merge(tmp_repo):
@@ -129,7 +129,7 @@ def test_merge(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-merge.png"
 
     assert "git-sim-merge" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 
 def test_mv(tmp_repo):
@@ -144,7 +144,7 @@ def test_mv(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-mv.png"
 
     assert "git-sim-mv" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 
 def test_rebase(tmp_repo):
@@ -159,7 +159,7 @@ def test_rebase(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-rebase.png"
 
     assert "git-sim-rebase" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 
 def test_reset(tmp_repo):
@@ -174,7 +174,7 @@ def test_reset(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-reset.png"
 
     assert "git-sim-reset" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 
 def test_restore(tmp_repo):
@@ -189,7 +189,7 @@ def test_restore(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-restore.png"
 
     assert "git-sim-restore" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 
 def test_revert(tmp_repo):
@@ -204,7 +204,7 @@ def test_revert(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-revert.png"
 
     assert "git-sim-revert" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 
 def test_rm(tmp_repo):
@@ -219,7 +219,7 @@ def test_rm(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-rm.png"
 
     assert "git-sim-rm" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 
 def test_stash(tmp_repo):
@@ -234,7 +234,7 @@ def test_stash(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-stash.png"
 
     assert "git-sim-stash" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 
 def test_status(tmp_repo):
@@ -249,7 +249,7 @@ def test_status(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-status.png"
 
     assert "git-sim-status" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 def test_switch(tmp_repo):
     """Test a simple `git-sim switch` command."""
@@ -263,7 +263,7 @@ def test_switch(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-switch.png"
 
     assert "git-sim-switch" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
 
 
 def test_tag(tmp_repo):
@@ -278,4 +278,4 @@ def test_tag(tmp_repo):
     fp_reference = Path(__file__).parent / "reference_files/git-sim-tag.png"
 
     assert "git-sim-tag" in str(fp_generated)
-    assert compare_images(fp_generated, fp_reference)
+    compare_images(fp_generated, fp_reference)
