@@ -44,7 +44,7 @@ dynamic = ["version"]
 version = { attr = "git_sim.__version__" }
 
 [project.optional-dependencies]
-dev = ["black", "pytest", "numpy"]
+dev = ["black", "numpy", "pillow", "pytest"]
 
 [project.scripts]
 git-sim = "git_sim.__main__:app"
