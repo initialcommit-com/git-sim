@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "git-sim"
+authors = [{ name = "Jacob Stopak", email = "jacob@initialcommit.io" }]
+description = "Simulate Git commands on your own repos by generating an image (default) or video visualization depicting the command's behavior."
+readme = "README.md"
+requires-python = ">=3.7"
+keywords = [
+    "git",
+    "sim",
+    "simulation",
+    "simulate",
+    "git-simulate",
+    "git-simulation",
+    "git-sim",
+    "manim",
+    "animation",
+    "gitanimation",
+    "image",
+    "video",
+    "dryrun",
+    "dry-run",
+]
+license = { text = "MIT License" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "git-dummy",
+    "gitpython",
+    "manim",
+    "opencv-python-headless",
+    "pydantic_settings",
+    "typer",
+]
+dynamic = ["version"]
+
+[tool.setuptools.dynamic]
+version = { attr = "git_sim.__version__" }
+
+[project.optional-dependencies]
+dev = ["black", "numpy", "pillow", "pytest"]
+
+[project.scripts]
+git-sim = "git_sim.__main__:app"
+
+[project.urls]
+Homepage = "https://initialcommit.com/tools/git-sim"
+Source = "https://github.com/initialcommit-com/git-sim"

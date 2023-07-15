@@ -51,8 +51,18 @@ $ pip uninstall git-sim
 
 ```console
 $ cd path/to/git-sim
-$ python -m pip install -e .
+$ python -m pip install -e .[dev]
 ```
+
+> Explanation: `python -m pip` uses the `pip` module of the currently active python interpreter.
+>
+> `install -e .[dev]` is the command that `pip` executes, where
+>
+> `-e` means to make it an [editable install](https://setuptools.pypa.io/en/latest/userguide/development_mode.html),
+>
+> the dot `.` refers to the current directory,
+>
+> and `[dev]` tells pip to install the "`dev`" [Extras](https://packaging.python.org/en/latest/tutorials/installing-packages/#installing-extras) (which are defined in the `project.optional-dependencies` section of [`pyproject.toml`](./pyproject.toml)).
 
 This will install sources from your cloned repo such that you can edit the source and the changes are reflected instantly.
 
