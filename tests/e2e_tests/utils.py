@@ -76,7 +76,7 @@ def get_cmd_parts(raw_command):
     cmd = cmd.replace("git-sim ", f"{git_sim_path.as_posix()} ")
 
     # Show full test command when run in diagnostic mode.
-    print(f"  With path: {cmd}")
+    print(f"  Test command: {cmd}")
 
     return split(cmd)
 
