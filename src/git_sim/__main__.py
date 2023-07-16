@@ -1,3 +1,4 @@
+import contextlib
 import datetime
 import os
 import pathlib
@@ -210,7 +211,7 @@ def main(
         settings.font_context = m.register_font(font_path)
         settings.font = get_font_name(font_path)
     else:
-        settings.font_context = False
+        settings.font_context = contextlib.nullcontext()
         settings.font = font
 
     try:
