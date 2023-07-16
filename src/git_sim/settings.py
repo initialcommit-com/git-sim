@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     highlight_commit_messages: bool = False
     style: Union[StyleOptions, None] = StyleOptions.CLEAN
     font: str = "Monospace"
+    font_context: bool = False
 
     class Config:
         env_prefix = "git_sim_"

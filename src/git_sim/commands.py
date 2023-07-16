@@ -14,7 +14,8 @@ if TYPE_CHECKING:
 def handle_animations(scene: Scene) -> None:
     from git_sim.animations import handle_animations as _handle_animations
 
-    return _handle_animations(scene)
+    with settings.font_context:
+        _handle_animations(scene)
 
 
 def add(
