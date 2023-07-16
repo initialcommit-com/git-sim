@@ -65,7 +65,8 @@ def get_cmd_parts(raw_command):
     # Add the global flags needed for testing.
     font_path = Path(__file__).parent / "ProggyClean.ttf"
     cmd = raw_command.replace(
-        "git-sim", f"git-sim -d --output-only-path --img-format=png --font='{font_path}'"
+        "git-sim",
+        f"git-sim -d --output-only-path --img-format=png --font='{font_path}'",
     )
 
     # Replace `git-sim` with the full path to the binary.

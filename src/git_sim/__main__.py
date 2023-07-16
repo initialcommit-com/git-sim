@@ -26,7 +26,7 @@ app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 def get_font_name(font_path):
     """Get the name of a font from its .ttf file."""
     font = TTFont(font_path)
-    return font['name'].getName(4, 3, 1, 1033).toUnicode()
+    return font["name"].getName(4, 3, 1, 1033).toUnicode()
 
 
 def version_callback(value: bool) -> None:
