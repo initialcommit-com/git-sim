@@ -11,6 +11,33 @@ from pathlib import Path
 
 from utils import get_cmd_parts, compare_images, run_git_reset
 
+import pytest
+
+
+simple_commands = [
+    "git-sim add",
+    "git-sim log",
+]
+
+@pytest.mark.parametrize("raw_cmd", simple_commands)
+def test_simple_command(tmp_repo, raw_cmd):
+    """Test a simple git-sim command.
+
+    This function works for any command of the form
+      `git-sim <command>`
+    """
+    cmd_parts = get_cmd_parts(raw_cmd)
+    filename_element = raw_cmd.replace(" ", "-")
+
+    os.chdir(tmp_repo)
+    output = subprocess.run(cmd_parts, capture_output=True)
+
+    fp_generated = Path(output.stdout.decode().strip())
+    fp_reference = Path(__file__).parent / f"reference_files/{filename_element}.png"
+
+    assert filename_element in str(fp_generated)
+    compare_images(fp_generated, fp_reference)
+
 
 def test_add(tmp_repo):
     """Test a simple `git-sim add` command."""
