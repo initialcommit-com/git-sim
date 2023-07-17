@@ -37,6 +37,7 @@ dependencies = [
     "opencv-python-headless",
     "pydantic_settings",
     "typer",
+    "fonttools",
 ]
 dynamic = ["version"]
 
