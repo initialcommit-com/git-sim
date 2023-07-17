@@ -44,21 +44,6 @@ def test_simple_command(tmp_repo, raw_cmd):
     compare_images(fp_generated, fp_reference)
 
 
-def test_add(tmp_repo):
-    """Test a simple `git-sim add` command."""
-    raw_cmd = "git-sim add"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-add.png"
-
-    assert "git-sim-add" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
-
-
 def test_branch(tmp_repo):
     """Test a simple `git-sim branch` command."""
     raw_cmd = "git-sim branch new_branch"
@@ -103,50 +88,6 @@ def test_cherrypick(tmp_repo):
     assert "git-sim-cherry_pick" in str(fp_generated)
     compare_images(fp_generated, fp_reference)
 
-
-def test_clean(tmp_repo):
-    """Test a simple `git-sim clean` command."""
-    raw_cmd = "git-sim clean"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-clean.png"
-
-    assert "git-sim-clean" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
-
-
-def test_commit(tmp_repo):
-    """Test a simple `git-sim commit` command."""
-    raw_cmd = "git-sim commit"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-commit.png"
-
-    assert "git-sim-commit" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
-
-
-def test_log(tmp_repo):
-    """Test a simple `git-sim log` command."""
-    raw_cmd = "git-sim log"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-log.png"
-
-    assert "git-sim-log" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
 
 
 def test_merge(tmp_repo):
@@ -209,21 +150,6 @@ def test_reset(tmp_repo):
     compare_images(fp_generated, fp_reference)
 
 
-def test_restore(tmp_repo):
-    """Test a simple `git-sim restore` command."""
-    raw_cmd = "git-sim restore"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-restore.png"
-
-    assert "git-sim-restore" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
-
-
 def test_revert(tmp_repo):
     """Test a simple `git-sim revert` command."""
     raw_cmd = "git-sim revert HEAD^"
@@ -253,35 +179,6 @@ def test_rm(tmp_repo):
     assert "git-sim-rm" in str(fp_generated)
     compare_images(fp_generated, fp_reference)
 
-
-def test_stash(tmp_repo):
-    """Test a simple `git-sim stash` command."""
-    raw_cmd = "git-sim stash"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-stash.png"
-
-    assert "git-sim-stash" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
-
-
-def test_status(tmp_repo):
-    """Test a simple `git-sim status` command."""
-    raw_cmd = "git-sim status"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-status.png"
-
-    assert "git-sim-status" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
 
 def test_switch(tmp_repo):
     """Test a simple `git-sim switch` command."""
