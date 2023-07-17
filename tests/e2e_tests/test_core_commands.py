@@ -14,7 +14,8 @@ from utils import get_cmd_parts, compare_images, run_git_reset
 import pytest
 
 
-simple_commands = [
+git_sim_commands = [
+    # Simple commands.
     "git-sim add",
     "git-sim log",
     "git-sim clean",
@@ -22,9 +23,8 @@ simple_commands = [
     "git-sim restore",
     "git-sim stash",
     "git-sim status",
-]
 
-complex_commands = [
+    # Complex commands.
     "git-sim branch new_branch",
     "git-sim checkout branch2",
     "git-sim cherry-pick branch2",
@@ -38,45 +38,31 @@ complex_commands = [
     "git-sim tag new_tag",
 ]
 
-@pytest.mark.parametrize("raw_cmd", simple_commands)
-def test_simple_command(tmp_repo, raw_cmd):
-    """Test a simple git-sim command.
 
-    This function works for any command of the form
-      `git-sim <command>`
+@pytest.mark.parametrize("raw_cmd", git_sim_commands)
+def test_command(tmp_repo, raw_cmd):
+    """Test a  git-sim command.
+
+    This function works for any command of the forms
+      `git-sim <command`
+      `git-sim <command> <arg>`
     """
-    cmd_parts = get_cmd_parts(raw_cmd)
-    filename_element = raw_cmd.replace(" ", "-")
 
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / f"reference_files/{filename_element}.png"
-
-    assert filename_element in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
-
-
-@pytest.mark.parametrize("raw_cmd", complex_commands)
-def test_complex_command(tmp_repo, raw_cmd):
-    """Test a complex git-sim command.
-
-    This function works for any command of the form
-      `git-sim <command> <arg>
-    """
-    cmd_parts = get_cmd_parts(raw_cmd)
-
+    # Generate the string to look for in the filename.
+    #   `git-sim log` -> "git-sim-log"
+    #   `git-sim cherry-pick branch2` -> "git-sim-cherry_pick""
     raw_cmd_parts = raw_cmd.split(" ")
-    # This converts commands like `git-sim cherry-pick` to git-sim-cherry_pick.
-    core_command = f"{raw_cmd_parts[0]} {raw_cmd_parts[1].replace('-', '_')}"
-    filename_element = core_command.replace(" ", "-")
+    filename_element = f"git-sim-{raw_cmd_parts[1].replace('-', '_')}"
 
+    # Get version of the command needed for testing, and run command.
+    cmd_parts = get_cmd_parts(raw_cmd)
     os.chdir(tmp_repo)
     output = subprocess.run(cmd_parts, capture_output=True)
 
+    # Get file paths to generated and reference files.
     fp_generated = Path(output.stdout.decode().strip())
     fp_reference = Path(__file__).parent / f"reference_files/{filename_element}.png"
 
+    # Validate filename elements, and compare output image to reference image.
     assert filename_element in str(fp_generated)
     compare_images(fp_generated, fp_reference)
