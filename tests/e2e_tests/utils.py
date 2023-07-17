@@ -55,7 +55,7 @@ def get_cmd_parts(raw_command):
     For example, the command:
         `git-sim log`
     becomes:
-        `</path/to/git-sim> -d --output-only-path --img-format=png log`
+        `</path/to/git-sim> -d --output-only-path --img-format=png --font="/path/to/test/font.ttf" log`
 
     This prevents images from auto-opening, simplifies parsing output to
       identify the images we need to check, and prefers png for test runs.
@@ -63,14 +63,21 @@ def get_cmd_parts(raw_command):
     Returns: list of command parts, ready to be run with subprocess.run()
     """
     # Add the global flags needed for testing.
+    font_path = Path(__file__).parent / "ProggyClean.ttf"
     cmd = raw_command.replace(
-        "git-sim", "git-sim -d --output-only-path --img-format=png --font='Courier New'"
+        "git-sim",
+        f"git-sim -d --output-only-path --img-format=png --font='{font_path}'",
     )
 
     # Replace `git-sim` with the full path to the binary.
-    #  as_posix() is needed for Windows compatibility.
+    #   as_posix() is needed for Windows compatibility.
+    # The space is included in "git-sim " to avoid replacing any occurrences
+    #   of git-sim in a font path.
     git_sim_path = get_venv_path() / "git-sim"
-    cmd = cmd.replace("git-sim", git_sim_path.as_posix())
+    cmd = cmd.replace("git-sim ", f"{git_sim_path.as_posix()} ")
+
+    # Show full test command when run in diagnostic mode.
+    print(f"  Test command: {cmd}")
 
     return split(cmd)
 

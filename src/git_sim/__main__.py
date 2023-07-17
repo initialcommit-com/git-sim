@@ -1,10 +1,15 @@
+import contextlib
 import datetime
 import os
 import pathlib
 import sys
 import time
+from pathlib import Path
 
 import typer
+import manim as m
+
+from fontTools.ttLib import TTFont
 
 import git_sim.commands
 from git_sim.settings import (
@@ -16,6 +21,12 @@ from git_sim.settings import (
 )
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
+
+
+def get_font_name(font_path):
+    """Get the name of a font from its .ttf file."""
+    font = TTFont(font_path)
+    return font["name"].getName(4, 3, 1, 1033).toUnicode()
 
 
 def version_callback(value: bool) -> None:
@@ -193,7 +204,15 @@ def main(
     settings.color_by = color_by
     settings.highlight_commit_messages = highlight_commit_messages
     settings.style = style
-    settings.font = font
+
+    # If font is a path, define the context that will be used when using Manim.
+    if Path(font).exists():
+        font_path = Path(font)
+        settings.font_context = m.register_font(font_path)
+        settings.font = get_font_name(font_path)
+    else:
+        settings.font_context = contextlib.nullcontext()
+        settings.font = font
 
     try:
         if sys.platform == "linux" or sys.platform == "darwin":
