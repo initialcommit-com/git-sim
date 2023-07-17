@@ -17,6 +17,11 @@ import pytest
 simple_commands = [
     "git-sim add",
     "git-sim log",
+    "git-sim clean",
+    "git-sim commit",
+    "git-sim restore",
+    "git-sim stash",
+    "git-sim status",
 ]
 
 @pytest.mark.parametrize("raw_cmd", simple_commands)
