@@ -24,6 +24,20 @@ simple_commands = [
     "git-sim status",
 ]
 
+complex_commands = [
+    "git-sim branch new_branch",
+    "git-sim checkout branch2",
+    "git-sim cherry-pick branch2",
+    "git-sim merge branch2",
+    "git-sim mv main.1 main.100",
+    "git-sim rebase branch2",
+    "git-sim reset HEAD^",
+    "git-sim revert HEAD^",
+    "git-sim rm main.1",
+    "git-sim switch branch2",
+    "git-sim tag new_tag",
+]
+
 @pytest.mark.parametrize("raw_cmd", simple_commands)
 def test_simple_command(tmp_repo, raw_cmd):
     """Test a simple git-sim command.
@@ -44,167 +58,25 @@ def test_simple_command(tmp_repo, raw_cmd):
     compare_images(fp_generated, fp_reference)
 
 
-def test_branch(tmp_repo):
-    """Test a simple `git-sim branch` command."""
-    raw_cmd = "git-sim branch new_branch"
+@pytest.mark.parametrize("raw_cmd", complex_commands)
+def test_complex_command(tmp_repo, raw_cmd):
+    """Test a complex git-sim command.
+
+    This function works for any command of the form
+      `git-sim <command> <arg>
+    """
     cmd_parts = get_cmd_parts(raw_cmd)
+
+    raw_cmd_parts = raw_cmd.split(" ")
+    # This converts commands like `git-sim cherry-pick` to git-sim-cherry_pick.
+    core_command = f"{raw_cmd_parts[0]} {raw_cmd_parts[1].replace('-', '_')}"
+    filename_element = core_command.replace(" ", "-")
 
     os.chdir(tmp_repo)
     output = subprocess.run(cmd_parts, capture_output=True)
 
     fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-branch.png"
+    fp_reference = Path(__file__).parent / f"reference_files/{filename_element}.png"
 
-    assert "git-sim-branch" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
-
-
-def test_checkout(tmp_repo):
-    """Test a simple `git-sim checkout` command."""
-    raw_cmd = "git-sim checkout branch2"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-checkout.png"
-
-    assert "git-sim-checkout" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
-
-
-def test_cherrypick(tmp_repo):
-    """Test a simple `git-sim cherry-pick` command."""
-    raw_cmd = "git-sim cherry-pick branch2"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-cherry_pick.png"
-
-    assert "git-sim-cherry_pick" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
-
-
-
-def test_merge(tmp_repo):
-    """Test a simple `git-sim merge` command."""
-    raw_cmd = "git-sim merge branch2"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-merge.png"
-
-    assert "git-sim-merge" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
-
-
-def test_mv(tmp_repo):
-    """Test a simple `git-sim mv` command."""
-    raw_cmd = "git-sim mv main.1 main.100"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-mv.png"
-
-    assert "git-sim-mv" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
-
-
-def test_rebase(tmp_repo):
-    """Test a simple `git-sim rebase` command."""
-    raw_cmd = "git-sim rebase branch2"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-rebase.png"
-
-    assert "git-sim-rebase" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
-
-
-def test_reset(tmp_repo):
-    """Test a simple `git-sim reset` command."""
-    raw_cmd = "git-sim reset HEAD^"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-reset.png"
-
-    assert "git-sim-reset" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
-
-
-def test_revert(tmp_repo):
-    """Test a simple `git-sim revert` command."""
-    raw_cmd = "git-sim revert HEAD^"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-revert.png"
-
-    assert "git-sim-revert" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
-
-
-def test_rm(tmp_repo):
-    """Test a simple `git-sim rm` command."""
-    raw_cmd = "git-sim rm main.1"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-rm.png"
-
-    assert "git-sim-rm" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
-
-
-def test_switch(tmp_repo):
-    """Test a simple `git-sim switch` command."""
-    raw_cmd = "git-sim switch branch2"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-switch.png"
-
-    assert "git-sim-switch" in str(fp_generated)
-    compare_images(fp_generated, fp_reference)
-
-
-def test_tag(tmp_repo):
-    """Test a simple `git-sim tag` command."""
-    raw_cmd = "git-sim tag new_tag"
-    cmd_parts = get_cmd_parts(raw_cmd)
-
-    os.chdir(tmp_repo)
-    output = subprocess.run(cmd_parts, capture_output=True)
-
-    fp_generated = Path(output.stdout.decode().strip())
-    fp_reference = Path(__file__).parent / "reference_files/git-sim-tag.png"
-
-    assert "git-sim-tag" in str(fp_generated)
+    assert filename_element in str(fp_generated)
     compare_images(fp_generated, fp_reference)
