@@ -17,6 +17,13 @@ Example: `$ git-sim merge <branch>`
 <br/><br/>
 ![git-sim-merge_04-22-23_21-04-32_cropped](https://user-images.githubusercontent.com/49353917/233821875-a7bb640d-10be-4433-a8fb-bd25646eeff4.jpg)
 
+Check out the [git-sim release blog post](https://initialcommit.com/blog/git-sim) for the full scoop!
+
+## Supporting git-sim
+Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work on it (and other Git projects) full time!
+- [sponsor Git-Sim on GitHub](https://github.com/sponsors/initialcommit-com)
+- [support Git-Sim via Patreon](patreon.com/user?u=92322459)
+
 ## Use cases
 - Visualize Git commands to understand their effects on your repo before actually running them
 - Prevent unexpected working directory and repository states by simulating before running
