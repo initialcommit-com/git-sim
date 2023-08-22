@@ -19,10 +19,10 @@ Example: `$ git-sim merge <branch>`
 
 Check out the [git-sim release blog post](https://initialcommit.com/blog/git-sim) for the full scoop!
 
-## Supporting git-sim
+## Support git-sim
 Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work on it (and other Git projects) full time!
-- [sponsor Git-Sim on GitHub](https://github.com/sponsors/initialcommit-com)
-- [support Git-Sim via Patreon](patreon.com/user?u=92322459)
+- [Sponsor Git-Sim on GitHub](https://github.com/sponsors/initialcommit-com)
+- [Support Git-Sim via Patreon](https://patreon.com/user?u=92322459)
 
 ## Use cases
 - Visualize Git commands to understand their effects on your repo before actually running them
