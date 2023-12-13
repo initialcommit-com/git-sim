@@ -47,11 +47,11 @@ class Stash(GitSimBaseCommand):
                     "Files are not required in apply/pop subcommand. Ignoring the file list....."
                 )
 
+        self.cmd += f"{type(self).__name__.lower()} {self.command.value if self.command else ''} {' '.join(self.files) if not self.no_files else ''}"
+
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
-            print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.command.value if self.command else ''} {' '.join(self.files) if not self.no_files else ''}"
-            )
+            print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
         self.parse_commits()
@@ -63,6 +63,7 @@ class Stash(GitSimBaseCommand):
             second_column_name="Staging area",
             third_column_name="Stashed changes",
         )
+        self.show_command_as_title()
         self.fadeout()
         self.show_outro()
 

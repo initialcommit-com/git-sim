@@ -8,10 +8,11 @@ class Branch(GitSimBaseCommand):
     def __init__(self, name: str):
         super().__init__()
         self.name = name
+        self.cmd += f"{type(self).__name__.lower()} {self.name}"
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
-            print(f"{settings.INFO_STRING} {type(self).__name__.lower()} {self.name}")
+            print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
         self.parse_commits()
@@ -48,5 +49,6 @@ class Branch(GitSimBaseCommand):
         self.recenter_frame()
         self.scale_frame()
         self.color_by()
+        self.show_command_as_title()
         self.fadeout()
         self.show_outro()

@@ -60,11 +60,11 @@ class Switch(GitSimBaseCommand):
         except TypeError:
             pass
 
+        self.cmd += f"{settings.INFO_STRING } {type(self).__name__.lower()}{' -c' if self.c else ''} {self.branch}"
+
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
-            print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()}{' -c' if self.c else ''} {self.branch}"
-            )
+            print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
         head_commit = self.get_commit()
@@ -117,5 +117,6 @@ class Switch(GitSimBaseCommand):
                 self.reset_branch(head_commit.hexsha)
 
         self.color_by()
+        self.show_command_as_title()
         self.fadeout()
         self.show_outro()

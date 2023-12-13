@@ -18,6 +18,7 @@ from git_sim.settings import settings
 class GitSimBaseCommand(m.MovingCameraScene):
     def __init__(self):
         super().__init__()
+        self.cmd = "git "
         self.init_repo()
 
         self.font = settings.font
@@ -1294,6 +1295,28 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.author_groups[author] = [group]
         else:
             self.author_groups[author].append(group)
+
+    def show_command_as_title(self):
+        if True:  # settings.show_command_as_title:
+            titleText = m.Text(
+                self.cmd,
+                font=self.font,
+                font_size=36,
+                color=self.fontColor,
+            )
+            titleText.move_to(
+                (
+                    self.camera.frame.get_x(),
+                    self.camera.frame.get_top()[1] - titleText.height * 1.5,
+                    0,
+                )
+            )
+            ul = m.Underline(titleText)
+            if settings.animate:
+                self.play(m.AddTextLetterByLetter(titleText), m.Create(ul))
+            else:
+                self.add(titleText, ul)
+            self.toFadeOut.add(titleText, ul)
 
     def del_rw(self, action, name, exc):
         os.chmod(name, stat.S_IWRITE)

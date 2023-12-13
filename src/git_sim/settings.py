@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     files: Union[List[pathlib.Path], None] = None
     hide_first_tag: bool = False
     img_format: ImgFormat = ImgFormat.JPG
-    INFO_STRING: str = "Simulating: git"
+    INFO_STRING: str = "Simulating:"
     light_mode: bool = False
     transparent_bg: bool = False
     logo: pathlib.Path = pathlib.Path(__file__).parent.resolve() / "logo.png"

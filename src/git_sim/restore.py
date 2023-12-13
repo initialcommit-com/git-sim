@@ -26,11 +26,11 @@ class Restore(GitSimBaseCommand):
                 print(f"git-sim error: No modified or staged file with name: '{file}'")
                 sys.exit()
 
+        self.cmd += f"{type(self).__name__.lower()} {' '.join(self.files)}"
+
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
-            print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()} {' '.join(self.files)}"
-            )
+            print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
         self.parse_commits()
@@ -38,6 +38,7 @@ class Restore(GitSimBaseCommand):
         self.scale_frame()
         self.vsplit_frame()
         self.setup_and_draw_zones(reverse=True)
+        self.show_command_as_title()
         self.fadeout()
         self.show_outro()
 

@@ -29,11 +29,11 @@ class Mv(GitSimBaseCommand):
                 print(f"git-sim error: No tracked file with name: '{file}'")
                 sys.exit()
 
+        self.cmd += f"{type(self).__name__.lower()} {self.file} {self.new_file}"
+
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
-            print(
-                f"{settings.INFO_STRING} {type(self).__name__.lower()} {self.file} {self.new_file}"
-            )
+            print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
         self.parse_commits()
@@ -46,6 +46,7 @@ class Mv(GitSimBaseCommand):
             third_column_name="Renamed files",
         )
         self.rename_moved_file()
+        self.show_command_as_title()
         self.fadeout()
         self.show_outro()
 

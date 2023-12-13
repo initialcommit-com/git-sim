@@ -23,10 +23,11 @@ class Clone(GitSimBaseCommand):
         super().__init__()
         self.url = url
         settings.max_branches_per_commit = 2
+        self.cmd += f"{type(self).__name__.lower()} {self.url}"
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
-            print(f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.url}")
+            print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
 
@@ -58,6 +59,7 @@ class Clone(GitSimBaseCommand):
         self.scale_frame()
         self.add_details(repo_name)
         self.color_by()
+        self.show_command_as_title()
         self.fadeout()
         self.show_outro()
 

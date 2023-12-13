@@ -34,11 +34,11 @@ class Revert(GitSimBaseCommand):
         except TypeError:
             pass
 
+        self.cmd += f"{type(self).__name__.lower()} {self.commit}"
+
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
-            print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.commit}"
-            )
+            print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
         self.parse_commits()
@@ -53,6 +53,7 @@ class Revert(GitSimBaseCommand):
             second_column_name="Changes reverted from",
             third_column_name="----",
         )
+        self.show_command_as_title()
         self.fadeout()
         self.show_outro()
 

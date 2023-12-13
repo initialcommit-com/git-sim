@@ -41,11 +41,11 @@ class Reset(GitSimBaseCommand):
         if soft:
             self.mode = ResetMode.SOFT
 
+        self.cmd += f"{type(self).__name__.lower()}{' --' + self.mode.value if self.mode != ResetMode.DEFAULT else ''} {self.commit}"
+
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
-            print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()}{' --' + self.mode.value if self.mode != ResetMode.DEFAULT else ''} {self.commit}",
-            )
+            print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
         self.parse_commits()
@@ -54,6 +54,7 @@ class Reset(GitSimBaseCommand):
         self.reset_head_branch(self.resetTo.hexsha)
         self.vsplit_frame()
         self.setup_and_draw_zones(first_column_name="Changes deleted from")
+        self.show_command_as_title()
         self.fadeout()
         self.show_outro()
 

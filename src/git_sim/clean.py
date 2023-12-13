@@ -21,9 +21,11 @@ class Clean(GitSimBaseCommand):
         except TypeError:
             pass
 
+        self.cmd += f"{type(self).__name__.lower()}"
+
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
-            print(f"{settings.INFO_STRING} {type(self).__name__.lower()}")
+            print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
         self.parse_commits()
@@ -35,6 +37,7 @@ class Clean(GitSimBaseCommand):
             second_column_name="----",
             third_column_name="Deleted files",
         )
+        self.show_command_as_title()
         self.fadeout()
         self.show_outro()
 

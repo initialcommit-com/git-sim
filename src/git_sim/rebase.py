@@ -31,11 +31,11 @@ class Rebase(GitSimBaseCommand):
         except TypeError:
             pass
 
+        self.cmd += f"{type(self).__name__.lower()} {self.branch}"
+
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
-            print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()} {self.branch}"
-            )
+            print(f"{settings.INFO_STRING} {self.cmd}")
 
         if self.branch in self.repo.git.branch(
             "--contains", self.repo.active_branch.name
@@ -101,6 +101,7 @@ class Rebase(GitSimBaseCommand):
         self.scale_frame()
         self.reset_head_branch(parent)
         self.color_by(offset=2 * len(to_rebase))
+        self.show_command_as_title()
         self.fadeout()
         self.show_outro()
 

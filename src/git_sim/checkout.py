@@ -60,11 +60,13 @@ class Checkout(GitSimBaseCommand):
         except TypeError:
             pass
 
+        self.cmd += (
+            f"{type(self).__name__.lower()}{' -b' if self.b else ''} {self.branch}"
+        )
+
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
-            print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()}{' -b' if self.b else ''} {self.branch}"
-            )
+            print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
         head_commit = self.get_commit()
@@ -118,4 +120,5 @@ class Checkout(GitSimBaseCommand):
 
         self.color_by()
         self.fadeout()
+        self.show_command_as_title()
         self.show_outro()

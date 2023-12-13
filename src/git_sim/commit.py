@@ -30,14 +30,16 @@ class Commit(GitSimBaseCommand):
             )
             sys.exit(1)
 
+        self.cmd += (
+            f"{type(self).__name__.lower()} {'--amend ' if self.amend else ''}"
+            + '-m "'
+            + self.message
+            + '"'
+        )
+
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
-            print(
-                f"{settings.INFO_STRING } {type(self).__name__.lower()} {'--amend ' if self.amend else ''}"
-                + '-m "'
-                + self.message
-                + '"'
-            )
+            print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
         head_commit = self.get_commit()
@@ -77,6 +79,7 @@ class Commit(GitSimBaseCommand):
                 third_column_name="New commit",
             )
 
+        self.show_command_as_title()
         self.fadeout()
         self.show_outro()
 
