@@ -117,6 +117,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         shift=numpy.array([0.0, 0.0, 0.0]),
         make_branches_remote=False,
     ):
+        if not self.head_exists():
+            commit = self.create_dark_commit()
+
         commit = commit or self.get_commit()
 
         if commit != "dark":
@@ -642,6 +645,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         third_column_name="Staging area",
         reverse=False,
     ):
+        if self.check_all_dark():
+            self.zone_title_offset = 2.0 if platform.system() == "Windows" else 6.0
+
         horizontal = m.Line(
             (
                 self.camera.frame.get_left()[0],
@@ -1321,6 +1327,18 @@ class GitSimBaseCommand(m.MovingCameraScene):
     def del_rw(self, action, name, exc):
         os.chmod(name, stat.S_IWRITE)
         os.remove(name)
+
+    def head_exists(self):
+        try:
+            hc = self.repo.head.commit
+        except ValueError:
+            return False
+        return True
+
+    def check_all_dark(self):
+        if not self.drawnCommits:
+            return True
+        return False
 
 
 class DottedLine(m.Line):
