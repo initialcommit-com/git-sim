@@ -641,8 +641,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
     def setup_and_draw_zones(
         self,
         first_column_name="Untracked files",
-        second_column_name="Working directory mods",
-        third_column_name="Staging area",
+        second_column_name="Modified files",
+        third_column_name="Staged files",
         reverse=False,
     ):
         if self.check_all_dark():
