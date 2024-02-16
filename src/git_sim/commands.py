@@ -117,6 +117,18 @@ def commit(
     handle_animations(scene=scene)
 
 
+def config(
+    settings: List[str] = typer.Argument(
+        default=None,
+        help="The names and values of one or more config settings to set",
+    )
+):
+    from git_sim.config import Config
+
+    scene = Config(settings=settings)
+    handle_animations(scene=scene)
+
+
 def fetch(
     remote: str = typer.Argument(
         default=None,
@@ -130,6 +142,13 @@ def fetch(
     from git_sim.fetch import Fetch
 
     scene = Fetch(remote=remote, branch=branch)
+    handle_animations(scene=scene)
+
+
+def init():
+    from git_sim.init import Init
+
+    scene = Init()
     handle_animations(scene=scene)
 
 

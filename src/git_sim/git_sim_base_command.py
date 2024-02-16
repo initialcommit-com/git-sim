@@ -101,7 +101,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.show_outro()
 
     def get_commit(self, sha_or_ref="HEAD"):
-        return self.repo.commit(sha_or_ref)
+        if self.head_exists():
+            return self.repo.commit(sha_or_ref)
+        return "dark"
 
     def get_default_commits(self):
         defaultCommits = [self.get_commit()]
@@ -646,7 +648,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         reverse=False,
     ):
         if self.check_all_dark():
-            self.zone_title_offset = 2.0 if platform.system() == "Windows" else 6.0
+            self.zone_title_offset = 2.0 if platform.system() == "Windows" else 2.0
+        elif len(self.drawnCommits) == 1:
+            self.zone_title_offset = 2.0 if platform.system() == "Windows" else 2.0
 
         horizontal = m.Line(
             (
@@ -928,6 +932,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 firstColumnFileNames.add(z)
 
     def center_frame_on_commit(self, commit):
+        if not commit or commit == "dark":
+            return
+
         if settings.animate:
             self.play(
                 self.camera.frame.animate.move_to(
@@ -938,6 +945,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.camera.frame.move_to(self.drawnCommits[commit.hexsha].get_center())
 
     def reset_head_branch(self, hexsha, shift=numpy.array([0.0, 0.0, 0.0])):
+        if not self.head_exists():
+            return
+
         if settings.animate:
             self.play(
                 self.drawnRefs["HEAD"].animate.move_to(
@@ -1046,25 +1056,28 @@ class GitSimBaseCommand(m.MovingCameraScene):
             fill_opacity=self.ref_fill_opacity,
         )
         circle.height = 1
-        circle.next_to(
-            self.drawnCommits[child.hexsha],
-            m.LEFT if settings.reverse else m.RIGHT,
-            buff=1.5,
-        )
+        if child != "dark":
+            circle.next_to(
+                self.drawnCommits[child.hexsha],
+                m.LEFT if settings.reverse else m.RIGHT,
+                buff=1.5,
+            )
+
         circle.shift(shift)
 
-        start = circle.get_center()
-        end = self.drawnCommits[child.hexsha].get_center()
-        arrow = m.Arrow(
-            start,
-            end,
-            color=self.fontColor,
-            stroke_width=self.arrow_stroke_width,
-            tip_shape=self.arrow_tip_shape,
-            max_stroke_width_to_length_ratio=1000,
-        )
-        length = numpy.linalg.norm(start - end) - (1.5 if start[1] == end[1] else 3)
-        arrow.set_length(length)
+        if child != "dark":
+            start = circle.get_center()
+            end = self.drawnCommits[child.hexsha].get_center()
+            arrow = m.Arrow(
+                start,
+                end,
+                color=self.fontColor,
+                stroke_width=self.arrow_stroke_width,
+                tip_shape=self.arrow_tip_shape,
+                max_stroke_width_to_length_ratio=1000,
+            )
+            length = numpy.linalg.norm(start - end) - (1.5 if start[1] == end[1] else 3)
+            arrow.set_length(length)
 
         commitId = m.Text(
             "abcdef",
@@ -1102,7 +1115,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.drawnCommits["abcdef"] = circle
         self.toFadeOut.add(circle)
 
-        if draw_arrow:
+        if draw_arrow and child != "dark":
             if settings.animate:
                 self.play(m.Create(arrow), run_time=1 / settings.speed)
             else:

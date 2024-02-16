@@ -75,7 +75,7 @@ class Commit(GitSimBaseCommand):
             self.vsplit_frame()
             self.setup_and_draw_zones(
                 first_column_name="Working directory",
-                second_column_name="Staging area",
+                second_column_name="Staged files",
                 third_column_name="New commit",
             )
 
@@ -96,10 +96,19 @@ class Commit(GitSimBaseCommand):
             if "git-sim_media" not in x.a_path:
                 firstColumnFileNames.add(x.a_path)
 
-        for y in self.repo.index.diff("HEAD"):
-            if "git-sim_media" not in y.a_path:
-                secondColumnFileNames.add(y.a_path)
-                thirdColumnFileNames.add(y.a_path)
-                secondColumnArrowMap[y.a_path] = m.Arrow(
-                    stroke_width=3, color=self.fontColor
-                )
+        if self.head_exists():
+            for y in self.repo.index.diff("HEAD"):
+                if "git-sim_media" not in y.a_path:
+                    secondColumnFileNames.add(y.a_path)
+                    thirdColumnFileNames.add(y.a_path)
+                    secondColumnArrowMap[y.a_path] = m.Arrow(
+                        stroke_width=3, color=self.fontColor
+                    )
+        else:
+            for y in self.repo.index.diff(None, staged=True):
+                if "git-sim_media" not in y.a_path:
+                    secondColumnFileNames.add(y.a_path)
+                    thirdColumnFileNames.add(y.a_path)
+                    secondColumnArrowMap[y.a_path] = m.Arrow(
+                        stroke_width=3, color=self.fontColor
+                    )
