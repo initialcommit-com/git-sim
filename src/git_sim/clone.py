@@ -19,11 +19,12 @@ class Clone(GitSimBaseCommand):
     def init_repo(self):
         pass
 
-    def __init__(self, url: str):
+    def __init__(self, url: str, path: str):
         super().__init__()
         self.url = url
+        self.path = path
         settings.max_branches_per_commit = 2
-        self.cmd += f"{type(self).__name__.lower()} {self.url}"
+        self.cmd += f"{type(self).__name__.lower()} {self.url + ('' if self.path == '.' else ' ' + self.path)}"
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
@@ -37,9 +38,17 @@ class Clone(GitSimBaseCommand):
             repo_name = repo_name.group(1)
             if repo_name.endswith(".git"):
                 repo_name = repo_name[:-4]
+        elif self.url == "." or self.url == "./" or self.url == ".\\":
+            repo_name = os.path.split(os.getcwd())[1]
         else:
             print(
                 f"git-sim error: Invalid repo URL, please confirm repo URL and try again"
+            )
+            sys.exit(1)
+
+        if self.url == os.path.join(self.path, repo_name):
+            print(
+                f"git-sim error: Cannot clone into same path, please try again"
             )
             sys.exit(1)
         new_dir = os.path.join(tempfile.gettempdir(), "git_sim", repo_name)
@@ -71,7 +80,7 @@ class Clone(GitSimBaseCommand):
 
     def add_details(self, repo_name):
         text1 = m.Text(
-            f"Successfully cloned from {self.url} into ./{repo_name}",
+            f"Successfully cloned from {self.url} into {repo_name if self.path == '.' else self.path}",
             font=self.font,
             font_size=20,
             color=self.fontColor,

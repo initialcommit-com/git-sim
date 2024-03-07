@@ -91,10 +91,14 @@ def clone(
         ...,
         help="The web URL or filesystem path of the Git repo to clone",
     ),
+    path: str = typer.Argument(
+        default=".",
+        help="The web URL or filesystem path of the Git repo to clone",
+    ),
 ):
     from git_sim.clone import Clone
 
-    scene = Clone(url=url)
+    scene = Clone(url=url, path=path)
     handle_animations(scene=scene)
 
 
