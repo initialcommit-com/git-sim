@@ -22,6 +22,9 @@ class Init(GitSimBaseCommand):
         super().__init__()
         self.cmd += f"{type(self).__name__.lower()}"
 
+    def init_repo(self):
+        pass
+
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(f"{settings.INFO_STRING} {self.cmd}")
