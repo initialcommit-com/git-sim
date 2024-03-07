@@ -16,17 +16,18 @@ from git_sim.enums import ColorByOptions
 
 
 class Push(GitSimBaseCommand):
-    def __init__(self, remote: str = None, branch: str = None):
+    def __init__(self, remote: str = None, branch: str = None, set_upstream: bool = False):
         super().__init__()
         self.remote = remote
         self.branch = branch
+        self.set_upstream = set_upstream
         settings.max_branches_per_commit = 2
 
         if self.remote and self.remote not in self.repo.remotes:
             print("git-sim error: no remote with name '" + self.remote + "'")
             sys.exit(1)
 
-        self.cmd += f"{type(self).__name__.lower()} {self.remote if self.remote else ''} {self.branch if self.branch else ''}"
+        self.cmd += f"{type(self).__name__.lower()} {'--set-upstream ' if self.set_upstream else ''}{self.remote if self.remote else ''} {self.branch if self.branch else ''}"
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:

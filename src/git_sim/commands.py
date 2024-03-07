@@ -240,10 +240,15 @@ def push(
         default=None,
         help="The name of the branch to push",
     ),
+    set_upstream: bool = typer.Option(
+        False,
+        "--set-upstream",
+        help="Map the local branch to the specified upstream branch",
+    ),
 ):
     from git_sim.push import Push
 
-    scene = Push(remote=remote, branch=branch)
+    scene = Push(remote=remote, branch=branch, set_upstream=set_upstream)
     handle_animations(scene=scene)
 
 
