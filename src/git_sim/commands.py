@@ -264,6 +264,26 @@ def rebase(
     handle_animations(scene=scene)
 
 
+def remote(
+    action: str = typer.Argument(
+        default=None,
+        help="The action to perform for the remote",
+    ),
+    remote: str = typer.Argument(
+        default=None,
+        help="The name of the remote",
+    ),
+    url_or_path: str = typer.Argument(
+        default=None,
+        help="The url or path to the remote",
+    ),
+):
+    from git_sim.remote import Remote
+
+    scene = Remote(action=action, remote=remote, url_or_path=url_or_path)
+    handle_animations(scene=scene)
+
+
 def reset(
     commit: str = typer.Argument(
         default="HEAD",
