@@ -23,7 +23,6 @@ git_sim_commands = [
     "git-sim restore",
     "git-sim stash",
     "git-sim status",
-
     # Complex commands.
     "git-sim branch new_branch",
     "git-sim checkout branch2",

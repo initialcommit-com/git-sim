@@ -32,9 +32,9 @@ class Remote(GitSimBaseCommand):
             print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
-        #self.recenter_frame()
-        #self.scale_frame()
-        #self.add_details(repo_name)
+        # self.recenter_frame()
+        # self.scale_frame()
+        # self.add_details(repo_name)
         self.show_command_as_title()
         self.fadeout()
         self.show_outro()

@@ -65,9 +65,7 @@ class Revert(GitSimBaseCommand):
         elif i == 2 and self.revert.hexsha not in [
             commit.hexsha for commit in self.get_default_commits()
         ]:
-            commitId = m.Text(
-                "...", font=self.font, font_size=20, color=self.fontColor
-            )
+            commitId = m.Text("...", font=self.font, font_size=20, color=self.fontColor)
             commitMessage = "..."
             hide_refs = True
         elif i == 3 and self.revert.hexsha not in [

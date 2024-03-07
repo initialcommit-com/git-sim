@@ -16,7 +16,9 @@ from git_sim.enums import ColorByOptions
 
 
 class Push(GitSimBaseCommand):
-    def __init__(self, remote: str = None, branch: str = None, set_upstream: bool = False):
+    def __init__(
+        self, remote: str = None, branch: str = None, set_upstream: bool = False
+    ):
         super().__init__()
         self.remote = remote
         self.branch = branch

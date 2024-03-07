@@ -476,18 +476,15 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         for branch in branches:
             if (
-                branch not in remote_tracking_branches # local branch
+                branch not in remote_tracking_branches  # local branch
                 and commit.hexsha == self.repo.heads[branch].commit.hexsha
             ) or (
-                branch in remote_tracking_branches # remote tracking branch
+                branch in remote_tracking_branches  # remote tracking branch
                 and commit.hexsha == remote_tracking_branches[branch]
             ):
                 text = (
                     (make_branches_remote + "/" + branch)
-                    if (
-                        make_branches_remote
-                        and branch not in remote_tracking_branches 
-                    )
+                    if (make_branches_remote and branch not in remote_tracking_branches)
                     else branch
                 )
 
@@ -1361,7 +1358,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         try:
             self.drawnRefsByCommit[hexsha].append(ref)
         except KeyError:
-            self.drawnRefsByCommit[hexsha] = [ref,]
+            self.drawnRefsByCommit[hexsha] = [
+                ref,
+            ]
 
 
 class DottedLine(m.Line):

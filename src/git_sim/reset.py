@@ -66,9 +66,7 @@ class Reset(GitSimBaseCommand):
         elif i == 3 and self.resetTo.hexsha not in [
             c.hexsha for c in self.get_default_commits()
         ]:
-            commitId = m.Text(
-                "...", font=self.font, font_size=20, color=self.fontColor
-            )
+            commitId = m.Text("...", font=self.font, font_size=20, color=self.fontColor)
             commitMessage = "..."
             hide_refs = True
         elif i == 4 and self.resetTo.hexsha not in [

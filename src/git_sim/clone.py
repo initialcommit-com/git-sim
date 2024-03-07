@@ -47,9 +47,7 @@ class Clone(GitSimBaseCommand):
             sys.exit(1)
 
         if self.url == os.path.join(self.path, repo_name):
-            print(
-                f"git-sim error: Cannot clone into same path, please try again"
-            )
+            print(f"git-sim error: Cannot clone into same path, please try again")
             sys.exit(1)
         new_dir = os.path.join(tempfile.gettempdir(), "git_sim", repo_name)
 

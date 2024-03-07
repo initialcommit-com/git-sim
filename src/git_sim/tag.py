@@ -61,7 +61,7 @@ class Tag(GitSimBaseCommand):
                 height=0.4,
                 width=tagText.width + 0.25,
             )
-            
+
             if self.commit:
                 commit = self.repo.commit(self.commit)
                 try:

@@ -26,7 +26,7 @@ class Config(GitSimBaseCommand):
 
         for i, setting in enumerate(self.settings):
             if " " in setting:
-                self.settings[i] = f"\"{setting}\""
+                self.settings[i] = f'"{setting}"'
 
         self.cmd += f"{type(self).__name__.lower()} {' '.join(self.settings)}"
 
@@ -35,9 +35,9 @@ class Config(GitSimBaseCommand):
             print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
-        #self.recenter_frame()
-        #self.scale_frame()
-        #self.add_details(repo_name)
+        # self.recenter_frame()
+        # self.scale_frame()
+        # self.add_details(repo_name)
         self.show_command_as_title()
         self.fadeout()
         self.show_outro()
