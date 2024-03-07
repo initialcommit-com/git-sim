@@ -399,10 +399,19 @@ def switch(
 def tag(
     name: str = typer.Argument(
         ...,
-        help="The name of the new tag",
-    )
+        help="The name of the tag",
+    ),
+    commit: str = typer.Argument(
+        default=None,
+        help="The commit to tag",
+    ),
+    d: bool = typer.Option(
+        False,
+        "-d",
+        help="Delete the specified tag",
+    ),
 ):
     from git_sim.tag import Tag
 
-    scene = Tag(name=name)
+    scene = Tag(name=name, commit=commit, d=d)
     handle_animations(scene=scene)

@@ -25,6 +25,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.fontColor = m.BLACK if settings.light_mode else m.WHITE
         self.drawnCommits = {}
         self.drawnRefs = {}
+        self.drawnRefsByCommit = {}
         self.drawnCommitIds = {}
         self.toFadeOut = m.Group()
         self.prevRef = None
@@ -455,6 +456,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
             self.toFadeOut.add(head)
             self.drawnRefs["HEAD"] = head
+            self.add_ref_to_drawn_refs_by_commit(commit.hexsha, head)
             self.prevRef = head
 
             if i == 0 and self.first_parse:
@@ -518,6 +520,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
                 self.toFadeOut.add(fullbranch)
                 self.drawnRefs[branch] = fullbranch
+                self.add_ref_to_drawn_refs_by_commit(commit.hexsha, fullbranch)
 
                 if i == 0 and self.first_parse:
                     self.topref = self.prevRef
@@ -566,7 +569,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
                         self.add(fulltag)
 
                     self.toFadeOut.add(fulltag)
-                    self.drawnRefs[tag] = fulltag
+                    self.drawnRefs[tag.name] = fulltag
+                    self.add_ref_to_drawn_refs_by_commit(commit.hexsha, fulltag)
 
                     if i == 0 and self.first_parse:
                         self.topref = self.prevRef
@@ -1352,6 +1356,12 @@ class GitSimBaseCommand(m.MovingCameraScene):
         if not self.drawnCommits:
             return True
         return False
+
+    def add_ref_to_drawn_refs_by_commit(self, hexsha, ref):
+        try:
+            self.drawnRefsByCommit[hexsha].append(ref)
+        except KeyError:
+            self.drawnRefsByCommit[hexsha] = [ref,]
 
 
 class DottedLine(m.Line):
