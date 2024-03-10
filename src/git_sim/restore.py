@@ -8,9 +8,10 @@ from git_sim.settings import settings
 
 
 class Restore(GitSimBaseCommand):
-    def __init__(self, files: List[str]):
+    def __init__(self, files: List[str], staged: bool):
         super().__init__()
         self.files = files
+        self.staged = staged
         settings.hide_merged_branches = True
         self.n = self.n_default
 
@@ -19,14 +20,18 @@ class Restore(GitSimBaseCommand):
         except TypeError:
             pass
 
-        for file in self.files:
-            if file not in [x.a_path for x in self.repo.index.diff(None)] + [
-                y.a_path for y in self.repo.index.diff("HEAD")
-            ]:
-                print(f"git-sim error: No modified or staged file with name: '{file}'")
-                sys.exit()
+        if not self.staged:
+            for file in self.files:
+                if file not in [x.a_path for x in self.repo.index.diff(None)]:
+                    print(f"git-sim error: No modified file with name: '{file}'")
+                    sys.exit()
+        else:
+            for file in self.files:
+                if file not in [y.a_path for y in self.repo.index.diff("HEAD")]:
+                    print(f"git-sim error: No modified or staged file with name: '{file}'")
+                    sys.exit()
 
-        self.cmd += f"{type(self).__name__.lower()} {' '.join(self.files)}"
+        self.cmd += f"{type(self).__name__.lower()}{' --staged' if self.staged else ''} {' '.join(self.files)}"
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:

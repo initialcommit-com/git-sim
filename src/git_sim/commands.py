@@ -317,12 +317,17 @@ def restore(
     files: List[str] = typer.Argument(
         default=None,
         help="The names of one or more files to restore",
-    )
+    ),
+    staged: bool = typer.Option(
+        False,
+        "--staged",
+        help="Restore staged file to working directory",
+    ),
 ):
     from git_sim.restore import Restore
 
     settings.hide_first_tag = True
-    scene = Restore(files=files)
+    scene = Restore(files=files, staged=staged)
     handle_animations(scene=scene)
 
 
