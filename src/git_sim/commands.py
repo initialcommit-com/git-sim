@@ -394,10 +394,15 @@ def switch(
         "-c",
         help="Create the specified branch if it doesn't already exist",
     ),
+    detach: bool = typer.Option(
+        False,
+        "--detach",
+        help="Allow switch resulting in detached HEAD state",
+    ),
 ):
     from git_sim.switch import Switch
 
-    scene = Switch(branch=branch, c=c)
+    scene = Switch(branch=branch, c=c, detach=detach)
     handle_animations(scene=scene)
 
 

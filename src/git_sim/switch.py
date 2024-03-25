@@ -10,10 +10,11 @@ from git_sim.settings import settings
 
 
 class Switch(GitSimBaseCommand):
-    def __init__(self, branch: str, c: bool):
+    def __init__(self, branch: str, c: bool, detach: bool):
         super().__init__()
         self.branch = branch
         self.c = c
+        self.detach = detach
 
         if self.c:
             if self.branch in self.repo.heads:
@@ -21,6 +22,11 @@ class Switch(GitSimBaseCommand):
                     "git-sim error: can't create new branch '"
                     + self.branch
                     + "', it already exists"
+                )
+                sys.exit(1)
+            if detach:
+                print(
+                    "git-sim error: can't use both '-c' and '--detach' flags"
                 )
                 sys.exit(1)
         else:
@@ -34,21 +40,32 @@ class Switch(GitSimBaseCommand):
                 )
                 sys.exit(1)
 
-            if self.branch == self.repo.active_branch.name:
+            if not self.repo.head.is_detached and self.branch == self.repo.active_branch.name:
                 print("git-sim error: already on branch '" + self.branch + "'")
                 sys.exit(1)
+
+            if not self.detach:
+                if self.branch not in self.repo.heads:
+                    print(
+                        "git-sim error: include --detach to allow detached HEAD"
+                    )
+                    sys.exit(1)
 
             self.is_ancestor = False
             self.is_descendant = False
 
             # branch being switched to is behind HEAD
-            if self.repo.active_branch.name in self.repo.git.branch(
-                "--contains", self.branch
-            ):
+            branch_names = self.repo.git.branch("--contains", self.branch)
+            branch_names = branch_names.split("\n")
+            for i, bn in enumerate(branch_names):
+                branch_names[i] = bn.strip("*").strip()
+            branch_hexshas = [self.repo.branches[branch].commit.hexsha for branch in branch_names]
+            if self.repo.head.commit.hexsha in branch_hexshas:
                 self.is_ancestor = True
+
             # HEAD is behind branch being switched to
             elif self.branch in self.repo.git.branch(
-                "--contains", self.repo.active_branch.name
+                "--contains", self.repo.head.commit.hexsha
             ):
                 self.is_descendant = True
 
@@ -56,11 +73,12 @@ class Switch(GitSimBaseCommand):
             self.selected_branches.append(self.branch)
 
         try:
-            self.selected_branches.append(self.repo.active_branch.name)
+            if not self.repo.head.is_detached:
+                self.selected_branches.append(self.repo.active_branch.name)
         except TypeError:
             pass
 
-        self.cmd += f"{settings.INFO_STRING } {type(self).__name__.lower()}{' -c' if self.c else ''} {self.branch}"
+        self.cmd += f"{type(self).__name__.lower()}{' -c' if self.c else ''}{' --detach' if self.detach else ''} {self.branch}"
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
@@ -104,7 +122,8 @@ class Switch(GitSimBaseCommand):
                 self.scale_frame()
                 if "HEAD" in self.drawnRefs:
                     self.reset_head(reset_head_to)
-                    self.reset_branch(head_commit.hexsha)
+                    if not self.repo.head.is_detached:
+                        self.reset_branch(head_commit.hexsha)
                 else:
                     self.draw_ref(branch_commit, self.topref)
             else:
