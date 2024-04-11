@@ -366,11 +366,15 @@ def stash(
         default=None,
         help="The name of the file to stash changes for",
     ),
+    stash_index: str = typer.Argument(
+        default="0",
+        help="Stash index",
+    ),
 ):
     from git_sim.stash import Stash
 
     settings.hide_first_tag = True
-    scene = Stash(files=files, command=command)
+    scene = Stash(files=files, command=command, stash_index=stash_index)
     handle_animations(scene=scene)
 
 

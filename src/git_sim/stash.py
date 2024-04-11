@@ -1,3 +1,4 @@
+import re
 import sys
 from enum import Enum
 import manim as m
@@ -10,13 +11,20 @@ from git_sim.settings import settings
 
 
 class Stash(GitSimBaseCommand):
-    def __init__(self, files: List[str], command: StashSubCommand):
+    def __init__(self, files: List[str], command: StashSubCommand, stash_index: int):
         super().__init__()
         self.files = files
         self.no_files = True if not self.files else False
         self.command = command
         settings.hide_merged_branches = True
         self.n = self.n_default
+
+        self.stash_index = self.parse_stash_format(stash_index)
+        if self.stash_index is None:
+            print(
+                "git-sim error: specify stash index as either integer or stash@{i}"
+            )
+            sys.exit()
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
@@ -44,7 +52,7 @@ class Stash(GitSimBaseCommand):
                 and not settings.quiet
             ):
                 print(
-                    "Files are not required in apply/pop subcommand. Ignoring the file list....."
+                    "Files are not required in apply/pop subcommand. Ignoring the file list..."
                 )
 
         self.cmd += f"{type(self).__name__.lower()} {self.command.value if self.command else ''} {' '.join(self.files) if not self.no_files else ''}"
@@ -147,17 +155,21 @@ class Stash(GitSimBaseCommand):
         thirdColumnArrowMap={},
     ):
         if self.command in [StashSubCommand.POP, StashSubCommand.APPLY]:
-            for x in self.repo.index.diff(None):
-                thirdColumnFileNames.add(x.a_path)
-                firstColumnFileNames.add(x.a_path)
-                thirdColumnArrowMap[x.a_path] = m.Arrow(
+            try:
+                stashedFileNames = self.repo.git.stash("show", "--name-only", self.stash_index)
+                stashedFileNames = stashedFileNames.split("\n")
+            except:
+                print(f"git-sim error: No stash entry with index {self.stashIndex} exists in stash")
+                sys.exit()
+            for s in stashedFileNames:
+                thirdColumnFileNames.add(s)
+                firstColumnFileNames.add(s)
+                thirdColumnArrowMap[s] = m.Arrow(
                     stroke_width=3, color=self.fontColor
                 )
-
-            for y in self.repo.index.diff("HEAD"):
-                firstColumnFileNames.add(y.a_path)
-                thirdColumnFileNames.add(y.a_path)
-                thirdColumnArrowMap[y.a_path] = m.Arrow(
+                firstColumnFileNames.add(s)
+                thirdColumnFileNames.add(s)
+                thirdColumnArrowMap[s] = m.Arrow(
                     stroke_width=3, color=self.fontColor
                 )
 
@@ -179,3 +191,14 @@ class Stash(GitSimBaseCommand):
                         secondColumnArrowMap[y.a_path] = m.Arrow(
                             stroke_width=3, color=self.fontColor
                         )
+
+    def parse_stash_format(self, s):
+        # Regular expression to match either a plain integer or stash@{integer}
+        match = re.match(r"^(?:stash@\{(\d+)\}|\b(\d+)\b)$", s)
+        if match:
+            # match.group(1) is the integer in the stash@{integer} format
+            # match.group(2) is the integer if it's just a plain number
+            # One of these groups will be None, the other will have our number as a string
+            number_str = match.group(1) or match.group(2)
+            return int(number_str)
+        return None
