@@ -30,6 +30,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.toFadeOut = m.Group()
         self.prevRef = None
         self.topref = None
+        self.topelement = None
         self.n_default = settings.n_default
         self.n = settings.n
         self.n_orig = self.n
@@ -599,13 +600,14 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
     def scale_frame(self):
         if settings.animate:
-            self.play(
-                self.camera.frame.animate.scale_to_fit_width(
-                    self.toFadeOut.get_width() * 1.1
-                ),
-                run_time=1 / settings.speed,
-            )
-            if self.toFadeOut.get_height() >= self.camera.frame.get_height():
+            if self.toFadeOut.get_width() > self.camera.frame.get_width():
+                self.play(
+                    self.camera.frame.animate.scale_to_fit_width(
+                        self.toFadeOut.get_width() * 1.1
+                    ),
+                    run_time=1 / settings.speed,
+                )
+            if self.toFadeOut.get_height() > self.camera.frame.get_height():
                 self.play(
                     self.camera.frame.animate.scale_to_fit_height(
                         self.toFadeOut.get_height() * 1.25
@@ -613,8 +615,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     run_time=1 / settings.speed,
                 )
         else:
-            self.camera.frame.scale_to_fit_width(self.toFadeOut.get_width() * 1.1)
-            if self.toFadeOut.get_height() >= self.camera.frame.get_height():
+            if self.toFadeOut.get_width() > self.camera.frame.get_width():
+                self.camera.frame.scale_to_fit_width(self.toFadeOut.get_width() * 1.1)
+            if self.toFadeOut.get_height() > self.camera.frame.get_height():
                 self.camera.frame.scale_to_fit_height(
                     self.toFadeOut.get_height() * 1.25
                 )
@@ -633,11 +636,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
             if settings.animate:
                 self.play(
                     self.toFadeOut.animate.align_to(self.camera.frame, m.UP).shift(
-                        m.DOWN * 0.75
+                        m.DOWN * 2.25
                     )
                 )
             else:
-                self.toFadeOut.align_to(self.camera.frame, m.UP).shift(m.DOWN * 0.75)
+                self.toFadeOut.align_to(self.camera.frame, m.UP).shift(m.DOWN * 2.25)
         except ValueError:
             pass
 
@@ -649,8 +652,6 @@ class GitSimBaseCommand(m.MovingCameraScene):
         reverse=False,
     ):
         if self.check_all_dark():
-            self.zone_title_offset = 2.0 if platform.system() == "Windows" else 2.0
-        elif len(self.drawnCommits) == 1:
             self.zone_title_offset = 2.0 if platform.system() == "Windows" else 2.0
 
         horizontal = m.Line(
@@ -665,7 +666,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 0,
             ),
             color=self.fontColor,
-        ).shift(m.UP * 2.5)
+        ).shift(m.UP * 1.75)
         horizontal2 = m.Line(
             (
                 self.camera.frame.get_left()[0],
@@ -678,7 +679,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 0,
             ),
             color=self.fontColor,
-        ).shift(m.UP * 1.5)
+        ).shift(m.UP * 0.75)
         vert1 = m.DashedLine(
             (
                 self.camera.frame.get_left()[0],
@@ -704,6 +705,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             first_column_name = "Staging area"
             third_column_name = "Deleted changes"
 
+        title_v_shift = abs(horizontal2.get_start()[1] - horizontal.get_start()[1]) / 2
         firstColumnTitle = (
             m.Text(
                 first_column_name,
@@ -712,8 +714,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 color=self.fontColor,
                 weight=m.BOLD,
             )
-            .move_to((vert1.get_center()[0] - 4, 0, 0))
-            .shift(m.UP * self.zone_title_offset)
+            .move_to((vert1.get_center()[0] - 4, horizontal.get_start()[1], 0))
+            .shift(m.DOWN * title_v_shift)
         )
         secondColumnTitle = (
             m.Text(
@@ -1189,7 +1191,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.prevRef = refRec
 
     def trim_path(self, path):
-        return (path[:15] + "..." + path[-15:]) if len(path) > 30 else path
+        return f"{path[:15]}...{path[-15:]}" if len(path) > 33 else path
+
+    def trim_cmd(self, path):
+        return f"{path[:30]}..." if len(path) > 33 else path
 
     def get_remote_tracking_branches(self):
         remote_refs = [remote.refs for remote in self.repo.remotes]
@@ -1317,26 +1322,34 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.author_groups[author].append(group)
 
     def show_command_as_title(self):
-        if True:  # settings.show_command_as_title:
+        if settings.show_command_as_title:
             titleText = m.Text(
-                self.cmd,
+                self.trim_cmd(self.cmd),
                 font=self.font,
                 font_size=36,
                 color=self.fontColor,
             )
+            top = 0
+            for element in self.toFadeOut:
+                if element.get_top()[1] > top:
+                    top = element.get_top()[1]
             titleText.move_to(
                 (
                     self.camera.frame.get_x(),
-                    self.camera.frame.get_top()[1] - titleText.height * 1.5,
+                    top + titleText.height * 2,
                     0,
                 )
             )
-            ul = m.Underline(titleText)
+            ul = m.Underline(
+                titleText,
+                color=self.fontColor,
+            )
+            self.toFadeOut.add(titleText, ul)
+            self.scale_frame()
             if settings.animate:
                 self.play(m.AddTextLetterByLetter(titleText), m.Create(ul))
             else:
                 self.add(titleText, ul)
-            self.toFadeOut.add(titleText, ul)
 
     def del_rw(self, action, name, exc):
         os.chmod(name, stat.S_IWRITE)

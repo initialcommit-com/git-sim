@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     style: Union[StyleOptions, None] = StyleOptions.CLEAN
     font: str = "Monospace"
     font_context: bool = False
+    show_command_as_title: bool = True
 
     class Config:
         env_prefix = "git_sim_"

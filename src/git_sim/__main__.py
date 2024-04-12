@@ -172,6 +172,10 @@ def main(
         settings.font,
         help="Font family used to display rendered text",
     ),
+    show_command_as_title: bool = typer.Option(
+        settings.show_command_as_title,
+        help="Use the simulated git command as the title of the output image or animated video",
+    ),
 ):
     import git
     from manim import WHITE, config
@@ -204,6 +208,7 @@ def main(
     settings.color_by = color_by
     settings.highlight_commit_messages = highlight_commit_messages
     settings.style = style
+    settings.show_command_as_title = show_command_as_title
 
     # If font is a path, define the context that will be used when using Manim.
     if Path(font).exists():
