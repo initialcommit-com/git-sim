@@ -1193,8 +1193,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
     def trim_path(self, path):
         return f"{path[:15]}...{path[-15:]}" if len(path) > 33 else path
 
-    def trim_cmd(self, path):
-        return f"{path[:30]}..." if len(path) > 33 else path
+    def trim_cmd(self, path, length=30):
+        return f"{path[:length]}..." if len(path) > (length + 3) else path
 
     def get_remote_tracking_branches(self):
         remote_refs = [remote.refs for remote in self.repo.remotes]

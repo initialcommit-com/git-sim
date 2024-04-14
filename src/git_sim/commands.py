@@ -122,6 +122,12 @@ def commit(
 
 
 def config(
+    l: bool = typer.Option(
+        False,
+        "-l",
+        "--list",
+        help="List existing local repo config settings",
+    ),
     settings: List[str] = typer.Argument(
         default=None,
         help="The names and values of one or more config settings to set",
@@ -129,7 +135,7 @@ def config(
 ):
     from git_sim.config import Config
 
-    scene = Config(settings=settings)
+    scene = Config(l=l, settings=settings)
     handle_animations(scene=scene)
 
 

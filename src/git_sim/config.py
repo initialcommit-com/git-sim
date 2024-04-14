@@ -1,72 +1,158 @@
-import sys
 import os
-import git
-import numpy
-import tempfile
-import shutil
-import stat
 import re
+import git
+import sys
+import stat
+import numpy
+import shutil
+import tempfile
 
 import manim as m
 
 from typing import List
-from argparse import Namespace
-
-from git.exc import GitCommandError, InvalidGitRepositoryError
 from git.repo import Repo
+from argparse import Namespace
+from configparser import NoSectionError
+from git.exc import GitCommandError, InvalidGitRepositoryError
 
-from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
+from git_sim.git_sim_base_command import GitSimBaseCommand
 
 
 class Config(GitSimBaseCommand):
-    def __init__(self, settings: List[str]):
+    def __init__(self, l: bool, settings: List[str]):
         super().__init__()
+        self.l = l
         self.settings = settings
 
         for i, setting in enumerate(self.settings):
             if " " in setting:
                 self.settings[i] = f'"{setting}"'
 
-        self.cmd += f"{type(self).__name__.lower()} {' '.join(self.settings)}"
+        if self.l:
+            self.cmd += f"{type(self).__name__.lower()} {'--list'}"
+        else:
+            self.cmd += f"{type(self).__name__.lower()} {' '.join(self.settings)}"
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
-        # self.recenter_frame()
-        # self.scale_frame()
-        # self.add_details(repo_name)
-        self.show_command_as_title()
+        self.add_details()
+        self.recenter_frame()
+        self.scale_frame()
         self.fadeout()
         self.show_outro()
 
-    def add_details(self, repo_name):
-        text1 = m.Text(
-            f"Successfully cloned from {self.url} into ./{repo_name}",
+    def add_details(self):
+        down_shift = m.DOWN * 0.5
+        self.camera.frame.scale_to_fit_width(18 * 1.1)
+        project_root = m.Rectangle(
+            height=9.0,
+            width=18.0,
+            color=self.fontColor,
+        )
+
+        cmd_text = m.Text(
+            self.trim_cmd(self.cmd, 50),
+            font=self.font,
+            font_size=36,
+            color=self.fontColor,
+        )
+        cmd_text.align_to(project_root, m.UP).shift(m.UP * 0.25 + cmd_text.height)
+
+        project_root_text = m.Text(
+            os.path.basename(os.getcwd()) + "/",
             font=self.font,
             font_size=20,
             color=self.fontColor,
-            weight=m.BOLD,
         )
-        text1.move_to([self.camera.frame.get_center()[0], 4, 0])
+        project_root_text.align_to(project_root, m.LEFT).align_to(project_root, m.UP).shift(m.RIGHT * 0.25).shift(m.DOWN * 0.25)
 
-        text2 = m.Text(
-            f"Cloned repo log:",
+        dot_git_text = m.Text(
+            ".git/",
             font=self.font,
             font_size=20,
             color=self.fontColor,
-            weight=m.BOLD,
         )
-        text2.move_to(text1.get_center()).shift(m.DOWN / 2)
+        dot_git_text.align_to(project_root_text, m.UP).shift(down_shift).align_to(project_root_text, m.LEFT).shift(m.RIGHT * 0.5)
 
-        self.toFadeOut.add(text1)
-        self.toFadeOut.add(text2)
-        self.recenter_frame()
-        self.scale_frame()
+        config_text = m.Text(
+            "config",
+            font=self.font,
+            font_size=20,
+            color=self.fontColor,
+        )
+        config_text.align_to(dot_git_text, m.UP).shift(down_shift).align_to(dot_git_text, m.LEFT).shift(m.RIGHT * 0.5)
 
         if settings.animate:
-            self.play(m.AddTextLetterByLetter(text1), m.AddTextLetterByLetter(text2))
+            self.play(m.AddTextLetterByLetter(cmd_text))
+            self.play(m.Create(project_root))
+            self.play(m.AddTextLetterByLetter(project_root_text))
+            self.play(m.AddTextLetterByLetter(dot_git_text))
+            self.play(m.AddTextLetterByLetter(config_text))
         else:
-            self.add(text1, text2)
+            self.add(cmd_text)
+            self.add(project_root)
+            self.add(project_root_text)
+            self.add(dot_git_text)
+            self.add(config_text)
+
+        config = self.repo.config_reader()
+        if self.l:
+            last_element = config_text
+            for section in config.sections():
+                section_text = m.Text(f"[{section}]", font=self.font, color=self.fontColor, font_size=20).align_to(last_element, m.UP).shift(down_shift).align_to(config_text, m.LEFT).shift(m.RIGHT * 0.5)
+                self.toFadeOut.add(section_text)
+                if settings.animate:
+                    self.play(m.AddTextLetterByLetter(section_text))
+                else:
+                    self.add(section_text)
+                last_element = section_text
+                for option in config.options(section):
+                    if option != "__name__":
+                        option_text = m.Text(f"{option} = {config.get_value(section, option)}", font=self.font, color=self.fontColor, font_size=20).align_to(last_element, m.UP).shift(down_shift).align_to(section_text, m.LEFT).shift(m.RIGHT * 0.5)
+                        self.toFadeOut.add(option_text)
+                        last_element = option_text
+                        if settings.animate:
+                            self.play(m.AddTextLetterByLetter(option_text))
+                        else:
+                            self.add(option_text)
+        else:
+            if not self.settings:
+                print("git-sim error: no config option specified")
+                sys.exit(1)
+            elif len(self.settings) > 2:
+                print("git-sim error: too many config options specified")
+                sys.exit(1)
+            elif "." not in self.settings[0]:
+                print("git-sim error: specify config option as 'section.option'")
+                sys.exit(1)
+            section = self.settings[0][:self.settings[0].index(".")]
+            option = self.settings[0][self.settings[0].index(".") + 1:]
+            if len(self.settings) == 1:
+                try:
+                    value = config.get_value(section, option)
+                except NoSectionError:
+                    print(f"git-sim error: section '{section}' doesn't exist in config")
+                    sys.exit(1)
+            elif len(self.settings) == 2:
+                value = self.settings[1].strip('"').strip("'").strip("\\")
+            section_text = m.Text(f"[{self.trim_cmd(section, 50)}]", font=self.font, color=self.fontColor, font_size=20, weight=m.BOLD).align_to(config_text, m.UP).shift(down_shift).align_to(config_text, m.LEFT).shift(m.RIGHT * 0.5)
+
+            option_text = m.Text(f"{self.trim_cmd(option, 40)} = {self.trim_cmd(value, 40)}", font=self.font, color=self.fontColor, font_size=20, weight=m.BOLD).align_to(section_text, m.UP).shift(down_shift).align_to(section_text, m.LEFT).shift(m.RIGHT * 0.5)
+            self.toFadeOut.add(section_text)
+            self.toFadeOut.add(option_text)
+            if settings.animate:
+                self.play(m.AddTextLetterByLetter(section_text))
+                self.play(m.AddTextLetterByLetter(option_text))
+            else:
+                self.add(section_text)
+                self.add(option_text)
+
+        self.toFadeOut.add(cmd_text)
+        self.toFadeOut.add(project_root)
+        self.toFadeOut.add(project_root_text)
+        self.toFadeOut.add(dot_git_text)
+        self.toFadeOut.add(config_text)
