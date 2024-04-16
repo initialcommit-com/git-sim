@@ -43,9 +43,9 @@ class Tag(GitSimBaseCommand):
             print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
-        self.parse_commits()
+        self.parse_commits(self.get_commit(sha_or_ref=self.name) if self.d else None)
         self.parse_all()
-        self.center_frame_on_commit(self.get_commit())
+        self.center_frame_on_commit(self.get_commit(sha_or_ref=self.name) if self.d else self.get_commit())
 
         if not self.d:
             tagText = m.Text(
