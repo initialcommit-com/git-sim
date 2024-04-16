@@ -59,7 +59,6 @@ def main(
     ),
     light_mode: bool = typer.Option(
         settings.light_mode,
-        "--light-mode",
         help="Enable light-mode with white background",
     ),
     transparent_bg: bool = typer.Option(
