@@ -4,8 +4,8 @@ import typer
 
 from typing import List, TYPE_CHECKING
 
-from git_sim.enums import ResetMode, StashSubCommand
 from git_sim.settings import settings
+from git_sim.enums import ResetMode, StashSubCommand, RemoteSubCommand
 
 if TYPE_CHECKING:
     from manim import Scene
@@ -271,9 +271,9 @@ def rebase(
 
 
 def remote(
-    action: str = typer.Argument(
+    command: RemoteSubCommand = typer.Argument(
         default=None,
-        help="The action to perform for the remote",
+        help="Remote subcommand (add, rename, remove, get-url, set-url)",
     ),
     remote: str = typer.Argument(
         default=None,
@@ -286,7 +286,7 @@ def remote(
 ):
     from git_sim.remote import Remote
 
-    scene = Remote(action=action, remote=remote, url_or_path=url_or_path)
+    scene = Remote(command=command, remote=remote, url_or_path=url_or_path)
     handle_animations(scene=scene)
 
 

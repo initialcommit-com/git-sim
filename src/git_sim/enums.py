@@ -8,12 +8,6 @@ class ResetMode(Enum):
     HARD = "hard"
 
 
-class StashSubCommand(Enum):
-    POP = "pop"
-    APPLY = "apply"
-    PUSH = "push"
-
-
 class ColorByOptions(Enum):
     AUTHOR = "author"
     BRANCH = "branch"
@@ -34,3 +28,17 @@ class VideoFormat(str, Enum):
 class ImgFormat(str, Enum):
     JPG = "jpg"
     PNG = "png"
+
+
+class StashSubCommand(Enum):
+    POP = "pop"
+    APPLY = "apply"
+    PUSH = "push"
+
+
+class RemoteSubCommand(Enum):
+    ADD = "add"
+    RENAME = "rename"
+    REMOVE = "remove"
+    GET_URL = "get-url"
+    SET_URL = "set-url"
