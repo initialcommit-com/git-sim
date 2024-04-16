@@ -23,9 +23,9 @@ class Remote(GitSimBaseCommand):
         self.down_shift = m.DOWN * 0.5
 
         self.cmd += f"{type(self).__name__.lower()}"
-        if self.command == RemoteSubCommand.ADD:
+        if self.command in (RemoteSubCommand.ADD, RemoteSubCommand.RENAME, RemoteSubCommand.SET_URL):
             self.cmd += f" {self.command.value} {self.remote} {self.url_or_path}"
-        elif self.command == RemoteSubCommand.REMOVE:
+        elif self.command in (RemoteSubCommand.REMOVE, RemoteSubCommand.GET_URL):
             self.cmd += f" {self.command.value} {self.remote}"
 
     def construct(self):
@@ -89,9 +89,10 @@ class Remote(GitSimBaseCommand):
         self.last_element = self.config_text
 
         if settings.animate:
-            self.play(
-                m.AddTextLetterByLetter(cmd_text, time_per_char=self.time_per_char)
-            )
+            if settings.show_command_as_title:
+                self.play(
+                    m.AddTextLetterByLetter(cmd_text, time_per_char=self.time_per_char)
+                )
             self.play(m.Create(self.project_root, time_per_char=self.time_per_char))
             self.play(
                 m.AddTextLetterByLetter(
@@ -107,7 +108,8 @@ class Remote(GitSimBaseCommand):
                 )
             )
         else:
-            self.add(cmd_text)
+            if settings.show_command_as_title:
+                self.add(cmd_text)
             self.add(self.project_root)
             self.add(project_root_text)
             self.add(dot_git_text)
@@ -215,7 +217,8 @@ class Remote(GitSimBaseCommand):
                 sys.exit(1)
             self.render_remote_data()
 
-        self.toFadeOut.add(cmd_text)
+        if settings.show_command_as_title:
+            self.toFadeOut.add(cmd_text)
         self.toFadeOut.add(self.project_root)
         self.toFadeOut.add(project_root_text)
         self.toFadeOut.add(dot_git_text)

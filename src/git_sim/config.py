@@ -95,9 +95,10 @@ class Config(GitSimBaseCommand):
         ).shift(m.RIGHT * 0.5)
 
         if settings.animate:
-            self.play(
-                m.AddTextLetterByLetter(cmd_text, time_per_char=self.time_per_char)
-            )
+            if settings.show_command_as_title:
+                self.play(
+                    m.AddTextLetterByLetter(cmd_text, time_per_char=self.time_per_char)
+                )
             self.play(m.Create(project_root, time_per_char=self.time_per_char))
             self.play(
                 m.AddTextLetterByLetter(
@@ -111,7 +112,8 @@ class Config(GitSimBaseCommand):
                 m.AddTextLetterByLetter(config_text, time_per_char=self.time_per_char)
             )
         else:
-            self.add(cmd_text)
+            if settings.show_command_as_title:
+                self.add(cmd_text)
             self.add(project_root)
             self.add(project_root_text)
             self.add(dot_git_text)
@@ -238,7 +240,8 @@ class Config(GitSimBaseCommand):
                 self.add(section_text)
                 self.add(option_text)
 
-        self.toFadeOut.add(cmd_text)
+        if settings.show_command_as_title:
+            self.toFadeOut.add(cmd_text)
         self.toFadeOut.add(project_root)
         self.toFadeOut.add(project_root_text)
         self.toFadeOut.add(dot_git_text)

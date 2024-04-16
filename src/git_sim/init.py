@@ -215,7 +215,8 @@ class Init(GitSimBaseCommand):
         ).next_to(refs_text_arrow, m.RIGHT)
 
         if settings.animate:
-            self.play(m.AddTextLetterByLetter(cmd_text))
+            if settings.show_command_as_title:
+                self.play(m.AddTextLetterByLetter(cmd_text))
             self.play(m.Create(project_root))
             self.play(m.AddTextLetterByLetter(project_root_text))
             self.play(
@@ -259,7 +260,8 @@ class Init(GitSimBaseCommand):
                 m.AddTextLetterByLetter(refs_desc),
             )
         else:
-            self.add(cmd_text)
+            if settings.show_command_as_title:
+                self.add(cmd_text)
             self.add(project_root)
             self.add(project_root_text)
             self.add(dot_git_text)
@@ -293,7 +295,8 @@ class Init(GitSimBaseCommand):
                 refs_desc,
             )
 
-        self.toFadeOut.add(cmd_text)
+        if settings.show_command_as_title:
+            self.toFadeOut.add(cmd_text)
         self.toFadeOut.add(project_root)
         self.toFadeOut.add(project_root_text)
         self.toFadeOut.add(
