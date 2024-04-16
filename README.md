@@ -35,7 +35,7 @@ Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work 
 
 ## Features
 - Run a one-liner git-sim command in the terminal to generate a custom Git command visualization (.jpg) from your repo
-- Supported commands: `log`, `status`, `add`, `restore`, `commit`, `stash`, `branch`, `tag`, `reset`, `revert`, `merge`, `rebase`, `cherry-pick`, `switch`, `checkout`, `fetch`, `pull`, `push`, `clone`, `rm`, `mv`, `clean`
+- Supported commands: `add`, `branch`, `checkout`, `cherry-pick`, `clean`, `clone`, `commit`, `config`, `fetch`, `init`, `log`, `merge`, `mv`, `pull`, `push`, `rebase`, `remote`, `reset`, `restore`, `revert`, `rm`, `stash`, `status`, `switch`, `tag`
 - Generate an animated video (.mp4) instead of a static image using the `--animate` flag (note: significant performance slowdown, it is recommended to use `--low-quality` to speed up testing and remove when ready to generate presentation-quality video)
 - Color commits by parameter, such as author with the `--color-by=author` option
 - Choose between dark mode (default) and light mode
@@ -135,7 +135,8 @@ $ git-sim <subcommand> -h
 * [Manim (Community version)](https://www.manim.community/)
 
 ## Commands
-Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "log", "status", "add", "restore", "commit", "stash", "branch", "tag", "reset", "revert", "merge", "rebase", "cherry-pick", "switch", "checkout", "fetch", "pull", "push", "clone", "rm", "mv", "clean" along with corresponding options.
+Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "add", "branch", "checkout", "cherry-pick", "clean", "clone", "commit", "config", "fetch", "init", "log", "merge", "mv", "pull", "push", "rebase", "remote", "reset", "restore", "revert", "rm", "stash", "status", "switch", "tag" along with corresponding options.
+
 
 ```console
 $ git-sim [global options] <subcommand> [subcommand options]
@@ -177,23 +178,6 @@ The `[subcommand options]` are like regular Git options specific to the specifie
 
 The following is a list of Git commands that can be simulated and their corresponding options/flags.
 
-### git log
-Usage: `git-sim log [-n <number>] [--all]`
-
-- Simulated output will show the most recent 5 commits on the active branch by default
-- Use `-n <number>` to set number of commits to display from each branch head
-- Set `--all` to display all local branches in the log output
-
-![git-sim-log_01-05-23_22-02-39](https://user-images.githubusercontent.com/49353917/210940300-aadd14c6-72ab-4529-a1be-b494ed5dd4c9.jpg)
-
-### git status
-Usage: `git-sim status`
-
-- Simulated output will show the state of the working directory, staging area, and untracked files
-- Note that simulated output will also show the most recent 5 commits on the active branch
-
-![git-sim-status_01-05-23_22-06-28](https://user-images.githubusercontent.com/49353917/210940685-735665e2-fa12-4043-979c-54c295b13800.jpg)
-
 ### git add
 Usage: `git-sim add <file 1> <file 2> ... <file n>`
 
@@ -203,14 +187,46 @@ Usage: `git-sim add <file 1> <file 2> ... <file n>`
 
 ![git-sim-add_01-05-23_22-07-40](https://user-images.githubusercontent.com/49353917/210940814-7e8dc318-6116-4e56-b415-bc547401a56a.jpg)
 
-### git restore
-Usage: `git-sim restore <file 1> <file 2> ... <file n>`
+### git branch
+Usage: `git-sim branch <new branch name>`
 
-- Specify one or more `<file>` as a *modified* working directory file, or staged file
-- Simulated output will show files being moved back to the working directory or discarded changes
+- Specify `<new branch name>` as the name of the new branch to simulate creation of
+- Simulated output will show the newly create branch ref along with most recent 5 commits on the active branch
+
+![git-sim-branch_01-05-23_22-13-17](https://user-images.githubusercontent.com/49353917/210941509-2a42a7a4-2168-4f62-913f-3f6fe74a0684.jpg)
+
+### git checkout
+Usage: `git-sim checkout [-b] <branch>`
+
+- Checks out `<branch>` into the working directory, i.e. moves `HEAD` to the specified `<branch>`
+- The `-b` flag creates a new branch with the specified name `<branch>` and checks it out, assuming it doesn't already exist
+
+![git-sim-checkout_04-09-23_21-46-04](https://user-images.githubusercontent.com/49353917/230827836-e9f23a0e-2576-4716-b2fb-6327d3cf9b22.jpg)
+
+### git cherry-pick
+Usage: `git-sim cherry-pick <commit>`
+
+- Specify `<commit>` as a ref (branch name/tag) or commit ID to cherry-pick onto the active branch
+- Supports editing the cherry-picked commit message with: `$ git-sim cherry-pick <commit> -e "Edited commit message"`
+
+![git-sim-cherry-pick_01-05-23_22-23-08](https://user-images.githubusercontent.com/49353917/210942811-fa5155b1-4c6f-4afc-bea2-d39b4cd594aa.jpg)
+
+### git clean
+Usage: `git-sim clean`
+
+- Simulated output will show untracked files being deleted
+- Since this is just a simulation, no need to specify `-i`, `-n`, `-f` as in regular Git
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
-![git-sim-restore_01-05-23_22-09-14](https://user-images.githubusercontent.com/49353917/210941009-e6bf7271-ce9b-4e41-9a0b-24cc4b8d3b15.jpg)
+![git-sim-clean_04-09-23_22-05-54](https://user-images.githubusercontent.com/49353917/230830043-779e7230-f439-461a-a408-b19b263e86e4.jpg)
+
+### git clone
+Usage: `git-sim clone <url>`
+
+- Clone the remote repo from `<url>` (web URL or filesystem path) to a new folder in the current directory
+- Output will report if clone operation is successful and show log of local clone
+
+![git-sim-clone_04-09-23_21-51-53](https://user-images.githubusercontent.com/49353917/230828521-80c8d2d1-2a31-46bb-aeed-746f0441c86e.jpg)
 
 ### git commit
 Usage: `git-sim commit -m "Commit message"`
@@ -223,49 +239,32 @@ Usage: `git-sim commit -m "Commit message"`
 
 ![git-sim-commit_01-05-23_22-10-21](https://user-images.githubusercontent.com/49353917/210941149-d83677a1-3ab7-4880-bc0f-871b1f150087.jpg)
 
-### git stash
-Usage: `git-sim stash [push|pop|apply] <file>`
+### git config
+Usage: `git-sim config [--list] <section.option> <value>`
 
-- Specify one or more `<file>` as a *modified* working directory file, or staged file
-- If no `<file>` is specified, all available files will be included
-- Simulated output will show files being moved in/out of the Git stash
-- Note that simulated output will also show the most recent 5 commits on the active branch
+- Simulated output describes the specified configuration change
+- Use `--list` or `-l` to display all configuration
 
-![git-sim-stash_01-05-23_22-11-18](https://user-images.githubusercontent.com/49353917/210941254-69c80b63-5c06-411a-a36a-1454b2906ee8.jpg)
+### git fetch
+Usage: `git-sim fetch <remote> <branch>`
 
-### git branch
-Usage: `git-sim branch <new branch name>`
+- Fetches the specified `<branch>` from the specified `<remote>` to the local repo
 
-- Specify `<new branch name>` as the name of the new branch to simulate creation of
-- Simulated output will show the newly create branch ref along with most recent 5 commits on the active branch
+![git-sim-fetch_04-09-23_21-47-59](https://user-images.githubusercontent.com/49353917/230828090-acae8979-4097-43a8-96ea-525890e0e0a8.jpg)
 
-![git-sim-branch_01-05-23_22-13-17](https://user-images.githubusercontent.com/49353917/210941509-2a42a7a4-2168-4f62-913f-3f6fe74a0684.jpg)
+### git init
+Usage: `git-sim init`
 
-### git tag
-Usage: `git-sim tag <new tag name>`
+- Simulated output describes the initialized `.git/` directory and it's contents
 
-- Specify `<new tag name>` as the name of the new tag to simulate creation of
-- Simulated output will show the newly create tag ref along with most recent 5 commits on the active branch
+### git log
+Usage: `git-sim log [-n <number>] [--all]`
 
-![git-sim-tag_01-05-23_22-14-18](https://user-images.githubusercontent.com/49353917/210941647-79376ff7-2941-42b3-964a-b1d3a404a4fe.jpg)
+- Simulated output will show the most recent 5 commits on the active branch by default
+- Use `-n <number>` to set number of commits to display from each branch head
+- Set `--all` to display all local branches in the log output
 
-### git reset
-Usage: `git-sim reset <reset-to> [--mixed|--soft|--hard]`
-
-- Specify `<reset-to>` as any commit id, branch name, tag, or other ref to simulate reset to from the current HEAD (default: `HEAD`)
-- As with a normal git reset command, default reset mode is `--mixed`, but can be specified using `--soft`, `--hard`, or `--mixed`
-- Simulated output will show branch/HEAD resets and resulting state of the working directory, staging area, and whether any file changes would be deleted by running the actual command
-
-![git-sim-reset_01-05-23_22-15-49](https://user-images.githubusercontent.com/49353917/210941835-80f032d2-4f06-4032-8dd0-98c8a2569049.jpg)
-
-### git revert
-Usage: `git-sim revert <to-revert>`
-
-- Specify `<to-revert>` as any commit id, branch name, tag, or other ref to simulate revert for
-- Simulated output will show the new commit which reverts the changes from `<to-revert>`
-- Simulated output will include the next 4 most recent commits on the active branch
-
-![git-sim-revert_01-05-23_22-16-59](https://user-images.githubusercontent.com/49353917/210941979-6db8b55c-2881-41d8-9e2e-6263b1dece13.jpg)
+![git-sim-log_01-05-23_22-02-39](https://user-images.githubusercontent.com/49353917/210940300-aadd14c6-72ab-4529-a1be-b494ed5dd4c9.jpg)
 
 ### git merge
 Usage: `git-sim merge <branch> [-m "Commit message"] [--no-ff]`
@@ -279,43 +278,15 @@ Usage: `git-sim merge <branch> [-m "Commit message"] [--no-ff]`
 
 ![git-sim-merge_01-05-23_09-44-46](https://user-images.githubusercontent.com/49353917/210942030-c7229488-571a-4943-a1f4-c6e4a0c8ccf3.jpg)
 
-### git rebase
-Usage: `git-sim rebase <new-base>`
+### git mv
+Usage: `git-sim mv <file> <new file>`
 
-- Specify `<new-base>` as the branch name to rebase the active branch onto
+- Specify `<file>` as file to update name/path
+- Specify `<new file>` as new name/path of file 
+- Simulated output will show the name/path of the file being updated 
+- Note that simulated output will also show the most recent 5 commits on the active branch
 
-![git-sim-rebase_01-05-23_09-53-34](https://user-images.githubusercontent.com/49353917/210942598-4ff8d1e6-464d-48f3-afb9-f46f7ec4828c.jpg)
-
-### git cherry-pick
-Usage: `git-sim cherry-pick <commit>`
-
-- Specify `<commit>` as a ref (branch name/tag) or commit ID to cherry-pick onto the active branch
-- Supports editing the cherry-picked commit message with: `$ git-sim cherry-pick <commit> -e "Edited commit message"`
-
-![git-sim-cherry-pick_01-05-23_22-23-08](https://user-images.githubusercontent.com/49353917/210942811-fa5155b1-4c6f-4afc-bea2-d39b4cd594aa.jpg)
-
-### git switch
-Usage: `git-sim switch [-c] <branch>`
-
-- Switches the checked-out branch to `<branch>`, i.e. moves `HEAD` to the specified `<branch>`
-- The `-c` flag creates a new branch with the specified name `<branch>` and switches to it, assuming it doesn't already exist
-
-![git-sim-switch_04-09-23_21-42-43](https://user-images.githubusercontent.com/49353917/230827783-a8740ace-b66f-4cac-b94e-5d101d27e0b5.jpg)
-
-### git checkout
-Usage: `git-sim checkout [-b] <branch>`
-
-- Checks out `<branch>` into the working directory, i.e. moves `HEAD` to the specified `<branch>`
-- The `-b` flag creates a new branch with the specified name `<branch>` and checks it out, assuming it doesn't already exist
-
-![git-sim-checkout_04-09-23_21-46-04](https://user-images.githubusercontent.com/49353917/230827836-e9f23a0e-2576-4716-b2fb-6327d3cf9b22.jpg)
-
-### git fetch
-Usage: `git-sim fetch <remote> <branch>`
-
-- Fetches the specified `<branch>` from the specified `<remote>` to the local repo
-
-![git-sim-fetch_04-09-23_21-47-59](https://user-images.githubusercontent.com/49353917/230828090-acae8979-4097-43a8-96ea-525890e0e0a8.jpg)
+![git-sim-mv_04-09-23_22-05-13](https://user-images.githubusercontent.com/49353917/230829978-0a64dbe2-d974-4cef-9c6e-ed26e987342f.jpg)
 
 ### git pull
 Usage: `git-sim pull [<remote> <branch>]`
@@ -335,13 +306,45 @@ Usage: `git-sim push [<remote> <branch>]`
 
 ![git-sim-push_04-21-23_13-41-57](https://user-images.githubusercontent.com/49353917/233731005-51fd7887-ae14-4ceb-a5d5-e5aed79e9fd8.jpg)
 
-### git clone
-Usage: `git-sim clone <url>`
+### git rebase
+Usage: `git-sim rebase <new-base>`
 
-- Clone the remote repo from `<url>` (web URL or filesystem path) to a new folder in the current directory
-- Output will report if clone operation is successful and show log of local clone
+- Specify `<new-base>` as the branch name to rebase the active branch onto
 
-![git-sim-clone_04-09-23_21-51-53](https://user-images.githubusercontent.com/49353917/230828521-80c8d2d1-2a31-46bb-aeed-746f0441c86e.jpg)
+![git-sim-rebase_01-05-23_09-53-34](https://user-images.githubusercontent.com/49353917/210942598-4ff8d1e6-464d-48f3-afb9-f46f7ec4828c.jpg)
+
+### git remote
+Usage: `git-sim remote [add|rename|remove|get-url|set-url] [<remote>] [<url>]`
+
+- Simulated output will show remotes being added, renamed, removed, modified as indicated
+- Running `git-sim remote` with no options will list all existing remotes and their details  
+
+### git reset
+Usage: `git-sim reset <reset-to> [--mixed|--soft|--hard]`
+
+- Specify `<reset-to>` as any commit id, branch name, tag, or other ref to simulate reset to from the current HEAD (default: `HEAD`)
+- As with a normal git reset command, default reset mode is `--mixed`, but can be specified using `--soft`, `--hard`, or `--mixed`
+- Simulated output will show branch/HEAD resets and resulting state of the working directory, staging area, and whether any file changes would be deleted by running the actual command
+
+![git-sim-reset_01-05-23_22-15-49](https://user-images.githubusercontent.com/49353917/210941835-80f032d2-4f06-4032-8dd0-98c8a2569049.jpg)
+
+### git restore
+Usage: `git-sim restore <file 1> <file 2> ... <file n>`
+
+- Specify one or more `<file>` as a *modified* working directory file, or staged file
+- Simulated output will show files being moved back to the working directory or discarded changes
+- Note that simulated output will also show the most recent 5 commits on the active branch
+
+![git-sim-restore_01-05-23_22-09-14](https://user-images.githubusercontent.com/49353917/210941009-e6bf7271-ce9b-4e41-9a0b-24cc4b8d3b15.jpg)
+
+### git revert
+Usage: `git-sim revert <to-revert>`
+
+- Specify `<to-revert>` as any commit id, branch name, tag, or other ref to simulate revert for
+- Simulated output will show the new commit which reverts the changes from `<to-revert>`
+- Simulated output will include the next 4 most recent commits on the active branch
+
+![git-sim-revert_01-05-23_22-16-59](https://user-images.githubusercontent.com/49353917/210941979-6db8b55c-2881-41d8-9e2e-6263b1dece13.jpg)
 
 ### git rm
 Usage: `git-sim rm <file 1> <file 2> ... <file n>`
@@ -352,24 +355,39 @@ Usage: `git-sim rm <file 1> <file 2> ... <file n>`
 
 ![git-sim-rm_04-09-23_22-01-29](https://user-images.githubusercontent.com/49353917/230829899-f5d688ea-bc8e-46f9-a54a-55d251c8915d.jpg)
 
-### git mv
-Usage: `git-sim mv <file> <new file>`
+### git stash
+Usage: `git-sim stash [push|pop|apply] <file>`
 
-- Specify `<file>` as file to update name/path
-- Specify `<new file>` as new name/path of file 
-- Simulated output will show the name/path of the file being updated 
+- Specify one or more `<file>` as a *modified* working directory file, or staged file
+- If no `<file>` is specified, all available files will be included
+- Simulated output will show files being moved in/out of the Git stash
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
-![git-sim-mv_04-09-23_22-05-13](https://user-images.githubusercontent.com/49353917/230829978-0a64dbe2-d974-4cef-9c6e-ed26e987342f.jpg)
+![git-sim-stash_01-05-23_22-11-18](https://user-images.githubusercontent.com/49353917/210941254-69c80b63-5c06-411a-a36a-1454b2906ee8.jpg)
 
-### git clean
-Usage: `git-sim clean`
+### git status
+Usage: `git-sim status`
 
-- Simulated output will show untracked files being deleted
-- Since this is just a simulation, no need to specify `-i`, `-n`, `-f` as in regular Git
+- Simulated output will show the state of the working directory, staging area, and untracked files
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
-![git-sim-clean_04-09-23_22-05-54](https://user-images.githubusercontent.com/49353917/230830043-779e7230-f439-461a-a408-b19b263e86e4.jpg)
+![git-sim-status_01-05-23_22-06-28](https://user-images.githubusercontent.com/49353917/210940685-735665e2-fa12-4043-979c-54c295b13800.jpg)
+
+### git switch
+Usage: `git-sim switch [-c] <branch>`
+
+- Switches the checked-out branch to `<branch>`, i.e. moves `HEAD` to the specified `<branch>`
+- The `-c` flag creates a new branch with the specified name `<branch>` and switches to it, assuming it doesn't already exist
+
+![git-sim-switch_04-09-23_21-42-43](https://user-images.githubusercontent.com/49353917/230827783-a8740ace-b66f-4cac-b94e-5d101d27e0b5.jpg)
+
+### git tag
+Usage: `git-sim tag <new tag name>`
+
+- Specify `<new tag name>` as the name of the new tag to simulate creation of
+- Simulated output will show the newly create tag ref along with most recent 5 commits on the active branch
+
+![git-sim-tag_01-05-23_22-14-18](https://user-images.githubusercontent.com/49353917/210941647-79376ff7-2941-42b3-964a-b1d3a404a4fe.jpg)
 
 ## Video animation examples
 ```console
