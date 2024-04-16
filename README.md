@@ -245,6 +245,8 @@ Usage: `git-sim config [--list] <section.option> <value>`
 - Simulated output describes the specified configuration change
 - Use `--list` or `-l` to display all configuration
 
+![git-sim-config_04-16-24_08-34-34](https://github.com/initialcommit-com/git-sim/assets/49353917/c123e7a7-1fff-4f5c-b4a2-1e34ea2a4d80)
+
 ### git fetch
 Usage: `git-sim fetch <remote> <branch>`
 
@@ -256,6 +258,8 @@ Usage: `git-sim fetch <remote> <branch>`
 Usage: `git-sim init`
 
 - Simulated output describes the initialized `.git/` directory and it's contents
+
+![git-sim-init_04-16-24_08-34-47](https://github.com/initialcommit-com/git-sim/assets/49353917/2abb1a4a-3022-4353-a828-2d337baa8383)
 
 ### git log
 Usage: `git-sim log [-n <number>] [--all]`
@@ -318,6 +322,8 @@ Usage: `git-sim remote [add|rename|remove|get-url|set-url] [<remote>] [<url>]`
 
 - Simulated output will show remotes being added, renamed, removed, modified as indicated
 - Running `git-sim remote` with no options will list all existing remotes and their details  
+
+![git-sim-remote_04-16-24_08-35-10](https://github.com/initialcommit-com/git-sim/assets/49353917/08cb06c4-3770-40a1-b7be-01e1f161c5e5)
 
 ### git reset
 Usage: `git-sim reset <reset-to> [--mixed|--soft|--hard]`
