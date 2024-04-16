@@ -323,7 +323,7 @@ Usage: `git-sim remote [add|rename|remove|get-url|set-url] [<remote>] [<url>]`
 - Simulated output will show remotes being added, renamed, removed, modified as indicated
 - Running `git-sim remote` with no options will list all existing remotes and their details  
 
-![git-sim-remote_04-16-24_08-35-10](https://github.com/initialcommit-com/git-sim/assets/49353917/08cb06c4-3770-40a1-b7be-01e1f161c5e5)
+![git-sim-remote_04-16-24_08-40-37](https://github.com/initialcommit-com/git-sim/assets/49353917/ebaff04c-d5b6-4691-97b3-60bb502ba444)
 
 ### git reset
 Usage: `git-sim reset <reset-to> [--mixed|--soft|--hard]`
