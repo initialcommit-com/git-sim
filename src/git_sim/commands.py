@@ -131,7 +131,7 @@ def config(
     settings: List[str] = typer.Argument(
         default=None,
         help="The names and values of one or more config settings to set",
-    )
+    ),
 ):
     from git_sim.config import Config
 

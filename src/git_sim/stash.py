@@ -21,9 +21,7 @@ class Stash(GitSimBaseCommand):
 
         self.stash_index = self.parse_stash_format(stash_index)
         if self.stash_index is None:
-            print(
-                "git-sim error: specify stash index as either integer or stash@{i}"
-            )
+            print("git-sim error: specify stash index as either integer or stash@{i}")
             sys.exit()
 
         try:
@@ -156,22 +154,22 @@ class Stash(GitSimBaseCommand):
     ):
         if self.command in [StashSubCommand.POP, StashSubCommand.APPLY]:
             try:
-                stashedFileNames = self.repo.git.stash("show", "--name-only", self.stash_index)
+                stashedFileNames = self.repo.git.stash(
+                    "show", "--name-only", self.stash_index
+                )
                 stashedFileNames = stashedFileNames.split("\n")
             except:
-                print(f"git-sim error: No stash entry with index {self.stashIndex} exists in stash")
+                print(
+                    f"git-sim error: No stash entry with index {self.stashIndex} exists in stash"
+                )
                 sys.exit()
             for s in stashedFileNames:
                 thirdColumnFileNames.add(s)
                 firstColumnFileNames.add(s)
-                thirdColumnArrowMap[s] = m.Arrow(
-                    stroke_width=3, color=self.fontColor
-                )
+                thirdColumnArrowMap[s] = m.Arrow(stroke_width=3, color=self.fontColor)
                 firstColumnFileNames.add(s)
                 thirdColumnFileNames.add(s)
-                thirdColumnArrowMap[s] = m.Arrow(
-                    stroke_width=3, color=self.fontColor
-                )
+                thirdColumnArrowMap[s] = m.Arrow(stroke_width=3, color=self.fontColor)
 
         else:
             for x in self.repo.index.diff(None):

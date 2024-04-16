@@ -28,7 +28,9 @@ class Restore(GitSimBaseCommand):
         else:
             for file in self.files:
                 if file not in [y.a_path for y in self.repo.index.diff("HEAD")]:
-                    print(f"git-sim error: No modified or staged file with name: '{file}'")
+                    print(
+                        f"git-sim error: No modified or staged file with name: '{file}'"
+                    )
                     sys.exit()
 
         self.cmd += f"{type(self).__name__.lower()}{' --staged' if self.staged else ''} {' '.join(self.files)}"

@@ -70,7 +70,9 @@ class Config(GitSimBaseCommand):
             font_size=20,
             color=self.fontColor,
         )
-        project_root_text.align_to(project_root, m.LEFT).align_to(project_root, m.UP).shift(m.RIGHT * 0.25).shift(m.DOWN * 0.25)
+        project_root_text.align_to(project_root, m.LEFT).align_to(
+            project_root, m.UP
+        ).shift(m.RIGHT * 0.25).shift(m.DOWN * 0.25)
 
         dot_git_text = m.Text(
             ".git/",
@@ -78,7 +80,9 @@ class Config(GitSimBaseCommand):
             font_size=20,
             color=self.fontColor,
         )
-        dot_git_text.align_to(project_root_text, m.UP).shift(down_shift).align_to(project_root_text, m.LEFT).shift(m.RIGHT * 0.5)
+        dot_git_text.align_to(project_root_text, m.UP).shift(down_shift).align_to(
+            project_root_text, m.LEFT
+        ).shift(m.RIGHT * 0.5)
 
         config_text = m.Text(
             "config",
@@ -86,14 +90,26 @@ class Config(GitSimBaseCommand):
             font_size=20,
             color=self.fontColor,
         )
-        config_text.align_to(dot_git_text, m.UP).shift(down_shift).align_to(dot_git_text, m.LEFT).shift(m.RIGHT * 0.5)
+        config_text.align_to(dot_git_text, m.UP).shift(down_shift).align_to(
+            dot_git_text, m.LEFT
+        ).shift(m.RIGHT * 0.5)
 
         if settings.animate:
-            self.play(m.AddTextLetterByLetter(cmd_text, time_per_char=self.time_per_char))
+            self.play(
+                m.AddTextLetterByLetter(cmd_text, time_per_char=self.time_per_char)
+            )
             self.play(m.Create(project_root, time_per_char=self.time_per_char))
-            self.play(m.AddTextLetterByLetter(project_root_text, time_per_char=self.time_per_char))
-            self.play(m.AddTextLetterByLetter(dot_git_text, time_per_char=self.time_per_char))
-            self.play(m.AddTextLetterByLetter(config_text, time_per_char=self.time_per_char))
+            self.play(
+                m.AddTextLetterByLetter(
+                    project_root_text, time_per_char=self.time_per_char
+                )
+            )
+            self.play(
+                m.AddTextLetterByLetter(dot_git_text, time_per_char=self.time_per_char)
+            )
+            self.play(
+                m.AddTextLetterByLetter(config_text, time_per_char=self.time_per_char)
+            )
         else:
             self.add(cmd_text)
             self.add(project_root)
@@ -105,25 +121,60 @@ class Config(GitSimBaseCommand):
         if self.l:
             last_element = config_text
             for i, section in enumerate(config.sections()):
-                section_text = m.Text(f"[{section}]", font=self.font, color=self.fontColor, font_size=20).align_to(last_element, m.UP).shift(down_shift).align_to(config_text, m.LEFT).shift(m.RIGHT * 0.5)
+                section_text = (
+                    m.Text(
+                        f"[{section}]",
+                        font=self.font,
+                        color=self.fontColor,
+                        font_size=20,
+                    )
+                    .align_to(last_element, m.UP)
+                    .shift(down_shift)
+                    .align_to(config_text, m.LEFT)
+                    .shift(m.RIGHT * 0.5)
+                )
                 self.toFadeOut.add(section_text)
                 if settings.animate:
-                    self.play(m.AddTextLetterByLetter(section_text, time_per_char=self.time_per_char))
+                    self.play(
+                        m.AddTextLetterByLetter(
+                            section_text, time_per_char=self.time_per_char
+                        )
+                    )
                 else:
                     self.add(section_text)
                 last_element = section_text
                 project_root = self.resize_rectangle(project_root, last_element)
                 for j, option in enumerate(config.options(section)):
                     if option != "__name__":
-                        option_text = m.Text(f"{option} = {config.get_value(section, option)}", font=self.font, color=self.fontColor, font_size=20).align_to(last_element, m.UP).shift(down_shift).align_to(section_text, m.LEFT).shift(m.RIGHT * 0.5)
+                        option_text = (
+                            m.Text(
+                                f"{option} = {config.get_value(section, option)}",
+                                font=self.font,
+                                color=self.fontColor,
+                                font_size=20,
+                            )
+                            .align_to(last_element, m.UP)
+                            .shift(down_shift)
+                            .align_to(section_text, m.LEFT)
+                            .shift(m.RIGHT * 0.5)
+                        )
                         self.toFadeOut.add(option_text)
                         last_element = option_text
                         if settings.animate:
-                            self.play(m.AddTextLetterByLetter(option_text, time_per_char=self.time_per_char))
+                            self.play(
+                                m.AddTextLetterByLetter(
+                                    option_text, time_per_char=self.time_per_char
+                                )
+                            )
                         else:
                             self.add(option_text)
-                        if not (i == len(config.sections()) - 1 and j == len(config.options(section)) - 1):
-                            project_root = self.resize_rectangle(project_root, last_element)
+                        if not (
+                            i == len(config.sections()) - 1
+                            and j == len(config.options(section)) - 1
+                        ):
+                            project_root = self.resize_rectangle(
+                                project_root, last_element
+                            )
         else:
             if not self.settings:
                 print("git-sim error: no config option specified")
@@ -134,8 +185,8 @@ class Config(GitSimBaseCommand):
             elif "." not in self.settings[0]:
                 print("git-sim error: specify config option as 'section.option'")
                 sys.exit(1)
-            section = self.settings[0][:self.settings[0].index(".")]
-            option = self.settings[0][self.settings[0].index(".") + 1:]
+            section = self.settings[0][: self.settings[0].index(".")]
+            option = self.settings[0][self.settings[0].index(".") + 1 :]
             if len(self.settings) == 1:
                 try:
                     value = config.get_value(section, option)
@@ -144,13 +195,45 @@ class Config(GitSimBaseCommand):
                     sys.exit(1)
             elif len(self.settings) == 2:
                 value = self.settings[1].strip('"').strip("'").strip("\\")
-            section_text = m.Text(f"[{self.trim_cmd(section, 50)}]", font=self.font, color=self.fontColor, font_size=20, weight=m.BOLD).align_to(config_text, m.UP).shift(down_shift).align_to(config_text, m.LEFT).shift(m.RIGHT * 0.5)
-            option_text = m.Text(f"{self.trim_cmd(option, 40)} = {self.trim_cmd(value, 40)}", font=self.font, color=self.fontColor, font_size=20, weight=m.BOLD).align_to(section_text, m.UP).shift(down_shift).align_to(section_text, m.LEFT).shift(m.RIGHT * 0.5)
+            section_text = (
+                m.Text(
+                    f"[{self.trim_cmd(section, 50)}]",
+                    font=self.font,
+                    color=self.fontColor,
+                    font_size=20,
+                    weight=m.BOLD,
+                )
+                .align_to(config_text, m.UP)
+                .shift(down_shift)
+                .align_to(config_text, m.LEFT)
+                .shift(m.RIGHT * 0.5)
+            )
+            option_text = (
+                m.Text(
+                    f"{self.trim_cmd(option, 40)} = {self.trim_cmd(value, 40)}",
+                    font=self.font,
+                    color=self.fontColor,
+                    font_size=20,
+                    weight=m.BOLD,
+                )
+                .align_to(section_text, m.UP)
+                .shift(down_shift)
+                .align_to(section_text, m.LEFT)
+                .shift(m.RIGHT * 0.5)
+            )
             self.toFadeOut.add(section_text)
             self.toFadeOut.add(option_text)
             if settings.animate:
-                self.play(m.AddTextLetterByLetter(section_text, time_per_char=self.time_per_char))
-                self.play(m.AddTextLetterByLetter(option_text, time_per_char=self.time_per_char))
+                self.play(
+                    m.AddTextLetterByLetter(
+                        section_text, time_per_char=self.time_per_char
+                    )
+                )
+                self.play(
+                    m.AddTextLetterByLetter(
+                        option_text, time_per_char=self.time_per_char
+                    )
+                )
             else:
                 self.add(section_text)
                 self.add(option_text)
@@ -162,9 +245,16 @@ class Config(GitSimBaseCommand):
         self.toFadeOut.add(config_text)
 
     def resize_rectangle(self, rect, last_element):
-        if last_element.get_bottom()[1] - 3 * last_element.height > rect.get_bottom()[1]:
+        if (
+            last_element.get_bottom()[1] - 3 * last_element.height
+            > rect.get_bottom()[1]
+        ):
             return rect
-        new_rect = m.Rectangle(width=rect.width, height=rect.height + 2 * last_element.height, color=rect.color)
+        new_rect = m.Rectangle(
+            width=rect.width,
+            height=rect.height + 2 * last_element.height,
+            color=rect.color,
+        )
         new_rect.align_to(rect, m.UP)
         self.toFadeOut.remove(rect)
         self.toFadeOut.add(new_rect)

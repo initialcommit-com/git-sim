@@ -25,9 +25,7 @@ class Switch(GitSimBaseCommand):
                 )
                 sys.exit(1)
             if detach:
-                print(
-                    "git-sim error: can't use both '-c' and '--detach' flags"
-                )
+                print("git-sim error: can't use both '-c' and '--detach' flags")
                 sys.exit(1)
         else:
             try:
@@ -40,15 +38,16 @@ class Switch(GitSimBaseCommand):
                 )
                 sys.exit(1)
 
-            if not self.repo.head.is_detached and self.branch == self.repo.active_branch.name:
+            if (
+                not self.repo.head.is_detached
+                and self.branch == self.repo.active_branch.name
+            ):
                 print("git-sim error: already on branch '" + self.branch + "'")
                 sys.exit(1)
 
             if not self.detach:
                 if self.branch not in self.repo.heads:
-                    print(
-                        "git-sim error: include --detach to allow detached HEAD"
-                    )
+                    print("git-sim error: include --detach to allow detached HEAD")
                     sys.exit(1)
 
             self.is_ancestor = False
@@ -59,7 +58,9 @@ class Switch(GitSimBaseCommand):
             branch_names = branch_names.split("\n")
             for i, bn in enumerate(branch_names):
                 branch_names[i] = bn.strip("*").strip()
-            branch_hexshas = [self.repo.branches[branch].commit.hexsha for branch in branch_names]
+            branch_hexshas = [
+                self.repo.branches[branch].commit.hexsha for branch in branch_names
+            ]
             if self.repo.head.commit.hexsha in branch_hexshas:
                 self.is_ancestor = True
 
