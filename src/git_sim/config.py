@@ -12,7 +12,7 @@ import manim as m
 from typing import List
 from git.repo import Repo
 from argparse import Namespace
-from configparser import NoSectionError
+from configparser import NoSectionError, NoOptionError
 from git.exc import GitCommandError, InvalidGitRepositoryError
 
 from git_sim.settings import settings
@@ -194,6 +194,9 @@ class Config(GitSimBaseCommand):
                     value = config.get_value(section, option)
                 except NoSectionError:
                     print(f"git-sim error: section '{section}' doesn't exist in config")
+                    sys.exit(1)
+                except NoOptionError:
+                    print(f"git-sim error: option '{option}' doesn't exist in config")
                     sys.exit(1)
             elif len(self.settings) == 2:
                 value = self.settings[1].strip('"').strip("'").strip("\\")
