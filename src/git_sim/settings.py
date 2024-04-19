@@ -20,8 +20,8 @@ class Settings(BaseSettings):
     transparent_bg: bool = False
     logo: pathlib.Path = pathlib.Path(__file__).parent.resolve() / "logo.png"
     low_quality: bool = False
-    max_branches_per_commit: int = 1
-    max_tags_per_commit: int = 1
+    max_branches_per_commit: int = 2
+    max_tags_per_commit: int = 2
     media_dir: pathlib.Path = pathlib.Path().cwd()
     outro_bottom_text: str = "Learn more at initialcommit.com"
     outro_top_text: str = "Thanks for using Initial Commit!"

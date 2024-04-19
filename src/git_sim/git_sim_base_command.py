@@ -1,18 +1,20 @@
 import os
-import platform
-import shutil
-import stat
+import git
 import sys
+import stat
+import numpy
+import random
+import shutil
+import platform
 import tempfile
 
-import git
 import manim as m
-import numpy
-from git.exc import GitCommandError, InvalidGitRepositoryError
-from git.repo import Repo
 
-from git_sim.enums import ColorByOptions, StyleOptions
+from git.repo import Repo
+from git.exc import GitCommandError, InvalidGitRepositoryError
+
 from git_sim.settings import settings
+from git_sim.enums import ColorByOptions, StyleOptions
 
 
 class GitSimBaseCommand(m.MovingCameraScene):
@@ -402,7 +404,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         exclude = []
         for b1 in branches:
             for b2 in branches:
-                if b1.name != b2.name:
+                if b1.name != b2.name and b1.commit != b2.commit:
                     if self.repo.is_ancestor(b1.commit, b2.commit):
                         exclude.append(b1.name)
         return [b for b in branches if b.name not in exclude]
@@ -1374,6 +1376,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.drawnRefsByCommit[hexsha] = [
                 ref,
             ]
+
+    def generate_random_sha(self):
+        valid_chars = "0123456789abcdef"
+        return "".join(random.choices(valid_chars, k=6))
 
 
 class DottedLine(m.Line):
