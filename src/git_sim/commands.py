@@ -262,11 +262,15 @@ def rebase(
     branch: str = typer.Argument(
         ...,
         help="The branch to simulate rebasing the checked-out commit onto",
-    )
+    ),
+    rebase_merges: bool = typer.Option(
+        False,
+        help="Preserve merge structure during rebase",
+    ),
 ):
     from git_sim.rebase import Rebase
 
-    scene = Rebase(branch=branch)
+    scene = Rebase(branch=branch, rebase_merges=rebase_merges)
     handle_animations(scene=scene)
 
 

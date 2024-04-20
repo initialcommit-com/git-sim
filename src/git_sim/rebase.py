@@ -11,9 +11,10 @@ from git_sim.git_sim_base_command import GitSimBaseCommand, DottedLine
 
 
 class Rebase(GitSimBaseCommand):
-    def __init__(self, branch: str):
+    def __init__(self, branch: str, rebase_merges: bool):
         super().__init__()
         self.branch = branch
+        self.rebase_merges = rebase_merges
 
         try:
             git.repo.fun.rev_parse(self.repo, self.branch)
@@ -38,11 +39,10 @@ class Rebase(GitSimBaseCommand):
         self.alt_colors = {
             0: [m.BLUE_B, m.BLUE_E],
             1: [m.PURPLE_B, m.PURPLE_E],
-            2: [m.RED_B, m.RED_E],
-            3: [m.GREEN_B, m.GREEN_E],
+            2: [m.GOLD_B, m.GOLD_E],
+            3: [m.TEAL_B, m.TEAL_E],
             4: [m.MAROON_B, m.MAROON_E],
-            5: [m.GOLD_B, m.GOLD_E],
-            6: [m.TEAL_B, m.TEAL_E],
+            5: [m.GREEN_B, m.GREEN_E],
         }
 
     def construct(self):
@@ -79,30 +79,30 @@ class Rebase(GitSimBaseCommand):
         head_commit = self.get_commit()
         default_commits = {}
         self.get_default_commits(self.get_commit(), default_commits)
-        default_commits = self.sort_and_flatten(default_commits)
+        flat_default_commits = self.sort_and_flatten(default_commits)
 
         reached_base = False
-        for commit in default_commits:
-            if commit != "dark" and self.branch in self.repo.git.branch(
-                "--contains", commit
-            ):
-                reached_base = True
+        merge_base = self.repo.git.merge_base(self.branch, self.repo.active_branch.name)
+        if merge_base in self.drawnCommits:
+            reached_base = True
 
         self.parse_commits(head_commit, shift=4 * m.DOWN)
         self.parse_all()
         self.center_frame_on_commit(branch_commit)
 
         to_rebase = []
-        for c in default_commits:
+        for c in flat_default_commits:
             if self.branch not in self.repo.git.branch("--contains", c):
                 to_rebase.append(c)
 
         parent = branch_commit.hexsha
         branch_counts = {}
         rebased_shas = []
+        rebased_sha_map = {}
         for j, tr in enumerate(reversed(to_rebase)):
-            if len(tr.parents) > 1:
-                continue
+            if not self.rebase_merges:
+                if len(tr.parents) > 1:
+                    continue
             if not reached_base and j == 0:
                 message = "..."
             else:
@@ -112,8 +112,9 @@ class Rebase(GitSimBaseCommand):
                 branch_counts[color_index] = 0
             branch_counts[color_index] += 1
             commit_color = self.alt_colors[color_index % len(self.alt_colors)][1]
-            parent = self.setup_and_draw_parent(parent, message, color=commit_color)
+            parent = self.setup_and_draw_parent(parent, tr.hexsha, message, color=commit_color, branch_index=color_index, default_commits=default_commits)
             rebased_shas.append(parent)
+            rebased_sha_map[tr.hexsha] = parent
 
         self.recenter_frame()
         self.scale_frame()
@@ -121,9 +122,10 @@ class Rebase(GitSimBaseCommand):
         branch_counts = {}
         k = 0
         for j, tr in enumerate(reversed(to_rebase)):
-            if len(tr.parents) > 1:
-                k += 1
-                continue
+            if not self.rebase_merges:
+                if len(tr.parents) > 1:
+                    k += 1
+                    continue
             color_index = int(self.drawnCommits[tr.hexsha].get_center()[1] / -4) - 1
             if color_index not in branch_counts:
                 branch_counts[color_index] = 0
@@ -132,7 +134,10 @@ class Rebase(GitSimBaseCommand):
             arrow_color = self.alt_colors[color_index % len(self.alt_colors)][1 if branch_counts[color_index] % 2 == 0 else 1]
             self.draw_arrow_between_commits(tr.hexsha, rebased_shas[j - k], color=arrow_color)
 
-        self.reset_head_branch(parent)
+        if self.rebase_merges:
+            self.reset_head_branch(rebased_sha_map[default_commits[0][0].hexsha])
+        else:
+            self.reset_head_branch(parent)
         self.color_by(offset=2 * len(to_rebase))
         self.show_command_as_title()
         self.fadeout()
@@ -141,10 +146,13 @@ class Rebase(GitSimBaseCommand):
     def setup_and_draw_parent(
         self,
         child,
+        orig,
         commitMessage="New commit",
         shift=numpy.array([0.0, 0.0, 0.0]),
         draw_arrow=True,
         color=m.RED,
+        branch_index=0,
+        default_commits={},
     ):
         circle = m.Circle(
             stroke_color=color,
@@ -153,25 +161,48 @@ class Rebase(GitSimBaseCommand):
             fill_opacity=0.25,
         )
         circle.height = 1
-        circle.next_to(
-            self.drawnCommits[child],
-            m.LEFT if settings.reverse else m.RIGHT,
-            buff=1.5,
-        )
+        if self.rebase_merges and branch_index > 0:
+            circle.move_to(
+                self.drawnCommits[orig].get_center(),
+            ).shift(m.UP * 4 + (m.LEFT if settings.reverse else m.RIGHT) * len(default_commits[0]) * 2.5)
+        else:
+            circle.next_to(
+                self.drawnCommits[child],
+                m.LEFT if settings.reverse else m.RIGHT,
+                buff=1.5,
+            )
         circle.shift(shift)
 
+        arrow_start_ends = []
+        arrows = []
         start = circle.get_center()
-        end = self.drawnCommits[child].get_center()
-        arrow = m.Arrow(
-            start,
-            end,
-            color=self.fontColor,
-            stroke_width=self.arrow_stroke_width,
-            tip_shape=self.arrow_tip_shape,
-            max_stroke_width_to_length_ratio=1000,
-        )
-        length = numpy.linalg.norm(start - end) - (1.5 if start[1] == end[1] else 3)
-        arrow.set_length(length)
+        if not self.rebase_merges or branch_index == 0:
+            end = self.drawnCommits[child].get_center()
+            arrow_start_ends.append((start, end))
+        if self.rebase_merges:
+            for p in self.get_commit(orig).parents:
+                if self.branch in self.repo.git.branch(
+                    "--contains", p
+                ):
+                    continue
+                try:
+                    end = self.drawnCommits[p.hexsha].get_center() + m.UP * 4 + (m.LEFT if settings.reverse else m.RIGHT) * len(default_commits[0]) * 2.5
+                    arrow_start_ends.append((start, end))
+                except KeyError:
+                    pass
+
+        for start, end in arrow_start_ends:
+            arrow = m.Arrow(
+                start,
+                end,
+                color=self.fontColor,
+                stroke_width=self.arrow_stroke_width,
+                tip_shape=self.arrow_tip_shape,
+                max_stroke_width_to_length_ratio=1000,
+            )
+            length = numpy.linalg.norm(start - end) - (1.5 if start[1] == end[1] else 3)
+            arrow.set_length(length)
+            arrows.append(arrow)
 
         sha = None
         while not sha or sha in self.drawnCommits:
@@ -212,10 +243,13 @@ class Rebase(GitSimBaseCommand):
 
         if draw_arrow:
             if settings.animate:
-                self.play(m.Create(arrow), run_time=1 / settings.speed)
+                for arrow in arrows:
+                    self.play(m.Create(arrow), run_time=1 / settings.speed)
+                    self.toFadeOut.add(arrow)
             else:
-                self.add(arrow)
-            self.toFadeOut.add(arrow)
+                for arrow in arrows:
+                    self.add(arrow)
+                    self.toFadeOut.add(arrow)
 
         return sha
 
@@ -223,7 +257,9 @@ class Rebase(GitSimBaseCommand):
         if branch_index not in default_commits:
             default_commits[branch_index] = []
         if len(default_commits[branch_index]) < self.n:
-            if commit not in self.sort_and_flatten(default_commits):
+            if commit not in self.sort_and_flatten(default_commits) and self.branch not in self.repo.git.branch(
+                "--contains", commit
+            ):
                 default_commits[branch_index].append(commit)
                 for i, parent in enumerate(commit.parents):
                     self.get_default_commits(parent, default_commits, branch_index + i)
