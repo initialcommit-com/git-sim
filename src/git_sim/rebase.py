@@ -11,10 +11,12 @@ from git_sim.git_sim_base_command import GitSimBaseCommand, DottedLine
 
 
 class Rebase(GitSimBaseCommand):
-    def __init__(self, branch: str, rebase_merges: bool):
+    def __init__(self, branch: str, rebase_merges: bool, onto: bool, oldparent: str):
         super().__init__()
         self.branch = branch
         self.rebase_merges = rebase_merges
+        self.onto = onto
+        self.oldparent = oldparent
 
         try:
             git.repo.fun.rev_parse(self.repo, self.branch)
@@ -26,6 +28,14 @@ class Rebase(GitSimBaseCommand):
             )
             sys.exit(1)
 
+        if self.onto:
+            if not self.oldparent:
+                print(
+                    "git-sim error: Please specify the parent of the commit to rebase ('oldparent')"
+                )
+                sys.exit(1)
+            self.n = self.get_mainline_distance(oldparent, "HEAD")
+
         if self.branch in [branch.name for branch in self.repo.heads]:
             self.selected_branches.append(self.branch)
 
@@ -34,7 +44,7 @@ class Rebase(GitSimBaseCommand):
         except TypeError:
             pass
 
-        self.cmd += f"{type(self).__name__.lower()} {self.branch}"
+        self.cmd += f"{type(self).__name__.lower()}{' --rebase-merges' if self.rebase_merges else ''}{' --onto' if self.onto else ''} {self.branch}{' ' + self.oldparent if self.onto and self.oldparent else ''}"
 
         self.alt_colors = {
             0: [m.BLUE_B, m.BLUE_E],
@@ -81,25 +91,25 @@ class Rebase(GitSimBaseCommand):
         self.get_default_commits(self.get_commit(), default_commits)
         flat_default_commits = self.sort_and_flatten(default_commits)
 
-        reached_base = False
-        merge_base = self.repo.git.merge_base(self.branch, self.repo.active_branch.name)
-        if merge_base in self.drawnCommits:
-            reached_base = True
-
         self.parse_commits(head_commit, shift=4 * m.DOWN)
         self.parse_all()
         self.center_frame_on_commit(branch_commit)
 
-        to_rebase = []
+        self.to_rebase = []
         for c in flat_default_commits:
             if self.branch not in self.repo.git.branch("--contains", c):
-                to_rebase.append(c)
+                self.to_rebase.append(c)
+
+        reached_base = False
+        merge_base = self.repo.git.merge_base(self.branch, self.repo.active_branch.name)
+        if merge_base in self.drawnCommits or (self.onto and self.to_rebase[-1].hexsha in self.drawnCommits):
+            reached_base = True
 
         parent = branch_commit.hexsha
         branch_counts = {}
         rebased_shas = []
         rebased_sha_map = {}
-        for j, tr in enumerate(reversed(to_rebase)):
+        for j, tr in enumerate(reversed(self.to_rebase)):
             if not self.rebase_merges:
                 if len(tr.parents) > 1:
                     continue
@@ -121,7 +131,7 @@ class Rebase(GitSimBaseCommand):
 
         branch_counts = {}
         k = 0
-        for j, tr in enumerate(reversed(to_rebase)):
+        for j, tr in enumerate(reversed(self.to_rebase)):
             if not self.rebase_merges:
                 if len(tr.parents) > 1:
                     k += 1
@@ -138,7 +148,7 @@ class Rebase(GitSimBaseCommand):
             self.reset_head_branch(rebased_sha_map[default_commits[0][0].hexsha])
         else:
             self.reset_head_branch(parent)
-        self.color_by(offset=2 * len(to_rebase))
+        self.color_by(offset=2 * len(self.to_rebase))
         self.show_command_as_title()
         self.fadeout()
         self.show_outro()
@@ -161,10 +171,21 @@ class Rebase(GitSimBaseCommand):
             fill_opacity=0.25,
         )
         circle.height = 1
-        if self.rebase_merges and branch_index > 0:
+        side_offset = 0
+        num_branch_index_0_to_rebase = 0
+        for commit in default_commits[0]:
+            if commit in self.to_rebase:
+                num_branch_index_0_to_rebase += 1
+        if self.rebase_merges:
+            for bi in default_commits:
+                if bi > 0:
+                    if len(default_commits[bi]) >= num_branch_index_0_to_rebase:
+                        side_offset = len(default_commits[bi]) - num_branch_index_0_to_rebase + 1
+
+        if self.rebase_merges:
             circle.move_to(
                 self.drawnCommits[orig].get_center(),
-            ).shift(m.UP * 4 + (m.LEFT if settings.reverse else m.RIGHT) * len(default_commits[0]) * 2.5)
+            ).shift(m.UP * 4 + (m.LEFT if settings.reverse else m.RIGHT) * len(default_commits[0]) * 2.5 + (m.LEFT * side_offset if settings.reverse else m.RIGHT * side_offset) * 5)
         else:
             circle.next_to(
                 self.drawnCommits[child],
@@ -183,10 +204,10 @@ class Rebase(GitSimBaseCommand):
             for p in self.get_commit(orig).parents:
                 if self.branch in self.repo.git.branch(
                     "--contains", p
-                ):
+                ) or p not in self.to_rebase:
                     continue
                 try:
-                    end = self.drawnCommits[p.hexsha].get_center() + m.UP * 4 + (m.LEFT if settings.reverse else m.RIGHT) * len(default_commits[0]) * 2.5
+                    end = self.drawnCommits[p.hexsha].get_center() + m.UP * 4 + (m.LEFT if settings.reverse else m.RIGHT) * len(default_commits[0]) * 2.5 + (m.LEFT * side_offset if settings.reverse else m.RIGHT * side_offset) * 5
                     arrow_start_ends.append((start, end))
                 except KeyError:
                     pass
@@ -257,6 +278,8 @@ class Rebase(GitSimBaseCommand):
         if branch_index not in default_commits:
             default_commits[branch_index] = []
         if len(default_commits[branch_index]) < self.n:
+            if self.onto and commit.hexsha == self.get_commit(self.oldparent).hexsha:
+                return default_commits
             if commit not in self.sort_and_flatten(default_commits) and self.branch not in self.repo.git.branch(
                 "--contains", commit
             ):

@@ -11,7 +11,7 @@ import tempfile
 import manim as m
 
 from git.repo import Repo
-from git.exc import GitCommandError, InvalidGitRepositoryError
+from git.exc import GitCommandError, InvalidGitRepositoryError, BadName
 
 from git_sim.settings import settings
 from git_sim.enums import ColorByOptions, StyleOptions
@@ -106,7 +106,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
     def get_commit(self, sha_or_ref="HEAD"):
         if self.head_exists():
-            return self.repo.commit(sha_or_ref)
+            try:
+                return self.repo.commit(sha_or_ref)
+            except BadName:
+                print(f"git-sim error: {sha_or_ref} did not resolve to a valid Git object.")
+                sys.exit(1)
         return "dark"
 
     def get_default_commits(self):
@@ -1380,6 +1384,17 @@ class GitSimBaseCommand(m.MovingCameraScene):
     def generate_random_sha(self):
         valid_chars = "0123456789abcdef"
         return "".join(random.choices(valid_chars, k=6))
+
+    def get_mainline_distance(self, sha_or_ref1, sha_or_ref2):
+        commit1 = self.get_commit(sha_or_ref1)
+        commit2 = self.get_commit(sha_or_ref2)
+        if not self.repo.is_ancestor(commit1, commit2):
+            print(f"git-sim error: specified sha/ref '{sha_or_ref1}' must be an ancestor of sha/ref '{sha_or_ref2}'.")
+            sys.exit(1)
+        d = 0
+        while self.get_commit(f"{commit2.hexsha}~{d}").hexsha != commit1.hexsha:
+            d += 1
+        return d
 
 
 class DottedLine(m.Line):

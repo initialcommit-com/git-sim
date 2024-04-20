@@ -265,12 +265,23 @@ def rebase(
     ),
     rebase_merges: bool = typer.Option(
         False,
+        "--rebase-merges",
+        "-r",
         help="Preserve merge structure during rebase",
+    ),
+    onto: bool = typer.Option(
+        False,
+        "--onto",
+        help="Rebase onto given branch instead of upstream",
+    ),
+    oldparent: str = typer.Argument(
+        None,
+        help="The parent of the commit to rebase (to be used with --onto)",
     ),
 ):
     from git_sim.rebase import Rebase
 
-    scene = Rebase(branch=branch, rebase_merges=rebase_merges)
+    scene = Rebase(branch=branch, rebase_merges=rebase_merges, onto=onto, oldparent=oldparent)
     handle_animations(scene=scene)
 
 
