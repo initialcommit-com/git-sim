@@ -1329,12 +1329,17 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
     def show_command_as_title(self):
         if settings.show_command_as_title:
-            titleText = m.Text(
-                self.trim_cmd(self.cmd),
-                font=self.font,
-                font_size=36,
-                color=self.fontColor,
-            )
+            title_len = 100
+            while 1:
+                titleText = m.Text(
+                    self.trim_cmd(self.cmd, title_len),
+                    font=self.font,
+                    font_size=36,
+                    color=self.fontColor,
+                )
+                if titleText.width < self.camera.frame.width:
+                    break
+                title_len -= 5
             top = 0
             for element in self.toFadeOut:
                 if element.get_top()[1] > top:

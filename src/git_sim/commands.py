@@ -278,10 +278,14 @@ def rebase(
         None,
         help="The parent of the commit to rebase (to be used with --onto)",
     ),
+    until: str = typer.Argument(
+        None,
+        help="The commit to rebase up to and including (to be used with --onto)",
+    ),
 ):
     from git_sim.rebase import Rebase
 
-    scene = Rebase(branch=branch, rebase_merges=rebase_merges, onto=onto, oldparent=oldparent)
+    scene = Rebase(branch=branch, rebase_merges=rebase_merges, onto=onto, oldparent=oldparent, until=until)
     handle_animations(scene=scene)
 
 

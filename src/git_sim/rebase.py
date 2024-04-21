@@ -11,12 +11,13 @@ from git_sim.git_sim_base_command import GitSimBaseCommand, DottedLine
 
 
 class Rebase(GitSimBaseCommand):
-    def __init__(self, branch: str, rebase_merges: bool, onto: bool, oldparent: str):
+    def __init__(self, branch: str, rebase_merges: bool, onto: bool, oldparent: str, until: str):
         super().__init__()
         self.branch = branch
         self.rebase_merges = rebase_merges
         self.onto = onto
         self.oldparent = oldparent
+        self.until = until
 
         try:
             git.repo.fun.rev_parse(self.repo, self.branch)
@@ -34,7 +35,16 @@ class Rebase(GitSimBaseCommand):
                     "git-sim error: Please specify the parent of the commit to rebase ('oldparent')"
                 )
                 sys.exit(1)
-            self.n = self.get_mainline_distance(oldparent, "HEAD")
+            self.n = max(self.get_mainline_distance(self.oldparent, "HEAD"), self.n)
+
+            if self.until:
+                self.until_n = self.get_mainline_distance(self.oldparent, self.until)
+        else:
+            if self.oldparent or self.until:
+                print(
+                    "git-sim error: Please use --onto flag when specifying <oldparent> and <until>"
+                )
+                sys.exit(1)
 
         if self.branch in [branch.name for branch in self.repo.heads]:
             self.selected_branches.append(self.branch)
@@ -44,7 +54,7 @@ class Rebase(GitSimBaseCommand):
         except TypeError:
             pass
 
-        self.cmd += f"{type(self).__name__.lower()}{' --rebase-merges' if self.rebase_merges else ''}{' --onto' if self.onto else ''} {self.branch}{' ' + self.oldparent if self.onto and self.oldparent else ''}"
+        self.cmd += f"{type(self).__name__.lower()}{' --rebase-merges' if self.rebase_merges else ''}{' --onto' if self.onto else ''} {self.branch}{' ' + self.oldparent if self.onto and self.oldparent else ''}{' ' + self.until if self.onto and self.until else ''}"
 
         self.alt_colors = {
             0: [m.BLUE_B, m.BLUE_E],
@@ -98,7 +108,12 @@ class Rebase(GitSimBaseCommand):
         self.to_rebase = []
         for c in flat_default_commits:
             if self.branch not in self.repo.git.branch("--contains", c):
-                self.to_rebase.append(c)
+                if self.onto and self.until:
+                    range_commits = list(self.repo.iter_commits(f"{self.oldparent}...{self.until}"))
+                    if c in range_commits:
+                        self.to_rebase.append(c)
+                else:
+                    self.to_rebase.append(c)
 
         reached_base = False
         merge_base = self.repo.git.merge_base(self.branch, self.repo.active_branch.name)
@@ -145,7 +160,14 @@ class Rebase(GitSimBaseCommand):
             self.draw_arrow_between_commits(tr.hexsha, rebased_shas[j - k], color=arrow_color)
 
         if self.rebase_merges:
-            self.reset_head_branch(rebased_sha_map[default_commits[0][0].hexsha])
+            if self.onto and self.until:
+                until_sha = self.get_commit(self.until).hexsha
+                if until_sha == self.repo.head.commit.hexsha:
+                    self.reset_head_branch(rebased_sha_map[until_sha])
+                else:
+                    self.reset_head(rebased_sha_map[until_sha])
+            else:
+                self.reset_head_branch(rebased_sha_map[default_commits[0][0].hexsha])
         else:
             self.reset_head_branch(parent)
         self.color_by(offset=2 * len(self.to_rebase))
@@ -194,21 +216,24 @@ class Rebase(GitSimBaseCommand):
             )
         circle.shift(shift)
 
-        arrow_start_ends = []
+        arrow_start_ends = set()
         arrows = []
-        start = circle.get_center()
+        start = tuple(circle.get_center())
         if not self.rebase_merges or branch_index == 0:
-            end = self.drawnCommits[child].get_center()
-            arrow_start_ends.append((start, end))
+            end = tuple(self.drawnCommits[child].get_center())
+            arrow_start_ends.add((start, end))
         if self.rebase_merges:
             for p in self.get_commit(orig).parents:
                 if self.branch in self.repo.git.branch(
                     "--contains", p
-                ) or p not in self.to_rebase:
+                ):
                     continue
                 try:
-                    end = self.drawnCommits[p.hexsha].get_center() + m.UP * 4 + (m.LEFT if settings.reverse else m.RIGHT) * len(default_commits[0]) * 2.5 + (m.LEFT * side_offset if settings.reverse else m.RIGHT * side_offset) * 5
-                    arrow_start_ends.append((start, end))
+                    if p not in self.to_rebase:
+                        end = tuple(self.drawnCommits[self.get_commit(self.branch).hexsha].get_center())
+                    else:
+                        end = tuple(self.drawnCommits[p.hexsha].get_center() + m.UP * 4 + (m.LEFT if settings.reverse else m.RIGHT) * len(default_commits[0]) * 2.5 + (m.LEFT * side_offset if settings.reverse else m.RIGHT * side_offset) * 5)
+                    arrow_start_ends.add((start, end))
                 except KeyError:
                     pass
 
@@ -221,7 +246,7 @@ class Rebase(GitSimBaseCommand):
                 tip_shape=self.arrow_tip_shape,
                 max_stroke_width_to_length_ratio=1000,
             )
-            length = numpy.linalg.norm(start - end) - (1.5 if start[1] == end[1] else 3)
+            length = numpy.linalg.norm(numpy.subtract(end, start)) - (1.5 if start[1] == end[1] else 3)
             arrow.set_length(length)
             arrows.append(arrow)
 
