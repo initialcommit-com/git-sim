@@ -11,50 +11,57 @@ from git_sim.git_sim_base_command import GitSimBaseCommand, DottedLine
 
 
 class Rebase(GitSimBaseCommand):
-    def __init__(self, branch: str, rebase_merges: bool, onto: bool, oldparent: str, until: str):
+    def __init__(self, newbase: str, rebase_merges: bool, onto: bool, oldbase: str, until: str):
         super().__init__()
-        self.branch = branch
+        self.newbase = newbase
         self.rebase_merges = rebase_merges
         self.onto = onto
-        self.oldparent = oldparent
+        self.oldbase = oldbase
         self.until = until
 
+        self.non_merge_reached = False
+
         try:
-            git.repo.fun.rev_parse(self.repo, self.branch)
+            git.repo.fun.rev_parse(self.repo, self.newbase)
         except git.exc.BadName:
             print(
                 "git-sim error: '"
-                + self.branch
+                + self.newbase
                 + "' is not a valid Git ref or identifier."
             )
             sys.exit(1)
 
         if self.onto:
-            if not self.oldparent:
+            if not self.oldbase:
                 print(
-                    "git-sim error: Please specify the parent of the commit to rebase ('oldparent')"
+                    "git-sim error: Please specify <oldbase> as the parent of the commit to rebase"
                 )
                 sys.exit(1)
-            self.n = max(self.get_mainline_distance(self.oldparent, "HEAD"), self.n)
+            elif not self.is_on_mainline(self.oldbase, "HEAD"):
+                print(
+                    "git-sim error: Currently only mainline commit paths (i.e. paths traced following _first parents_) along <oldbase> to HEAD are supported for rebase simulations"
+                )
+                sys.exit(1)
+            self.n = max(self.get_shortest_distance(self.oldbase, "HEAD"), self.n)
 
             if self.until:
-                self.until_n = self.get_mainline_distance(self.oldparent, self.until)
+                self.until_n = self.get_shortest_distance(self.oldbase, self.until)
         else:
-            if self.oldparent or self.until:
+            if self.oldbase or self.until:
                 print(
-                    "git-sim error: Please use --onto flag when specifying <oldparent> and <until>"
+                    "git-sim error: Please use --onto flag when specifying <oldbase> and <until>"
                 )
                 sys.exit(1)
 
-        if self.branch in [branch.name for branch in self.repo.heads]:
-            self.selected_branches.append(self.branch)
+        if self.newbase in [branch.name for branch in self.repo.heads]:
+            self.selected_branches.append(self.newbase)
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
         except TypeError:
             pass
 
-        self.cmd += f"{type(self).__name__.lower()}{' --rebase-merges' if self.rebase_merges else ''}{' --onto' if self.onto else ''} {self.branch}{' ' + self.oldparent if self.onto and self.oldparent else ''}{' ' + self.until if self.onto and self.until else ''}"
+        self.cmd += f"{type(self).__name__.lower()}{' --rebase-merges' if self.rebase_merges else ''}{' --onto' if self.onto else ''} {self.newbase}{' ' + self.oldbase if self.onto and self.oldbase else ''}{' ' + self.until if self.onto and self.until else ''}"
 
         self.alt_colors = {
             0: [m.BLUE_B, m.BLUE_E],
@@ -69,33 +76,29 @@ class Rebase(GitSimBaseCommand):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(f"{settings.INFO_STRING} {self.cmd}")
 
-        if self.branch in self.repo.git.branch(
-            "--contains", self.repo.active_branch.name
-        ):
+        if self.repo.is_ancestor(self.repo.head.commit.hexsha, self.newbase):
             print(
-                "git-sim error: Branch '"
-                + self.repo.active_branch.name
-                + "' is already included in the history of active branch '"
-                + self.branch
+                "git-sim error: Current HEAD '"
+                + self.repo.head.commit.hexsha
+                + "' is already included in the history of '"
+                + self.newbase
                 + "'."
             )
             sys.exit(1)
 
-        if self.repo.active_branch.name in self.repo.git.branch(
-            "--contains", self.branch
-        ):
+        if self.repo.is_ancestor(self.newbase, self.repo.head.commit.hexsha):
             print(
-                "git-sim error: Branch '"
-                + self.branch
-                + "' is already based on active branch '"
-                + self.repo.active_branch.name
+                "git-sim error: New base '"
+                + self.newbase
+                + "' is already based on current HEAD '"
+                + self.repo.head.commit.hexsha
                 + "'."
             )
             sys.exit(1)
 
         self.show_intro()
-        branch_commit = self.get_commit(self.branch)
-        self.parse_commits(branch_commit)
+        newbase_commit = self.get_commit(self.newbase)
+        self.parse_commits(newbase_commit)
         head_commit = self.get_commit()
         default_commits = {}
         self.get_default_commits(self.get_commit(), default_commits)
@@ -103,24 +106,31 @@ class Rebase(GitSimBaseCommand):
 
         self.parse_commits(head_commit, shift=4 * m.DOWN)
         self.parse_all()
-        self.center_frame_on_commit(branch_commit)
+        self.center_frame_on_commit(newbase_commit)
 
         self.to_rebase = []
         for c in flat_default_commits:
-            if self.branch not in self.repo.git.branch("--contains", c):
+            if not self.repo.is_ancestor(c, self.newbase):
                 if self.onto and self.until:
-                    range_commits = list(self.repo.iter_commits(f"{self.oldparent}...{self.until}"))
+                    range_commits = list(self.repo.iter_commits(f"{self.oldbase}...{self.until}"))
                     if c in range_commits:
                         self.to_rebase.append(c)
                 else:
                     self.to_rebase.append(c)
+        if self.rebase_merges:
+            if len(self.to_rebase[-1].parents) > 1:
+                self.cleaned_to_rebase = []
+                for j, tr in enumerate(self.to_rebase):
+                    if self.repo.is_ancestor(self.to_rebase[-1], tr):
+                        self.cleaned_to_rebase.append(tr)
+                self.to_rebase = self.cleaned_to_rebase
 
         reached_base = False
-        merge_base = self.repo.git.merge_base(self.branch, self.repo.active_branch.name)
+        merge_base = self.repo.git.merge_base(self.newbase, self.repo.head.commit.hexsha)
         if merge_base in self.drawnCommits or (self.onto and self.to_rebase[-1].hexsha in self.drawnCommits):
             reached_base = True
 
-        parent = branch_commit.hexsha
+        parent = newbase_commit.hexsha
         branch_counts = {}
         rebased_shas = []
         rebased_sha_map = {}
@@ -159,15 +169,20 @@ class Rebase(GitSimBaseCommand):
             arrow_color = self.alt_colors[color_index % len(self.alt_colors)][1 if branch_counts[color_index] % 2 == 0 else 1]
             self.draw_arrow_between_commits(tr.hexsha, rebased_shas[j - k], color=arrow_color)
 
-        if self.rebase_merges:
-            if self.onto and self.until:
-                until_sha = self.get_commit(self.until).hexsha
-                if until_sha == self.repo.head.commit.hexsha:
-                    self.reset_head_branch(rebased_sha_map[until_sha])
-                else:
-                    self.reset_head(rebased_sha_map[until_sha])
+        if self.onto and self.until:
+            until_sha = self.get_commit(self.until).hexsha
+            if until_sha == self.repo.head.commit.hexsha:
+                self.reset_head_branch(rebased_sha_map[until_sha])
             else:
-                self.reset_head_branch(rebased_sha_map[default_commits[0][0].hexsha])
+                try:
+                    self.reset_head(rebased_sha_map[until_sha])
+                except KeyError:
+                    for sha in rebased_sha_map:
+                        if len(self.get_commit(sha).parents) < 2:
+                            self.reset_head(rebased_sha_map[sha])
+                            break
+        elif self.rebase_merges:
+            self.reset_head_branch(rebased_sha_map[default_commits[0][0].hexsha])
         else:
             self.reset_head_branch(parent)
         self.color_by(offset=2 * len(self.to_rebase))
@@ -223,14 +238,21 @@ class Rebase(GitSimBaseCommand):
             end = tuple(self.drawnCommits[child].get_center())
             arrow_start_ends.add((start, end))
         if self.rebase_merges:
-            for p in self.get_commit(orig).parents:
-                if self.branch in self.repo.git.branch(
-                    "--contains", p
-                ):
+            orig_commit = self.get_commit(orig)
+            if len(orig_commit.parents) < 2:
+                self.non_merge_reached = True
+            for p in orig_commit.parents:
+                if self.repo.is_ancestor(p, self.newbase):
                     continue
                 try:
                     if p not in self.to_rebase:
-                        end = tuple(self.drawnCommits[self.get_commit(self.branch).hexsha].get_center())
+                        if branch_index > 0:
+                            end = tuple(self.drawnCommits[self.get_commit(self.newbase).hexsha].get_center())
+                        elif not self.non_merge_reached:
+                            if p.hexsha == orig_commit.parents[1].hexsha:
+                                end = tuple(self.drawnCommits[p.hexsha].get_center())
+                        else:
+                            continue
                     else:
                         end = tuple(self.drawnCommits[p.hexsha].get_center() + m.UP * 4 + (m.LEFT if settings.reverse else m.RIGHT) * len(default_commits[0]) * 2.5 + (m.LEFT * side_offset if settings.reverse else m.RIGHT * side_offset) * 5)
                     arrow_start_ends.add((start, end))
@@ -303,11 +325,9 @@ class Rebase(GitSimBaseCommand):
         if branch_index not in default_commits:
             default_commits[branch_index] = []
         if len(default_commits[branch_index]) < self.n:
-            if self.onto and commit.hexsha == self.get_commit(self.oldparent).hexsha:
+            if self.onto and commit.hexsha == self.get_commit(self.oldbase).hexsha:
                 return default_commits
-            if commit not in self.sort_and_flatten(default_commits) and self.branch not in self.repo.git.branch(
-                "--contains", commit
-            ):
+            if commit not in self.sort_and_flatten(default_commits) and not self.repo.is_ancestor(commit, self.newbase):
                 default_commits[branch_index].append(commit)
                 for i, parent in enumerate(commit.parents):
                     self.get_default_commits(parent, default_commits, branch_index + i)

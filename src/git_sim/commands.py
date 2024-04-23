@@ -259,9 +259,9 @@ def push(
 
 
 def rebase(
-    branch: str = typer.Argument(
+    newbase: str = typer.Argument(
         ...,
-        help="The branch to simulate rebasing the checked-out commit onto",
+        help="The new base commit to simulate rebasing to",
     ),
     rebase_merges: bool = typer.Option(
         False,
@@ -274,7 +274,7 @@ def rebase(
         "--onto",
         help="Rebase onto given branch instead of upstream",
     ),
-    oldparent: str = typer.Argument(
+    oldbase: str = typer.Argument(
         None,
         help="The parent of the commit to rebase (to be used with --onto)",
     ),
@@ -285,7 +285,7 @@ def rebase(
 ):
     from git_sim.rebase import Rebase
 
-    scene = Rebase(branch=branch, rebase_merges=rebase_merges, onto=onto, oldparent=oldparent, until=until)
+    scene = Rebase(newbase=newbase, rebase_merges=rebase_merges, onto=onto, oldbase=oldbase, until=until)
     handle_animations(scene=scene)
 
 

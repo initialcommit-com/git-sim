@@ -13,6 +13,8 @@ import manim as m
 from git.repo import Repo
 from git.exc import GitCommandError, InvalidGitRepositoryError, BadName
 
+from collections import deque
+
 from git_sim.settings import settings
 from git_sim.enums import ColorByOptions, StyleOptions
 
@@ -1390,16 +1392,43 @@ class GitSimBaseCommand(m.MovingCameraScene):
         valid_chars = "0123456789abcdef"
         return "".join(random.choices(valid_chars, k=6))
 
-    def get_mainline_distance(self, sha_or_ref1, sha_or_ref2):
-        commit1 = self.get_commit(sha_or_ref1)
-        commit2 = self.get_commit(sha_or_ref2)
-        if not self.repo.is_ancestor(commit1, commit2):
-            print(f"git-sim error: specified sha/ref '{sha_or_ref1}' must be an ancestor of sha/ref '{sha_or_ref2}'.")
-            sys.exit(1)
-        d = 0
-        while self.get_commit(f"{commit2.hexsha}~{d}").hexsha != commit1.hexsha:
-            d += 1
-        return d
+    def get_shortest_distance(self, sha_or_ref1, sha_or_ref2):
+        # Create a queue for BFS that stores (commit, depth) tuples
+        queue = deque([(self.repo.commit(sha_or_ref2), 0)])
+        visited = set()
+
+        # Perform BFS from the start commit
+        while queue:
+            current_commit, depth = queue.popleft()
+
+            # If we reach the end commit
+            if current_commit.hexsha == self.repo.commit(sha_or_ref1).hexsha:
+                print(depth)
+                return depth
+
+            # Mark this commit as visited
+            visited.add(current_commit.hexsha)
+
+            # Queue all unvisited parents
+            for parent in current_commit.parents:
+                if parent.hexsha not in visited:
+                    queue.append((parent, depth + 1))
+
+        # If no path found
+        return -1
+
+    def is_on_mainline(self, sha_or_ref1, sha_or_ref2):
+        current_commit = self.get_commit(sha_or_ref2)
+
+        # Traverse the first parent history
+        while current_commit:
+            if current_commit.hexsha == self.get_commit(sha_or_ref1).hexsha:
+                return True
+            if current_commit.parents:
+                current_commit = current_commit.parents[0]
+            else:
+                break
+        return False
 
 
 class DottedLine(m.Line):
