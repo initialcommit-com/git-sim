@@ -171,8 +171,8 @@ class Rebase(GitSimBaseCommand):
 
         if self.onto and self.until:
             until_sha = self.get_commit(self.until).hexsha
-            if until_sha == self.repo.head.commit.hexsha:
-                self.reset_head_branch(rebased_sha_map[until_sha])
+            if self.until in [b.name for b in self.repo.branches]:
+                self.reset_head_branch(rebased_sha_map[until_sha], branch=self.until)
             else:
                 try:
                     self.reset_head(rebased_sha_map[until_sha])

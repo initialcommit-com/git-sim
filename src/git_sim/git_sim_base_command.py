@@ -955,7 +955,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         else:
             self.camera.frame.move_to(self.drawnCommits[commit.hexsha].get_center())
 
-    def reset_head_branch(self, hexsha, shift=numpy.array([0.0, 0.0, 0.0])):
+    def reset_head_branch(self, hexsha, branch="HEAD", shift=numpy.array([0.0, 0.0, 0.0])):
         if not self.head_exists():
             return
 
@@ -968,7 +968,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                         0,
                     )
                 ),
-                self.drawnRefs[self.repo.active_branch.name].animate.move_to(
+                self.drawnRefs[self.repo.active_branch.name if branch == "HEAD" else branch].animate.move_to(
                     (
                         self.drawnCommits[hexsha].get_center()[0] + shift[0],
                         self.drawnCommits[hexsha].get_center()[1] + 2 + shift[1],
@@ -984,7 +984,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     0,
                 )
             )
-            self.drawnRefs[self.repo.active_branch.name].move_to(
+            self.drawnRefs[self.repo.active_branch.name if branch == "HEAD" else branch].move_to(
                 (
                     self.drawnCommits[hexsha].get_center()[0] + shift[0],
                     self.drawnCommits[hexsha].get_center()[1] + 2 + shift[1],
