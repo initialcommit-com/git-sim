@@ -34,7 +34,7 @@ class Rebase(GitSimBaseCommand):
         if self.onto:
             if not self.oldbase:
                 print(
-                    "git-sim error: Please specify <oldbase> as the parent of the commit to rebase"
+                    "git-sim error: When using --onto, please specify <oldbase> as the parent of the commit to rebase"
                 )
                 sys.exit(1)
             elif not self.is_on_mainline(self.oldbase, "HEAD"):
@@ -127,6 +127,10 @@ class Rebase(GitSimBaseCommand):
 
         reached_base = False
         merge_base = self.repo.git.merge_base(self.newbase, self.repo.head.commit.hexsha)
+        base_branch_commits = list(self.repo.iter_commits(f"{merge_base}...HEAD"))
+        for bc in base_branch_commits:
+            if merge_base in [p.hexsha for p in bc.parents]:
+                reached_base = True
         if merge_base in self.drawnCommits or (self.onto and self.to_rebase[-1].hexsha in self.drawnCommits):
             reached_base = True
 
@@ -185,6 +189,7 @@ class Rebase(GitSimBaseCommand):
             self.reset_head_branch(rebased_sha_map[default_commits[0][0].hexsha])
         else:
             self.reset_head_branch(parent)
+
         self.color_by(offset=2 * len(self.to_rebase))
         self.show_command_as_title()
         self.fadeout()
@@ -222,7 +227,7 @@ class Rebase(GitSimBaseCommand):
         if self.rebase_merges:
             circle.move_to(
                 self.drawnCommits[orig].get_center(),
-            ).shift(m.UP * 4 + (m.LEFT if settings.reverse else m.RIGHT) * len(default_commits[0]) * 2.5 + (m.LEFT * side_offset if settings.reverse else m.RIGHT * side_offset) * 5)
+            ).shift(m.UP * 4 + (m.LEFT if settings.reverse else m.RIGHT) * len(default_commits[0]) * 2.5 + (m.LEFT if settings.reverse else m.RIGHT) * (5 + side_offset))
         else:
             circle.next_to(
                 self.drawnCommits[child],
@@ -254,7 +259,7 @@ class Rebase(GitSimBaseCommand):
                         else:
                             continue
                     else:
-                        end = tuple(self.drawnCommits[p.hexsha].get_center() + m.UP * 4 + (m.LEFT if settings.reverse else m.RIGHT) * len(default_commits[0]) * 2.5 + (m.LEFT * side_offset if settings.reverse else m.RIGHT * side_offset) * 5)
+                        end = tuple(self.drawnCommits[p.hexsha].get_center() + m.UP * 4 + (m.LEFT if settings.reverse else m.RIGHT) * len(default_commits[0]) * 2.5 + (m.LEFT if settings.reverse else m.RIGHT) * (5 + side_offset))
                     arrow_start_ends.add((start, end))
                 except KeyError:
                     pass

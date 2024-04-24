@@ -1358,6 +1358,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 color=self.fontColor,
             )
             self.toFadeOut.add(titleText, ul)
+            self.recenter_frame()
             self.scale_frame()
             if settings.animate:
                 self.play(m.AddTextLetterByLetter(titleText), m.Create(ul))
@@ -1403,7 +1404,6 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
             # If we reach the end commit
             if current_commit.hexsha == self.repo.commit(sha_or_ref1).hexsha:
-                print(depth)
                 return depth
 
             # Mark this commit as visited
