@@ -51,7 +51,7 @@ $ pip uninstall git-sim
 
 ```console
 $ cd path/to/git-sim
-$ python -m pip install -e .[dev]
+$ python -m pip install -e '.[dev]'
 ```
 
 > Explanation: `python -m pip` uses the `pip` module of the currently active python interpreter.
