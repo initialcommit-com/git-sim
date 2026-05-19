@@ -6,7 +6,7 @@ import sys
 import tempfile
 
 import git
-import manim as m
+import skia
 import numpy
 from git.exc import GitCommandError, InvalidGitRepositoryError
 from git.repo import Repo
@@ -15,66 +15,17 @@ from git_sim.enums import ColorByOptions, StyleOptions
 from git_sim.settings import settings
 
 
-class GitSimBaseCommand(m.MovingCameraScene):
+class GitSimBaseCommand:
     def __init__(self):
         super().__init__()
         self.cmd = "git "
         self.init_repo()
-
-        self.font = settings.font
-        self.fontColor = m.BLACK if settings.light_mode else m.WHITE
-        self.drawnCommits = {}
-        self.drawnRefs = {}
-        self.drawnRefsByCommit = {}
-        self.drawnCommitIds = {}
-        self.toFadeOut = m.Group()
-        self.prevRef = None
-        self.topref = None
-        self.n_default = settings.n_default
-        self.n = settings.n
-        self.n_orig = self.n
-        self.n_dark_commits = 0
-        self.selected_branches = []
-        self.zone_title_offset = 2.6 if platform.system() == "Windows" else 2.6
-        self.arrow_map = []
-        self.arrows = []
-        self.all = settings.all
-        self.first_parse = True
-        self.author_groups = {}
-        self.colors = [
-            m.ORANGE,
-            m.YELLOW,
-            m.GREEN,
-            m.BLUE,
-            m.MAROON,
-            m.PURPLE,
-            m.GOLD,
-            m.TEAL,
-            m.RED,
-            m.PINK,
-            m.DARK_BLUE,
-        ]
-
-        self.logo = m.ImageMobject(settings.logo)
-        self.logo.width = 3
-        self.hide_first_tag = settings.hide_first_tag
-
-        self.fill_opacity = 0.25
-        self.ref_fill_opacity = 0.25
-        if settings.transparent_bg:
-            self.fill_opacity = 0.5
-            self.ref_fill_opacity = 1.0
-
-        if settings.style == StyleOptions.CLEAN:
-            self.commit_stroke_width = 5
-            self.arrow_stroke_width = 5
-            self.arrow_tip_shape = m.ArrowTriangleFilledTip
-            self.font_weight = m.NORMAL
-        elif settings.style == StyleOptions.THICK:
-            self.commit_stroke_width = 30
-            self.arrow_stroke_width = 10
-            self.arrow_tip_shape = m.StealthTip
-            self.font_weight = m.BOLD
+        self.init_canvas()
+        self.init_gitsim_attributes()
+        self.init_canvas()
+        self.init_fonts()
+        self.init_shape_format()
+        self.init_logo()
 
     def init_repo(self):
         try:
@@ -93,6 +44,76 @@ class GitSimBaseCommand(m.MovingCameraScene):
         except InvalidGitRepositoryError:
             print("git-sim error: No Git repository found at current path.")
             sys.exit(1)
+
+    def init_canvas(self):
+        surface = skia.Surface(1920, 1080)
+        self.canvas = surface.getCanvas()
+        self.canvas_color = skia.ColorWHITE if settings.light_mode else skia.ColorBlack
+        canvas.drawColor(self.canvas_color)
+
+    def init_gitsim_attributes(self):
+        self.drawnCommits = {}
+        self.drawnRefs = {}
+        self.drawnRefsByCommit = {}
+        self.drawnCommitIds = {}
+        self.prevRef = None
+        self.topref = None
+        self.n_default = settings.n_default
+        self.n = settings.n
+        self.n_orig = self.n
+        self.n_dark_commits = 0
+        self.selected_branches = []
+        self.arrow_map = []
+        self.arrows = []
+        self.all = settings.all
+        self.first_parse = True
+        self.author_groups = {}
+        self.hide_first_tag = settings.hide_first_tag
+        self.zone_title_offset = 2.6 if platform.system() == "Windows" else 2.6
+
+    def init_colors(self):
+        self.colors = [
+            skia.ColorORANGE,
+            skia.ColorYELLOW,
+            skia.ColorGREEN,
+            skia.ColorBLUE,
+            skia.ColorMAROON,
+            skia.ColorPURPLE,
+            skia.ColorGOLD,
+            skia.ColorTEAL,
+            skia.ColorRED,
+            skia.ColorPINK,
+            skia.ColorDARK_BLUE,
+        ]
+
+    def init_fonts(self):
+        self.font = settings.font
+        self.fontColor = skia.ColorBLACK if settings.light_mode else skia.ColorWHITE
+        if settings.style == StyleOptions.CLEAN:
+            self.font_weight = "normal"
+        elif settings.style == StyleOptions.THICK:
+            self.font_weight = "bold"
+
+    def init_shape_format(self):
+        self.fill_opacity = 0.25 * 255
+        self.ref_fill_opacity = 0.25 * 255
+        if settings.transparent_bg:
+            self.fill_opacity = 0.5 * 255
+            self.ref_fill_opacity = 1.0 * 255
+
+        if settings.style == StyleOptions.CLEAN:
+            self.commit_stroke_width = 5
+            self.arrow_stroke_width = 5
+            self.arrow_tip_shape = "ArrowTriangleFilledTip"
+        elif settings.style == StyleOptions.THICK:
+            self.commit_stroke_width = 30
+            self.arrow_stroke_width = 10
+            self.arrow_tip_shape = "StealthTip"
+
+    def init_logo(self):
+        #self.logo = m.ImageMobject(settings.logo)
+        #self.logo.width = 3
+        pass
 
     def construct(self):
         print(f"{settings.INFO_STRING} {type(self).__name__.lower()}")
@@ -254,19 +275,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
     def draw_commit(self, commit, i, prevCircle, shift=numpy.array([0.0, 0.0, 0.0])):
         if commit == "dark":
-            commit_fill = m.WHITE if settings.light_mode else m.BLACK
+            commit_fill = skia.ColorWhite if settings.light_mode else skia.ColorBLACK
         elif len(commit.parents) <= 1:
-            commit_fill = m.RED
+            commit_fill = skia.ColorRED
         else:
-            commit_fill = m.GRAY
-
-        circle = m.Circle(
-            stroke_color=commit_fill,
-            stroke_width=self.commit_stroke_width,
-            fill_color=commit_fill,
-            fill_opacity=self.fill_opacity,
-        )
-        circle.height = 1
+            commit_fill = skia.ColorGRAY
 
         if shift.any():
             circle.shift(shift)
@@ -299,6 +312,25 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 else (m.LEFT if settings.reverse else m.RIGHT)
             )
             end = self.drawnCommits[commit.hexsha].get_center()
+
+
+        # --- Filled circle (semi-transparent) ---
+        paint = skia.Paint(
+            AntiAlias=True,
+            Style=skia.Paint.kFill_Style,
+            StrokeWidth=self.commit_stroke_width,
+            Color=skia.ColorSetARGB(self.fill_opacity, commit_fill[0], commit_fill[1], commit_fill[2]),  # alpha=50 (~20% opaque red)
+        )
+        canvas.drawCircle(180, 100, self.commit_radius, paint)
+
+        # --- Stroke circle (ring) ---
+        paint2 = skia.Paint(
+            AntiAlias=True,
+            Style=skia.Paint.kStroke_Style,
+            StrokeWidth=self.commit_stroke_width,
+            Color=skia.ColorSetARGB(self.fill_opacity * 2, commit_fill[0], commit_fill[1], commit_fill[2]),  # alpha=128 (~50% opaque red)
+        )
+        canvas.drawCircle(180, 100, self.commit_radius, paint2)
 
         arrow = m.Arrow(
             start,
