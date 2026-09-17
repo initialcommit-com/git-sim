@@ -15,9 +15,11 @@ trusted at the moment a human approves or rejects the command.
 import os
 import shlex
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import git
+
+from git_sim.textgraph import render_text_graph
 
 
 class Risk(str, Enum):
@@ -61,6 +63,14 @@ class PreflightReport:
         self.recovery: List[str] = []
         self.warnings: List[str] = []
         self.error: Optional[str] = None
+        # Structured hints for visual renderers (see textgraph.py): the fate of
+        # individual commits, extra revisions the graph must include besides
+        # HEAD, and the affected working-tree entries with their fate.
+        self.marks: Dict[str, str] = {}  # full sha -> label shown beside the commit
+        self.graph_tips: List[str] = []
+        self.panel_title = "Working tree"
+        self.panel_rows: List[Tuple[str, str, str]] = []  # (status, name, fate)
+        self.text_graph = ""
 
     def escalate(self, risk: Risk) -> None:
         order = [Risk.SAFE, Risk.CAUTION, Risk.DESTRUCTIVE]
@@ -77,6 +87,7 @@ class PreflightReport:
             "would_lose": self.would_lose,
             "recovery": self.recovery,
             "warnings": self.warnings,
+            "text_graph": self.text_graph,
             "error": self.error,
         }
 
@@ -124,10 +135,20 @@ def _tracking_ref(repo: git.Repo) -> Optional[git.RemoteReference]:
         return None
 
 
-def analyze(command: str, repo_path: str = ".") -> PreflightReport:
+def _stash_row(entry: str, fate: str) -> Tuple[str, str, str]:
+    """Turn a 'stash@{0}: WIP on main: ...' line into a panel row."""
+    ref, _, description = entry.partition(":")
+    return (ref.strip(), description.strip(), fate)
+
+
+def analyze(
+    command: str, repo_path: str = ".", render_text: bool = True
+) -> PreflightReport:
     """Analyze a git command against a real repository.
 
     Returns a PreflightReport of deterministic facts. Never modifies the repo.
+    With render_text (default), the report also carries a plain-text commit
+    graph of the operation for terminals that cannot show an image.
     """
     tokens = parse_command(command)
     subcommand = tokens[0] if tokens else ""
@@ -148,6 +169,8 @@ def analyze(command: str, repo_path: str = ".") -> PreflightReport:
     try:
         if analyzer:
             analyzer(repo, args, report)
+            if render_text and report.error is None:
+                report.text_graph = render_text_graph(repo, report)
         elif subcommand in READ_ONLY_COMMANDS:
             report.summary = f"'{subcommand}' does not modify the repository."
         else:
@@ -187,6 +210,11 @@ def _analyze_reset(repo: git.Repo, args: List[str], report: PreflightReport) -> 
         f"Moves {branch} from {_short_sha(head_commit)} to "
         f"{_short_sha(target_commit)} ({mode} reset)."
     )
+    for c in abandoned:
+        report.marks[c.hexsha] = "ABANDONED"
+    if target_commit.hexsha != head_commit.hexsha:
+        report.graph_tips.append(target_commit.hexsha)
+        report.marks[target_commit.hexsha] = "NEW HEAD"
 
     if abandoned:
         report.escalate(Risk.CAUTION)
@@ -208,8 +236,10 @@ def _analyze_reset(repo: git.Repo, args: List[str], report: PreflightReport) -> 
         report.escalate(Risk.DESTRUCTIVE if (dirty["staged"] or dirty["unstaged"]) else Risk.CAUTION)
         for f in dirty["staged"]:
             report.would_lose.append(f"staged changes in {f} (NOT recoverable)")
+            report.panel_rows.append(("staged", f, "DISCARDED (not recoverable)"))
         for f in dirty["unstaged"]:
             report.would_lose.append(f"unstaged changes in {f} (NOT recoverable)")
+            report.panel_rows.append(("modified", f, "DISCARDED (not recoverable)"))
         if dirty["staged"] or dirty["unstaged"]:
             report.warnings.append(
                 "Uncommitted changes discarded by --hard cannot be recovered from the reflog."
@@ -224,6 +254,9 @@ def _analyze_reset(repo: git.Repo, args: List[str], report: PreflightReport) -> 
         if dirty["staged"]:
             report.facts.append(
                 f"{len(dirty['staged'])} staged file(s) will be unstaged (changes kept in working tree)."
+            )
+            report.panel_rows.extend(
+                ("staged", f, "unstaged (changes kept)") for f in dirty["staged"]
             )
     else:
         report.facts.append("Soft reset: index and working tree are untouched.")
@@ -249,6 +282,9 @@ def _analyze_clean(repo: git.Repo, args: List[str], report: PreflightReport) -> 
     if files:
         report.escalate(Risk.DESTRUCTIVE)
         report.would_lose.extend(f"{f} (untracked — NOT recoverable)" for f in files)
+        report.panel_rows.extend(
+            ("untracked", f, "DELETED (not recoverable)") for f in files
+        )
         report.warnings.append(
             "Untracked files are not in git's object store; deletion is permanent."
         )
@@ -275,6 +311,10 @@ def _analyze_rebase(repo: git.Repo, args: List[str], report: PreflightReport) ->
         f"{positional[0]} — every replayed commit gets a NEW hash."
     )
     report.facts.extend(f"  {_describe_commit(c)}" for c in replayed)
+    report.graph_tips.append(upstream.hexsha)
+    for c in replayed:
+        report.marks[c.hexsha] = "REPLAYED (new hash)"
+    report.marks.setdefault(upstream.hexsha, "NEW BASE")
     if replayed:
         report.recovery.append(
             f"Original commits stay in the reflog: git reset --hard {_short_sha(head)}"
@@ -286,6 +326,10 @@ def _analyze_rebase(repo: git.Repo, args: List[str], report: PreflightReport) ->
         already_pushed = len(replayed) - len(published)
         if already_pushed > 0:
             report.escalate(Risk.DESTRUCTIVE)
+            unpublished = {c.hexsha for c in published}
+            for c in replayed:
+                if c.hexsha not in unpublished:
+                    report.marks[c.hexsha] = "REPLAYED (already PUSHED)"
             report.warnings.append(
                 f"{already_pushed} of the replayed commit(s) already exist on "
                 f"{tracking.name}: rebasing rewrites PUBLISHED history and will "
@@ -312,6 +356,9 @@ def _analyze_merge(repo: git.Repo, args: List[str], report: PreflightReport) -> 
     kind = "fast-forward" if ff else "merge commit"
     report.summary = f"Brings in {len(incoming)} commit(s) from {positional[0]} ({kind})."
     report.facts.extend(f"  {_describe_commit(c)}" for c in incoming[:20])
+    report.graph_tips.append(other.hexsha)
+    for c in incoming:
+        report.marks[c.hexsha] = "INCOMING"
 
     # Deterministic conflict detection via git's own merge machinery (git >= 2.38).
     if not ff:
@@ -360,6 +407,16 @@ def _analyze_push(repo: git.Repo, args: List[str], report: PreflightReport) -> N
         report.escalate(Risk.CAUTION if force else Risk.SAFE)
         return
 
+    report.graph_tips.append(tracking.hexsha)
+    for c in outgoing:
+        report.marks[c.hexsha] = "PUSHED"
+    remote_fate = (
+        "OVERWRITTEN (remote only)"
+        if (force or lease)
+        else "MISSING LOCALLY (blocks push)"
+    )
+    for c in remote_only:
+        report.marks[c.hexsha] = remote_fate
     report.facts.append(
         f"Local is {len(outgoing)} ahead / {len(remote_only)} behind {tracking_name} "
         "(as of last fetch — run git fetch for current data)."
@@ -414,6 +471,11 @@ def _analyze_branch(repo: git.Repo, args: List[str], report: PreflightReport) ->
             report.error = f"Branch not found: {name}"
             return
         unmerged = list(repo.iter_commits(f"HEAD..{target.hexsha}"))
+        report.graph_tips.append(target.hexsha)
+        for c in unmerged:
+            report.marks[c.hexsha] = (
+                "ABANDONED (branch deleted)" if forced else "UNMERGED (git refuses)"
+            )
         if unmerged:
             if forced:
                 report.escalate(Risk.DESTRUCTIVE)
@@ -444,12 +506,23 @@ def _analyze_restore(repo: git.Repo, args: List[str], report: PreflightReport) -
     if staged_only:
         report.summary = "Unstages changes; working tree files keep their content."
         return
-    affected = [
-        f for f in dirty["unstaged"] + dirty["staged"]
-        if any(p == "." or f == p or f.startswith(p.rstrip("/") + "/") or f == p.lstrip("./") for p in paths)
-    ] if paths else []
+    def matches(f: str) -> bool:
+        return any(
+            p == "."
+            or f == p
+            or f.startswith(p.rstrip("/") + "/")
+            or f == p.lstrip("./")
+            for p in paths
+        )
+
+    rows: List[Tuple[str, str]] = []
+    if paths:
+        rows.extend(("modified", f) for f in dirty["unstaged"] if matches(f))
+        rows.extend(("staged", f) for f in dirty["staged"] if matches(f))
+    affected = [f for _, f in rows]
     if affected:
         report.escalate(Risk.DESTRUCTIVE)
+        report.panel_rows.extend((s, f, "DISCARDED (not recoverable)") for s, f in rows)
         report.summary = (
             f"Overwrites {len(set(affected))} file(s) with the index/HEAD version, "
             "discarding local modifications:"
@@ -475,8 +548,22 @@ def _analyze_checkout(repo: git.Repo, args: List[str], report: PreflightReport) 
     positional = _positionals(args)
     target = positional[0] if positional else ""
     report.summary = f"Switches to '{target}'."
+    if target:
+        try:
+            target_commit = repo.commit(target)
+        except Exception:
+            target_commit = None
+        if (
+            target_commit is not None
+            and target_commit.hexsha != repo.head.commit.hexsha
+        ):
+            report.graph_tips.append(target_commit.hexsha)
+            report.marks[target_commit.hexsha] = "SWITCH TARGET"
     if n_dirty:
         report.escalate(Risk.CAUTION)
+        carried = "carried over (or switch refused)"
+        report.panel_rows.extend(("staged", f, carried) for f in dirty["staged"])
+        report.panel_rows.extend(("modified", f, carried) for f in dirty["unstaged"])
         report.facts.append(
             f"{n_dirty} modified file(s) will be carried over, or git will refuse "
             "the switch if they conflict with the target."
@@ -486,11 +573,13 @@ def _analyze_checkout(repo: git.Repo, args: List[str], report: PreflightReport) 
 def _analyze_stash(repo: git.Repo, args: List[str], report: PreflightReport) -> None:
     sub = args[0] if args and not args[0].startswith("-") else "push"
     stashes = repo.git.stash("list").splitlines()
+    report.panel_title = "Stashes"
     if sub == "clear":
         if stashes:
             report.escalate(Risk.DESTRUCTIVE)
             report.summary = f"Deletes ALL {len(stashes)} stash entries."
             report.would_lose.extend(stashes)
+            report.panel_rows.extend(_stash_row(s, "DELETED") for s in stashes)
             report.warnings.append("Cleared stashes are hard to recover (dangling commits only).")
         else:
             report.summary = "No stashes exist; nothing to clear."
@@ -500,6 +589,7 @@ def _analyze_stash(repo: git.Repo, args: List[str], report: PreflightReport) -> 
         report.escalate(Risk.CAUTION if match else Risk.SAFE)
         report.summary = f"Drops {target}."
         report.would_lose.extend(match)
+        report.panel_rows.extend(_stash_row(s, "DROPPED") for s in match)
     elif sub == "pop":
         report.summary = "Applies and removes the top stash; kept if conflicts occur."
     else:
@@ -512,6 +602,7 @@ def _analyze_commit(repo: git.Repo, args: List[str], report: PreflightReport) ->
         return
     head = repo.head.commit
     report.escalate(Risk.CAUTION)
+    report.marks[head.hexsha] = "REPLACED (new hash)"
     report.summary = f"Replaces HEAD commit {_short_sha(head)} with a new commit (new hash)."
     report.recovery.append(f"Old commit stays in reflog: git reset --soft {_short_sha(head)}")
     tracking = _tracking_ref(repo)
@@ -519,6 +610,7 @@ def _analyze_commit(repo: git.Repo, args: List[str], report: PreflightReport) ->
         published = list(repo.iter_commits(f"{tracking.name}..HEAD"))
         if not published:
             report.escalate(Risk.DESTRUCTIVE)
+            report.marks[head.hexsha] = "REPLACED (already PUSHED)"
             report.warnings.append(
                 f"HEAD is already pushed to {tracking.name}: amending rewrites "
                 "PUBLISHED history and will require a force-push."

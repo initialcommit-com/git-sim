@@ -187,3 +187,126 @@ def test_not_a_repo_reports_error(tmp_path):
 def test_unknown_command_defaults_to_caution(repo):
     report = analyze("git filter-branch --force", str(repo))
     assert report.risk == Risk.CAUTION
+    assert report.text_graph == ""
+
+
+# --- text graph -----------------------------------------------------------
+
+
+def test_reset_text_graph_marks_commits_and_files(repo):
+    (repo / "file1.txt").write_text("modified\n")
+    graph = analyze("git reset --hard HEAD~2", str(repo)).text_graph
+    assert graph.count("<- ABANDONED") == 2
+    assert "<- NEW HEAD" in graph
+    assert "commit 1" in graph  # the target commit is visible
+    assert "(HEAD -> main" in graph  # git's own ref decorations
+    assert "Working tree:" in graph
+    assert "modified  file1.txt" in graph
+    assert "DISCARDED" in graph
+
+
+def test_reset_text_graph_marker_column_is_aligned(repo):
+    graph = analyze("git reset --hard HEAD~2", str(repo)).text_graph
+    positions = {line.index("<-") for line in graph.splitlines() if "<-" in line}
+    assert len(positions) == 1
+
+
+def test_rebase_text_graph_shows_replayed_and_new_base(repo):
+    run_git(repo, "checkout", "feature")
+    graph = analyze("git rebase main", str(repo)).text_graph
+    assert "<- REPLAYED (new hash)" in graph
+    assert "<- NEW BASE" in graph
+
+
+def test_branch_force_delete_text_graph_includes_branch_tip(repo):
+    graph = analyze("git branch -D feature", str(repo)).text_graph
+    assert "feature commit" in graph
+    assert "<- ABANDONED (branch deleted)" in graph
+
+
+def test_clean_text_graph_lists_files_in_panel(repo):
+    (repo / "junk1.log").write_text("x")
+    graph = analyze("git clean -f", str(repo)).text_graph
+    assert "untracked junk1.log" in graph
+    assert "<- DELETED (not recoverable)" in graph
+
+
+def test_file_only_operations_show_panel_without_commit_graph(repo):
+    (repo / "file1.txt").write_text("modified\n")
+    for command in (
+        "git checkout -- file1.txt",
+        "git restore file1.txt",
+        "git reset --hard HEAD",
+    ):
+        graph = analyze(command, str(repo)).text_graph
+        commit_lines = [line for line in graph.splitlines() if line.startswith("*")]
+        assert commit_lines == [], command
+        assert graph.startswith("Working tree:"), command
+        assert "modified  file1.txt" in graph, command
+
+
+def test_stash_clear_text_panel(repo):
+    (repo / "file1.txt").write_text("modified\n")
+    run_git(repo, "stash")
+    graph = analyze("git stash clear", str(repo)).text_graph
+    assert "Stashes:" in graph
+    assert "stash@{0}" in graph
+    assert "<- DELETED" in graph
+
+
+def test_amend_text_graph_marks_head(repo):
+    graph = analyze("git commit --amend -m 'x'", str(repo)).text_graph
+    assert "<- REPLACED (new hash)" in graph
+
+
+def test_force_push_text_graph_marks_remote_only(repo, tmp_path):
+    remote = tmp_path / "remote.git"
+    run_git(tmp_path, "init", "--bare", str(remote))
+    run_git(repo, "remote", "add", "origin", str(remote))
+    run_git(repo, "push", "-u", "origin", "main")
+    clone = tmp_path / "clone"
+    run_git(tmp_path, "clone", str(remote), str(clone))
+    run_git(clone, "config", "user.email", "other@example.com")
+    run_git(clone, "config", "user.name", "Other")
+    (clone / "remote-work.txt").write_text("important\n")
+    run_git(clone, "add", ".")
+    run_git(clone, "commit", "-m", "remote-only work")
+    run_git(clone, "push")
+    run_git(repo, "fetch")
+    (repo / "local.txt").write_text("local\n")
+    run_git(repo, "add", ".")
+    run_git(repo, "commit", "-m", "local work")
+
+    graph = analyze("git push --force", str(repo)).text_graph
+    assert "remote-only work" in graph
+    assert "<- OVERWRITTEN (remote only)" in graph
+    assert "<- PUSHED" in graph
+    # Divergent history draws a real graph with a connector row.
+    assert any(line.startswith("|") for line in graph.splitlines())
+
+
+def test_text_graph_elides_long_history_but_shows_target(repo):
+    for i in range(20):
+        (repo / "many.txt").write_text(f"{i}\n")
+        run_git(repo, "add", "many.txt")
+        run_git(repo, "commit", "-m", f"filler {i}")
+    graph = analyze("git reset --hard HEAD~12", str(repo)).text_graph
+    commit_lines = [line for line in graph.splitlines() if line.startswith("*")]
+    assert graph.count("<- ABANDONED") == 12
+    assert "<- NEW HEAD" in graph
+    assert 13 <= len(commit_lines) <= 14  # target plus one line of context
+    assert "earlier commit(s) not shown" in graph
+
+
+def test_read_only_command_has_no_text_graph(repo):
+    assert analyze("git status", str(repo)).text_graph == ""
+
+
+def test_text_graph_can_be_disabled(repo):
+    report = analyze("git reset --hard HEAD~1", str(repo), render_text=False)
+    assert report.text_graph == ""
+    assert report.marks  # structured hints are still recorded
+
+
+def test_text_graph_in_to_dict(repo):
+    assert "text_graph" in analyze("git reset --hard HEAD~1", str(repo)).to_dict()

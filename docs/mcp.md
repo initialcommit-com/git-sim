@@ -34,11 +34,41 @@ Both tools are strictly read-only with respect to the repository.
   "would_lose": ["unstaged changes in pyproject.toml (NOT recoverable)"],
   "recovery": ["Commits stay in the reflog ~90 days: git reset --hard ccd3d99"],
   "warnings": ["Uncommitted changes discarded by --hard cannot be recovered from the reflog."],
+  "text_graph": "* c362a60 (HEAD -> mcp-server) Add Claude Code PreToolUse hook ...   <- ABANDONED\n...",
   "simulation_image": "C:/.../git-sim-reset_09-16-26.jpg"
 }
 ```
 
 Risk levels: `safe`, `caution`, `destructive`.
+
+### Text graph
+
+Alongside the image, every report carries `text_graph`: a plain-text
+rendering of the operation for places an image cannot reach (a permission
+prompt, an SSH session, CI logs). It is git's own `log --graph` layout with a
+fate marker beside each affected commit, followed by a panel of the affected
+working-tree entries:
+
+```text
+* c362a60 (HEAD -> mcp-server) Add Claude Code PreToolUse hook for autom...   <- ABANDONED
+* d31d48b Add MCP server with deterministic git pre-flight engine             <- ABANDONED
+* ccd3d99 (tag: v0.3.5, main) Bump version to 0.3.5                           <- NEW HEAD
+* 4f7c57e Update logo entry in manifest
+  ... 212 earlier commit(s) not shown
+
+Working tree:
+  modified  README.md                                                         <- DISCARDED (not recoverable)
+```
+
+Markers by operation: `ABANDONED` / `NEW HEAD` (reset), `REPLAYED (new hash)`
+/ `NEW BASE` (rebase), `INCOMING` (merge), `PUSHED` / `OVERWRITTEN (remote
+only)` (push), `ABANDONED (branch deleted)` (branch -D), `REPLACED (new hash)`
+(commit --amend), `SWITCH TARGET` (checkout/switch). The window shows about 8
+commits, widened as needed so every marked commit is visible, and the panel
+lists deleted, discarded, dropped or carried-over entries. Divergent history
+(force-push, rebase onto a moved branch) draws real branch lines. The commit
+graph only appears when some commit's fate changes; file-only operations
+(`checkout -- path`, `restore`, `clean`, `stash`) show just the panel.
 
 Analyzers currently implemented: `reset` (abandoned commits + discarded
 worktree changes), `clean` (exact file list via `git clean -n`), `rebase`
@@ -110,8 +140,10 @@ Behavior:
 - Safe commands (and non-git commands) pass through instantly — a cheap
   string pre-filter avoids any analysis cost on the vast majority of calls.
 - Risky commands trigger an "ask" permission decision whose reason contains
-  the pre-flight report (risk level, what would be lost, recovery command),
-  so you approve or reject with ground truth in front of you.
+  the pre-flight report (risk level, the text graph of affected commits and
+  files, what would be lost, recovery command), so you approve or reject
+  with ground truth in front of you — even in a terminal where the image
+  cannot open.
 - The hook never denies on its own and fails open on any internal error —
   it adds information to Claude Code's existing permission flow, never a
   new failure mode.
@@ -123,6 +155,7 @@ Configuration via environment variables:
 | `GIT_SIM_HOOK_ASK_ON` | `caution` | Minimum risk that triggers the prompt (`caution` or `destructive`) |
 | `GIT_SIM_HOOK_RENDER` | `1` | Set `0` to skip rendering the image (facts only, faster) |
 | `GIT_SIM_HOOK_OPEN` | `1` | Set `0` to not auto-open the rendered image |
+| `GIT_SIM_HOOK_TEXT` | `1` | Set `0` to omit the text graph from the prompt |
 
 ## Other MCP clients
 

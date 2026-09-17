@@ -86,3 +86,26 @@ def test_threshold_destructive_skips_caution(repo, monkeypatch):
 
 def test_outside_a_repo_stays_silent(tmp_path):
     assert run_hook(hook_input("git reset --hard", tmp_path)) is None
+
+
+def test_reason_includes_text_graph(repo):
+    (repo / "file1.txt").write_text("modified\n")
+    output = run_hook(hook_input("git reset --hard HEAD~1", repo))
+    reason = output["hookSpecificOutput"]["permissionDecisionReason"]
+    assert "<- ABANDONED" in reason
+    assert "<- NEW HEAD" in reason
+    assert "Working tree:" in reason
+    # Graph sits between the summary and the losses.
+    assert (
+        reason.index("hard reset")
+        < reason.index("<- ABANDONED")
+        < reason.index("Would lose:")
+    )
+
+
+def test_text_graph_can_be_disabled_by_env(repo, monkeypatch):
+    monkeypatch.setenv("GIT_SIM_HOOK_TEXT", "0")
+    output = run_hook(hook_input("git reset --hard HEAD~1", repo))
+    reason = output["hookSpecificOutput"]["permissionDecisionReason"]
+    assert "<- " not in reason
+    assert "reflog" in reason

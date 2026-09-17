@@ -16,6 +16,7 @@ Environment variables:
                          level that triggers the approval prompt.
     GIT_SIM_HOOK_RENDER  "0" to skip rendering the git-sim image (facts only).
     GIT_SIM_HOOK_OPEN    "0" to skip auto-opening the rendered image.
+    GIT_SIM_HOOK_TEXT    "0" to omit the plain-text commit graph from the prompt.
 """
 
 import json
@@ -76,6 +77,10 @@ def format_reason(reports: List[PreflightReport], image_path: Optional[str]) -> 
         lines.append(f"git-sim preflight: {report.risk.value.upper()} — {report.command}")
         if report.summary:
             lines.append(report.summary)
+        if report.text_graph:
+            lines.append("")
+            lines.append(report.text_graph)
+            lines.append("")
         if report.would_lose:
             lines.append("Would lose:")
             lines.extend(f"  - {loss}" for loss in report.would_lose[:8])
@@ -102,9 +107,10 @@ def run_hook(hook_input: dict) -> Optional[dict]:
         return None
 
     threshold = os.environ.get("GIT_SIM_HOOK_ASK_ON", "caution")
+    render_text = os.environ.get("GIT_SIM_HOOK_TEXT", "1") != "0"
     flagged = []
     for git_command in extract_git_commands(command):
-        report = analyze(git_command, cwd)
+        report = analyze(git_command, cwd, render_text=render_text)
         if report.error is None and _risk_triggers(report.risk, threshold):
             flagged.append(report)
 
