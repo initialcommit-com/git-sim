@@ -46,9 +46,11 @@ version = { attr = "git_sim.__version__" }
 
 [project.optional-dependencies]
 dev = ["black", "numpy", "pillow", "pytest"]
+mcp = ["mcp>=2.0"]
 
 [project.scripts]
 git-sim = "git_sim.__main__:app"
+git-sim-mcp = "git_sim.mcp_server:main"
 
 [project.urls]
 Homepage = "https://initialcommit.com/tools/git-sim"

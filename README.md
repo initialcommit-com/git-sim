@@ -43,6 +43,7 @@ Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work 
 - Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
 - Animation only: Add custom branded intro/outro sequences if desired
 - Animation only: Speed up or slow down animation speed as desired
+- NEW: [MCP server](docs/mcp.md) so AI coding agents (Claude Code, Cursor, etc.) can run deterministic visual pre-flight checks before executing destructive git commands in your repo (`pip install git-sim[mcp]`)
 
 ## Quickstart
 Note: If you prefer to install git-sim with Docker, skip steps (1) and (2) here and jump to the [Docker installation](#docker-installation) section below, then come back here to step (3).
