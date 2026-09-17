@@ -34,7 +34,7 @@ from git_sim.preflight import PreflightReport, Risk, analyze
 GIT_WORD = re.compile(r"\bgit(?!-)\b")
 RISKY_WORDS = re.compile(
     r"\b(reset|clean|rebase|restore|checkout|switch|stash|branch|push|commit"
-    r"|filter-branch)\b"
+    r"|worktree|filter-branch)\b"
 )
 
 SHELL_SEPARATORS = re.compile(r"&&|\|\||;|\||\n")
@@ -75,6 +75,8 @@ def format_reason(reports: List[PreflightReport], image_path: Optional[str]) -> 
     lines = []
     for report in reports:
         lines.append(f"git-sim preflight: {report.risk.value.upper()} — {report.command}")
+        if report.location:
+            lines.append(report.location)
         if report.summary:
             lines.append(report.summary)
         if report.text_graph:

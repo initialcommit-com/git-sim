@@ -77,8 +77,34 @@ deterministic conflict prediction via `git merge-tree`), `push` (force-push
 overwrite detection against the tracking ref), `branch -d/-D` (unmerged
 commit detection), `restore`/`checkout`/`switch` (discarded local
 modifications), `stash` (drop/clear losses), `commit --amend`
-(published-history detection). Read-only commands are recognized as `safe`;
-unrecognized commands default to `caution`.
+(published-history detection), `worktree remove/prune` (uncommitted changes
+deleted with the worktree; stale records). Read-only commands are recognized
+as `safe`; unrecognized commands default to `caution`.
+
+### Worktree awareness
+
+Agents running in parallel usually get one worktree each, and the parts of
+git that worktrees share — the stash list, branches, the object store — are
+where one agent's command reaches another's work. Every report therefore
+carries a `worktree` object (the worktree the command runs in, its branch,
+and the other worktrees), and when the repo has more than one worktree the
+hook prompt opens with a location line such as
+`In worktree 'agent-2' on feat-b; other worktree(s): repo (main), agent-1 (feat-a).`
+
+The analyzers use the same information:
+
+- `stash drop` / `stash clear` flag entries that belong to branches checked
+  out in other worktrees, since the stash list is shared repo-wide.
+- `branch -d/-D` and `checkout`/`switch` report that git will refuse when the
+  branch is checked out in another worktree (and `switch`/`checkout` honour
+  `--ignore-other-worktrees`).
+- `rebase` warns when another worktree's branch is based on the commits being
+  replayed, because that branch will diverge afterwards.
+- `worktree remove` lists the uncommitted changes that `--force` would
+  delete, and reports that git refuses without it; `worktree prune` lists
+  the stale records it would drop.
+- In the text graph, branches checked out elsewhere are decorated with the
+  worktree name, e.g. `(feat-a @agent-1)`.
 
 ## Installation
 

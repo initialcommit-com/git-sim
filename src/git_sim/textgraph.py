@@ -97,6 +97,18 @@ def _choose_window(
     return shown, total
 
 
+def _label_worktrees(decor: str, worktree_branches: dict) -> str:
+    """Append '@<worktree>' to branch decorations checked out in other worktrees."""
+    if not decor or not worktree_branches:
+        return decor
+    parts = []
+    for item in decor.split(", "):
+        branch = item.split(" -> ")[-1]
+        label = worktree_branches.get(branch)
+        parts.append(f"{item} @{label}" if label else item)
+    return ", ".join(parts)
+
+
 def _render_graph(repo: git.Repo, report, max_commits: int, hard_cap: int) -> List[str]:
     tips = _resolve_tips(repo, report.graph_tips)
     shown, total = _choose_window(repo, tips, list(report.marks), max_commits, hard_cap)
@@ -113,7 +125,10 @@ def _render_graph(repo: git.Repo, report, max_commits: int, hard_cap: int) -> Li
             # Connector rows such as "|/" or "| *": keep as-is.
             entries.append((line.rstrip(), None, None))
             continue
-        decor = f"({m.group('decor')}) " if m.group("decor") else ""
+        decor_text = _label_worktrees(
+            m.group("decor"), getattr(report, "worktree_branches", None) or {}
+        )
+        decor = f"({decor_text}) " if decor_text else ""
         body = _truncate(f"{m.group('short')} {decor}{m.group('subject')}", BODY_WIDTH)
         entries.append((m.group("prefix"), body, report.marks.get(m.group("sha"))))
 

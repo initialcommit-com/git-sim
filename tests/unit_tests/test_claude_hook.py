@@ -117,6 +117,25 @@ def test_hook_renders_simulation_image(repo, monkeypatch):
     assert image_path.endswith((".jpg", ".png"))
 
 
+def test_reason_includes_worktree_location(repo, tmp_path):
+    run_git(repo, "branch", "feature")
+    run_git(repo, "worktree", "add", str(tmp_path / "wt"), "feature")
+    (repo / "file1.txt").write_text("modified\n")
+    output = run_hook(hook_input("git reset --hard HEAD~1", repo))
+    reason = output["hookSpecificOutput"]["permissionDecisionReason"]
+    assert "In the main worktree on main; other worktree(s): wt (feature)." in reason
+
+
+def test_worktree_remove_is_prefiltered_and_analyzed(repo, tmp_path):
+    run_git(repo, "branch", "feature")
+    wt = tmp_path / "wt"
+    run_git(repo, "worktree", "add", str(wt), "feature")
+    (wt / "file1.txt").write_text("changed\n")
+    output = run_hook(hook_input(f"git worktree remove --force {wt}", repo))
+    reason = output["hookSpecificOutput"]["permissionDecisionReason"]
+    assert "DESTRUCTIVE" in reason and "file1.txt" in reason
+
+
 def test_text_graph_can_be_disabled_by_env(repo, monkeypatch):
     monkeypatch.setenv("GIT_SIM_HOOK_TEXT", "0")
     output = run_hook(hook_input("git reset --hard HEAD~1", repo))
