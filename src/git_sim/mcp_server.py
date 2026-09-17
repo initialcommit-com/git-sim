@@ -12,23 +12,12 @@ Requires the 'mcp' extra: pip install git-sim[mcp]
 
 import json
 import os
-import subprocess
-import sys
-import tempfile
-from typing import List, Optional
+from typing import Optional
 
 from mcp.server.mcpserver import Image, MCPServer
 
-from git_sim.preflight import analyze, parse_command
-
-RENDERABLE_COMMANDS = {
-    "add", "branch", "checkout", "cherry-pick", "clean", "clone", "commit",
-    "config", "fetch", "init", "log", "merge", "mv", "pull", "push", "rebase",
-    "remote", "reset", "restore", "revert", "rm", "stash", "status", "switch",
-    "tag",
-}
-
-RENDER_TIMEOUT_SECONDS = 180
+from git_sim.preflight import analyze
+from git_sim.simulate import render_simulation
 
 server = MCPServer(
     "git-sim",
@@ -43,75 +32,6 @@ server = MCPServer(
         "the command will do."
     ),
 )
-
-
-def _media_dir(repo_path: str) -> str:
-    root = os.path.join(tempfile.gettempdir(), "git-sim-mcp")
-    os.makedirs(root, exist_ok=True)
-    return root
-
-
-def _run_git_sim(cli_args: List[str], repo_path: str) -> subprocess.CompletedProcess:
-    cmd = [
-        sys.executable,
-        "-m",
-        "git_sim",
-        "-d",
-        "--output-only-path",
-        "--media-dir",
-        _media_dir(repo_path),
-        *cli_args,
-    ]
-    return subprocess.run(
-        cmd,
-        cwd=repo_path,
-        capture_output=True,
-        text=True,
-        timeout=RENDER_TIMEOUT_SECONDS,
-    )
-
-
-def render_simulation(command: str, repo_path: str) -> dict:
-    """Render a git-sim image for the given git command.
-
-    Tries the command verbatim first; if git-sim rejects an option git-sim
-    doesn't support, retries with positional arguments only so the user still
-    gets a visual of the repo context.
-    """
-    tokens = parse_command(command)
-    if not tokens:
-        return {"image_path": None, "render_note": "empty command"}
-    subcommand, args = tokens[0], tokens[1:]
-    if subcommand not in RENDERABLE_COMMANDS:
-        return {
-            "image_path": None,
-            "render_note": f"git-sim does not render '{subcommand}'",
-        }
-
-    attempts = [[subcommand, *args]]
-    positional_only = [subcommand, *[a for a in args if not a.startswith("-")]]
-    if positional_only != attempts[0]:
-        attempts.append(positional_only)
-
-    last_error = ""
-    for i, attempt in enumerate(attempts):
-        try:
-            proc = _run_git_sim(attempt, repo_path)
-        except subprocess.TimeoutExpired:
-            return {"image_path": None, "render_note": "render timed out"}
-        lines = [ln.strip() for ln in proc.stdout.splitlines() if ln.strip()]
-        path = lines[-1] if lines else None
-        if proc.returncode == 0 and path and os.path.exists(path):
-            note = None
-            if i == 1:
-                note = (
-                    "rendered without options (git-sim does not support one of "
-                    f"the given flags): git-sim {' '.join(attempt)}"
-                )
-            return {"image_path": path, "render_note": note}
-        last_error = (proc.stderr or proc.stdout or "").strip()[-500:]
-
-    return {"image_path": None, "render_note": f"render failed: {last_error}"}
 
 
 @server.tool(

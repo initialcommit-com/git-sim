@@ -73,6 +73,57 @@ your CLAUDE.md such as:
 > stash drop/clear, commit --amend), call the git-sim `git_preflight` tool
 > and show me the image and facts, and wait for my approval.
 
+## Claude Code hook: enforced pre-flight (`git-sim-hook`)
+
+The MCP tools rely on the agent choosing to call them. The `git-sim-hook`
+command removes that reliance: registered as a PreToolUse hook, it
+intercepts every shell command the agent is about to run, analyzes any git
+invocations in it, and — when the pre-flight engine rates one risky —
+forces an approval prompt showing the deterministic facts, and renders and
+opens the git-sim simulation image. The agent cannot skip it.
+
+Add to `.claude/settings.json` (project) or `~/.claude/settings.json`
+(global; run `/hooks` or restart Claude Code after editing):
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git-sim-hook",
+            "timeout": 120,
+            "statusMessage": "git-sim preflight check..."
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Behavior:
+
+- Safe commands (and non-git commands) pass through instantly — a cheap
+  string pre-filter avoids any analysis cost on the vast majority of calls.
+- Risky commands trigger an "ask" permission decision whose reason contains
+  the pre-flight report (risk level, what would be lost, recovery command),
+  so you approve or reject with ground truth in front of you.
+- The hook never denies on its own and fails open on any internal error —
+  it adds information to Claude Code's existing permission flow, never a
+  new failure mode.
+
+Configuration via environment variables:
+
+| Variable | Default | Effect |
+|---|---|---|
+| `GIT_SIM_HOOK_ASK_ON` | `caution` | Minimum risk that triggers the prompt (`caution` or `destructive`) |
+| `GIT_SIM_HOOK_RENDER` | `1` | Set `0` to skip rendering the image (facts only, faster) |
+| `GIT_SIM_HOOK_OPEN` | `1` | Set `0` to not auto-open the rendered image |
+
 ## Other MCP clients
 
 Any client that supports stdio servers can use:

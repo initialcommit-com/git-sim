@@ -8,3 +8,6 @@ dist/
 git_sim.egg-info/
 
 .venv/
+
+# Claude Code local (per-machine) settings
+.claude/settings.local.json
