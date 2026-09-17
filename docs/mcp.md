@@ -83,11 +83,15 @@ unrecognized commands default to `caution`.
 ## Installation
 
 ```console
-$ pip install git-sim[mcp]
+$ pip install git-sim
 ```
 
-(Requires the usual git-sim prerequisites — see the main README — plus
-Python >= 3.10 for the MCP SDK.)
+The default ("core") install includes the pre-flight engine, the text graph,
+the MCP server and the Claude Code hook, and does not depend on Manim.
+Requires Python >= 3.10. Rendering the simulation image needs the `full`
+extra (`pip install "git-sim[full]"`) until the Skia renderer lands; the
+facts and `text_graph` work without it, and the tools report a `render_note`
+saying so. For a dependency-minimal ("min") install see the main README.
 
 ## Claude Code
 

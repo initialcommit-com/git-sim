@@ -7,7 +7,11 @@ import time
 from pathlib import Path
 
 import typer
-import manim as m
+
+try:
+    import manim as m
+except ImportError:  # core install: the Manim renderer is an optional extra
+    m = None
 
 from fontTools.ttLib import TTFont
 
@@ -21,6 +25,14 @@ from git_sim.settings import (
 )
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
+
+MISSING_RENDERER_MESSAGE = """\
+git-sim: rendering images and animations requires the 'full' install:
+
+    pip install "git-sim[full]"
+
+The pre-flight engine, text graph, MCP server (git-sim-mcp) and Claude Code
+hook (git-sim-hook) work without it."""
 
 
 def get_font_name(font_path):
@@ -176,6 +188,10 @@ def main(
         help="Use the simulated git command as the title of the output image or animated video",
     ),
 ):
+    if m is None:
+        typer.echo(MISSING_RENDERER_MESSAGE, err=True)
+        raise typer.Exit(code=1)
+
     import git
     from manim import WHITE, config
 

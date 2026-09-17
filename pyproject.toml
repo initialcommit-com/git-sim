@@ -7,7 +7,7 @@ name = "git-sim"
 authors = [{ name = "Jacob Stopak", email = "jacob@initialcommit.io" }]
 description = "Simulate Git commands on your own repos by generating an image (default) or video visualization depicting the command's behavior."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 keywords = [
     "git",
     "sim",
@@ -30,14 +30,16 @@ classifiers = [
     "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
     "Operating System :: OS Independent",
 ]
+# The default ("core") install: pre-flight engine, text graph, static image
+# simulation, MCP server and Claude Code hook. No Manim.
 dependencies = [
     "git-dummy",
     "gitpython",
-    "manim",
-    "opencv-python-headless",
+    "mcp>=2.0",
     "pydantic_settings",
     "typer",
     "fonttools",
+    # "skia-python",  # static image renderer — added when the Skia backend lands
 ]
 dynamic = ["version"]
 
@@ -45,8 +47,12 @@ dynamic = ["version"]
 version = { attr = "git_sim.__version__" }
 
 [project.optional-dependencies]
+# Animated video output (and, until the Skia renderer lands, static images).
+full = ["manim", "opencv-python-headless", "numpy"]
 dev = ["black", "numpy", "pillow", "pytest"]
-mcp = ["mcp>=2.0"]
+# Kept so `pip install git-sim[mcp]` from older docs still works; the MCP
+# server is part of the core install now.
+mcp = []
 
 [project.scripts]
 git-sim = "git_sim.__main__:app"

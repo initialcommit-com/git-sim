@@ -43,22 +43,30 @@ Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work 
 - Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
 - Animation only: Add custom branded intro/outro sequences if desired
 - Animation only: Speed up or slow down animation speed as desired
-- NEW: [MCP server](docs/mcp.md) so AI coding agents (Claude Code, Cursor, etc.) can run deterministic visual pre-flight checks before executing destructive git commands in your repo (`pip install git-sim[mcp]`)
+- NEW: [MCP server and Claude Code hook](docs/mcp.md) so AI coding agents (Claude Code, Cursor, etc.) run deterministic pre-flight checks — facts, a text commit graph and a simulation image — before executing destructive git commands in your repo. Included in the default install.
 
 ## Quickstart
 Note: If you prefer to install git-sim with Docker, skip steps (1) and (2) here and jump to the [Docker installation](#docker-installation) section below, then come back here to step (3).
 
-1) **Install Manim and its dependencies for your OS / environment:**
+1) Install `git-sim`:
+
+```console
+$ pip3 install git-sim
+```
+
+This default ("core") install includes the deterministic pre-flight engine and text commit graph, the static image simulation, the [MCP server](docs/mcp.md) and the Claude Code hook. It does not depend on Manim. See [Installation](#installation) for the other tiers.
+
+2) Optional — for animated video output (`--animate`), install the `full` extra, which adds Manim. Manim needs FFmpeg and other system packages; follow the Manim installation guide for your OS / environment first:
     - [Install Manim on Windows](https://docs.manim.community/en/stable/installation/windows.html)
     - [Install Manim on MacOS](https://docs.manim.community/en/stable/installation/macos.html)
     - [Install Manim on Linux](https://docs.manim.community/en/stable/installation/linux.html)
     - [Install Manim in Conda](https://docs.manim.community/en/stable/installation/conda.html)
 
-2) Install `git-sim`:
-
 ```console
-$ pip3 install git-sim
+$ pip3 install "git-sim[full]"
 ```
+
+Note: until the Skia-based static renderer lands, static images also need the `full` extra. The pre-flight engine, text graph, MCP server and hook work with the core install today.
 
 Note: For MacOS, it is recommended to **NOT** use the system Python to install Git-Sim, and instead use [Homebrew](https://brew.sh) to install a version of Python to work with Git-Sim. Virtual environments should work too.
 
@@ -131,9 +139,9 @@ $ git-sim <subcommand> -h
 ```
 
 ## Requirements
-* Python 3.7 or greater
+* Python 3.10 or greater
 * Pip (Package manager for Python)
-* [Manim (Community version)](https://www.manim.community/)
+* Animated output only: [Manim (Community version)](https://www.manim.community/), installed via `pip install "git-sim[full]"`
 
 ## Commands
 Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "add", "branch", "checkout", "cherry-pick", "clean", "clone", "commit", "config", "fetch", "init", "log", "merge", "mv", "pull", "push", "rebase", "remote", "reset", "restore", "revert", "rm", "stash", "status", "switch", "tag" along with corresponding options.
@@ -544,11 +552,22 @@ $ git-sim --animate --low-quality status
 ```
 
 ## Installation
-See **Quickstart** section for details on installing manim and other dependencies. Then run:
+git-sim ships in tiers, so an AI agent's machine or a CI runner installs only what it needs:
+
+| Tier | Install | Includes |
+|---|---|---|
+| **core** (default) | `pip3 install git-sim` | pre-flight engine, text commit graph, static image simulation, MCP server (`git-sim-mcp`), Claude Code hook (`git-sim-hook`) |
+| **full** | `pip3 install "git-sim[full]"` | everything in core, plus animated video output via Manim (install Manim's own system dependencies first — see **Quickstart**) |
+| **min** | see below | pre-flight engine, text commit graph and MCP server only — no image rendering, for headless machines |
+
+pip extras can only add packages, so the `min` tier is the core package installed without its rendering dependency:
 
 ```console
-$ pip3 install git-sim
+$ pip3 install --no-deps git-sim
+$ pip3 install gitpython "mcp>=2.0" typer pydantic-settings fonttools git-dummy
 ```
+
+(Until the Skia renderer is added, core and min install the same packages; the recipe matters once `skia-python` joins the core dependencies.) Older docs mention `pip install git-sim[mcp]`; that still works and is the same as core.
 
 ## Docker installation
 
