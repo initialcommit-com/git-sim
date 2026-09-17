@@ -2,7 +2,7 @@ import sys
 import os
 
 import git
-import manim as m
+from git_sim.backend import m
 import numpy
 import tempfile
 import shutil

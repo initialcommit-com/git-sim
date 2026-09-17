@@ -1,6 +1,6 @@
 import sys
 import git
-import manim as m
+from git_sim.backend import m
 
 from typing import List
 
@@ -13,7 +13,7 @@ class Add(GitSimBaseCommand):
         super().__init__()
         self.hide_first_tag = True
         self.allow_no_commits = True
-        self.files = files
+        self.files = files or []  # newer typer passes None for an omitted list
         settings.hide_merged_branches = True
         self.n = self.n_default
 

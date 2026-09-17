@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 import pytest
@@ -101,6 +102,19 @@ def test_reason_includes_text_graph(repo):
         < reason.index("<- ABANDONED")
         < reason.index("Would lose:")
     )
+
+
+def test_hook_renders_simulation_image(repo, monkeypatch):
+    monkeypatch.setenv("GIT_SIM_HOOK_RENDER", "1")
+    monkeypatch.setenv("GIT_SIM_HOOK_OPEN", "0")
+    for var in [v for v in os.environ if v.lower().startswith("git_sim_")]:
+        monkeypatch.delenv(var, raising=False)
+    output = run_hook(hook_input("git reset --hard HEAD~1", repo))
+    reason = output["hookSpecificOutput"]["permissionDecisionReason"]
+    assert "Simulation image:" in reason
+    image_path = reason.rsplit("Simulation image:", 1)[1].strip()
+    assert os.path.exists(image_path)
+    assert image_path.endswith((".jpg", ".png"))
 
 
 def test_text_graph_can_be_disabled_by_env(repo, monkeypatch):

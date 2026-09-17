@@ -6,7 +6,7 @@ import sys
 import tempfile
 
 import git
-import manim as m
+from git_sim.backend import m
 import numpy
 from git.exc import GitCommandError, InvalidGitRepositoryError
 from git.repo import Repo
@@ -1391,8 +1391,10 @@ class DottedLine(m.Line):
 
         self.add(*self.dots)
 
-        self.get_start = lambda: self.dot_points[0]
-        self.get_end = lambda: self.dot_points[-1]
+        # Read the ends from the dots themselves so they follow later
+        # transforms (set_length scales the dots about the center).
+        self.get_start = lambda: self.dots[0].get_center()
+        self.get_end = lambda: self.dots[-1].get_center()
 
     def get_first_handle(self):
         return self.dot_points[-1]

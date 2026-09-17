@@ -1,5 +1,5 @@
 import sys
-import manim as m
+from git_sim.backend import m
 
 from typing import List
 
@@ -10,7 +10,7 @@ from git_sim.settings import settings
 class Restore(GitSimBaseCommand):
     def __init__(self, files: List[str], staged: bool):
         super().__init__()
-        self.files = files
+        self.files = files or []  # newer typer passes None for an omitted list
         self.staged = staged
         settings.hide_merged_branches = True
         self.n = self.n_default

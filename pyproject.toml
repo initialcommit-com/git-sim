@@ -31,15 +31,16 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 # The default ("core") install: pre-flight engine, text graph, static image
-# simulation, MCP server and Claude Code hook. No Manim.
+# simulation (skia), MCP server and Claude Code hook. No Manim.
 dependencies = [
     "git-dummy",
     "gitpython",
     "mcp>=2.0",
+    "numpy",
     "pydantic_settings",
+    "skia-python",
     "typer",
     "fonttools",
-    # "skia-python",  # static image renderer — added when the Skia backend lands
 ]
 dynamic = ["version"]
 
@@ -47,9 +48,9 @@ dynamic = ["version"]
 version = { attr = "git_sim.__version__" }
 
 [project.optional-dependencies]
-# Animated video output (and, until the Skia renderer lands, static images).
-full = ["manim", "opencv-python-headless", "numpy"]
-dev = ["black", "numpy", "pillow", "pytest"]
+# Animated video output (--animate) via Manim.
+extras = ["manim", "opencv-python-headless"]
+dev = ["black", "pillow", "pytest"]
 # Kept so `pip install git-sim[mcp]` from older docs still works; the MCP
 # server is part of the core install now.
 mcp = []

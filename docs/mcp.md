@@ -87,11 +87,11 @@ $ pip install git-sim
 ```
 
 The default ("core") install includes the pre-flight engine, the text graph,
-the MCP server and the Claude Code hook, and does not depend on Manim.
-Requires Python >= 3.10. Rendering the simulation image needs the `full`
-extra (`pip install "git-sim[full]"`) until the Skia renderer lands; the
-facts and `text_graph` work without it, and the tools report a `render_note`
-saying so. For a dependency-minimal ("min") install see the main README.
+the MCP server, the Claude Code hook and the static image renderer (skia),
+and does not depend on Manim. Requires Python >= 3.10. The simulation image
+renders in well under a second. Manim is only needed for animated output
+(`pip install "git-sim[extras]"`). For a dependency-minimal ("min") install
+see the main README.
 
 ## Claude Code
 

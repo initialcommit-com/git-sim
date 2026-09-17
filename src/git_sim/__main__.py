@@ -1,5 +1,6 @@
 import contextlib
 import datetime
+import importlib.util
 import os
 import pathlib
 import sys
@@ -7,11 +8,6 @@ import time
 from pathlib import Path
 
 import typer
-
-try:
-    import manim as m
-except ImportError:  # core install: the Manim renderer is an optional extra
-    m = None
 
 from fontTools.ttLib import TTFont
 
@@ -25,14 +21,6 @@ from git_sim.settings import (
 )
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
-
-MISSING_RENDERER_MESSAGE = """\
-git-sim: rendering images and animations requires the 'full' install:
-
-    pip install "git-sim[full]"
-
-The pre-flight engine, text graph, MCP server (git-sim-mcp) and Claude Code
-hook (git-sim-hook) work without it."""
 
 
 def get_font_name(font_path):
@@ -188,12 +176,13 @@ def main(
         help="Use the simulated git command as the title of the output image or animated video",
     ),
 ):
-    if m is None:
-        typer.echo(MISSING_RENDERER_MESSAGE, err=True)
-        raise typer.Exit(code=1)
-
     import git
-    from manim import WHITE, config
+
+    if animate and importlib.util.find_spec("manim") is None:
+        from git_sim.backend import MISSING_ANIMATION_MESSAGE
+
+        typer.echo(MISSING_ANIMATION_MESSAGE, err=True)
+        raise typer.Exit(code=1)
 
     settings.animate = animate
     settings.n = n
@@ -225,7 +214,11 @@ def main(
     settings.style = style
     settings.show_command_as_title = show_command_as_title
 
-    # If font is a path, define the context that will be used when using Manim.
+    # The backend (skia for images, Manim for --animate) is chosen from
+    # settings.animate on first import, so import it only now.
+    from git_sim.backend import m
+
+    # If font is a path, register it with the backend and use its family name.
     if Path(font).exists():
         font_path = Path(font)
         settings.font_context = m.register_font(font_path)
@@ -248,20 +241,23 @@ def main(
 
     settings.media_dir = os.path.join(settings.media_dir, repo_name)
 
-    config.media_dir = settings.media_dir
-    config.verbosity = "ERROR"
-
-    if settings.low_quality:
-        config.quality = "low_quality"
-
-    if settings.light_mode:
-        config.background_color = WHITE
-
     if settings.transparent_bg:
         settings.img_format = ImgFormat.PNG
 
-    t = datetime.datetime.fromtimestamp(time.time()).strftime("%m-%d-%y_%H-%M-%S")
-    config.output_file = "git-sim-" + ctx.invoked_subcommand + "_" + t + ".mp4"
+    if settings.animate:
+        from manim import WHITE, config
+
+        config.media_dir = settings.media_dir
+        config.verbosity = "ERROR"
+
+        if settings.low_quality:
+            config.quality = "low_quality"
+
+        if settings.light_mode:
+            config.background_color = WHITE
+
+        t = datetime.datetime.fromtimestamp(time.time()).strftime("%m-%d-%y_%H-%M-%S")
+        config.output_file = "git-sim-" + ctx.invoked_subcommand + "_" + t + ".mp4"
 
 
 app.command()(git_sim.commands.add)

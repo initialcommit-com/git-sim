@@ -1,6 +1,6 @@
 import sys
 import git
-import manim as m
+from git_sim.backend import m
 
 from typing import List
 

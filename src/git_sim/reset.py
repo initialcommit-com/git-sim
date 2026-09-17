@@ -2,7 +2,7 @@ import sys
 from enum import Enum
 
 import git
-import manim as m
+from git_sim.backend import m
 
 from git_sim.enums import ResetMode
 from git_sim.git_sim_base_command import GitSimBaseCommand

@@ -1,10 +1,10 @@
 """Render git-sim simulations programmatically.
 
 Shared by the MCP server and the Claude Code hook. Shells out to the git-sim
-CLI in a subprocess so callers don't need to touch Manim directly.
+CLI in a subprocess, which draws the static image with the built-in skia
+renderer, so the caller's process stays isolated from the scene code.
 """
 
-import importlib.util
 import os
 import subprocess
 import sys
@@ -21,17 +21,6 @@ RENDERABLE_COMMANDS = {
 }
 
 RENDER_TIMEOUT_SECONDS = 180
-
-# Until the Skia backend lands, images are rendered by the Manim-based CLI,
-# which is only present in the 'full' install.
-RENDERER_MISSING_NOTE = (
-    'image rendering requires the Manim renderer: pip install "git-sim[full]" '
-    "(facts and text_graph do not need it)"
-)
-
-
-def _renderer_available() -> bool:
-    return importlib.util.find_spec("manim") is not None
 
 
 def _media_dir() -> str:
@@ -76,8 +65,6 @@ def render_simulation(command: str, repo_path: str) -> dict:
             "image_path": None,
             "render_note": f"git-sim does not render '{subcommand}'",
         }
-    if not _renderer_available():
-        return {"image_path": None, "render_note": RENDERER_MISSING_NOTE}
 
     attempts = [[subcommand, *args]]
     positional_only = [subcommand, *[a for a in args if not a.startswith("-")]]

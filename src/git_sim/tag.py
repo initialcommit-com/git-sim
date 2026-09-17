@@ -1,5 +1,5 @@
 import sys
-import manim as m
+from git_sim.backend import m
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings

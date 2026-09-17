@@ -1,21 +1,22 @@
 from __future__ import annotations
 
+import inspect
+
 import typer
 
-from typing import List, TYPE_CHECKING
+from typing import List
 
 from git_sim.settings import settings
 from git_sim.enums import ResetMode, StashSubCommand, RemoteSubCommand
 
-if TYPE_CHECKING:
-    from manim import Scene
 
-
-def handle_animations(scene: Scene) -> None:
+def handle_animations(scene) -> None:
     from git_sim.animations import handle_animations as _handle_animations
 
+    # The calling typer command's name (e.g. "cherry_pick") names the output file.
+    command_name = inspect.stack()[1].function
     with settings.font_context:
-        return _handle_animations(scene)
+        return _handle_animations(scene, command_name)
 
 
 def add(

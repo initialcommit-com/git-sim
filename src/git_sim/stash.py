@@ -1,7 +1,7 @@
 import re
 import sys
 from enum import Enum
-import manim as m
+from git_sim.backend import m
 
 from typing import List
 
@@ -13,7 +13,7 @@ from git_sim.settings import settings
 class Stash(GitSimBaseCommand):
     def __init__(self, files: List[str], command: StashSubCommand, stash_index: int):
         super().__init__()
-        self.files = files
+        self.files = files or []  # newer typer passes None for an omitted list
         self.no_files = True if not self.files else False
         self.command = command
         settings.hide_merged_branches = True

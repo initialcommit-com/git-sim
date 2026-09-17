@@ -3,7 +3,7 @@ import typer
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
 import numpy
-import manim as m
+from git_sim.backend import m
 
 
 class Log(GitSimBaseCommand):

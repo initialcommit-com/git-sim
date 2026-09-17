@@ -2,7 +2,7 @@ import os
 import git
 import sys
 
-import manim as m
+from git_sim.backend import m
 
 from git.repo import Repo
 

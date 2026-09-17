@@ -2,7 +2,7 @@ import sys
 from argparse import Namespace
 
 import git
-import manim as m
+from git_sim.backend import m
 import numpy
 
 from git_sim.git_sim_base_command import GitSimBaseCommand

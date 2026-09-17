@@ -6,7 +6,7 @@ RUN apt update
 
 RUN apt -y install build-essential python3-dev libcairo2-dev libpango1.0-dev ffmpeg
 
-# The image is for rendering, so install the 'full' tier (core + Manim).
-RUN pip3 install "git-sim[full]"
+# Static images need only the core install; 'extras' adds Manim for --animate.
+RUN pip3 install "git-sim[extras]"
 
 ENTRYPOINT [ "git-sim" ]
