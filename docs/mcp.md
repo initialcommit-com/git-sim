@@ -253,3 +253,16 @@ With the repo checked out and dev dependencies installed:
 ```console
 $ python scripts/mcp_smoke_test.py /path/to/some/repo
 ```
+
+## Validating the simulations
+
+`scripts/validate_commands.py` builds fixture repositories with git-dummy,
+constructs every subcommand scene in-process (60 cases covering each command
+and flag), and checks what was drawn — which commits, where the HEAD, branch
+and tag labels landed, the arrows between commits, and the files in each zone
+column — against ground truth computed from the repository with GitPython.
+It prints a PASS/FAIL table and writes one image per case for spot checks:
+
+```console
+$ python scripts/validate_commands.py [image-output-dir]
+```

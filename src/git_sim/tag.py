@@ -36,7 +36,7 @@ class Tag(GitSimBaseCommand):
                 )
                 sys.exit(1)
 
-        self.cmd += f"{type(self).__name__.lower()}{' -d' if self.d else ''}{' self.commit' if self.commit else ''} {self.name}"
+        self.cmd += f"{type(self).__name__.lower()}{' -d' if self.d else ''} {self.name}{' ' + self.commit if self.commit else ''}"
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:

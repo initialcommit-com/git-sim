@@ -23,11 +23,14 @@ class Mv(GitSimBaseCommand):
         except TypeError:
             pass
 
-            try:
-                self.repo.git.ls_files("--error-unmatch", self.file)
-            except:
-                print(f"git-sim error: No tracked file with name: '{file}'")
-                sys.exit()
+        if not self.file or not self.new_file:
+            print("git-sim error: mv needs a source file and a destination")
+            sys.exit(1)
+        try:
+            self.repo.git.ls_files("--error-unmatch", self.file)
+        except git.GitCommandError:
+            print(f"git-sim error: No tracked file with name: '{self.file}'")
+            sys.exit(1)
 
         self.cmd += f"{type(self).__name__.lower()} {self.file} {self.new_file}"
 

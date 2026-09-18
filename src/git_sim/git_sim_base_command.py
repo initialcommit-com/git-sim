@@ -1147,6 +1147,12 @@ class GitSimBaseCommand(m.MovingCameraScene):
         return nondark_commits
 
     def draw_ref(self, commit, top, i=0, text="HEAD", color=m.BLUE):
+        # No ref has been drawn yet (e.g. switching to a commit that carries
+        # no labels): stack above the commit's own id instead of failing.
+        if top is None and commit != "dark":
+            top = self.drawnCommitIds.get(commit.hexsha) or self.drawnCommits.get(
+                commit.hexsha
+            )
         refText = m.Text(
             text,
             font=self.font,

@@ -160,7 +160,7 @@ class Stash(GitSimBaseCommand):
                 stashedFileNames = stashedFileNames.split("\n")
             except:
                 print(
-                    f"git-sim error: No stash entry with index {self.stashIndex} exists in stash"
+                    f"git-sim error: No stash entry with index {self.stash_index} exists in stash"
                 )
                 sys.exit()
             for s in stashedFileNames:

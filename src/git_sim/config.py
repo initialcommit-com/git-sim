@@ -23,7 +23,7 @@ class Config(GitSimBaseCommand):
     def __init__(self, l: bool, settings: List[str]):
         super().__init__()
         self.l = l
-        self.settings = settings
+        self.settings = settings or []  # newer typer passes None for an omitted list
         self.time_per_char = 0.05
 
         for i, setting in enumerate(self.settings):
@@ -170,13 +170,8 @@ class Config(GitSimBaseCommand):
                             )
                         else:
                             self.add(option_text)
-                        if not (
-                            i == len(config.sections()) - 1
-                            and j == len(config.options(section)) - 1
-                        ):
-                            project_root = self.resize_rectangle(
-                                project_root, last_element
-                            )
+                        # Also after the last line, so it never overflows the box.
+                        project_root = self.resize_rectangle(project_root, last_element)
         else:
             if not self.settings:
                 print("git-sim error: no config option specified")

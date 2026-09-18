@@ -45,11 +45,15 @@ class Commit(GitSimBaseCommand):
         head_commit = self.get_commit()
 
         if self.amend:
+            # An amend replaces HEAD: the new commit takes HEAD's parents, and
+            # the old HEAD commit drops out of the branch. (create_from_tree
+            # would otherwise default to HEAD itself as the parent.)
             tree = self.repo.tree()
             amended = git.Commit.create_from_tree(
                 self.repo,
                 tree,
                 self.message,
+                parent_commits=list(head_commit.parents),
             )
             head_commit = amended
 

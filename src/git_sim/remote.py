@@ -230,6 +230,7 @@ class Remote(GitSimBaseCommand):
             > self.project_root.get_bottom()[1]
         ):
             return
+        rect = self.project_root
         new_rect = m.Rectangle(
             width=rect.width,
             height=rect.height + 2 * self.last_element.height,
@@ -377,8 +378,5 @@ class Remote(GitSimBaseCommand):
                             )
                         else:
                             self.add(option_text)
-                        if not (
-                            i == len(self.config.sections()) - 1
-                            and j == len(self.config.options(section)) - 1
-                        ):
-                            self.resize_rectangle()
+                        # Also after the last line, so it never overflows the box.
+                        self.resize_rectangle()

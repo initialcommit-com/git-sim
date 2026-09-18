@@ -268,7 +268,15 @@ class Mobject:
         return self.apply_points_function(func)
 
     # --------------------------------------------------------------- placement
+    @staticmethod
+    def _require_target(target, method):
+        # manim raises on a missing target; silently producing NaN geometry
+        # would render a blank image instead of surfacing the bug.
+        if target is None:
+            raise TypeError(f"{method}() needs a point or mobject, got None")
+
     def move_to(self, point_or_mobject, aligned_edge=ORIGIN, coor_mask=(1, 1, 1)):
+        self._require_target(point_or_mobject, "move_to")
         if isinstance(point_or_mobject, Mobject):
             target = point_or_mobject.get_critical_point(aligned_edge)
         else:
@@ -286,6 +294,7 @@ class Mobject:
         aligned_edge=ORIGIN,
         **kwargs,
     ):
+        self._require_target(mobject_or_point, "next_to")
         d = to_point(direction)
         edge = to_point(aligned_edge)
         if isinstance(mobject_or_point, Mobject):
@@ -308,6 +317,7 @@ class Mobject:
         return self.set_coord(y, 1, direction)
 
     def align_to(self, mobject_or_point, direction=ORIGIN):
+        self._require_target(mobject_or_point, "align_to")
         d = to_point(direction)
         if isinstance(mobject_or_point, Mobject):
             point = mobject_or_point.get_critical_point(d)
