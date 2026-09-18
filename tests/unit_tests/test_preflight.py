@@ -185,9 +185,47 @@ def test_not_a_repo_reports_error(tmp_path):
 
 
 def test_unknown_command_defaults_to_caution(repo):
-    report = analyze("git filter-branch --force", str(repo))
+    report = analyze("git symbolic-ref HEAD refs/heads/other", str(repo))
     assert report.risk == Risk.CAUTION
     assert report.text_graph == ""
+
+
+def test_additive_commands_are_safe(repo):
+    for command in (
+        "git add .",
+        "git mv file1.txt other.txt",
+        "git cherry-pick feature",
+        "git pull",
+    ):
+        report = analyze(command, str(repo))
+        assert report.risk == Risk.SAFE, command
+        assert report.summary and not report.would_lose
+
+
+def test_rm_reports_uncommitted_changes_lost(repo):
+    (repo / "file1.txt").write_text("modified\n")
+    report = analyze("git rm -f file1.txt file2.txt", str(repo))
+    assert report.risk == Risk.DESTRUCTIVE
+    assert any("file1.txt" in loss for loss in report.would_lose)
+    assert (
+        "tracked",
+        "file2.txt",
+        "DELETED (recoverable from HEAD)",
+    ) in report.panel_rows
+    clean = analyze("git rm file2.txt", str(repo))
+    assert clean.risk == Risk.CAUTION and not clean.would_lose
+    assert analyze("git rm --cached file1.txt", str(repo)).risk == Risk.SAFE
+    assert "refuses" in analyze("git rm nope.txt", str(repo)).summary
+
+
+def test_reflog_gc_and_filter_branch(repo):
+    assert analyze("git reflog", str(repo)).risk == Risk.SAFE
+    expire = analyze("git reflog expire --expire=now --all", str(repo))
+    assert expire.risk == Risk.DESTRUCTIVE and expire.warnings
+    assert analyze("git gc", str(repo)).risk == Risk.SAFE
+    assert analyze("git gc --prune=now", str(repo)).risk == Risk.CAUTION
+    rewrite = analyze("git filter-branch --force --index-filter x HEAD", str(repo))
+    assert rewrite.risk == Risk.DESTRUCTIVE and "refs/original" in rewrite.recovery[0]
 
 
 # --- text graph -----------------------------------------------------------

@@ -78,8 +78,12 @@ overwrite detection against the tracking ref), `branch -d/-D` (unmerged
 commit detection), `restore`/`checkout`/`switch` (discarded local
 modifications), `stash` (drop/clear losses), `commit --amend`
 (published-history detection), `worktree remove/prune` (uncommitted changes
-deleted with the worktree; stale records). Read-only commands are recognized
-as `safe`; unrecognized commands default to `caution`.
+deleted with the worktree; stale records), `rm` (uncommitted changes deleted
+with the file), `reflog expire/delete`, `gc --prune`, `filter-branch`.
+Read-only commands and purely additive ones (`add`, `mv`, `init`, `clone`,
+`cherry-pick`, `revert`, `pull`) are `safe`; unrecognized commands default to
+`caution`. The hook only analyzes git invocations whose own subcommand has an
+analyzer, so `git add reset.py && git commit -m "fix branch"` never prompts.
 
 ### Worktree awareness
 

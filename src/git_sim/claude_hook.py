@@ -42,15 +42,21 @@ import subprocess
 import sys
 from typing import List, Optional, Tuple
 
-from git_sim.preflight import PreflightReport, Risk, analyze
+from git_sim.preflight import (
+    RISKY_SUBCOMMANDS,
+    PreflightReport,
+    Risk,
+    analyze,
+    parse_command,
+)
 
 # Cheap pre-filter so the vast majority of shell commands exit immediately
-# without touching GitPython. Word "git" (not "git-sim") plus a subcommand
-# the analyzers care about.
+# without touching GitPython: the word "git" (not "git-sim") plus one of the
+# subcommands that has an analyzer. This only gates the expensive work; the
+# per-command check below decides what is actually analyzed.
 GIT_WORD = re.compile(r"\bgit(?!-)\b")
 RISKY_WORDS = re.compile(
-    r"\b(reset|clean|rebase|restore|checkout|switch|stash|branch|push|commit"
-    r"|worktree|filter-branch)\b"
+    r"\b(" + "|".join(re.escape(s) for s in sorted(RISKY_SUBCOMMANDS)) + r")\b"
 )
 
 SHELL_SEPARATORS = re.compile(r"&&|\|\||;|\||\n")
@@ -79,6 +85,37 @@ def extract_git_commands(shell_command: str) -> List[str]:
         if tokens and tokens[0] == "git":
             git_commands.append(" ".join(tokens))
     return git_commands
+
+
+def _subcommand(git_command: str) -> str:
+    """The git subcommand, skipping global options such as -C <path> or -c k=v."""
+    try:
+        tokens = parse_command(git_command)
+    except ValueError:
+        tokens = git_command.split()[1:]
+    skip_next = False
+    for token in tokens:
+        if skip_next:
+            skip_next = False
+            continue
+        if token in ("-C", "-c", "--git-dir", "--work-tree", "--namespace"):
+            skip_next = True
+            continue
+        if token.startswith("-"):
+            continue
+        return token
+    return ""
+
+
+def risky_git_commands(shell_command: str) -> List[str]:
+    """The git invocations in a shell command whose own subcommand can discard
+    something. `git add x && git commit -m 'reset branch'` yields only the
+    commit, and a filename like reset.py never counts."""
+    return [
+        cmd
+        for cmd in extract_git_commands(shell_command)
+        if _subcommand(cmd) in RISKY_SUBCOMMANDS
+    ]
 
 
 def _risk_triggers(risk: Risk, threshold: str) -> bool:
@@ -253,7 +290,7 @@ def run_hook(hook_input: dict, agent: Optional[str] = None) -> Optional[dict]:
     threshold = os.environ.get("GIT_SIM_HOOK_ASK_ON", "caution")
     render_text = os.environ.get("GIT_SIM_HOOK_TEXT", "1") != "0"
     flagged = []
-    for git_command in extract_git_commands(command):
+    for git_command in risky_git_commands(command):
         report = analyze(git_command, cwd, render_text=render_text)
         if report.error is None and _risk_triggers(report.risk, threshold):
             flagged.append(report)

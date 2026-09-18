@@ -64,6 +64,26 @@ READ_ONLY_COMMANDS = {
     "tag",  # reads unless creating/deleting; refined in analyzer
     "stash",  # refined in analyzer
     "fetch",  # updates remote-tracking refs only, never loses work
+    "version",
+    "help",
+    "grep",
+    "for-each-ref",
+    "name-rev",
+    "merge-base",
+}
+
+# Subcommands that change the repo but only ever add to it: nothing existing
+# is discarded, so they never warrant a prompt.
+NON_DESTRUCTIVE_COMMANDS = {
+    "add": "stages files; nothing is discarded",
+    "init": "creates a repository; nothing is discarded",
+    "clone": "creates a new clone; nothing is discarded",
+    "mv": "renames tracked files (content kept, recorded in the index)",
+    "cherry-pick": "creates new commit(s); existing history is untouched",
+    "revert": "creates a new commit undoing another; existing history is untouched",
+    "pull": "fetches and merges; local commits stay reachable",
+    "notes": "edits notes; commits are untouched",
+    "bisect": "moves HEAD between existing commits; nothing is discarded",
 }
 
 
@@ -319,6 +339,8 @@ def analyze(
                 report.text_graph = render_text_graph(repo, report)
         elif subcommand in READ_ONLY_COMMANDS:
             report.summary = f"'{subcommand}' does not modify the repository."
+        elif subcommand in NON_DESTRUCTIVE_COMMANDS:
+            report.summary = f"'{subcommand}' {NON_DESTRUCTIVE_COMMANDS[subcommand]}."
         else:
             report.escalate(Risk.CAUTION)
             report.summary = (
@@ -872,6 +894,88 @@ def _analyze_worktree(repo: git.Repo, args: List[str], report: PreflightReport) 
         report.summary = f"Unknown worktree subcommand '{sub}'; review manually."
 
 
+def _analyze_rm(repo: git.Repo, args: List[str], report: PreflightReport) -> None:
+    paths = _positionals(args)
+    if not paths:
+        report.summary = "git rm with no paths; git refuses."
+        return
+    if "--cached" in args:
+        report.summary = "Removes the paths from the index only; files stay on disk."
+        return
+    try:
+        tracked = repo.git.ls_files("--", *paths).splitlines()
+    except git.GitCommandError:
+        tracked = []
+    if not tracked:
+        report.summary = "git refuses: none of the paths are tracked."
+        return
+    dirty = _dirty_files(repo)
+    modified = [f for f in tracked if f in dirty["unstaged"] or f in dirty["staged"]]
+    report.summary = (
+        f"Deletes {len(tracked)} tracked file(s) from the working tree and index."
+    )
+    for f in tracked:
+        if f in modified:
+            report.panel_rows.append(("modified", f, "DELETED (changes not recoverable)"))
+        else:
+            report.panel_rows.append(("tracked", f, "DELETED (recoverable from HEAD)"))
+    if modified:
+        report.escalate(Risk.DESTRUCTIVE)
+        report.would_lose.extend(
+            f"uncommitted changes in {f} (NOT recoverable)" for f in modified
+        )
+        report.warnings.append(
+            "git rm deletes the file; edits not yet committed go with it (use -f to force past git's own check)."
+        )
+    else:
+        report.escalate(Risk.CAUTION)
+    report.recovery.append("Committed content comes back with: git checkout HEAD -- <path>")
+
+
+def _analyze_reflog(repo: git.Repo, args: List[str], report: PreflightReport) -> None:
+    sub = args[0] if args and not args[0].startswith("-") else "show"
+    if sub in ("expire", "delete"):
+        report.escalate(Risk.DESTRUCTIVE)
+        report.summary = (
+            f"'reflog {sub}' removes reflog entries: the safety net that makes "
+            "reset, rebase and amend recoverable."
+        )
+        if any(a.startswith("--expire") and "now" in a for a in args):
+            report.warnings.append(
+                "Expiring to 'now' makes every commit not reachable from a ref eligible "
+                "for deletion at the next gc."
+            )
+    else:
+        report.summary = "Shows the reflog; nothing at risk."
+
+
+def _analyze_gc(repo: git.Repo, args: List[str], report: PreflightReport) -> None:
+    prune_now = any(a == "--prune=now" or a.startswith("--prune=") for a in args)
+    if prune_now:
+        report.escalate(Risk.CAUTION)
+        report.summary = (
+            "Garbage-collects and prunes unreachable objects: dangling commits "
+            "(dropped stashes, reflog-only history) are deleted for good."
+        )
+        report.warnings.append("Anything recoverable only via 'git fsck --lost-found' disappears.")
+    else:
+        report.summary = "Garbage-collects with the default two-week grace period; recent objects are kept."
+
+
+def _analyze_filter_branch(
+    repo: git.Repo, args: List[str], report: PreflightReport
+) -> None:
+    report.escalate(Risk.DESTRUCTIVE)
+    report.summary = (
+        "Rewrites every commit it touches with a new hash; all branches and tags "
+        "involved change identity and must be force-pushed."
+    )
+    report.warnings.append(
+        "History rewrite across the repository. Prefer git filter-repo, and back up first."
+    )
+    report.recovery.append("Original refs are kept under refs/original/ until you delete them.")
+
+
 def _analyze_commit(repo: git.Repo, args: List[str], report: PreflightReport) -> None:
     if "--amend" not in args:
         report.summary = "Creates a new commit; nothing at risk."
@@ -906,4 +1010,12 @@ _ANALYZERS = {
     "stash": _analyze_stash,
     "commit": _analyze_commit,
     "worktree": _analyze_worktree,
+    "rm": _analyze_rm,
+    "reflog": _analyze_reflog,
+    "gc": _analyze_gc,
+    "filter-branch": _analyze_filter_branch,
 }
+
+# The subcommands that can discard something and therefore deserve a look
+# before they run. The hook analyzes only these; everything else passes.
+RISKY_SUBCOMMANDS = frozenset(_ANALYZERS)

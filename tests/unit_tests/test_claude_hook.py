@@ -55,6 +55,37 @@ def test_risky_word_but_safe_analysis_stays_silent(repo):
     assert run_hook(hook_input("git branch", repo)) is None
 
 
+def test_add_and_commit_stay_silent_even_with_risky_words_nearby(repo):
+    (repo / "reset.py").write_text("x\n")
+    (repo / "branch.txt").write_text("x\n")
+    # 'reset' and 'branch' appear only as filenames; 'commit' is a real
+    # subcommand but a plain commit discards nothing.
+    command = 'git add reset.py branch.txt && git commit -m "fix reset of branch"'
+    assert run_hook(hook_input(command, repo)) is None
+    assert run_hook(hook_input("git add . ; git mv reset.py checkout.py", repo)) is None
+    assert run_hook(hook_input("git -C . pull --rebase origin main", repo)) is None
+
+
+def test_only_risky_subcommands_are_analyzed():
+    from git_sim.claude_hook import risky_git_commands
+
+    line = "git add reset.py && git commit -m x && git reset --hard HEAD~1 && git -C sub stash drop"
+    assert risky_git_commands(line) == [
+        "git commit -m x",
+        "git reset --hard HEAD~1",
+        "git -C sub stash drop",
+    ]
+
+
+def test_rm_of_modified_file_asks(repo):
+    (repo / "file1.txt").write_text("modified\n")
+    output = run_hook(hook_input("git rm -f file1.txt", repo))
+    reason = output["hookSpecificOutput"]["permissionDecisionReason"]
+    assert "DESTRUCTIVE" in reason and "file1.txt" in reason
+    # --cached keeps the file on disk: nothing to ask about.
+    assert run_hook(hook_input("git rm --cached file1.txt", repo)) is None
+
+
 def test_destructive_command_asks_with_facts(repo):
     (repo / "junk.log").write_text("x")
     output = run_hook(hook_input("git clean -fd", repo))
