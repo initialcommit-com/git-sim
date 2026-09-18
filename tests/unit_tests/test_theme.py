@@ -200,3 +200,22 @@ def test_commit_messages_wrap_at_word_boundaries():
     assert wrapped == "Merge branch1 into\nmain"
     assert all(len(line) <= 20 for line in wrapped.split("\n"))
     assert len(GitSimBaseCommand.wrap_message("x" * 500)) <= 100
+
+
+def test_pill_labels_center_on_their_capitals():
+    """Labels with and without descenders share a baseline inside pills of
+    the same height, so "main" and "origin/main" sit at the same visual
+    height instead of the ink box pushing descender-bearing names upward."""
+    from git_sim import render as m
+    from git_sim.git_sim_base_command import GitSimBaseCommand
+
+    box = m.RoundedRectangle(corner_radius=0.12, width=3, height=0.4)
+    plain = m.Text("main", font="Monospace", font_size=20, weight=m.BOLD)
+    descender = m.Text("origin/pages", font="Monospace", font_size=20, weight=m.BOLD)
+    GitSimBaseCommand.center_label(plain, box)
+    GitSimBaseCommand.center_label(descender, box)
+    assert abs(plain.baseline_y() - descender.baseline_y()) < 1e-6
+    # The capitals straddle the pill's center line.
+    cap_mid = plain.baseline_y() + plain.layout.cap_height / 2
+    assert abs(cap_mid - box.get_center()[1]) < 1e-6
+    assert abs(plain.get_center()[0] - box.get_center()[0]) < 1e-6

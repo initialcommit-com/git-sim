@@ -40,6 +40,7 @@ Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work 
 - Color commits by parameter, such as author with the `--color-by=author` option
 - Choose between dark mode (default) and light mode
 - Specify output formats of either jpg, png, mp4, or webm
+- NEW: `--interactive` writes a self-contained HTML page instead of an image: hover a commit for its full message, author, date and ancestry, click to copy its sha, pan and zoom, and flip a **Before / After** switch that replays the command (step by step for `rebase -i` and cherry-pick ranges). One file, no external requests, easy to attach to a PR or share
 - Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
 - Animation only: Add custom branded intro/outro sequences if desired
 - Animation only: Speed up or slow down animation speed as desired
@@ -558,6 +559,12 @@ Use light mode (soft off-white background, dark text) instead of the default dar
 
 ```console
 $ git-sim --light-mode status
+```
+
+Write a self-contained interactive HTML page instead of an image. Open it in any browser; hover commits for details, drag to pan, wheel to zoom, and use the Before / After switch (or the arrow keys) to replay the command. Add `#before` to the URL to open on the "before" view:
+
+```console
+$ git-sim --interactive rebase -i main --todo todo.txt
 ```
 
 Animate the simulated output as a .mp4 video file:

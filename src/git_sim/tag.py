@@ -68,7 +68,7 @@ class Tag(GitSimBaseCommand):
                         sys.exit(1)
             else:
                 tagRec.next_to(self.topref, m.UP)
-            tagText.move_to(tagRec.get_center())
+            self.center_label(tagText, tagRec)
 
             fulltag = m.VGroup(tagRec, tagText)
 

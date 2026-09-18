@@ -16,6 +16,10 @@ The git-sim MCP (Model Context Protocol) server gives any MCP client
 - **`git_simulate(command, repo_path)`** — rendering only. Useful for
   illustrating repo state (`log`, `status`) or explaining an operation
   visually.
+  Pass `interactive=true` to get a self-contained HTML page instead of an
+  image: hover details, pan/zoom and a Before/After toggle that replays the
+  operation (step by step for multi-action commands). The CLI equivalent is
+  `git-sim --interactive <command>`.
 
 Both tools are strictly read-only with respect to the repository.
 

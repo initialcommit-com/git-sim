@@ -55,7 +55,12 @@ def main(
     ),
     img_format: ImgFormat = typer.Option(
         settings.img_format,
-        help="Output format for the image files.",
+        help="Output format for the image files (jpg, png, or html for an interactive page).",
+    ),
+    interactive: bool = typer.Option(
+        False,
+        "--interactive",
+        help="Write a self-contained interactive HTML page (hover details, pan/zoom, before/after) instead of an image; same as --img-format html",
     ),
     light_mode: bool = typer.Option(
         settings.light_mode,
@@ -190,7 +195,7 @@ def main(
     settings.animate = animate
     settings.n = n
     settings.auto_open = auto_open
-    settings.img_format = img_format
+    settings.img_format = ImgFormat.HTML if interactive else img_format
     settings.light_mode = light_mode
     settings.transparent_bg = transparent_bg
     settings.logo = logo

@@ -72,16 +72,27 @@ def _render_image(scene, command_name: str) -> None:
     else:
         width, height = DEFAULT_PIXEL_WIDTH, DEFAULT_PIXEL_HEIGHT
 
-    data = scene.render_image(
-        image_file_path,
-        pixel_width=width,
-        pixel_height=height,
-        background=theme_for(settings.light_mode).bg,
-        transparent=settings.transparent_bg,
-        fmt=fmt,
-    )
+    theme = theme_for(settings.light_mode)
+    if fmt == "html":
+        data = scene.render_html(
+            image_file_path,
+            pixel_width=width,
+            pixel_height=height,
+            theme=theme,
+            title=getattr(scene, "cmd", ""),
+            extra_mobjects=getattr(scene, "removed_mobjects", ()),
+        )
+    else:
+        data = scene.render_image(
+            image_file_path,
+            pixel_width=width,
+            pixel_height=height,
+            background=theme.bg,
+            transparent=settings.transparent_bg,
+            fmt=fmt,
+        )
 
-    _announce("image", image_file_path)
+    _announce("page" if fmt == "html" else "image", image_file_path)
     if settings.stdout and not settings.quiet:
         sys.stdout.buffer.write(data)
     _auto_open(image_file_path, open_file)

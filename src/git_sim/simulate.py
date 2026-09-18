@@ -14,10 +14,34 @@ from typing import List
 from git_sim.preflight import parse_command
 
 RENDERABLE_COMMANDS = {
-    "add", "branch", "checkout", "cherry-pick", "clean", "clone", "commit",
-    "config", "fetch", "init", "log", "merge", "mv", "pull", "push", "rebase",
-    "remote", "reset", "restore", "revert", "rm", "stash", "status", "switch",
-    "tag", "worktree", "reflog", "submodule",
+    "add",
+    "branch",
+    "checkout",
+    "cherry-pick",
+    "clean",
+    "clone",
+    "commit",
+    "config",
+    "fetch",
+    "init",
+    "log",
+    "merge",
+    "mv",
+    "pull",
+    "push",
+    "rebase",
+    "remote",
+    "reset",
+    "restore",
+    "revert",
+    "rm",
+    "stash",
+    "status",
+    "switch",
+    "tag",
+    "worktree",
+    "reflog",
+    "submodule",
 }
 
 RENDER_TIMEOUT_SECONDS = 180
@@ -29,7 +53,9 @@ def _media_dir() -> str:
     return root
 
 
-def _run_git_sim(cli_args: List[str], repo_path: str) -> subprocess.CompletedProcess:
+def _run_git_sim(
+    cli_args: List[str], repo_path: str, img_format: str = None
+) -> subprocess.CompletedProcess:
     cmd = [
         sys.executable,
         "-m",
@@ -38,8 +64,10 @@ def _run_git_sim(cli_args: List[str], repo_path: str) -> subprocess.CompletedPro
         "--output-only-path",
         "--media-dir",
         _media_dir(),
-        *cli_args,
     ]
+    if img_format:
+        cmd += ["--img-format", img_format]
+    cmd += list(cli_args)
     return subprocess.run(
         cmd,
         cwd=repo_path,
@@ -49,8 +77,9 @@ def _run_git_sim(cli_args: List[str], repo_path: str) -> subprocess.CompletedPro
     )
 
 
-def render_simulation(command: str, repo_path: str) -> dict:
-    """Render a git-sim image for the given git command.
+def render_simulation(command: str, repo_path: str, img_format: str = None) -> dict:
+    """Render a git-sim image (or, with img_format="html", a self-contained
+    interactive page) for the given git command.
 
     Tries the command verbatim first; if git-sim rejects an option git-sim
     doesn't support, retries with positional arguments only so the user still
@@ -74,7 +103,7 @@ def render_simulation(command: str, repo_path: str) -> dict:
     last_error = ""
     for i, attempt in enumerate(attempts):
         try:
-            proc = _run_git_sim(attempt, repo_path)
+            proc = _run_git_sim(attempt, repo_path, img_format)
         except subprocess.TimeoutExpired:
             return {"image_path": None, "render_note": "render timed out"}
         lines = [ln.strip() for ln in proc.stdout.splitlines() if ln.strip()]

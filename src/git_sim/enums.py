@@ -28,6 +28,7 @@ class VideoFormat(str, Enum):
 class ImgFormat(str, Enum):
     JPG = "jpg"
     PNG = "png"
+    HTML = "html"  # self-contained interactive page (see git_sim.render.html)
 
 
 class StashSubCommand(Enum):

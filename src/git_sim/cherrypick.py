@@ -91,6 +91,8 @@ class CherryPick(GitSimBaseCommand):
         else:
             parent = head_commit
             for k, pick in enumerate(self.picks):
+                # Each picked commit is one step in the interactive page.
+                self.current_step = k + 1 if len(self.picks) > 1 else 0
                 new_id = f"abcde{chr(ord('f') + k)}"
                 message = (
                     self.edit if (self.edit and len(self.picks) == 1) else pick.message

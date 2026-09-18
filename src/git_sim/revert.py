@@ -170,6 +170,13 @@ class Revert(GitSimBaseCommand):
 
         self.drawnCommits["abcdef"] = circle
         self.toFadeOut.add(circle)
+        head_sha = self.get_commit().hexsha
+        self.tag_commit(
+            circle, "abcdef", phase="after", message=commitMessage, parents=head_sha
+        )
+        self.tag(commitId, role="commit-label", sha="abcdef", phase="after")
+        self.tag(message, role="commit-label", sha="abcdef", phase="after")
+        self.tag(arrow, role="edge", src="abcdef", dst=head_sha, phase="after")
 
         if settings.animate:
             self.play(m.Create(arrow), run_time=1 / settings.speed)

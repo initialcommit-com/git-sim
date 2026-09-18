@@ -142,6 +142,11 @@ class TextLayout:
             self.strike_position = 0.3 * TEXT_UNITS_PER_POINT * font_size
         if not self.strike_thickness:
             self.strike_thickness = 0.05 * TEXT_UNITS_PER_POINT * font_size
+        # Cap height above the baseline, for centering labels on their
+        # letterforms rather than on ink that descenders stretch downward.
+        self.cap_height = metrics.fCapHeight * units_per_px
+        if not self.cap_height:
+            self.cap_height = 0.7 * TEXT_UNITS_PER_POINT * font_size
 
         self.line_bounds = []  # (left, bottom, right, top) or None for blank lines
         for i, line in enumerate(self.lines):
@@ -230,6 +235,21 @@ class Text(Mobject):
     def _has_ink(self):
         return self.layout.bbox is not None
 
+    def baseline_y(self):
+        """Scene y of the first line's baseline."""
+        return float(self.get_center()[1] + self._origin_offset[1] * self._font_scale)
+
+    def center_on_caps(self, point):
+        """Place the text so its capitals are vertically centered on ``point``
+        (and its ink horizontally). Plain move_to centers the ink box, which
+        sits too high for labels with descenders such as "origin/main"."""
+        self.move_to(point)
+        if not self._has_ink():
+            return self
+        target_baseline = point[1] - self.layout.cap_height * self._font_scale / 2
+        self.shift(np.array([0.0, target_baseline - self.baseline_y(), 0.0]))
+        return self
+
     def draw(self, painter):
         if self._has_ink():
             scale = self._font_scale
@@ -241,7 +261,13 @@ class Text(Mobject):
                     continue
                 baseline = pen + np.array([0.0, -i * self.layout.pitch * scale, 0.0])
                 painter.text(
-                    line, baseline, self.font, em_units, self.weight == BOLD, self
+                    line,
+                    baseline,
+                    self.font,
+                    em_units,
+                    self.weight == BOLD,
+                    self,
+                    ink=(bounds[0] * scale, (bounds[2] - bounds[0]) * scale),
                 )
                 if self.strikethrough:
                     y = baseline[1] + self.layout.strike_position * scale

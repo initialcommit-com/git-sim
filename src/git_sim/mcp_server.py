@@ -67,14 +67,27 @@ def git_preflight(command: str, repo_path: Optional[str] = None):
         "Render a git-sim visualization of a git command against the given "
         "repository, without the pre-flight analysis. Useful for illustrating "
         "repo state (log, status) or explaining an operation visually. "
-        "Read-only: the repository is never modified."
+        "With interactive=true, writes a self-contained HTML page instead "
+        "(hover for commit details, pan/zoom, a Before/After toggle that "
+        "replays the operation) and returns its path for the user to open or "
+        "share. Read-only: the repository is never modified."
     )
 )
-def git_simulate(command: str, repo_path: Optional[str] = None):
+def git_simulate(
+    command: str, repo_path: Optional[str] = None, interactive: bool = False
+):
     repo_path = os.path.abspath(repo_path or os.getcwd())
-    rendered = render_simulation(command, repo_path)
+    rendered = render_simulation(
+        command, repo_path, img_format="html" if interactive else None
+    )
     if not rendered["image_path"]:
         return f"Could not render: {rendered['render_note']}"
+    if interactive:
+        rendered["page_path"] = rendered.pop("image_path")
+        rendered["open_with"] = (
+            "any browser; append #before to the URL to open on the 'before' view"
+        )
+        return json.dumps(rendered, indent=2)
     parts = [json.dumps(rendered, indent=2), Image(path=rendered["image_path"])]
     return parts
 

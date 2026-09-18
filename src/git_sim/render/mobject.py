@@ -48,11 +48,20 @@ class Mobject:
         self.stroke_width = stroke_width
         self.z_index = kwargs.get("z_index", 0)
         self.shadow = None  # {"dx", "dy", "sigma", "color", "opacity"} in scene units
+        # Semantic metadata (role, sha, phase, ...) carried into interactive
+        # (SVG/HTML) output as data attributes. Ignored by the raster path.
+        self.meta = {}
         self._saved_state = None
 
     def set_shadow(self, spec):
         """Soft shadow (or glow) drawn under the fill; None removes it."""
         self.shadow = dict(spec) if spec else None
+        return self
+
+    def set_meta(self, **meta):
+        """Attach metadata to this mobject and its whole family."""
+        for mob in self.get_family():
+            mob.meta.update(meta)
         return self
 
     # ------------------------------------------------------------------ family

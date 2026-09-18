@@ -101,7 +101,7 @@ class Branch(GitSimBaseCommand):
         branchRec, branchText = self.ref_pill(self.name, self.theme.branch)
 
         branchRec.next_to(self.topref, m.UP)
-        branchText.move_to(branchRec.get_center())
+        self.center_label(branchText, branchRec)
 
         fullbranch = m.VGroup(branchRec, branchText)
 

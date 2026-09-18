@@ -25,6 +25,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         self.font = settings.font
         self.theme = theme_for(settings.light_mode)
+        # Interactive output: elements are tagged before/after (and with a
+        # step for multi-action commands); labels a simulation removes are
+        # kept here so the page can show them in the "before" view.
+        self.current_step = 0
+        self.removed_mobjects = []
         self.fontColor = self.theme.text
         self.mutedColor = self.theme.text_muted
         self.arrowColor = self.theme.arrow
@@ -247,6 +252,55 @@ class GitSimBaseCommand(m.MovingCameraScene):
             centers.append(commit.get_center())
         return centers
 
+    # ------------------------------------------------------------ interactive
+    def tag(self, mob, **meta):
+        """Attach semantic metadata for the interactive (HTML) output. A no-op
+        on manim mobjects. ``phase="after"`` elements get the current step."""
+        setter = getattr(mob, "set_meta", None)
+        if setter is None:
+            return mob
+        if meta.get("phase") == "after" and self.current_step and "step" not in meta:
+            meta["step"] = self.current_step
+        return setter(**meta)
+
+    def tag_commit(self, mob, commit, phase="before", **extra):
+        """Tag a disc (and later its labels) with what the tooltip shows."""
+        if isinstance(commit, str):  # a simulated commit, keyed by id
+            meta = dict(sha=commit, author="simulated", date="")
+        else:
+            meta = dict(
+                sha=commit.hexsha,
+                author=commit.author.name,
+                date=commit.committed_datetime.strftime("%Y-%m-%d %H:%M"),
+                message=commit.message.split("\n")[0][:200],
+                parents=" ".join(p.hexsha for p in commit.parents),
+            )
+        meta.update(extra)
+        return self.tag(mob, role="commit", phase=phase, **meta)
+
+    def snapshot_refs(self, *names):
+        return {
+            name: self.drawnRefs[name].get_center().copy()
+            for name in names
+            if name in self.drawnRefs
+        }
+
+    def tag_moves(self, snapshot):
+        """After moving labels, record how far each one travelled so the page
+        can slide it back in the "before" view."""
+        for name, old in snapshot.items():
+            ref = self.drawnRefs.get(name)
+            if ref is None or not hasattr(ref, "meta"):
+                continue
+            delta = old - ref.get_center()
+            prior = ref.meta.get("moved_by")
+            if prior is not None:
+                delta = delta + numpy.asarray(prior)
+            if numpy.linalg.norm(delta) > 1e-6:
+                # Only the position is "after": the label itself exists in
+                # both views, so its phase is left alone.
+                self.tag(ref, moved_by=(float(delta[0]), float(delta[1])))
+
     # ------------------------------------------------------------------ styling
     def commit_circle(self, kind="commit", fill=None):
         """A commit disc styled by the theme: solid fill, a rim ring and a soft
@@ -281,7 +335,16 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
     def recolor_commit(self, circle, color):
         """Recolor a drawn commit (e.g. gold for one that becomes unreachable),
-        keeping its glow in step."""
+        keeping its glow in step. The previous color is remembered for the
+        interactive before/after view."""
+        meta = getattr(circle, "meta", None)
+        if meta is not None and "before_fill" not in meta:
+            self.tag(
+                circle,
+                before_fill=circle.fill_color,
+                before_stroke=circle.stroke_color,
+                step=self.current_step or None,
+            )
         circle.set_color(color)
         apply_shadow(circle, self.theme.shadow(color))
         return circle
@@ -321,6 +384,16 @@ class GitSimBaseCommand(m.MovingCameraScene):
             tip_shape=self.arrow_tip_shape,
             max_stroke_width_to_length_ratio=1000,
         )
+
+    @staticmethod
+    def center_label(text, box):
+        """Center a pill's label on the pill: on its capitals when the
+        renderer can measure them (static output), else on its ink box."""
+        if hasattr(text, "center_on_caps"):
+            text.center_on_caps(box.get_center())
+        else:
+            text.move_to(box.get_center())
+        return text
 
     def ref_pill(self, text, color):
         """A ref label (HEAD, branch, tag) as bold text on a solid rounded
@@ -373,6 +446,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
             isNewCommit = True
         if isNewCommit:
             self.paint_commit_for_lane(circle, kind)
+        if commit != "dark":
+            self.tag_commit(circle, commit, kind=kind)
 
         if isNewCommit:
             start = (
@@ -391,6 +466,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
             end = self.drawnCommits[commit.hexsha].get_center()
 
         arrow = self.lane_arrow(start, end)
+        if commit != "dark":
+            child_sha = (getattr(prevCircle, "meta", None) or {}).get("sha", "")
+            self.tag(arrow, role="edge", src=child_sha, dst=commit.hexsha, phase="before")
 
         if commit == "dark":
             arrow = m.Arrow(start, end, color=self.theme.bg)
@@ -437,6 +515,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
             or settings.style == StyleOptions.THICK
             else m.NORMAL,
         ).next_to(circle, m.DOWN)
+        if commit != "dark":
+            self.tag(commitId, role="commit-label", sha=commit.hexsha, phase="before")
+            self.tag(message, role="commit-label", sha=commit.hexsha, phase="before")
 
         if settings.animate and commit != "dark" and isNewCommit:
             self.play(
@@ -514,9 +595,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 headbox.next_to(self.drawnCommits[commit.hexsha], m.UP)
             else:
                 headbox.next_to(commitId, m.UP)
-            headText.move_to(headbox.get_center())
+            self.center_label(headText, headbox)
 
             head = m.VGroup(headbox, headText)
+            self.tag(head, role="ref", name="HEAD", kind="head", phase="before")
 
             if settings.animate:
                 self.play(m.Create(head), run_time=1 / settings.speed)
@@ -565,9 +647,16 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 )
 
                 branchRec.next_to(self.prevRef, m.UP)
-                branchText.move_to(branchRec.get_center())
+                self.center_label(branchText, branchRec)
 
                 fullbranch = m.VGroup(branchRec, branchText)
+                self.tag(
+                    fullbranch,
+                    role="ref",
+                    name=text,
+                    kind="remote" if is_remote else "branch",
+                    phase="before",
+                )
 
                 self.prevRef = fullbranch
 
@@ -599,9 +688,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     tagRec, tagText = self.ref_pill(tag.name, self.theme.tag)
 
                     tagRec.next_to(self.prevRef, m.UP)
-                    tagText.move_to(tagRec.get_center())
+                    self.center_label(tagText, tagRec)
 
                     fulltag = m.VGroup(tagRec, tagText)
+                    self.tag(fulltag, role="ref", name=tag.name, kind="tag", phase="before")
 
                     self.prevRef = tagRec
 
@@ -915,6 +1005,25 @@ class GitSimBaseCommand(m.MovingCameraScene):
             horizontal2,
         )
 
+        for files, title in (
+            (firstColumnFilesDict, first_column_name),
+            (secondColumnFilesDict, second_column_name),
+            (thirdColumnFilesDict, third_column_name),
+        ):
+            for name, text in files.items():
+                self.tag(text, role="file", name=name, column=title, phase="before")
+
+        def tag_move(arrow, source, dest):
+            """The destination entry appears with the command and slides in
+            from where the file was; the arrow belongs to the command too."""
+            self.tag(arrow, role="edge", phase="after")
+            delta = source.get_center() - dest.get_center()
+            self.tag(
+                dest,
+                phase="after",
+                moved_by=(float(delta[0]), float(delta[1])),
+            )
+
         if len(firstColumnFiles):
             if settings.animate:
                 self.play(*[m.AddTextLetterByLetter(d) for d in firstColumnFiles])
@@ -961,6 +1070,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     ),
                 )
             firstColumnArrowMap[filename].set_color(self.arrowColor)
+            tag_move(
+                firstColumnArrowMap[filename],
+                firstColumnFilesDict[filename],
+                (secondColumnFilesDict if reverse else thirdColumnFilesDict)[filename],
+            )
             if settings.animate:
                 self.play(m.Create(firstColumnArrowMap[filename]))
             else:
@@ -981,6 +1095,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 ),
             )
             secondColumnArrowMap[filename].set_color(self.arrowColor)
+            tag_move(
+                secondColumnArrowMap[filename],
+                secondColumnFilesDict[filename],
+                thirdColumnFilesDict[filename],
+            )
             if settings.animate:
                 self.play(m.Create(secondColumnArrowMap[filename]))
             else:
@@ -1002,6 +1121,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
             )
 
             thirdColumnArrowMap[filename].set_color(self.arrowColor)
+            tag_move(
+                thirdColumnArrowMap[filename],
+                thirdColumnFilesDict[filename],
+                firstColumnFilesDict[filename],
+            )
             if settings.animate:
                 self.play(m.Create(thirdColumnArrowMap[filename]))
             else:
@@ -1056,6 +1180,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
     def reset_head_branch(self, hexsha, shift=numpy.array([0.0, 0.0, 0.0])):
         if not self.head_exists():
             return
+        moved = self.snapshot_refs("HEAD", self.repo.active_branch.name)
 
         if settings.animate:
             self.play(
@@ -1089,7 +1214,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     0,
                 )
             )
+        self.tag_moves(moved)
+
     def reset_head(self, hexsha, shift=numpy.array([0.0, 0.0, 0.0])):
+        moved = self.snapshot_refs("HEAD")
         if settings.animate:
             self.play(
                 self.drawnRefs["HEAD"].animate.move_to(
@@ -1108,8 +1236,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     0,
                 )
             )
+        self.tag_moves(moved)
 
     def reset_branch(self, hexsha, shift=numpy.array([0.0, 0.0, 0.0])):
+        moved = self.snapshot_refs(self.repo.active_branch.name)
         if settings.animate:
             self.play(
                 self.drawnRefs[self.repo.active_branch.name].animate.move_to(
@@ -1128,8 +1258,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     0,
                 )
             )
+        self.tag_moves(moved)
 
     def reset_head_branch_to_ref(self, ref, shift=numpy.array([0.0, 0.0, 0.0])):
+        moved = self.snapshot_refs("HEAD", self.repo.active_branch.name)
         if settings.animate:
             self.play(self.drawnRefs["HEAD"].animate.next_to(ref, m.UP))
             self.play(
@@ -1142,6 +1274,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.drawnRefs[self.repo.active_branch.name].next_to(
                 self.drawnRefs["HEAD"], m.UP
             )
+        self.tag_moves(moved)
 
     def translate_frame(self, shift):
         if settings.animate:
@@ -1218,6 +1351,18 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         self.drawnCommits[new_id] = circle
         self.toFadeOut.add(circle)
+        self.tag_commit(
+            circle,
+            new_id,
+            phase="after",
+            message=commitMessage,
+            parents=child_key if child_key != "dark" else "",
+            kind="merge" if color in (m.GRAY, "merge") else "commit",
+        )
+        self.tag(commitId, role="commit-label", sha=new_id, phase="after")
+        self.tag(message, role="commit-label", sha=new_id, phase="after")
+        if child_key != "dark":
+            self.tag(arrow, role="edge", src=new_id, dst=child_key, phase="after")
 
         if draw_arrow and child_key != "dark":
             if settings.animate:
@@ -1241,6 +1386,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         ).add_tip()
         length = numpy.linalg.norm(start - end) - 1.65
         arrow.set_length(length)
+        self.tag(arrow, role="edge", src=startsha, dst=endsha, phase="after")
         self.draw_arrow(True, arrow)
 
     def create_dark_commit(self):
@@ -1259,9 +1405,25 @@ class GitSimBaseCommand(m.MovingCameraScene):
             )
         refbox, refText = self.ref_pill(text, color or self.theme.head)
         refbox.next_to(top, m.UP)
-        refText.move_to(refbox.get_center())
+        self.center_label(refText, refbox)
 
         ref = m.VGroup(refbox, refText)
+        kinds = {
+            self.theme.purple: "reflog",
+            self.theme.tag: "tag",
+            self.theme.branch: "branch",
+            self.theme.remote: "remote",
+        }
+        kind = kinds.get(color, "head")
+        # Reflog labels describe existing state; every other draw_ref call
+        # places a label the simulated command creates or moves.
+        self.tag(
+            ref,
+            role="ref",
+            name=text,
+            kind=kind,
+            phase="before" if kind == "reflog" else "after",
+        )
 
         if settings.animate:
             self.play(m.Create(ref), run_time=1 / settings.speed)
@@ -1501,6 +1663,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
             )
             texts.append(mob)
         self.toFadeOut.add(*texts)
+        for t in texts:
+            self.tag(t, role="note", phase="after")
         if settings.animate:
             self.play(*[m.AddTextLetterByLetter(t) for t in texts])
         else:
@@ -1518,6 +1682,12 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 self.recolor_commit(circle, color)
             commit_id = self.drawnCommitIds.get(sha)
             if commit_id is not None:
+                if "before_fill" not in (getattr(commit_id, "meta", None) or {}):
+                    self.tag(
+                        commit_id,
+                        before_fill=commit_id.color,
+                        step=self.current_step or None,
+                    )
                 commit_id.set_color(color)
 
     def remove_ref(self, name):
@@ -1530,6 +1700,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         else:
             self.remove(ref)
         self.toFadeOut.remove(ref)
+        # Keep it for the interactive page, visible only in the "before" view.
+        self.tag(ref, phase="removed")
+        self.removed_mobjects.append(ref)
 
     def unreachable_after_losing(self, ref_names):
         """Commits reachable only through the given refs (what deleting them orphans)."""
@@ -1574,6 +1747,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 buff=0.15,
             )
             self.toFadeOut.add(titleText, ul)
+            self.tag(titleText, role="title")
+            self.tag(ul, role="title")
             self.scale_frame()
             self.fit_title_in_frame(titleText)
             if settings.animate:

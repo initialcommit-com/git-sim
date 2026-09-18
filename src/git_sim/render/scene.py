@@ -215,7 +215,7 @@ class Painter:
                 ),
             )
 
-    def text(self, line, baseline, family, em_units, bold, mobject):
+    def text(self, line, baseline, family, em_units, bold, mobject, ink=None):
         font = make_font(family, bold, em_units * self.scale)
         x, y = self.to_px(baseline)
         paint = self._paint(
@@ -320,6 +320,55 @@ class Scene:
         else:
             data = image.encodeToData(skia.kPNG, 100)
         payload = bytes(data)
+        os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+        with open(path, "wb") as f:
+            f.write(payload)
+        return payload
+
+    def render_svg(
+        self,
+        pixel_width=DEFAULT_PIXEL_WIDTH,
+        pixel_height=DEFAULT_PIXEL_HEIGHT,
+        background=BLACK,
+        font_stack=None,
+        extra_mobjects=(),
+    ) -> str:
+        """The current scene state as an SVG document string. ``extra_mobjects``
+        are drawn too (e.g. labels a simulation removed, kept for the
+        before/after view)."""
+        from git_sim.render.svg import SvgPainter
+
+        painter = SvgPainter(
+            self.camera.frame, pixel_width, pixel_height, font_stack=font_stack
+        )
+        for mobject in list(self.mobjects) + list(extra_mobjects):
+            mobject.draw(painter)
+        return painter.document(background)
+
+    def render_html(
+        self,
+        path,
+        pixel_width=DEFAULT_PIXEL_WIDTH,
+        pixel_height=DEFAULT_PIXEL_HEIGHT,
+        theme=None,
+        title="",
+        extra_mobjects=(),
+    ) -> bytes:
+        """Write a self-contained interactive page (inline SVG plus a small
+        script: tooltips, ancestry highlighting, pan/zoom, before/after)."""
+        from git_sim.render.html import FONT_STACK, build_html
+
+        svg = self.render_svg(
+            pixel_width,
+            pixel_height,
+            background=theme.bg if theme else BLACK,
+            font_stack=FONT_STACK,
+            extra_mobjects=extra_mobjects,
+        )
+        page = build_html(
+            svg, title=title, theme=theme, width=pixel_width, height=pixel_height
+        )
+        payload = page.encode("utf-8")
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
         with open(path, "wb") as f:
             f.write(payload)

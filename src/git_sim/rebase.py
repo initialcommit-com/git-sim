@@ -228,7 +228,9 @@ class Rebase(GitSimBaseCommand):
         copies = 0
         folded = 0
         dropped = 0
-        for action, tr in plan:
+        for index, (action, tr) in enumerate(plan):
+            # Each todo action is one step in the interactive page.
+            self.current_step = index + 1 if len(plan) > 1 else 0
             if action == "drop":
                 self.mark_commits([tr.hexsha])
                 dropped += 1
@@ -346,6 +348,12 @@ class Rebase(GitSimBaseCommand):
 
         self.drawnCommits[sha] = circle
         self.toFadeOut.add(circle)
+        self.tag_commit(
+            circle, sha, phase="after", message=commitMessage, parents=child
+        )
+        self.tag(commitId, role="commit-label", sha=sha, phase="after")
+        self.tag(message, role="commit-label", sha=sha, phase="after")
+        self.tag(arrow, role="edge", src=sha, dst=child, phase="after")
 
         if draw_arrow:
             if settings.animate:
