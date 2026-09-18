@@ -48,19 +48,7 @@ class Tag(GitSimBaseCommand):
         self.center_frame_on_commit(self.get_commit())
 
         if not self.d:
-            tagText = m.Text(
-                self.name,
-                font=self.font,
-                font_size=20,
-                color=self.fontColor,
-            )
-            tagRec = m.Rectangle(
-                color=m.YELLOW,
-                fill_color=m.YELLOW,
-                fill_opacity=0.25,
-                height=0.4,
-                width=tagText.width + 0.25,
-            )
+            tagRec, tagText = self.ref_pill(self.name, self.theme.tag)
 
             if self.commit:
                 commit = self.repo.commit(self.commit)

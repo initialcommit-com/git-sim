@@ -44,7 +44,7 @@ class Reflog(GitSimBaseCommand):
                 self.parse_commits(commit, shift=4 * lane * m.DOWN)
             refs_here = self.drawnRefsByCommit.get(sha, [])
             top = refs_here[-1] if refs_here else None
-            self.draw_ref(commit, top, text=ref, color=m.PURPLE)
+            self.draw_ref(commit, top, text=ref, color=self.theme.purple)
             self.add_ref_to_drawn_refs_by_commit(sha, self.drawnRefs[ref])
         orphaned = [sha for sha, _, _ in self.entries if sha not in reachable]
         self.mark_commits(orphaned)
@@ -60,7 +60,7 @@ class Reflog(GitSimBaseCommand):
         if orphaned:
             first = next(ref for sha, ref, _ in self.entries if sha in orphaned)
             notes.append(
-                ("Gold commits are reachable only through the reflog.", m.GOLD)
+                ("Gold commits are reachable only through the reflog.", self.theme.gold)
             )
             notes.append(
                 f"Bring one back with: git reset --hard {first}  (or git branch rescue {first})"

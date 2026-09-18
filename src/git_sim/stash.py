@@ -105,7 +105,7 @@ class Stash(GitSimBaseCommand):
                     [
                         (
                             f"All {len(self.entries)} stash entries are deleted; only 'git fsck --lost-found' can find them afterwards.",
-                            m.GOLD,
+                            self.theme.gold,
                         )
                     ]
                 )

@@ -85,6 +85,16 @@ class Square(Rectangle):
         super().__init__(height=side_length, width=side_length, **kwargs)
 
 
+class RoundedRectangle(Rectangle):
+    def __init__(self, corner_radius=0.5, **kwargs):
+        super().__init__(**kwargs)
+        self.corner_radius = corner_radius
+
+    def draw(self, painter):
+        painter.round_rect(self.points, self.corner_radius, self)
+        Mobject.draw(self, painter)
+
+
 # ------------------------------------------------------------------- arrow tips
 class ArrowTip:
     """Tip geometry attached to the end of a line. Size is fixed; only the

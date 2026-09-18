@@ -13,6 +13,7 @@ import time
 
 from git_sim.enums import VideoFormat
 from git_sim.settings import settings
+from git_sim.theme import theme_for
 
 
 def handle_animations(scene, command_name: str) -> None:
@@ -75,7 +76,7 @@ def _render_image(scene, command_name: str) -> None:
         image_file_path,
         pixel_width=width,
         pixel_height=height,
-        background="#FFFFFF" if settings.light_mode else "#000000",
+        background=theme_for(settings.light_mode).bg,
         transparent=settings.transparent_bg,
         fmt=fmt,
     )

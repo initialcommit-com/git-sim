@@ -47,7 +47,13 @@ class Mobject:
         self.stroke_opacity = stroke_opacity
         self.stroke_width = stroke_width
         self.z_index = kwargs.get("z_index", 0)
+        self.shadow = None  # {"dx", "dy", "sigma", "color", "opacity"} in scene units
         self._saved_state = None
+
+    def set_shadow(self, spec):
+        """Soft shadow (or glow) drawn under the fill; None removes it."""
+        self.shadow = dict(spec) if spec else None
+        return self
 
     # ------------------------------------------------------------------ family
     def add(self, *mobjects):

@@ -149,7 +149,7 @@ class Push(GitSimBaseCommand):
                 [
                     (
                         f"--force-with-lease rejected: {remote_name}/{branch_name} moved since your last fetch.",
-                        m.GOLD,
+                        self.theme.gold,
                     ),
                     f"You expected {expected[:6] if expected else '?'}; fetch, review the new commits, then retry.",
                 ]
@@ -189,7 +189,7 @@ class Push(GitSimBaseCommand):
                 f"{flag} moved {remote_name}/{branch_name} from {remote_only[0].hexsha[:6]} to {head_commit.hexsha[:6]}.",
                 (
                     f"{len(remote_only)} remote commit(s) were overwritten (gold) and are no longer reachable from the remote branch.",
-                    m.GOLD,
+                    self.theme.gold,
                 ),
                 "Anyone who pulled them now has divergent history.",
             ]
@@ -220,7 +220,7 @@ class Push(GitSimBaseCommand):
                 f"Gold commits exist in remote repo, but not locally (need to be pulled).",
                 font=self.font,
                 font_size=20,
-                color=m.GOLD,
+                color=self.theme.gold,
                 weight=m.BOLD,
             )
             text3.move_to(text2.get_center()).shift(m.DOWN / 2)
@@ -229,7 +229,7 @@ class Push(GitSimBaseCommand):
                 f"Red commits exist in both local and remote repos.",
                 font=self.font,
                 font_size=20,
-                color=m.RED,
+                color=self.theme.commit,
                 weight=m.BOLD,
             )
             text4.move_to(text3.get_center()).shift(m.DOWN / 2)
@@ -258,7 +258,7 @@ class Push(GitSimBaseCommand):
                 f"Gold commits are ahead of your current branch tip (need to be pulled).",
                 font=self.font,
                 font_size=20,
-                color=m.GOLD,
+                color=self.theme.gold,
                 weight=m.BOLD,
             )
             text3.move_to(text2.get_center()).shift(m.DOWN / 2)
@@ -267,7 +267,7 @@ class Push(GitSimBaseCommand):
                 f"Red commits are up to date in both local and remote branches.",
                 font=self.font,
                 font_size=20,
-                color=m.RED,
+                color=self.theme.commit,
                 weight=m.BOLD,
             )
             text4.move_to(text3.get_center()).shift(m.DOWN / 2)

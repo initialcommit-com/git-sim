@@ -95,6 +95,7 @@ from git_sim.render.shapes import (  # noqa: F401
     Intersection,
     Line,
     Rectangle,
+    RoundedRectangle,
     Square,
     StealthTip,
     Underline,

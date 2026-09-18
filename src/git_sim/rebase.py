@@ -282,13 +282,7 @@ class Rebase(GitSimBaseCommand):
         shift=numpy.array([0.0, 0.0, 0.0]),
         draw_arrow=True,
     ):
-        circle = m.Circle(
-            stroke_color=m.RED,
-            stroke_width=self.commit_stroke_width,
-            fill_color=m.RED,
-            fill_opacity=0.25,
-        )
-        circle.height = 1
+        circle = self.commit_circle()
         circle.next_to(
             self.drawnCommits[child],
             m.LEFT if settings.reverse else m.RIGHT,
@@ -301,7 +295,7 @@ class Rebase(GitSimBaseCommand):
         arrow = m.Arrow(
             start,
             end,
-            color=self.fontColor,
+            color=self.arrowColor,
             stroke_width=self.arrow_stroke_width,
             tip_shape=self.arrow_tip_shape,
             max_stroke_width_to_length_ratio=1000,
@@ -337,12 +331,10 @@ class Rebase(GitSimBaseCommand):
 
         commitMessage = commitMessage[:40].replace("\n", " ")
         message = m.Text(
-            "\n".join(
-                commitMessage[j : j + 20] for j in range(0, len(commitMessage), 20)
-            )[:100],
+            self.wrap_message(commitMessage),
             font=self.font,
             font_size=14,
-            color=self.fontColor,
+            color=self.mutedColor,
         ).next_to(circle, m.DOWN)
         self.toFadeOut.add(message)
 

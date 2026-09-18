@@ -248,7 +248,9 @@ def main(
         settings.img_format = ImgFormat.PNG
 
     if settings.animate:
-        from manim import WHITE, config
+        from manim import config
+
+        from git_sim.theme import theme_for
 
         config.media_dir = settings.media_dir
         config.verbosity = "ERROR"
@@ -256,8 +258,7 @@ def main(
         if settings.low_quality:
             config.quality = "low_quality"
 
-        if settings.light_mode:
-            config.background_color = WHITE
+        config.background_color = theme_for(settings.light_mode).bg
 
         t = datetime.datetime.fromtimestamp(time.time()).strftime("%m-%d-%y_%H-%M-%S")
         config.output_file = "git-sim-" + ctx.invoked_subcommand + "_" + t + ".mp4"

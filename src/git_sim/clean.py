@@ -68,7 +68,7 @@ class Clean(GitSimBaseCommand):
             notes.append(
                 (
                     "-x also deletes ignored files such as build output and virtualenvs.",
-                    m.GOLD,
+                    self.theme.gold,
                 )
             )
         if notes:

@@ -80,7 +80,7 @@ class Commit(GitSimBaseCommand):
                 head_commit,
                 self.drawnRefs["HEAD"],
                 text=self.repo.active_branch.name,
-                color=m.GREEN,
+                color=self.theme.branch,
             )
 
         self.recenter_frame()

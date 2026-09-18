@@ -554,7 +554,7 @@ $ git-sim cherry-pick 0ae641
 ```
 
 ## Command examples with extra options/flags
-Use light mode for white background and black text, instead of the default black background with white text:
+Use light mode (soft off-white background, dark text) instead of the default dark theme:
 
 ```console
 $ git-sim --light-mode status

@@ -25,16 +25,21 @@ from git_sim.render.mobject import Mobject
 
 # Pango generic family names, and what to try for them.
 GENERIC_FAMILIES = {
+    # Modern coding fonts first (Windows Terminal, JetBrains, macOS, common
+    # Linux installs), with Courier New as the last resort.
     "monospace": [
-        "Courier New",
+        "Cascadia Mono",
+        "JetBrains Mono",
+        "Fira Mono",
+        "SF Mono",
+        "Menlo",
         "Consolas",
         "DejaVu Sans Mono",
         "Liberation Mono",
-        "Menlo",
-        "Monaco",
-        "Cascadia Mono",
-        "Lucida Console",
         "Noto Sans Mono",
+        "Monaco",
+        "Lucida Console",
+        "Courier New",
     ],
     "sans-serif": ["Arial", "Helvetica", "DejaVu Sans", "Liberation Sans", "Noto Sans"],
     "sans": ["Arial", "Helvetica", "DejaVu Sans", "Liberation Sans", "Noto Sans"],

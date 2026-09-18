@@ -732,7 +732,10 @@ def case_cherry_pick():
             ),
             (
                 "copied message drawn",
-                lambda c: any(msg[:20] in t for t in c.text_values()),
+                lambda c: any(
+                    " ".join(msg[:20].split()) in " ".join(t.split())
+                    for t in c.text_values()
+                ),
             ),
         ],
     )
@@ -1420,7 +1423,9 @@ def note_texts(cap):
 
 
 def has_text(cap, needle):
-    return any(needle in t for t in note_texts(cap))
+    # Commit messages wrap at word boundaries, so compare with whitespace folded.
+    fold = lambda s: " ".join(s.split())
+    return any(fold(needle) in fold(t) for t in note_texts(cap))
 
 
 def case_branch_flags():

@@ -93,7 +93,7 @@ class Switch(GitSimBaseCommand):
             self.parse_commits(head_commit)
             self.recenter_frame()
             self.scale_frame()
-            self.draw_ref(head_commit, self.topref, text=self.branch, color=m.GREEN)
+            self.draw_ref(head_commit, self.topref, text=self.branch, color=self.theme.branch)
         else:
             branch_commit = self.get_commit(self.branch)
 

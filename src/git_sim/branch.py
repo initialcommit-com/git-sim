@@ -98,19 +98,7 @@ class Branch(GitSimBaseCommand):
         self.show_outro()
 
     def create_branch(self):
-        branchText = m.Text(
-            self.name,
-            font=self.font,
-            font_size=20,
-            color=self.fontColor,
-        )
-        branchRec = m.Rectangle(
-            color=m.GREEN,
-            fill_color=m.GREEN,
-            fill_opacity=0.25,
-            height=0.4,
-            width=branchText.width + 0.25,
-        )
+        branchRec, branchText = self.ref_pill(self.name, self.theme.branch)
 
         branchRec.next_to(self.topref, m.UP)
         branchText.move_to(branchRec.get_center())
@@ -138,7 +126,7 @@ class Branch(GitSimBaseCommand):
             notes.append(
                 (
                     f"{len(self.orphaned)} commit(s) are now reachable only from the reflog (gold).",
-                    m.GOLD,
+                    self.theme.gold,
                 )
             )
             notes.append(f"Recover with: git branch {self.name} {short}")
@@ -157,7 +145,7 @@ class Branch(GitSimBaseCommand):
         ]
         self.remove_ref(self.name)
         top = remaining[-1] if remaining else None
-        self.draw_ref(target, top, text=self.new_name, color=m.GREEN)
+        self.draw_ref(target, top, text=self.new_name, color=self.theme.branch)
         self.add_notes(
             [
                 f"Renamed branch '{self.name}' to '{self.new_name}'; commits are untouched."

@@ -89,9 +89,34 @@ class Painter:
     def _fill_paint(self, mobject):
         if mobject.fill_opacity <= 0:
             return None
-        return self._paint(
+        paint = self._paint(
             mobject.fill_color, mobject.fill_opacity, self.skia.Paint.kFill_Style
         )
+        shadow = getattr(mobject, "shadow", None)
+        if shadow:
+            self._add_shadow(paint, shadow)
+        return paint
+
+    def _add_shadow(self, paint, shadow):
+        """Soft drop shadow / glow under a fill. Best effort: an older skia
+        without the image-filter API just draws the flat fill."""
+        try:
+            r, g, b, a = parse_color(shadow["color"], shadow.get("opacity", 0.3))
+            color = self.skia.ColorSetARGB(
+                int(a * 255), int(r * 255), int(g * 255), int(b * 255)
+            )
+            sigma = shadow.get("sigma", 0.05) * self.scale
+            paint.setImageFilter(
+                self.skia.ImageFilters.DropShadow(
+                    shadow.get("dx", 0.0) * self.scale,
+                    -shadow.get("dy", 0.0) * self.scale,
+                    sigma,
+                    sigma,
+                    color,
+                )
+            )
+        except Exception:
+            pass
 
     def _stroke_paint(self, mobject):
         if mobject.stroke_width <= 0 or mobject.stroke_opacity <= 0:
@@ -132,6 +157,17 @@ class Painter:
         for paint in (self._fill_paint(mobject), self._stroke_paint(mobject)):
             if paint is not None:
                 self.canvas.drawPath(path, paint)
+
+    def round_rect(self, points, corner_radius, mobject):
+        if len(points) < 2:
+            return
+        xs = [self.to_px(p)[0] for p in points]
+        ys = [self.to_px(p)[1] for p in points]
+        rect = self.skia.Rect.MakeLTRB(min(xs), min(ys), max(xs), max(ys))
+        radius = min(corner_radius * self.scale, rect.width() / 2, rect.height() / 2)
+        for paint in (self._fill_paint(mobject), self._stroke_paint(mobject)):
+            if paint is not None:
+                self.canvas.drawRoundRect(rect, radius, radius, paint)
 
     def polyline(self, points, mobject):
         if len(points) < 2:

@@ -107,7 +107,7 @@ class Merge(GitSimBaseCommand):
                     branch_commit,
                     self.drawnRefs["HEAD"],
                     text=self.repo.active_branch.name,
-                    color=m.GREEN,
+                    color=self.theme.branch,
                 )
             if self.no_ff:
                 self.color_by(offset=2)
