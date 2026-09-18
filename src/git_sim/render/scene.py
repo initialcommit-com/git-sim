@@ -176,6 +176,16 @@ class Painter:
         if paint is not None:
             self.canvas.drawPath(self._path(points, close=False), paint)
 
+    def cubic(self, p0, p1, p2, p3, mobject):
+        paint = self._stroke_paint(mobject)
+        if paint is None:
+            return
+        paint.setStrokeCap(self.skia.Paint.kRound_Cap)
+        path = self.skia.Path()
+        path.moveTo(*self.to_px(p0))
+        path.cubicTo(*self.to_px(p1), *self.to_px(p2), *self.to_px(p3))
+        self.canvas.drawPath(path, paint)
+
     def line(self, start, end, mobject):
         paint = self._stroke_paint(mobject)
         if paint is None:

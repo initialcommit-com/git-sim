@@ -132,17 +132,11 @@ class Revert(GitSimBaseCommand):
             m.LEFT if settings.reverse else m.RIGHT,
             buff=1.5,
         )
+        self.paint_commit_for_lane(circle)
 
         start = circle.get_center()
         end = self.drawnCommits[self.get_commit().hexsha].get_center()
-        arrow = m.Arrow(
-            start,
-            end,
-            color=self.arrowColor,
-            stroke_width=self.arrow_stroke_width,
-            tip_shape=self.arrow_tip_shape,
-            max_stroke_width_to_length_ratio=1000,
-        )
+        arrow = self.lane_arrow(start, end)
         length = numpy.linalg.norm(start - end) - (1.5 if start[1] == end[1] else 3)
         arrow.set_length(length)
 

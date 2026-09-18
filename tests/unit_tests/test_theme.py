@@ -3,6 +3,7 @@ skia renderer gained for it, and the scenes' use of them."""
 
 import os
 import subprocess
+import types
 
 import numpy as np
 import pytest
@@ -112,18 +113,84 @@ def test_scene_takes_its_colors_from_the_theme(repo, light):
     head_box, head_text = scene.drawnRefs["HEAD"]
     assert head_box.fill_color == theme.head and head_box.fill_opacity == 1.0
     assert head_text.color == theme.ref_text
+    # Labels keep a fixed color by kind, whatever lane they sit in.
     branch_box, _ = scene.drawnRefs["main"]
     assert branch_box.fill_color == theme.branch
+    assert theme.lane_color(0) == theme.commit
     disc = next(iter(scene.drawnCommits.values()))
     assert disc.fill_color == theme.commit and disc.fill_opacity == 1.0
-    assert disc.stroke_color == theme.commit_ring
+    assert disc.stroke_color == theme.ring_for(theme.commit)
     assert disc.shadow is not None
+    # The table gets a translucent header band.
+    bands = [
+        mob
+        for top in scene.mobjects
+        for mob in top.get_family()
+        if getattr(mob, "fill_color", None) == theme.panel
+        and mob.fill_opacity == theme.panel_opacity
+    ]
+    assert len(bands) == 1
     # Gold marking recolors the glow along with the disc.
     scene.mark_commits([next(iter(scene.drawnCommits))])
     assert disc.fill_color == theme.gold and disc.shadow["color"] in (
         theme.gold,
         "#000000",
     )
+
+
+def test_lane_hues_cycle_and_rings_track_the_fill():
+    assert DARK.lane_color(0) == DARK.commit
+    assert DARK.lane_color(1) != DARK.lane_color(0)
+    assert DARK.lane_color(len(DARK.lane_colors)) == DARK.lane_color(0)
+    assert DARK.lane_color(-2) == DARK.lane_color(2)
+    # Dark rims are lighter than the fill, light rims darker.
+    assert DARK.ring_for("#808080") == "#A6A6A6"
+    assert LIGHT.ring_for("#808080") == "#606060"
+
+
+def test_lane_arrow_keeps_straight_endpoints_and_arrives_along_the_lane(tmp_path):
+    from git_sim import render as m
+
+    start, end = np.array([0.0, 0.0, 0.0]), np.array([2.5, -4.0, 0.0])
+    straight = m.Arrow(start, end, max_stroke_width_to_length_ratio=1000)
+    curved = m.LaneArrow(start, end, max_stroke_width_to_length_ratio=1000)
+    for arrow in (straight, curved):
+        arrow.set_length(arrow.get_length() - 3)
+    # set_length scales about the center including the tip, whose direction
+    # differs between the two shapes, so allow a hundredth of a unit.
+    assert np.allclose(straight.get_start(), curved.get_start(), atol=0.02)
+    assert np.allclose(straight.get_end(), curved.get_end(), atol=0.02)
+    _, _, p2, p3 = curved._controls()
+    tangent = p3 - p2
+    assert abs(tangent[0]) > abs(
+        tangent[1]
+    ), "arrives more horizontally than vertically"
+    scene = m.Scene()
+    scene.add(curved)
+    scene.render_image(str(tmp_path / "lane.png"), fmt="png")
+
+
+def test_lane_hues_color_commits_but_never_labels(repo):
+    from git_sim.log import Log
+
+    subprocess.run(
+        ["git", "checkout", "-q", "-b", "side", "HEAD~1"], cwd=repo, check=True
+    )
+    (repo / "s.txt").write_text("s\n")
+    subprocess.run(["git", "add", "s.txt"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "side"], cwd=repo, check=True)
+    subprocess.run(["git", "checkout", "-q", "main"], cwd=repo, check=True)
+    ctx = types.SimpleNamespace(
+        parent=types.SimpleNamespace(params={"n": 5, "all": True})
+    )
+    scene = Log(ctx=ctx, n=5, all=True)
+    scene.construct()
+    fills = {c.fill_color for c in scene.drawnCommits.values()}
+    assert DARK.lane_color(1) in fills, "the side lane is drawn in the second hue"
+    side_box, _ = scene.drawnRefs["side"]
+    main_box, _ = scene.drawnRefs["main"]
+    assert side_box.fill_color == main_box.fill_color == DARK.branch
+    assert scene.drawnRefs["HEAD"][0].fill_color == DARK.head
 
 
 def test_commit_messages_wrap_at_word_boundaries():

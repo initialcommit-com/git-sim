@@ -1,6 +1,6 @@
 """Visual theme for the rendered simulations: one palette for dark mode and
-one for light mode, plus the few style rules (shadows, ring colors) that the
-scenes share.
+one for light mode, plus the few style rules (shadows, ring colors, lane
+hues) that the scenes share.
 
 Scenes never hard-code a manim color; they take semantic colors from the
 active theme so both modes stay consistent and can be tuned in one place.
@@ -8,6 +8,14 @@ active theme so both modes stay consistent and can be tuned in one place.
 
 from dataclasses import dataclass, field
 from typing import List, Optional
+
+
+def _mix(color: str, other: str, amount: float) -> str:
+    """Blend ``color`` toward ``other`` by ``amount`` (0..1); both "#RRGGBB"."""
+    a = [int(color[i : i + 2], 16) for i in (1, 3, 5)]
+    b = [int(other[i : i + 2], 16) for i in (1, 3, 5)]
+    mixed = [round(x + (y - x) * amount) for x, y in zip(a, b)]
+    return "#" + "".join(f"{max(0, min(255, v)):02X}" for v in mixed)
 
 
 @dataclass(frozen=True)
@@ -31,7 +39,23 @@ class Theme:
     gold: str
     ref_text: str  # label text on a colored pill
     glow: bool  # commits get a soft same-colored glow (dark) or a drop shadow
+    panel: str  # translucent band behind table headers / alternate rows
+    panel_opacity: float
+    stripe_opacity: float
     author_colors: List[str] = field(default_factory=list)
+    # One hue per lane (row) of the commit graph for the commit discs; lane 0
+    # is the current branch. Ref labels keep fixed colors by kind.
+    lane_colors: List[str] = field(default_factory=list)
+
+    def lane_color(self, index: int) -> str:
+        return self.lane_colors[abs(int(index)) % len(self.lane_colors)]
+
+    def ring_for(self, fill: str) -> str:
+        """Rim color for a disc of the given fill: a lighter tint in dark mode,
+        a darker shade in light mode."""
+        if self.glow:
+            return _mix(fill, "#FFFFFF", 0.3)
+        return _mix(fill, "#000000", 0.25)
 
     def shadow(self, color: Optional[str] = None):
         """Shadow spec (scene units) for a filled shape of the given color."""
@@ -83,6 +107,9 @@ DARK = Theme(
     gold="#E3B341",
     ref_text="#0D1117",
     glow=True,
+    panel="#FFFFFF",
+    panel_opacity=0.06,
+    stripe_opacity=0.03,
     author_colors=[
         "#F47067",
         "#E3B341",
@@ -96,6 +123,7 @@ DARK = Theme(
         "#79C0FF",
         "#D2A8FF",
     ],
+    lane_colors=["#F47067", "#39C5CF", "#BC8CFF", "#3FB950", "#FFA657", "#F778BA"],
 )
 
 LIGHT = Theme(
@@ -118,6 +146,9 @@ LIGHT = Theme(
     gold="#BF8700",
     ref_text="#FFFFFF",
     glow=False,
+    panel="#000000",
+    panel_opacity=0.04,
+    stripe_opacity=0.025,
     author_colors=[
         "#CF222E",
         "#BF8700",
@@ -131,6 +162,7 @@ LIGHT = Theme(
         "#0550AE",
         "#6639BA",
     ],
+    lane_colors=["#F0665C", "#1F9BA6", "#8250DF", "#2DA44E", "#E16F24", "#D6409F"],
 )
 
 

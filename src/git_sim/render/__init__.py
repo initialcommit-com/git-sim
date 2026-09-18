@@ -93,6 +93,7 @@ from git_sim.render.shapes import (  # noqa: F401
     Dot,
     ImageMobject,
     Intersection,
+    LaneArrow,
     Line,
     Rectangle,
     RoundedRectangle,

@@ -286,10 +286,48 @@ class GitSimBaseCommand(m.MovingCameraScene):
         apply_shadow(circle, self.theme.shadow(color))
         return circle
 
+    # Lanes: rows of the graph are 4 units apart; lane 0 holds the current
+    # branch. Each lane gets its own hue so divergence reads at a glance.
+    LANE_PITCH = 4.0
+
+    def lane_index(self, y):
+        return int(round(-float(y) / self.LANE_PITCH))
+
+    def lane_color_at(self, y):
+        """Hue of the lane at the given y coordinate."""
+        return self.theme.lane_color(self.lane_index(y))
+
+    def paint_commit_for_lane(self, circle, kind="commit"):
+        """Give a positioned commit disc its lane's hue (merge and placeholder
+        discs keep their own colors)."""
+        if kind != "commit":
+            return circle
+        fill = self.lane_color_at(circle.get_center()[1])
+        circle.set_fill(fill)
+        circle.set_stroke(self.theme.ring_for(fill))
+        apply_shadow(circle, self.theme.shadow(fill))
+        return circle
+
+    def lane_arrow(self, start, end):
+        """Parent arrow: straight within a lane, a smooth curve between lanes
+        (the curve is a static-renderer feature; manim draws it straight)."""
+        curved = getattr(m, "LaneArrow", None)
+        cls = curved if curved is not None and start[1] != end[1] else m.Arrow
+        return cls(
+            start,
+            end,
+            color=self.arrowColor,
+            stroke_width=self.arrow_stroke_width,
+            tip_shape=self.arrow_tip_shape,
+            max_stroke_width_to_length_ratio=1000,
+        )
+
     def ref_pill(self, text, color):
         """A ref label (HEAD, branch, tag) as bold text on a solid rounded
-        pill. Returns (box, text); the caller positions the box and moves the
-        text onto its center."""
+        pill. Label colors are fixed by kind (branch green, remote teal, HEAD
+        blue, tag amber) so a reader always knows what a label is. Returns
+        (box, text); the caller positions the box and moves the text onto
+        its center."""
         label = m.Text(
             text,
             font=self.font,
@@ -333,6 +371,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
             isNewCommit = commit.hexsha not in self.drawnCommits
         else:
             isNewCommit = True
+        if isNewCommit:
+            self.paint_commit_for_lane(circle, kind)
 
         if isNewCommit:
             start = (
@@ -350,14 +390,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             )
             end = self.drawnCommits[commit.hexsha].get_center()
 
-        arrow = m.Arrow(
-            start,
-            end,
-            color=self.arrowColor,
-            stroke_width=self.arrow_stroke_width,
-            tip_shape=self.arrow_tip_shape,
-            max_stroke_width_to_length_ratio=1000,
-        )
+        arrow = self.lane_arrow(start, end)
 
         if commit == "dark":
             arrow = m.Arrow(start, end, color=self.theme.bg)
@@ -728,13 +761,34 @@ class GitSimBaseCommand(m.MovingCameraScene):
             if third_column_name == "Staged files":
                 third_column_name = "Deleted changes"
 
+        # A faint band behind the header row, drawn beneath the rules.
+        header_band = m.Rectangle(
+            width=self.camera.frame.get_width(),
+            height=abs(horizontal.get_start()[1] - horizontal2.get_start()[1]),
+            color=self.theme.panel,
+            fill_color=self.theme.panel,
+            fill_opacity=self.theme.panel_opacity,
+            stroke_width=0,
+        ).move_to(
+            (
+                self.camera.frame.get_center()[0],
+                (horizontal.get_start()[1] + horizontal2.get_start()[1]) / 2,
+                0,
+            )
+        )
+        self.add(header_band)
+        self.toFadeOut.add(header_band)
+
+        def title_color(name):
+            return self.mutedColor if name.strip("-") == "" else self.fontColor
+
         title_v_shift = abs(horizontal2.get_start()[1] - horizontal.get_start()[1]) / 2
         firstColumnTitle = (
             m.Text(
                 first_column_name,
                 font=self.font,
                 font_size=28,
-                color=self.fontColor,
+                color=title_color(first_column_name),
                 weight=m.BOLD,
             )
             .move_to((vert1.get_center()[0] - 4, horizontal.get_start()[1], 0))
@@ -745,7 +799,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 second_column_name,
                 font=self.font,
                 font_size=28,
-                color=self.fontColor,
+                color=title_color(second_column_name),
                 weight=m.BOLD,
             )
             .move_to(self.camera.frame.get_center())
@@ -756,7 +810,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 third_column_name,
                 font=self.font,
                 font_size=28,
-                color=self.fontColor,
+                color=title_color(third_column_name),
                 weight=m.BOLD,
             )
             .move_to((vert2.get_center()[0] + 4, 0, 0))
@@ -810,6 +864,32 @@ class GitSimBaseCommand(m.MovingCameraScene):
             secondColumnArrowMap,
             thirdColumnArrowMap,
         )
+
+        # Zebra stripes behind every other row, added before the row text so
+        # they sit underneath it. Rows are 0.5 high, starting just below the
+        # header's lower rule.
+        n_rows = max(
+            len(firstColumnFileNames),
+            len(secondColumnFileNames),
+            len(thirdColumnFileNames),
+        )
+        for row in range(1, n_rows, 2):
+            stripe = m.Rectangle(
+                width=self.camera.frame.get_width(),
+                height=0.5,
+                color=self.theme.panel,
+                fill_color=self.theme.panel,
+                fill_opacity=self.theme.stripe_opacity,
+                stroke_width=0,
+            ).move_to(
+                (
+                    self.camera.frame.get_center()[0],
+                    horizontal2.get_center()[1] - 0.5 * (row + 1),
+                    0,
+                )
+            )
+            self.add(stripe)
+            self.toFadeOut.add(stripe)
 
         firstColumnFiles = m.VGroup()
         secondColumnFiles = m.VGroup()
@@ -1009,7 +1089,6 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     0,
                 )
             )
-
     def reset_head(self, hexsha, shift=numpy.array([0.0, 0.0, 0.0])):
         if settings.animate:
             self.play(
@@ -1095,18 +1174,13 @@ class GitSimBaseCommand(m.MovingCameraScene):
             )
 
         circle.shift(shift)
+        if color not in (m.GRAY, "merge") and (color is None or color == m.RED):
+            self.paint_commit_for_lane(circle)
 
         if child_key != "dark":
             start = circle.get_center()
             end = self.drawnCommits[child_key].get_center()
-            arrow = m.Arrow(
-                start,
-                end,
-                color=self.arrowColor,
-                stroke_width=self.arrow_stroke_width,
-                tip_shape=self.arrow_tip_shape,
-                max_stroke_width_to_length_ratio=1000,
-            )
+            arrow = self.lane_arrow(start, end)
             length = numpy.linalg.norm(start - end) - (1.5 if start[1] == end[1] else 3)
             arrow.set_length(length)
 

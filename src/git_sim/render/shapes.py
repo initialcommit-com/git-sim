@@ -313,6 +313,43 @@ class Arrow(Line):
         self._set_stroke_width_from_length()
 
 
+class LaneArrow(Arrow):
+    """An Arrow between two lanes of the commit graph drawn as a cubic curve:
+    it leaves its commit steeply and arrives along the parent's lane. The
+    endpoints are exactly those of the straight Arrow it replaces, so layout
+    and shortening (set_length) behave the same."""
+
+    def _controls(self):
+        p0, p3 = self.get_start(), self.get_end()
+        d = p3 - p0
+        p1 = p0 + np.array([0.15 * d[0], 0.6 * d[1], 0.0])
+        p2 = p3 - np.array([0.6 * d[0], 0.15 * d[1], 0.0])
+        return p0, p1, p2, p3
+
+    def _tip_polygons(self):
+        polys = []
+        if self.get_length() == 0:
+            return polys
+        p0, p1, p2, p3 = self._controls()
+        if self.tip is not None:
+            polys.append((self.tip, self.tip.polygon(p3, p3 - p2)))
+        if self.start_tip is not None:
+            polys.append((self.start_tip, self.start_tip.polygon(p0, p0 - p1)))
+        return polys
+
+    def draw(self, painter):
+        if len(self.points) >= 2 and self.get_length() > 0:
+            p0, p1, p2, p3 = self._controls()
+            if self.tip is not None:
+                p3 = p3 - _unit(p3 - p2) * self.tip.length
+            if self.start_tip is not None:
+                p0 = p0 + _unit(p1 - p0) * self.start_tip.length
+            painter.cubic(p0, p1, p2, p3, self)
+        for tip, poly in self._tip_polygons():
+            painter.tip(poly, self, tip.filled)
+        Mobject.draw(self, painter)
+
+
 class Underline(Line):
     def __init__(self, mobject, buff=SMALL_BUFF, **kwargs):
         super().__init__(LEFT, RIGHT, **kwargs)
