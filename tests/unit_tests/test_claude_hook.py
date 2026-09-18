@@ -136,6 +136,103 @@ def test_worktree_remove_is_prefiltered_and_analyzed(repo, tmp_path):
     assert "DESTRUCTIVE" in reason and "file1.txt" in reason
 
 
+# --- other agents' dialects ------------------------------------------------
+
+
+def dirty(repo):
+    (repo / "file1.txt").write_text("modified\n")
+
+
+def test_cursor_payload_gets_cursor_output(repo):
+    dirty(repo)
+    payload = {
+        "hook_event_name": "beforeShellExecution",
+        "command": "git reset --hard HEAD~1",
+        "cwd": str(repo),
+        "workspace_roots": [str(repo)],
+    }
+    output = run_hook(payload)
+    assert output["permission"] == "ask"
+    assert "DESTRUCTIVE" in output["user_message"]
+    assert output["agent_message"] == output["user_message"]
+
+
+def test_copilot_payload_with_json_string_args(repo):
+    dirty(repo)
+    payload = {
+        "sessionId": "s",
+        "cwd": str(repo),
+        "toolName": "bash",
+        "toolArgs": '{"command": "git reset --hard HEAD~1"}',
+    }
+    output = run_hook(payload)
+    assert output["permissionDecision"] == "ask"
+    assert "file1.txt" in output["permissionDecisionReason"]
+    assert run_hook({**payload, "toolName": "edit"}) is None
+
+
+def test_gemini_cannot_ask_so_it_denies_with_instructions(repo):
+    dirty(repo)
+    payload = {
+        "hook_event_name": "BeforeTool",
+        "tool_name": "run_shell_command",
+        "tool_input": {"command": "git reset --hard HEAD~1"},
+        "cwd": str(repo),
+    }
+    output = run_hook(payload)
+    assert output["decision"] == "deny"
+    assert "GIT_SIM_APPROVE=1" in output["reason"]
+    assert output["systemMessage"] == output["reason"]
+
+
+def test_codex_dialect_via_agent_flag_denies_with_claude_schema(repo):
+    dirty(repo)
+    payload = {
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Bash",
+        "tool_input": {"command": "git reset --hard HEAD~1"},
+        "cwd": str(repo),
+    }
+    assert (
+        run_hook(payload)["hookSpecificOutput"]["permissionDecision"] == "ask"
+    )  # Claude by default
+    output = run_hook(payload, agent="codex")
+    decision = output["hookSpecificOutput"]
+    assert decision["permissionDecision"] == "deny"
+    assert "Codex CLI hooks cannot prompt" in decision["permissionDecisionReason"]
+
+
+def test_approval_override_lets_the_command_through(repo):
+    dirty(repo)
+    for command in (
+        "GIT_SIM_APPROVE=1 git reset --hard HEAD~1",
+        "$env:GIT_SIM_APPROVE=1; git reset --hard HEAD~1",
+    ):
+        assert run_hook(hook_input(command, repo, tool="PowerShell")) is None
+
+
+def test_mode_deny_and_warn(repo, monkeypatch):
+    dirty(repo)
+    monkeypatch.setenv("GIT_SIM_HOOK_MODE", "deny")
+    output = run_hook(hook_input("git reset --hard HEAD~1", repo))
+    assert output["hookSpecificOutput"]["permissionDecision"] == "deny"
+    assert (
+        "cannot prompt" not in output["hookSpecificOutput"]["permissionDecisionReason"]
+    )
+    monkeypatch.setenv("GIT_SIM_HOOK_MODE", "warn")
+    output = run_hook(hook_input("git reset --hard HEAD~1", repo))
+    assert output["hookSpecificOutput"]["permissionDecision"] == "allow"
+    assert "DESTRUCTIVE" in output["systemMessage"]
+
+
+def test_agent_flag_parsing():
+    from git_sim.claude_hook import _agent_from_argv
+
+    assert _agent_from_argv(["--agent", "Cursor"]) == "cursor"
+    assert _agent_from_argv(["--agent=gemini"]) == "gemini"
+    assert _agent_from_argv([]) is None
+
+
 def test_text_graph_can_be_disabled_by_env(repo, monkeypatch):
     monkeypatch.setenv("GIT_SIM_HOOK_TEXT", "0")
     output = run_hook(hook_input("git reset --hard HEAD~1", repo))

@@ -54,7 +54,13 @@ Note: If you prefer to install git-sim with Docker, skip steps (1) and (2) here 
 $ pip3 install git-sim
 ```
 
-This default ("core") install includes the deterministic pre-flight engine and text commit graph, the static image simulation (drawn with [skia](https://skia.org), no Manim needed), the [MCP server](docs/mcp.md) and the Claude Code hook. See [Installation](#installation) for the other tiers.
+This default ("core") install includes the deterministic pre-flight engine and text commit graph, the static image simulation (drawn with [skia](https://skia.org), no Manim needed), the [MCP server](docs/mcp.md) and the pre-flight hook for AI coding agents. See [Installation](#installation) for the other tiers.
+
+Using an AI coding agent? Wire git-sim into it with one command — it detects Claude Code, Codex CLI, Cursor, GitHub Copilot CLI, Gemini CLI and VS Code and writes the hook and MCP entries into each one's config (see [docs/mcp.md](docs/mcp.md)):
+
+```console
+$ git-sim install
+```
 
 2) Optional — for animated video output (`--animate`), install the `extras` tier, which adds Manim. Manim needs FFmpeg and other system packages; follow the Manim installation guide for your OS / environment first:
     - [Install Manim on Windows](https://docs.manim.community/en/stable/installation/windows.html)

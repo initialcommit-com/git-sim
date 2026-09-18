@@ -286,6 +286,12 @@ app.command()(git_sim.commands.status)
 app.command()(git_sim.commands.switch)
 app.command()(git_sim.commands.tag)
 
+# Agent integration (not git subcommands).
+from git_sim.install import install, uninstall  # noqa: E402
+
+app.command()(install)
+app.command()(uninstall)
+
 
 if __name__ == "__main__":
     app()

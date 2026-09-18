@@ -119,7 +119,46 @@ renders in well under a second. Manim is only needed for animated output
 (`pip install "git-sim[extras]"`). For a dependency-minimal ("min") install
 see the main README.
 
-## Claude Code
+## One-command setup for any agent
+
+```console
+$ git-sim install
+```
+
+`git-sim install` detects the AI coding agents on your machine and wires
+both the pre-flight hook and the MCP server into each one's own config, in
+its own format:
+
+| Agent | Hook | MCP server |
+|---|---|---|
+| Claude Code | `~/.claude/settings.json` → `hooks.PreToolUse` (matcher `Bash\|PowerShell`) | `~/.claude.json` → `mcpServers` |
+| Codex CLI | `~/.codex/hooks.json` → `hooks.PreToolUse` (matcher `Bash`) | `~/.codex/config.toml` → `[mcp_servers.git-sim]` |
+| Cursor | `~/.cursor/hooks.json` → `hooks.beforeShellExecution` | `~/.cursor/mcp.json` |
+| GitHub Copilot CLI | `~/.copilot/hooks/git-sim.json` → `hooks.preToolUse` | `~/.copilot/mcp-config.json` |
+| Gemini CLI | `~/.gemini/settings.json` → `hooks.BeforeTool` (matcher `run_shell_command`) | same file → `mcpServers` |
+| VS Code (Copilot) | — (no shell hook) | user `mcp.json` → `servers` |
+
+Options: `--agent claude --agent cursor` to pick agents, `--all` for every
+supported one, `--scope project` to write into the current repo instead of
+your home config (`.claude/settings.json`, `.codex/hooks.json`,
+`.cursor/hooks.json`, `.github/hooks/git-sim.json`, `.gemini/settings.json`,
+`.mcp.json`, `.vscode/mcp.json`), `--no-hook` / `--no-mcp`, and `--dry-run`.
+Writes are idempotent (an existing git-sim entry is updated in place) and
+`git-sim uninstall` removes exactly what was added. Agents read their config
+at startup, so restart any that are running.
+
+The hook is one executable, `git-sim-hook`, invoked with `--agent <name>` so
+it answers in that agent's hook dialect. Claude Code, Cursor and Copilot
+hooks can ask the user, so risky commands produce an approval prompt with
+the facts. Codex and Gemini hooks can only allow or deny, so there a risky
+command is denied and the reason carries the facts plus an instruction: show
+them to the user and, if they approve, re-run the command prefixed with
+`GIT_SIM_APPROVE=1` (PowerShell: `$env:GIT_SIM_APPROVE=1;`), which the hook
+lets through. `GIT_SIM_HOOK_MODE=deny` makes every agent deny risky commands
+outright (for unattended runs), and `GIT_SIM_HOOK_MODE=warn` allows them but
+attaches the facts as a message.
+
+## Claude Code (manual)
 
 ```console
 $ claude mcp add git-sim -- git-sim-mcp
@@ -183,6 +222,8 @@ Configuration via environment variables:
 | Variable | Default | Effect |
 |---|---|---|
 | `GIT_SIM_HOOK_ASK_ON` | `caution` | Minimum risk that triggers the prompt (`caution` or `destructive`) |
+| `GIT_SIM_HOOK_MODE` | `ask` | `ask` prompts (or denies with instructions where the agent cannot prompt); `deny` denies risky commands outright; `warn` allows them with the facts attached |
+| `GIT_SIM_HOOK_AGENT` | detected | Force the hook dialect (`claude`, `codex`, `cursor`, `copilot`, `gemini`); `git-sim install` passes `--agent` instead |
 | `GIT_SIM_HOOK_RENDER` | `1` | Set `0` to skip rendering the image (facts only, faster) |
 | `GIT_SIM_HOOK_OPEN` | `1` | Set `0` to not auto-open the rendered image |
 | `GIT_SIM_HOOK_TEXT` | `1` | Set `0` to omit the text graph from the prompt |
