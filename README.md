@@ -167,7 +167,7 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 `--media-dir`: The path at which to store the simulated output media files.  
 `-d`: Disable the automatic opening of the image/video file after generation. Useful to avoid errors in console mode with no GUI.  
 `--light-mode`: Use a light mode color scheme instead of default dark mode.  
-`--reverse, -r`: Display commit history in the reverse direction.  
+`--reverse, -r` / `--no-reverse`: By default the newest commit is on the left and arrows point right toward parents, so history reads left to right. `--no-reverse` puts the newest commit on the right with arrows pointing left, the original layout.  
 `--img-format`: Output format for the image file, i.e. `jpg` or `png`. Default output format is `jpg`.  
 `--stdout`: Write raw image data to stdout while suppressing all other program output.  
 `--output-only-path`: Only output the path to the generated media file to stdout. Useful for other programs to ingest.  

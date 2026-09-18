@@ -25,7 +25,9 @@ class Settings(BaseSettings):
     media_dir: pathlib.Path = pathlib.Path().cwd()
     outro_bottom_text: str = "Learn more at initialcommit.com"
     outro_top_text: str = "Thanks for using Initial Commit!"
-    reverse: bool = False
+    # Newest commit on the left, arrows pointing right toward parents, so
+    # history reads left to right. --no-reverse restores the older layout.
+    reverse: bool = True
     show_intro: bool = False
     show_outro: bool = False
     speed: float = 1.5

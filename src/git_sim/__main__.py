@@ -97,9 +97,12 @@ def main(
     ),
     reverse: bool = typer.Option(
         settings.reverse,
-        "--reverse",
+        "--reverse/--no-reverse",
         "-r",
-        help="Display commit history in the reverse direction",
+        help=(
+            "Lay commits out newest-first with arrows pointing right toward parents "
+            "(default). --no-reverse puts the newest commit on the right instead."
+        ),
     ),
     show_intro: bool = typer.Option(
         settings.show_intro,
