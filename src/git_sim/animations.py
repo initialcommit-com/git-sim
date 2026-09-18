@@ -70,13 +70,16 @@ def _open_page(scene, page_path: str, theme) -> None:
     if not hosted:
         _auto_open(page_path, open_file)
         return
+    # share=False: the command rides in the fragment and no text graph is
+    # sent, so the server learns nothing about the repository. Only the
+    # page's own Share button builds links that carry preview-card data.
     url = viewer_link(
         scene.rendered_svg,
         title=getattr(scene, "cmd", ""),
         theme_name=theme.name,
-        summary=_share_summary(scene),
         viewer_url=settings.viewer_url,
-        local_path=page_path,
+        local_path=os.path.basename(page_path),
+        share=False,
     )
     try:
         open_url(url)
@@ -86,9 +89,10 @@ def _open_page(scene, page_path: str, theme) -> None:
     if _talking():
         host = urllib.parse.urlsplit(settings.viewer_url).netloc or settings.viewer_url
         print(
-            f"Opened in the git-sim viewer at {host} (the graph travels inside the link; "
-            "nothing is uploaded). To open the saved page instead, pass --open-in local "
-            "or set git_sim_open_in=local."
+            f"Opened in the git-sim viewer at {host}. Nothing about you, your repository "
+            "or your code was sent there: the graph travels inside the link's #fragment, "
+            "which stays in your browser. To open the saved page instead, pass "
+            "--open-in local or set git_sim_open_in=local."
         )
 
 

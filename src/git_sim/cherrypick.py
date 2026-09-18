@@ -90,16 +90,21 @@ class CherryPick(GitSimBaseCommand):
             )
         else:
             parent = head_commit
+            # Interactive page: picks appear one by one, then their arrows,
+            # then the labels move.
+            self.begin_sequence(len(self.picks))
             for k, pick in enumerate(self.picks):
-                # Each picked commit is one step in the interactive page.
-                self.current_step = k + 1 if len(self.picks) > 1 else 0
+                self.sequence_item(k)
                 new_id = f"abcde{chr(ord('f') + k)}"
                 message = (
                     self.edit if (self.edit and len(self.picks) == 1) else pick.message
                 )
-                self.setup_and_draw_parent(parent, message, new_id=new_id)
-                self.draw_arrow_between_commits(pick.hexsha, new_id)
+                self.setup_and_draw_parent(
+                    parent, message, new_id=new_id, source=pick.hexsha
+                )
+                self.draw_arrow_between_commits(pick.hexsha, new_id, kind="origin")
                 parent = new_id
+            self.end_sequence()
             self.recenter_frame()
             self.scale_frame()
             self.reset_head_branch(parent)

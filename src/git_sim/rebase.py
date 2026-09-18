@@ -135,13 +135,18 @@ class Rebase(GitSimBaseCommand):
 
         parent = branch_commit.hexsha
 
+        # Interactive page: the copies appear one by one, then their arrows,
+        # then the labels move.
+        self.begin_sequence(len(to_rebase))
         for j, tr in enumerate(reversed(to_rebase)):
+            self.sequence_item(j)
             if not reached_base and j == 0:
                 message = "..."
             else:
                 message = tr.message
-            parent = self.setup_and_draw_parent(parent, message)
-            self.draw_arrow_between_commits(tr.hexsha, parent)
+            parent = self.setup_and_draw_parent(parent, message, source=tr.hexsha)
+            self.draw_arrow_between_commits(tr.hexsha, parent, kind="origin")
+        self.end_sequence()
 
         self.recenter_frame()
         self.scale_frame()
@@ -228,24 +233,27 @@ class Rebase(GitSimBaseCommand):
         copies = 0
         folded = 0
         dropped = 0
+        # Interactive page: each todo action is a step (copies appear, drops
+        # turn gold), then the arrows follow in order, then the labels move.
+        self.begin_sequence(len(plan))
         for index, (action, tr) in enumerate(plan):
-            # Each todo action is one step in the interactive page.
-            self.current_step = index + 1 if len(plan) > 1 else 0
+            self.sequence_item(index)
             if action == "drop":
                 self.mark_commits([tr.hexsha])
                 dropped += 1
                 continue
             if action in ("squash", "fixup") and copies:
                 # Folded into the previous replayed commit: point at it.
-                self.draw_arrow_between_commits(tr.hexsha, parent)
+                self.draw_arrow_between_commits(tr.hexsha, parent, kind="origin")
                 folded += 1
                 continue
             message = tr.message.split("\n")[0]
             if action == "reword":
                 message = message + " (reworded)"
-            parent = self.setup_and_draw_parent(parent, message)
-            self.draw_arrow_between_commits(tr.hexsha, parent)
+            parent = self.setup_and_draw_parent(parent, message, source=tr.hexsha)
+            self.draw_arrow_between_commits(tr.hexsha, parent, kind="origin")
             copies += 1
+        self.end_sequence()
 
         self.recenter_frame()
         self.scale_frame()
@@ -283,6 +291,7 @@ class Rebase(GitSimBaseCommand):
         commitMessage="New commit",
         shift=numpy.array([0.0, 0.0, 0.0]),
         draw_arrow=True,
+        source=None,
     ):
         circle = self.commit_circle()
         circle.next_to(
@@ -362,6 +371,8 @@ class Rebase(GitSimBaseCommand):
         )
         self.tag(commitId, role="commit-label", sha=sha, phase="after")
         self.tag(message, role="commit-label", sha=sha, phase="after")
+        if source:  # the copy slides over from the commit it was made from
+            self.tag_slide((circle, commitId, message), source, circle.get_center())
         self.tag(arrow, role="edge", src=sha, dst=child, phase="after")
 
         if draw_arrow:

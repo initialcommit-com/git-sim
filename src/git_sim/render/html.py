@@ -124,10 +124,14 @@ html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-f
 #scrub::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--accent);border:3px solid var(--bg);box-shadow:0 0 0 2px var(--accent);cursor:grab}
 #scrub:active::-webkit-slider-thumb{cursor:grabbing}
 #stepLabel{color:var(--muted);font:600 12px/1 var(--font);min-width:84px;text-align:left}
+/* Narrow windows: the bar gives up its side links, then the brand and step label, rather than overflowing. */
+@media (max-width:1180px){#bar .right a{display:none}#scrub{width:min(36vw,520px)}}
+@media (max-width:820px){#bar{grid-template-columns:auto 1fr auto;padding:0 10px}#brand,#stepLabel{display:none}#scrub{width:min(40vw,520px)}}
 #stage{padding:0 0 24px}
-#scene{display:block;width:100%;height:auto;user-select:none}
+#scene{display:block;width:100%;height:auto;margin:0 auto;user-select:none}
 #scene .dim{filter:opacity(.18)}
-#scene [data-role="commit"],#scene [data-role="commit-label"],#scene [data-role="ref"]{cursor:pointer}
+#scene .lit{opacity:1 !important}
+#scene [data-role="commit"],#scene [data-role="commit-label"],#scene [data-role="commit-hit"],#scene [data-role="ref"]{cursor:pointer}
 #tip{position:fixed;pointer-events:none;display:none;max-width:420px;background:var(--bg);color:var(--text);border:1px solid var(--rule);border-radius:10px;padding:10px 12px;font:13px/1.45 var(--font);box-shadow:0 8px 28px rgba(0,0,0,.35);z-index:3}
 #tip .k{color:var(--muted)}
 #tip .sha{color:var(--accent);font-weight:700}
@@ -160,7 +164,8 @@ window.GitSimViewer = (function(){
   }
   function hashParams(){
     const raw = (location.hash || '').replace(/^#/, '');
-    if (!raw.includes('=')) return {s: raw};
+    // A bare state (#before, #after, #step=N) or key=value pairs (d=, s=, p=, t=).
+    if (!raw.includes('=') || /^step=\d+$/.test(raw)) return {s: raw};
     const out = {}; new URLSearchParams(raw).forEach((v, k) => { out[k] = v; }); return out;
   }
   function meta(){
@@ -247,11 +252,11 @@ window.GitSimViewer = (function(){
     note.id = 'openedNote';
     note.setAttribute('role', 'note');
     const text = document.createElement('span');
-    text.innerHTML = '<b>Opened here by git-sim.</b> The graph came along inside the link and was not uploaded. The page is also saved on your machine at <code></code>. To open that file instead, run with <code>--open-in local</code>, or set <code>git_sim_open_in=local</code> to make it the default.';
-    text.querySelector('code').textContent = localPath;
+    text.innerHTML = '<b>Opened here by git-sim.</b> No user, git or codebase data was sent to our server: the graph travels inside the link’s #fragment, which stays in your browser. The page is also saved on your machine as <code></code> in your git-sim media folder. To open that file instead, run with <code>--open-in local</code>, or set <code>git_sim_open_in=local</code> to make it the default.';
+    text.querySelector('code').textContent = String(localPath).split(/[\\/]/).pop();
     const close = document.createElement('button');
     close.title = 'dismiss'; close.textContent = '✕';
-    close.addEventListener('click', () => note.remove());
+    close.addEventListener('click', () => { note.remove(); window.dispatchEvent(new Event('git-sim:layout')); });
     note.append(text, close);
     stage.parentNode.insertBefore(note, stage);
   }
@@ -290,8 +295,8 @@ window.GitSimViewer = (function(){
       const want = siteTheme() || info.theme;
       if (want && shown.dataset.theme !== want) retheme(shown, shown.dataset.theme, want);
       if (want) document.documentElement.dataset.theme = want;
+      if (params.p) openedNote(params.p);  // before init, so the fit accounts for it
       init();
-      if (params.p) openedNote(params.p);
     } catch (e) {
       fail('<b>Could not open this link.</b> The graph data in it is damaged or truncated (some apps cut long links). Ask for the link again, or for the image.');
     }
@@ -315,12 +320,47 @@ window.GitSimViewer = (function(){
   const moved = $('[data-dx]', svg);
   const recolored = $('[data-before-fill]', svg);
   let maxStep = 1;
-  after.forEach(el => { const s = parseInt(el.dataset.step || '0', 10); if (s > maxStep) maxStep = s; });
+  [...after, ...removed, ...moved, ...recolored].forEach(el => { const s = parseInt(el.dataset.step || '0', 10); if (s > maxStep) maxStep = s; });
   const stepOf = el => parseInt(el.dataset.step || '0', 10) || maxStep;
   const amount = (el, p) => clamp(p - (stepOf(el) - 1), 0, 1);
   const hex = c => { const m = /^#?([0-9a-f]{6})$/i.exec((c || '').trim()); return m ? [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16)) : null; };
   const mix = (a, b, t) => { const A = hex(a), B = hex(b); if (!A || !B) return t < .5 ? a : b; return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
   recolored.forEach(el => { el.dataset.afterFill = el.getAttribute('fill') || ''; el.dataset.afterStroke = el.getAttribute('stroke') || ''; });
+
+  // ---- hit areas ------------------------------------------------------------
+  // A commit is drawn as a disc, an id and a message with gaps between them.
+  // One transparent rectangle per commit, spanning all three, sits behind
+  // them so the pointer, tooltip and highlight treat the gaps as part of the
+  // commit instead of as empty space.
+  const commitOf = new Map();
+  $('[data-role="commit"]', svg).forEach(el => { if (el.dataset.sha) commitOf.set(el.dataset.sha, el); });
+  const hits = new Map();
+  {
+    const boxes = new Map();
+    $('[data-role="commit"],[data-role="commit-label"]', svg).forEach(el => {
+      const sha = el.dataset.sha;
+      if (!sha) return;
+      let b;
+      try { b = el.getBBox(); } catch (e) { return; }
+      if (!b || (!b.width && !b.height)) return;
+      const cur = boxes.get(sha) || {x: Infinity, y: Infinity, r: -Infinity, b: -Infinity};
+      cur.x = Math.min(cur.x, b.x); cur.y = Math.min(cur.y, b.y);
+      cur.r = Math.max(cur.r, b.x + b.width); cur.b = Math.max(cur.b, b.y + b.height);
+      boxes.set(sha, cur);
+    });
+    const anchor = svg.querySelector('[data-role="background"]') || svg.querySelector('defs');
+    boxes.forEach((b, sha) => {
+      const pad = 6, hit = document.createElementNS(SVG_NS, 'rect');
+      hit.setAttribute('x', b.x - pad); hit.setAttribute('y', b.y - pad);
+      hit.setAttribute('width', b.r - b.x + 2 * pad); hit.setAttribute('height', b.b - b.y + 2 * pad);
+      hit.setAttribute('fill', 'transparent');
+      hit.dataset.role = 'commit-hit'; hit.dataset.sha = sha;
+      if (anchor) anchor.after(hit); else svg.prepend(hit);
+      hits.set(sha, hit);
+    });
+  }
+  // A commit hidden by the scrubber takes its hit area with it.
+  const syncHits = () => hits.forEach((hit, sha) => { const c = commitOf.get(sha); hit.style.pointerEvents = c && parseFloat(c.style.opacity || '1') < .5 ? 'none' : ''; });
 
   const scrub = document.getElementById('scrub');
   const stepLabel = document.getElementById('stepLabel');
@@ -328,11 +368,43 @@ window.GitSimViewer = (function(){
   const play = document.getElementById('play');
   const RES = 1000;
   scrub.max = String(maxStep * RES);
-  let progress = maxStep;
+  let progress = 0;  // the page opens on "before" and plays forward from there
 
+  // "Copied from" links (rebase, cherry-pick) matter most while their commit
+  // appears; afterwards they settle to a faint trace so the finished graph
+  // stays readable. Hovering a commit brings its links back (see highlight).
+  const SETTLED = 0.28;
+  const isOrigin = el => el.dataset.role === 'edge' && el.dataset.kind === 'origin';
+  const isLane = el => el.dataset.role === 'edge' && el.dataset.kind !== 'origin';
+  // A parent arrow draws itself tail to tip: its line grows, then the head appears.
+  after.filter(el => isLane(el) && (el.tagName === 'line' || el.tagName === 'path')).forEach(el => {
+    let len = 0;
+    try { len = el.tagName === 'path' ? el.getTotalLength() : Math.hypot(el.x2.baseVal.value - el.x1.baseVal.value, el.y2.baseVal.value - el.y1.baseVal.value); } catch (e) {}
+    if (len > 0) el.dataset.len = len;
+  });
+  // A copy made by rebase or cherry-pick appears at the commit it came from
+  // and slides to its place (its data-dx/dy point back at the source).
+  const slides = new Set(moved.filter(el => el.dataset.phase === 'after'));
   function render(){
-    after.forEach(el => { const a = amount(el, progress); el.style.opacity = a; el.style.pointerEvents = a < .5 ? 'none' : ''; });
+    after.forEach(el => {
+      const a = amount(el, progress);
+      let o = a;
+      if (isOrigin(el)) {
+        // The dotted trail lights up dot by dot as the copy passes; the head last.
+        const t = el.dataset.t !== undefined ? parseFloat(el.dataset.t) : 1;
+        o = a > 0 && a >= t - 1e-6 ? 1 : 0;
+        o *= 1 - (1 - SETTLED) * clamp(progress - stepOf(el) - 0.35, 0, 1) / 0.65;
+      } else if (isLane(el)) {
+        const len = parseFloat(el.dataset.len || '0');
+        if (len > 0) { el.style.strokeDasharray = `${len}`; el.style.strokeDashoffset = `${len * (1 - a)}`; o = a > 0 ? 1 : 0; }
+        else o = a > .85 ? 1 : 0;  // the arrowhead, once the line has reached it
+      } else if (slides.has(el)) {
+        o = clamp(a / 0.15, 0, 1);  // visible almost at once, then on its way
+      }
+      el.style.opacity = o; el.style.pointerEvents = o < .5 ? 'none' : '';
+    });
     removed.forEach(el => { const a = 1 - amount(el, progress); el.style.opacity = a; el.style.pointerEvents = a < .5 ? 'none' : ''; });
+    syncHits();
     moved.forEach(el => {
       const back = 1 - amount(el, progress);
       el.style.transform = back > 0 ? `translate(${el.dataset.dx * back}px, ${el.dataset.dy * back}px)` : '';
@@ -365,8 +437,11 @@ window.GitSimViewer = (function(){
     };
     raf = requestAnimationFrame(frame);
   }
-  function forward(){ tween(maxStep, 900 * Math.max(1, maxStep - progress) + 200, backward); }
-  function backward(){ tween(0, 700 + 250 * maxStep, forward); }
+  // Long sequences (commits, then arrows, then labels) get quicker beats so
+  // a whole pass stays around five seconds.
+  const perStep = clamp(4500 / maxStep, 380, 900);
+  function forward(){ tween(maxStep, perStep * Math.max(1, maxStep - progress) + 200, backward); }
+  function backward(){ tween(0, 700 + 120 * maxStep, forward); }
   function startPlay(){
     if (playing) return;
     playing = true; play.innerHTML = '&#10074;&#10074;'; play.title = 'pause (A)';
@@ -389,11 +464,14 @@ window.GitSimViewer = (function(){
   if (!animatable) document.getElementById('controls').classList.add('off');
   const params = hashParams();
   const state = params.s || '';
-  if (state === 'before') progress = 0;
+  const pinned = /^(before|after|step=\d+)$/.test(state);
+  // Opens on "before" and plays, unless the link pins a state (#before,
+  // #after, #step=N). A graph nothing changes in just shows its one state.
+  if (state === 'after' || !animatable) progress = maxStep;
   else if (/^step=\d+$/.test(state)) progress = clamp(parseInt(state.slice(5), 10), 0, maxStep);
+  else progress = 0;
   render();
-  // The page opens playing, unless the link pins a state (#before, #after, #step=N).
-  if (animatable && !/^(before|after|step=\d+)$/.test(state)) startPlay();
+  if (animatable && !pinned) startPlay();
 
   document.addEventListener('keydown', e => {
     if (e.target === scrub && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); }
@@ -422,13 +500,18 @@ window.GitSimViewer = (function(){
   function highlight(sha){
     const keep = ancestry(sha);
     $('[data-role="commit"],[data-role="commit-label"]', svg).forEach(el => el.classList.toggle('dim', !keep.has(el.dataset.sha)));
-    $('[data-role="edge"]', svg).forEach(el => el.classList.toggle('dim', !(keep.has(el.dataset.src) && keep.has(el.dataset.dst))));
+    $('[data-role="edge"]', svg).forEach(el => {
+      const linked = keep.has(el.dataset.src) && keep.has(el.dataset.dst);
+      el.classList.toggle('dim', !linked);
+      // A settled "copied from" link touching the hovered commit lights back up.
+      el.classList.toggle('lit', isOrigin(el) && amount(el, progress) > .5 && (el.dataset.src === sha || el.dataset.dst === sha));
+    });
   }
-  function clearHighlight(){ $('.dim', svg).forEach(el => el.classList.remove('dim')); }
+  function clearHighlight(){ $('.dim,.lit', svg).forEach(el => el.classList.remove('dim', 'lit')); }
   const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   function describe(el){
     const d = el.dataset;
-    if (d.role === 'commit' || d.role === 'commit-label') {
+    if (d.role === 'commit' || d.role === 'commit-label' || d.role === 'commit-hit') {
       const c = $('[data-role="commit"][data-sha="' + d.sha + '"]', svg)[0];
       const data = c ? c.dataset : d;
       if (data.kind === 'elided') return `<div class="msg">${esc(data.message || '')}</div><div class="k">stands for the commits between its neighbours</div>`;
@@ -444,19 +527,30 @@ window.GitSimViewer = (function(){
     if (d.role === 'file') return `<div class="sha">${esc(d.name)}</div><div><span class="k">${esc(d.column || '')}</span>${d.phase === 'after' ? ' · after the command' : ''}</div>`;
     return '';
   }
-  let tipTimer = null;
+  // A commit is a disc, an id and a message with gaps between them. Crossing a
+  // gap must not flash the highlight off and on, so leaving an element only
+  // schedules the clear, and reaching another part of the same commit (or any
+  // commit) within the grace period cancels it.
+  let hoverSha = null, clearTimer = null;
+  function clearNow(){ clearTimeout(clearTimer); clearTimer = null; hoverSha = null; tip.style.display = 'none'; clearHighlight(); }
+  function scheduleClear(){ if (clearTimer === null) clearTimer = setTimeout(clearNow, 320); }
   svg.addEventListener('mousemove', e => {
-    const el = e.target.closest('[data-role="commit"],[data-role="commit-label"],[data-role="ref"],[data-role="file"]');
-    if (!el || parseFloat(el.style.opacity || '1') < .5) { tip.style.display = 'none'; clearHighlight(); return; }
+    const el = e.target.closest('[data-role="commit"],[data-role="commit-label"],[data-role="commit-hit"],[data-role="ref"],[data-role="file"]');
+    const shown = el && (el.dataset.role === 'commit-hit' ? commitOf.get(el.dataset.sha) || el : el);
+    // Truly empty space: the tooltip goes at once (so it never trails the
+    // pointer), the highlight only after the grace period.
+    if (!el || parseFloat(shown.style.opacity || '1') < .5) { tip.style.display = 'none'; scheduleClear(); return; }
     const content = describe(el);
-    if (!content) { tip.style.display = 'none'; return; }
+    if (!content) { tip.style.display = 'none'; scheduleClear(); return; }
+    clearTimeout(clearTimer); clearTimer = null;
     tip.innerHTML = content; tip.style.display = 'block';
     const x = Math.min(e.clientX + 16, window.innerWidth - tip.offsetWidth - 12);
     const y = Math.min(e.clientY + 16, window.innerHeight - tip.offsetHeight - 12);
     tip.style.left = x + 'px'; tip.style.top = y + 'px';
-    if (el.dataset.sha) highlight(el.dataset.sha); else clearHighlight();
+    const sha = el.dataset.sha || null;
+    if (sha !== hoverSha) { hoverSha = sha; if (sha) highlight(sha); else clearHighlight(); }
   });
-  svg.addEventListener('mouseleave', () => { tip.style.display = 'none'; clearHighlight(); });
+  svg.addEventListener('mouseleave', clearNow);
   svg.addEventListener('click', e => {
     const el = e.target.closest('[data-sha]');
     if (!el || !navigator.clipboard) return;
@@ -493,6 +587,23 @@ window.GitSimViewer = (function(){
   }, {passive: false});
   stage.addEventListener('dblclick', resetView);
 
+  // ---- fit ------------------------------------------------------------------
+  // The graph fills the width, which suits the usual five commits plus a zone
+  // table. A taller graph (several lanes, no table) would then run past the
+  // bottom of the window, so it is scaled down until it fits the space the
+  // stage actually has, below whatever sits above it (the bar, a note, the
+  // site's own header), but never below about half size: past that,
+  // scrolling beats squinting.
+  function fit(){
+    const natural = stage.clientWidth * vb0.h / vb0.w;
+    const top = stage.getBoundingClientRect().top + window.scrollY;  // as if scrolled to the top
+    const available = window.innerHeight - top - 24;
+    svg.style.height = (available > 240 && natural > available) ? Math.max(available, natural * 0.55) + 'px' : '';
+  }
+  fit();
+  window.addEventListener('resize', fit);
+  window.addEventListener('git-sim:layout', fit);
+
   // ---- help menu --------------------------------------------------------------
   const help = document.getElementById('help'), helpMenu = document.getElementById('helpMenu');
   const showHelp = on => { helpMenu.hidden = !on; help.classList.toggle('on', on); };
@@ -509,22 +620,31 @@ window.GitSimViewer = (function(){
   shareBtn.onclick = e => { e.stopPropagation(); showShare(shareMenu.hidden); };
   document.addEventListener('click', e => { if (!shareMenu.hidden && !shareMenu.contains(e.target)) showShare(false); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') showShare(false); });
-  const title = info.title || document.title;
-  const stateHash = () => progress <= 0.001 ? 'before' : progress >= maxStep - 0.001 ? 'after' : 'step=' + Math.round(progress);
+  // The command: from the page's meta, else from the link's fragment (git-sim
+  // opening the hosted viewer keeps it out of the query string).
+  const title = (info.title && info.title !== 'git-sim' ? info.title : '') || params.t || document.title;
+  if (params.t && (!info.title || info.title === 'git-sim')) document.title = params.t + ' — simulated with git-sim';
+  // The state a copied link pins. While the loop is playing nothing is pinned,
+  // so whoever opens the link sees it play from "before" too.
+  const stateHash = () => playing ? '' : progress <= 0.001 ? 'before' : progress >= maxStep - 0.001 ? 'after' : 'step=' + Math.round(progress);
   const shareText = () => `${title} — simulated with git-sim`;
   const fileName = () => (title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'git-sim');
   const canPack = typeof CompressionStream !== 'undefined';
   // A link to the hosted viewer: command + short text graph in the query
   // (for the preview card), the whole graph compressed in the fragment.
   async function shareUrl(){
+    const s = stateHash();
     if (params.d) {  // already on the hosted viewer: keep the graph, update the state
-      const p = new URLSearchParams(location.hash.replace(/^#/, '')); p.set('s', stateHash());
+      const p = new URLSearchParams(location.hash.replace(/^#/, ''));
+      if (s) p.set('s', s); else p.delete('s');
+      p.delete('p');  // the local path only means something on this machine
       return location.href.split('#')[0] + '#' + p.toString();
     }
-    if (!info.viewer_url || !canPack) return location.href.split('#')[0] + '#' + stateHash();
+    if (!info.viewer_url || !canPack) return location.href.split('#')[0] + (s ? '#' + s : '');
     const q = new URLSearchParams({t: title, m: pristineTheme});
     if (info.summary) q.set('g', await deflate(info.summary));
-    const frag = new URLSearchParams({d: await deflate(pristine), s: stateHash()});
+    const frag = new URLSearchParams({d: await deflate(pristine)});
+    if (s) frag.set('s', s);
     return `${info.viewer_url}?${q}#${frag}`;
   }
   async function toPng(scale){
@@ -645,20 +765,22 @@ def header_markup(fragment_attr=""):
         'title="Initial Commit — the team behind git-sim. Quality resources and tools for developers: Git guides, courses and tools that make version control click.">Initial Commit</a>'
         '<a href="https://devlands.com" target="_blank" rel="noopener" '
         'title="Devlands — learn Git comfortably, use Git confidently. Explore your own repository as an immersive 3D world where every Git operation is something you can see and walk through.">Devlands</a>'
-        '<button id="share" title="copy a link or an image of this simulation, or post it">Share</button>'
+        '<button id="share" title="copy a link or an image of this simulation, save it, or post it">Share</button>'
         '<div id="shareMenu" hidden>'
-        '<h3>Copy or save</h3><div class="grid">'
-        '<button data-action="link" title="a link that opens this graph in the git-sim viewer at the current slider position">Copy link</button>'
+        '<h3>Copy</h3><div class="grid">'
+        '<button data-action="link" title="a link that opens this graph in the git-sim viewer at the current slider position. The graph itself stays in the link\'s #fragment; the command and a short text graph (git log --oneline, up to 12 lines) go in the query string so the link gets a preview card when posted">Copy link</button>'
         '<button data-action="image" title="a PNG of the graph as shown right now, on your clipboard">Copy image</button>'
-        '<button data-action="png">Download PNG</button>'
-        '<button data-action="svg">Download SVG</button>'
+        "</div>"
+        '<h3>Save</h3><div class="grid">'
+        '<button data-action="png" title="a PNG of the graph as shown right now">Download PNG</button>'
+        '<button data-action="svg" title="the graph as vector art, as generated">Download SVG</button>'
         '<button data-action="html" title="this whole interactive page as one file">Download page</button>'
-        '<button data-action="native" title="your device\'s share sheet">Share…</button>'
         "</div>"
         '<h3>Post</h3><div class="grid">'
         '<a data-intent="x" href="#">X</a><a data-intent="bluesky" href="#">Bluesky</a>'
         '<a data-intent="linkedin" href="#">LinkedIn</a><a data-intent="reddit" href="#">Reddit</a>'
         '<a data-intent="hn" href="#">Hacker News</a><a data-intent="email" href="#">Email</a>'
+        '<button data-action="native" title="your device\'s share sheet">Share…</button>'
         "</div>"
         '<p id="localNote">This page is a local file, so a posted link only works once the .html is hosted somewhere. '
         "Copy the image to post right away, or download the page and attach it.</p>"
@@ -725,22 +847,36 @@ def viewer_link(
     theme_name="dark",
     summary="",
     viewer_url=DEFAULT_VIEWER_URL,
-    state="after",
+    state=None,
     local_path=None,
+    share=True,
 ):
-    """A link that opens ``svg`` in the hosted viewer, identical in shape to
-    what the page's own "Copy link" produces: the command, theme and a short
-    text graph in the query string (for the preview card), the whole graph
+    """A link that opens ``svg`` in the hosted viewer. The whole graph travels
     compressed in the #fragment, which browsers never send to the server.
-    ``local_path`` (the saved page) rides in the fragment too, so the viewer
-    can say where the local copy is."""
+
+    With ``share=True`` (what the page's own "Copy link" produces) the
+    command, theme and a short text graph go in the query string so the
+    server can draw a preview card for the link when it is posted. With
+    ``share=False`` (git-sim opening the page for its own user) the query
+    string carries only the theme; the command rides in the fragment and no
+    text graph is sent, so nothing about the repository reaches the server.
+
+    ``local_path`` (the saved page's name) rides in the fragment too, so the
+    viewer can say where the local copy is. Without ``state`` the page opens
+    on "before" and plays the command."""
     title = " ".join((title or "").split())
-    query = {"t": title, "m": theme_name}
-    if summary:
-        query["g"] = _pack(summary)
-    fragment = {"d": _pack(svg), "s": state}
+    query = {"m": theme_name}
+    fragment = {"d": _pack(svg)}
+    if share:
+        query = {"t": title, "m": theme_name}
+        if summary:
+            query["g"] = _pack(summary)
+    elif title:
+        fragment["t"] = title
+    if state:  # "before", "after" or "step=N" pins the view; unpinned, it plays
+        fragment["s"] = state
     if local_path:
-        fragment["p"] = str(local_path)
+        fragment["p"] = os.path.basename(str(local_path))
     return (
         f"{viewer_url}?{urllib.parse.urlencode(query)}"
         f"#{urllib.parse.urlencode(fragment)}"

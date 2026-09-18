@@ -104,6 +104,11 @@ def test_html_page_is_self_contained_and_wires_the_controls(tmp_path):
     assert 'id="share"' in page and 'data-action="image"' in page
     assert "intent/tweet" in page and "bsky.app" in page and "linkedin.com" in page
     assert "startPlay();" in page and "before|after|step=" in page, "plays on open"
+    assert "/^step=\\d+$/.test(raw)" in page, "#step=N is a pinned state, not a key"
+    assert "let progress = 0;" in page, "opens on the 'before' state"
+    assert "function fit()" in page and "stage.getBoundingClientRect().top" in page
+    assert "function scheduleClear()" in page, "hover highlight survives the gaps"
+    assert "commit-hit" in page and "getBBox()" in page, "one hit area per commit"
     assert "forEach(el => link(el.dataset.src, el.dataset.dst))" in page
     assert "GitSimViewer.init();" in page
     assert '"viewer_url": "https://initialcommit.com/tools/git-sim/view"' in page
@@ -168,10 +173,79 @@ def test_multi_action_commands_are_stepped(repo, tmp_path):
     scene = Rebase(branch="feature", interactive=True, todo=str(todo))
     scene.construct()
     svg = scene.render_svg(background=DARK.bg)
-    steps = {int(s) for s in re.findall(r'data-step="(\d+)"', svg)}
-    assert steps == {1, 2, 3}
+    commits, trails, arrows, moves = step_groups(svg)
+    # Each todo action takes two steps: the pick slides in with its trail (1)
+    # and its parent arrow draws (2); the squash adds only a trail (3); the
+    # drop turns its commit gold (5); then the labels move (7).
+    assert commits == {1, 5} and trails == {1, 3} and arrows == {2}
+    assert moves == {7}
     dropped = [e for e in attrs(svg, f'data-sha="{c5}"') if "data-before-fill" in e]
-    assert dropped and 'data-step="3"' in dropped[0]
+    assert dropped and 'data-step="5"' in dropped[0]
+
+
+def step_groups(svg):
+    """The step numbers used in an SVG by simulated commits (including ones
+    recolored), by dotted "copied from" trails, by parent arrows, and by
+    labels that move."""
+    step_of = lambda e: int(re.search(r'data-step="(\d+)"', e).group(1))
+    commits = {
+        step_of(e)
+        for e in attrs(svg, 'data-role="commit"')
+        if 'data-phase="after"' in e and "data-step=" in e and e.startswith("<circle")
+    }
+    recolored = {
+        step_of(e)
+        for e in attrs(svg, "data-before-fill=")
+        if "data-step=" in e and e.startswith("<circle")
+    }
+    edges = [
+        e
+        for e in attrs(svg, 'data-role="edge"')
+        if 'data-phase="after"' in e and "data-step=" in e
+    ]
+    trails = {step_of(e) for e in edges if 'data-kind="origin"' in e}
+    arrows = {step_of(e) for e in edges if 'data-kind="origin"' not in e}
+    moves = {
+        step_of(e)
+        for e in attrs(svg, "data-dx=")
+        if "data-step=" in e and 'data-role="ref"' in e
+    }
+    return commits | recolored, trails, arrows, moves
+
+
+def test_plain_rebase_replays_one_commit_per_step(repo):
+    from git_sim.rebase import Rebase
+
+    # feature diverges from main, which has three commits of its own beyond
+    # the fork; rebasing main onto feature replays them, one step each.
+    run_git(repo, "checkout", "-q", "feature")
+    (repo / "feature.txt").write_text("feature work\n")
+    run_git(repo, "add", "feature.txt")
+    run_git(repo, "commit", "-q", "-m", "feature work")
+    run_git(repo, "checkout", "-q", "main")
+    scene = Rebase(branch="feature")
+    scene.construct()
+    svg = scene.render_svg(background=DARK.bg)
+    copies = [
+        e
+        for e in attrs(svg, 'data-role="commit"')
+        if 'data-phase="after"' in e and e.startswith("<circle")
+    ]
+    assert len(copies) == 3
+    commits, trails, arrows, moves = step_groups(svg)
+    # Each copy slides in with its dotted trail (odd steps), then its parent
+    # arrow draws (even steps); HEAD and the branch label move last (7).
+    assert commits == {1, 3, 5} and trails == {1, 3, 5} and arrows == {2, 4, 6}
+    assert moves == {7}
+    # The copies travel from the commits they were made from.
+    assert all("data-dx=" in e for e in copies), "copies know where they came from"
+    dots = [e for e in attrs(svg, 'data-kind="origin"') if e.startswith("<circle")]
+    ts = sorted({float(re.search(r'data-t="([\d.]+)"', e).group(1)) for e in dots})
+    assert ts[0] == 0.0 and ts[-1] <= 1.0 and len(ts) > 2, "dots know their place"
+    # Dotted links are drawn first, beneath the commits they cross.
+    first_dot = svg.index('data-kind="origin"')
+    first_copy = min(svg.index(e) for e in copies)
+    assert first_dot < first_copy
 
 
 def test_zone_moves_slide_files_between_columns(repo):
@@ -231,9 +305,23 @@ def test_hosted_viewer_link_carries_the_graph_in_the_fragment():
     query = dict(urllib.parse.parse_qsl(parts.query))
     assert query["t"] == "git reset --hard HEAD~2" and query["m"] == "light"
     fragment = dict(urllib.parse.parse_qsl(parts.fragment))
-    assert (
-        fragment["s"] == "after" and fragment["p"] == r"C:\repo\git-sim_media\page.html"
+    assert "s" not in fragment, "unpinned: the page opens on 'before' and plays"
+    assert fragment["p"] == "page.html", "only the file name, never the path"
+    pinned = viewer_link(svg, state="after")
+    pinned_fragment = dict(
+        urllib.parse.parse_qsl(urllib.parse.urlsplit(pinned).fragment)
     )
+    assert pinned_fragment["s"] == "after"
+
+    # git-sim opening the page for its own user sends the server nothing about
+    # the repository: no command or text graph in the query string.
+    private = urllib.parse.urlsplit(
+        viewer_link(svg, title="git reset --hard", summary="* abc secret", share=False)
+    )
+    assert dict(urllib.parse.parse_qsl(private.query)) == {"m": "dark"}
+    private_fragment = dict(urllib.parse.parse_qsl(private.fragment))
+    assert private_fragment["t"] == "git reset --hard" and "g" not in private.query
+    assert "secret" not in private.geturl()
 
     def unpack(packed):
         padded = packed + "=" * (-len(packed) % 4)
@@ -254,6 +342,8 @@ def test_hosted_viewer_link_carries_the_graph_in_the_fragment():
 def test_page_opens_in_the_hosted_viewer_unless_told_otherwise(
     repo, tmp_path, monkeypatch, capsys
 ):
+    import urllib.parse
+
     from git_sim import animations
     from git_sim.commit import Commit
     from git_sim.enums import OpenIn
@@ -279,10 +369,15 @@ def test_page_opens_in_the_hosted_viewer_unless_told_otherwise(
     animations._open_page(scene, str(page), DARK)
     assert len(opened["urls"]) == 1 and not opened["files"]
     url = opened["urls"][0]
-    assert url.startswith(settings.viewer_url + "?t=git+commit")
-    assert "#d=" in url and "p=" in url and str(page.name) in url
+    assert url.startswith(settings.viewer_url + "?m=dark#")
+    query, fragment = url.split("?", 1)[1].split("#", 1)
+    assert query == "m=dark", "the server is told nothing but the theme"
+    frag = dict(urllib.parse.parse_qsl(fragment))
+    assert frag["d"] and frag["t"].startswith("git commit")
+    assert frag["p"] == page.name and str(tmp_path) not in url, "file name only"
     out = capsys.readouterr().out
     assert "Opened in the git-sim viewer at initialcommit.com" in out
+    assert "Nothing about you, your repository or your code was sent" in out
     assert "--open-in local" in out and "git_sim_open_in=local" in out
 
     settings.open_in = OpenIn.LOCAL

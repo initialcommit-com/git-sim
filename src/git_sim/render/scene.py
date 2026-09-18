@@ -284,6 +284,14 @@ class Scene:
     def bring_to_front(self, *mobjects):
         self.add(*mobjects)
 
+    def bring_to_back(self, *mobjects):
+        """Draw these first, i.e. beneath everything else on the scene."""
+        for mob in reversed(mobjects):
+            if mob in self.mobjects:
+                self.mobjects.remove(mob)
+            self.mobjects.insert(0, mob)
+        return self
+
     def construct(self):
         pass
 

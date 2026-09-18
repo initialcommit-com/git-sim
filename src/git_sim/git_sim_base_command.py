@@ -29,6 +29,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         # step for multi-action commands); labels a simulation removes are
         # kept here so the page can show them in the "before" view.
         self.current_step = 0
+        self.arrow_step = 0  # arrows of a multi-commit command follow the commits
+        self.move_step = 0  # and the labels move last
+        self.sequence_len = 0
         self.removed_mobjects = []
         self.fontColor = self.theme.text
         self.mutedColor = self.theme.text_muted
@@ -258,9 +261,48 @@ class GitSimBaseCommand(m.MovingCameraScene):
         setter = getattr(mob, "set_meta", None)
         if setter is None:
             return mob
-        if meta.get("phase") == "after" and self.current_step and "step" not in meta:
-            meta["step"] = self.current_step
+        if meta.get("phase") == "after" and "step" not in meta:
+            # A commit's parent arrow is drawn after the commit has arrived;
+            # its dotted "copied from" trail grows along with the commit.
+            lane_arrow = meta.get("role") == "edge" and meta.get("kind") != "origin"
+            step = (
+                self.arrow_step if lane_arrow and self.arrow_step else self.current_step
+            )
+            if step:
+                meta["step"] = step
         return setter(**meta)
+
+    # Commands that add several commits play them one at a time: the copy
+    # slides from the commit it came from to its new place, its dotted trail
+    # growing behind it (step 2k-1); its arrow to its parent then draws
+    # (step 2k); and after the last one the labels move (step 2n+1).
+    def begin_sequence(self, count):
+        self.sequence_len = count if count > 1 else 0
+        self.sequence_item(0)
+
+    def sequence_item(self, index):
+        n = self.sequence_len
+        self.current_step = 2 * index + 1 if n else 0
+        self.arrow_step = 2 * index + 2 if n else 0
+
+    def end_sequence(self):
+        n = self.sequence_len
+        self.current_step = 0
+        self.arrow_step = 0
+        self.move_step = 2 * n + 1 if n else 0
+
+    def tag_slide(self, mobs, source_sha, destination):
+        """Mark a simulated commit's disc and labels as having travelled from
+        the drawn commit ``source_sha`` to ``destination``, so the page can
+        slide them along that path when the commit appears."""
+        source = self.drawnCommits.get(source_sha)
+        if source is None:
+            return
+        delta = source.get_center() - destination
+        if numpy.linalg.norm(delta) < 1e-6:
+            return
+        for mob in mobs:
+            self.tag(mob, moved_by=(float(delta[0]), float(delta[1])))
 
     def tag_commit(self, mob, commit, phase="before", **extra):
         """Tag a disc (and later its labels) with what the tooltip shows."""
@@ -298,7 +340,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
             if numpy.linalg.norm(delta) > 1e-6:
                 # Only the position is "after": the label itself exists in
                 # both views, so its phase is left alone.
-                self.tag(ref, moved_by=(float(delta[0]), float(delta[1])))
+                self.tag(
+                    ref,
+                    moved_by=(float(delta[0]), float(delta[1])),
+                    step=self.move_step or None,
+                )
 
     # ------------------------------------------------------------------ styling
     def commit_circle(self, kind="commit", fill=None):
@@ -1392,6 +1438,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         draw_arrow=True,
         color=None,
         new_id="abcdef",
+        source=None,
     ):
         """Draw a simulated new commit whose parent is ``child`` (a Commit, or
         the key of an already drawn commit such as a previous simulated one).
@@ -1465,6 +1512,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
         )
         self.tag(commitId, role="commit-label", sha=new_id, phase="after")
         self.tag(message, role="commit-label", sha=new_id, phase="after")
+        if source:  # a copy: it slides over from the commit it was made from
+            self.tag_slide((circle, commitId, message), source, circle.get_center())
         if child_key != "dark":
             self.tag(arrow, role="edge", src=new_id, dst=child_key, phase="after")
 
@@ -1478,7 +1527,12 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         return commitId
 
-    def draw_arrow_between_commits(self, startsha, endsha):
+    def draw_arrow_between_commits(self, startsha, endsha, kind="parent"):
+        """A dotted arrow between two drawn commits. ``kind`` is "parent" for a
+        real parent link (a merge commit's second parent) or "origin" for the
+        link from a commit to the copy a rebase or cherry-pick made of it. It
+        runs disc edge to disc edge and sits beneath the rest of the drawing,
+        so it never covers a commit or its labels on its way across."""
         start = self.drawnCommits[startsha].get_center()
         end = self.drawnCommits[endsha].get_center()
 
@@ -1488,10 +1542,18 @@ class GitSimBaseCommand(m.MovingCameraScene):
             color=self.arrowColor,
             dot_kwargs={"color": self.arrowColor, "radius": 0.06},
         ).add_tip()
-        length = numpy.linalg.norm(start - end) - 1.65
+        length = numpy.linalg.norm(start - end) - 1.3
         arrow.set_length(length)
-        self.tag(arrow, role="edge", src=startsha, dst=endsha, phase="after")
+        self.tag(arrow, role="edge", kind=kind, src=startsha, dst=endsha, phase="after")
+        # Each dot knows how far along the way it sits (0 at the start, 1 at
+        # the head), so the page can light the trail up as the copy travels.
+        first, u = arrow.get_start(), arrow.get_unit_vector()
+        span = float(numpy.dot(arrow.get_end() - first, u)) or 1.0
+        for dot in arrow.dots:
+            along = float(numpy.dot(dot.get_center() - first, u)) / span
+            self.tag(dot, t=round(min(max(along, 0.0), 1.0), 3))
         self.draw_arrow(True, arrow)
+        self.bring_to_back(arrow)
 
     def create_dark_commit(self):
         return "dark"
@@ -1934,3 +1996,18 @@ class DottedLine(m.Line):
 
     def get_last_handle(self):
         return self.dot_points[-2]
+
+    def draw(self, painter):
+        """Dots stop where the arrowhead begins. Drawn under the tip they poke
+        out past its point and show through it while the arrow fades."""
+        start, u = self.get_start(), self.get_unit_vector()
+        span = float(numpy.dot(self.get_end() - start, u))
+        tip = getattr(self, "tip", None)
+        if tip is not None:
+            span -= tip.length
+        for shape, poly in self._tip_polygons():
+            painter.tip(poly, self, shape.filled)
+        for dot in self.dots:
+            along = float(numpy.dot(dot.get_center() - start, u))
+            if along + dot.get_width() / 2 <= span + 1e-6:
+                dot.draw(painter)
