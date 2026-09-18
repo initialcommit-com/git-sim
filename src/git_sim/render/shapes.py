@@ -314,17 +314,77 @@ class Arrow(Line):
 
 
 class LaneArrow(Arrow):
-    """An Arrow between two lanes of the commit graph drawn as a cubic curve:
-    it leaves its commit steeply and arrives along the parent's lane. The
-    endpoints are exactly those of the straight Arrow it replaces, so layout
-    and shortening (set_length) behave the same."""
+    """An Arrow between two lanes of the commit graph drawn as a cubic curve.
+
+    It leaves its commit at a shallow angle toward the parent's side, runs
+    along its own lane into the empty column beyond it, then swings over to
+    the parent and lands on the parent's rim at an angle that depends on how
+    many lanes it crossed: the nearest lane arrives at 25 degrees from the
+    horizontal, each further lane 15 degrees steeper. Several branches that
+    fork from one commit therefore fan out around it instead of piling onto
+    one spot, and none of them runs over the commits of the lanes between.
+    The straight chord (``points``) is kept for layout and set_length; the
+    curve is built from the two commit centres given at construction."""
+
+    LANE_PITCH = 4.0
+    RIM = 0.8  # distance from the child's centre where the curve begins
+    EXIT_ANGLE = np.radians(35.0)
+
+    def __init__(self, start, end, lane_pitch=None, **kwargs):
+        super().__init__(start, end, **kwargs)
+        self.anchor_start = to_point(start).astype(float).copy()
+        self.anchor_end = to_point(end).astype(float).copy()
+        self.lane_pitch = float(lane_pitch or self.LANE_PITCH)
+
+    def lanes_crossed(self):
+        dy = abs(self.anchor_end[1] - self.anchor_start[1])
+        return max(1, int(round(dy / self.lane_pitch)))
+
+    def landing(self):
+        """(angle from the horizontal, distance from the parent's centre) at
+        which the arrowhead lands, pointing at the centre. The nearest lane
+        lands at 30 degrees just off the rim; each further lane lands 10
+        degrees steeper and 0.4 further out. The heads therefore sit in a
+        neat arc below the parent, none over another and none over the
+        parent's message, while the bodies climb the empty column beside
+        the lane ends before curling in."""
+        k = self.lanes_crossed()
+        angle = 30.0 if k == 1 else min(50.0 + 10.0 * (k - 2), 75.0)
+        return np.radians(angle), min(0.9 + 0.4 * (k - 1), 2.5)
+
+    def arrival_angle(self):
+        return self.landing()[0]
 
     def _controls(self):
-        p0, p3 = self.get_start(), self.get_end()
-        d = p3 - p0
-        p1 = p0 + np.array([0.15 * d[0], 0.6 * d[1], 0.0])
-        p2 = p3 - np.array([0.6 * d[0], 0.15 * d[1], 0.0])
+        child, parent = self.anchor_start, self.anchor_end
+        d = parent - child
+        dx, dy = float(d[0]), float(d[1])
+        sx = 1.0 if dx >= 0 else -1.0  # the parent is to the right (+) or left
+        sy = 1.0 if dy >= 0 else -1.0  # the parent is above (+) or below
+        rim = self.RIM
+        if abs(dx) < 0.5:  # straight above or below: leave and arrive vertically
+            p0 = child + np.array([0.0, sy * rim, 0.0])
+            p3 = parent - np.array([0.0, sy * rim, 0.0])
+            pull = np.array([0.0, sy * 0.35 * abs(dy), 0.0])
+            return p0, p0 + pull, p3 - pull, p3
+        # Leave the child at a shallow angle toward the parent's side.
+        out = self.EXIT_ANGLE
+        p0 = child + np.array([sx * rim * np.cos(out), sy * rim * np.sin(out), 0.0])
+        # Land on the parent pointing at its centre.
+        phi, reach = self.landing()
+        approach = np.array([sx * np.cos(phi), sy * np.sin(phi), 0.0])
+        p3 = parent - approach * reach
+        p2 = p3 - approach * 0.7  # a short final curl; the body climbs beside
+        # Run along the lane toward where the climb begins, never past it, so
+        # the curve does not double back.
+        run = max(0.3, 0.6 * (float(p2[0]) - float(p0[0])) * sx)
+        p1 = p0 + np.array([sx * run, 0.0, 0.0])
         return p0, p1, p2, p3
+
+    def _extra_points(self):
+        # The curve leaves the chord; the frame must contain the whole of it.
+        p0, p1, p2, p3 = self._controls()
+        return np.vstack([super()._extra_points(), p0, p1, p2, p3])
 
     def _tip_polygons(self):
         polys = []

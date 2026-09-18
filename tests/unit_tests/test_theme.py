@@ -148,26 +148,54 @@ def test_lane_hues_cycle_and_rings_track_the_fill():
     assert LIGHT.ring_for("#808080") == "#606060"
 
 
-def test_lane_arrow_keeps_straight_endpoints_and_arrives_along_the_lane(tmp_path):
+def test_lane_arrows_fan_out_around_a_shared_parent(tmp_path):
     from git_sim import render as m
 
-    start, end = np.array([0.0, 0.0, 0.0]), np.array([2.5, -4.0, 0.0])
-    straight = m.Arrow(start, end, max_stroke_width_to_length_ratio=1000)
-    curved = m.LaneArrow(start, end, max_stroke_width_to_length_ratio=1000)
-    for arrow in (straight, curved):
-        arrow.set_length(arrow.get_length() - 3)
-    # set_length scales about the center including the tip, whose direction
-    # differs between the two shapes, so allow a hundredth of a unit.
-    assert np.allclose(straight.get_start(), curved.get_start(), atol=0.02)
-    assert np.allclose(straight.get_end(), curved.get_end(), atol=0.02)
-    _, _, p2, p3 = curved._controls()
-    tangent = p3 - p2
-    assert abs(tangent[0]) > abs(
-        tangent[1]
-    ), "arrives more horizontally than vertically"
+    parent = np.array([2.5, 0.0, 0.0])
+    arrows = [
+        m.LaneArrow(
+            np.array([0.0, -4.0 * k, 0.0]),
+            parent,
+            lane_pitch=4.0,
+            max_stroke_width_to_length_ratio=1000,
+        )
+        for k in (1, 2, 3, 4)
+    ]
+    for arrow in arrows:
+        arrow.set_length(arrow.get_length() - 3)  # layout shortens the chord
+    angles = [round(np.degrees(a.arrival_angle())) for a in arrows]
+    assert angles == [30, 50, 60, 70], "further lanes land ever steeper"
+    reaches = [round(a.landing()[1], 2) for a in arrows]
+    assert reaches == [0.9, 1.3, 1.7, 2.1], "and stop a little further out"
+    landings = []
+    for arrow in arrows:
+        p0, p1, p2, p3 = arrow._controls()
+        # Starts just off the child's rim, heading toward the parent's side.
+        assert 0.7 < np.linalg.norm(p0 - arrow.anchor_start) < 0.9 and p1[0] > p0[0]
+        assert abs(p1[1] - p0[1]) < 1e-9, "runs along its own lane first"
+        assert p1[0] <= p2[0] + 1e-9, "never runs past the climb, so no doubling back"
+        # Lands pointing at the parent's centre.
+        toward = parent - p3
+        tangent = p3 - p2
+        cos = np.dot(toward, tangent) / (
+            np.linalg.norm(toward) * np.linalg.norm(tangent)
+        )
+        assert cos > 0.999
+        landings.append(p3)
+    gaps = [np.linalg.norm(a - b) for a, b in zip(landings, landings[1:])]
+    assert min(gaps) > 0.35, "arrowheads (0.35 wide) never overlap"
+    # None lands over the parent's message (below it, within its text span).
+    for p3 in landings:
+        rel = p3 - parent
+        assert not (rel[1] < -0.8 and abs(rel[0]) < 0.7), rel
+    # The bodies climb the empty column beside the lane ends (x >= 1.0 past
+    # the child's centre), clear of the ids and messages of the lanes between.
+    for arrow in arrows[1:]:
+        _, p1, p2, _ = arrow._controls()
+        assert p1[0] > 0.9 and p2[0] > 0.9, (p1, p2)
     scene = m.Scene()
-    scene.add(curved)
-    scene.render_image(str(tmp_path / "lane.png"), fmt="png")
+    scene.add(*arrows)
+    scene.render_image(str(tmp_path / "lanes.png"), fmt="png")
 
 
 def test_lane_hues_color_commits_but_never_labels(repo):

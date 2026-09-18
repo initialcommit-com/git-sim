@@ -421,6 +421,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         (the curve is a static-renderer feature; manim draws it straight)."""
         curved = getattr(m, "LaneArrow", None)
         cls = curved if curved is not None and start[1] != end[1] else m.Arrow
+        extra = {"lane_pitch": self.LANE_PITCH} if cls is curved else {}
         return cls(
             start,
             end,
@@ -428,6 +429,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             stroke_width=self.arrow_stroke_width,
             tip_shape=self.arrow_tip_shape,
             max_stroke_width_to_length_ratio=1000,
+            **extra,
         )
 
     @staticmethod
