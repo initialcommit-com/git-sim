@@ -997,6 +997,48 @@ def _analyze_commit(repo: git.Repo, args: List[str], report: PreflightReport) ->
             )
 
 
+def _analyze_submodule(repo: git.Repo, args: List[str], report: PreflightReport) -> None:
+    sub = args[0] if args and not args[0].startswith("-") else "status"
+    paths = _positionals(args[1:]) if args else []
+    if sub == "deinit":
+        targets = paths or (["<all>"] if "--all" in args else [])
+        dirty = []
+        for path in targets:
+            if path == "<all>":
+                continue
+            try:
+                if git.Repo(os.path.join(repo.working_tree_dir, path)).git.status("--porcelain").strip():
+                    dirty.append(path)
+            except Exception:
+                pass
+        report.summary = (
+            f"Empties the working tree of {', '.join(targets) or 'the named submodule(s)'} and unregisters them from .git/config; .gitmodules keeps the entry."
+        )
+        if dirty and ("--force" in args or "-f" in args):
+            report.escalate(Risk.DESTRUCTIVE)
+            report.would_lose.extend(
+                f"uncommitted changes inside submodule {p} (NOT recoverable)" for p in dirty
+            )
+        elif dirty:
+            report.escalate(Risk.CAUTION)
+            report.warnings.append(
+                f"git refuses to deinit {', '.join(dirty)} while it has local changes; --force would delete them."
+            )
+        else:
+            report.escalate(Risk.CAUTION)
+        report.recovery.append("Re-register with: git submodule update --init <path>")
+        return
+    if sub == "update":
+        report.summary = "Checks each submodule out at the commit the superproject pins."
+        if "--force" in args or "-f" in args:
+            report.escalate(Risk.CAUTION)
+            report.warnings.append(
+                "--force discards local changes inside the submodules' working trees."
+            )
+        return
+    report.summary = f"'submodule {sub}' records or reports pins; nothing is discarded."
+
+
 _ANALYZERS = {
     "reset": _analyze_reset,
     "clean": _analyze_clean,
@@ -1014,6 +1056,7 @@ _ANALYZERS = {
     "reflog": _analyze_reflog,
     "gc": _analyze_gc,
     "filter-branch": _analyze_filter_branch,
+    "submodule": _analyze_submodule,
 }
 
 # The subcommands that can discard something and therefore deserve a look

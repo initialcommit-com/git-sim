@@ -79,7 +79,8 @@ commit detection), `restore`/`checkout`/`switch` (discarded local
 modifications), `stash` (drop/clear losses), `commit --amend`
 (published-history detection), `worktree remove/prune` (uncommitted changes
 deleted with the worktree; stale records), `rm` (uncommitted changes deleted
-with the file), `reflog expire/delete`, `gc --prune`, `filter-branch`.
+with the file), `reflog expire/delete`, `gc --prune`, `filter-branch`,
+`submodule deinit/update --force` (local changes inside the submodule).
 Read-only commands and purely additive ones (`add`, `mv`, `init`, `clone`,
 `cherry-pick`, `revert`, `pull`) are `safe`; unrecognized commands default to
 `caution`. The hook only analyzes git invocations whose own subcommand has an
@@ -257,8 +258,8 @@ $ python scripts/mcp_smoke_test.py /path/to/some/repo
 ## Validating the simulations
 
 `scripts/validate_commands.py` builds fixture repositories with git-dummy,
-constructs every subcommand scene in-process (60 cases covering each command
-and flag), and checks what was drawn — which commits, where the HEAD, branch
+constructs every subcommand scene in-process (122 cases covering each command
+and flag, including the refusal paths), and checks what was drawn — which commits, where the HEAD, branch
 and tag labels landed, the arrows between commits, and the files in each zone
 column — against ground truth computed from the repository with GitPython.
 It prints a PASS/FAIL table and writes one image per case for spot checks:

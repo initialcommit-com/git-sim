@@ -9,8 +9,18 @@ from git_sim.settings import settings
 
 
 class Clean(GitSimBaseCommand):
-    def __init__(self):
+    def __init__(
+        self,
+        force: bool = False,
+        dry_run: bool = False,
+        directories: bool = False,
+        ignored: bool = False,
+    ):
         super().__init__()
+        self.force = force
+        self.dry_run = dry_run
+        self.directories = directories
+        self.ignored = ignored
         self.hide_first_tag = True
         self.allow_no_commits = True
         settings.hide_merged_branches = True
@@ -21,7 +31,17 @@ class Clean(GitSimBaseCommand):
         except TypeError:
             pass
 
-        self.cmd += f"{type(self).__name__.lower()}"
+        flags = "".join(
+            flag
+            for flag, on in (
+                (" -n", self.dry_run),
+                (" -f", self.force),
+                (" -d", self.directories),
+                (" -x", self.ignored),
+            )
+            if on
+        )
+        self.cmd += f"{type(self).__name__.lower()}{flags}"
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
@@ -33,10 +53,26 @@ class Clean(GitSimBaseCommand):
         self.scale_frame()
         self.vsplit_frame()
         self.setup_and_draw_zones(
-            first_column_name="Untracked files",
+            first_column_name="Untracked files"
+            + (" + ignored" if self.ignored else ""),
             second_column_name="----",
-            third_column_name="Deleted files",
+            third_column_name="Deleted files"
+            + (" (dry run)" if self.dry_run and not self.force else ""),
         )
+        notes = []
+        if not self.force and not self.dry_run:
+            notes.append(
+                "git clean refuses to run without -f (or -n to preview); this is what -f would delete."
+            )
+        if self.ignored:
+            notes.append(
+                (
+                    "-x also deletes ignored files such as build output and virtualenvs.",
+                    m.GOLD,
+                )
+            )
+        if notes:
+            self.add_notes(notes)
         self.show_command_as_title()
         self.fadeout()
         self.show_outro()
@@ -109,6 +145,23 @@ class Clean(GitSimBaseCommand):
             thirdColumnFiles.add(text)
             thirdColumnFilesDict[f] = text
 
+    def would_remove(self):
+        """Exactly what git would delete, from its own dry run with the same flags."""
+        args = ["-n"]
+        if self.directories:
+            args.append("-d")
+        if self.ignored:
+            args.append("-x")
+        try:
+            out = self.repo.git.clean(*args)
+        except git.GitCommandError:
+            return []
+        return [
+            line.replace("Would remove ", "")
+            for line in out.splitlines()
+            if line.startswith("Would remove ") and "git-sim_media" not in line
+        ]
+
     def populate_zones(
         self,
         firstColumnFileNames,
@@ -118,8 +171,7 @@ class Clean(GitSimBaseCommand):
         secondColumnArrowMap={},
         thirdColumnArrowMap={},
     ):
-        for z in self.repo.untracked_files:
-            if "git-sim_media" not in z:
-                firstColumnFileNames.add(z)
-                thirdColumnFileNames.add(z)
-                firstColumnArrowMap[z] = m.Arrow(stroke_width=3, color=self.fontColor)
+        for z in self.would_remove():
+            firstColumnFileNames.add(z)
+            thirdColumnFileNames.add(z)
+            firstColumnArrowMap[z] = m.Arrow(stroke_width=3, color=self.fontColor)

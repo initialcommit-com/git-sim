@@ -7,7 +7,13 @@ import typer
 from typing import List
 
 from git_sim.settings import settings
-from git_sim.enums import ResetMode, StashSubCommand, RemoteSubCommand
+from git_sim.enums import (
+    ResetMode,
+    StashSubCommand,
+    RemoteSubCommand,
+    SubmoduleSubCommand,
+    WorktreeSubCommand,
+)
 
 
 def handle_animations(scene) -> None:
@@ -35,12 +41,19 @@ def add(
 def branch(
     name: str = typer.Argument(
         ...,
-        help="The name of the new branch",
-    )
+        help="The branch to create, delete (-d/-D) or rename (-m)",
+    ),
+    new_name: str = typer.Argument(
+        default=None,
+        help="With -m: the new name for the branch",
+    ),
+    d: bool = typer.Option(False, "-d", "--delete", help="Delete the branch (refused if unmerged)"),
+    D: bool = typer.Option(False, "-D", help="Force-delete the branch even if unmerged"),
+    m: bool = typer.Option(False, "-m", "--move", help="Rename the branch to NEW_NAME"),
 ):
     from git_sim.branch import Branch
 
-    scene = Branch(name=name)
+    scene = Branch(name=name, new_name=new_name, delete=d, force_delete=D, move=m)
     handle_animations(scene=scene)
 
 
@@ -64,7 +77,7 @@ def checkout(
 def cherry_pick(
     commit: str = typer.Argument(
         ...,
-        help="The ref (branch/tag), or commit ID to simulate cherry-pick onto active branch",
+        help="The ref (branch/tag), commit ID, or range A..B to simulate cherry-picking onto the active branch",
     ),
     edit: str = typer.Option(
         None,
@@ -72,18 +85,29 @@ def cherry_pick(
         "-e",
         help="Specify a new commit message for the cherry-picked commit",
     ),
+    no_commit: bool = typer.Option(
+        False,
+        "--no-commit",
+        "-n",
+        help="Apply the changes to the index and working tree without committing",
+    ),
 ):
     from git_sim.cherrypick import CherryPick
 
-    scene = CherryPick(commit=commit, edit=edit)
+    scene = CherryPick(commit=commit, edit=edit, no_commit=no_commit)
     handle_animations(scene=scene)
 
 
-def clean():
+def clean(
+    force: bool = typer.Option(False, "-f", "--force", help="Actually delete (git refuses without -f or -n)"),
+    dry_run: bool = typer.Option(False, "-n", "--dry-run", help="Show what would be deleted"),
+    d: bool = typer.Option(False, "-d", help="Also remove untracked directories"),
+    x: bool = typer.Option(False, "-x", help="Also remove ignored files"),
+):
     from git_sim.clean import Clean
 
     settings.hide_first_tag = True
-    scene = Clean()
+    scene = Clean(force=force, dry_run=dry_run, directories=d, ignored=x)
     handle_animations(scene=scene)
 
 
@@ -112,13 +136,24 @@ def commit(
     ),
     amend: bool = typer.Option(
         default=False,
-        help="Amend the last commit message, must be used with the --message flag",
+        help="Replace the last commit (with --message, or --no-edit to keep its message)",
+    ),
+    no_edit: bool = typer.Option(
+        False,
+        "--no-edit",
+        help="With --amend: keep the existing commit message",
+    ),
+    all: bool = typer.Option(
+        False,
+        "--all",
+        "-a",
+        help="Automatically stage modified and deleted tracked files before committing",
     ),
 ):
     from git_sim.commit import Commit
 
     settings.hide_first_tag = True
-    scene = Commit(message=message, amend=amend)
+    scene = Commit(message=message, amend=amend, no_edit=no_edit, all=all)
     handle_animations(scene=scene)
 
 
@@ -252,22 +287,55 @@ def push(
         "--set-upstream",
         help="Map the local branch to the specified upstream branch",
     ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Overwrite the remote branch even if it has commits you don't have",
+    ),
+    force_with_lease: bool = typer.Option(
+        False,
+        "--force-with-lease",
+        help="Overwrite the remote branch only if it still matches your last fetch",
+    ),
 ):
     from git_sim.push import Push
 
-    scene = Push(remote=remote, branch=branch, set_upstream=set_upstream)
+    scene = Push(
+        remote=remote,
+        branch=branch,
+        set_upstream=set_upstream,
+        force=force,
+        force_with_lease=force_with_lease,
+    )
     handle_animations(scene=scene)
 
 
 def rebase(
     branch: str = typer.Argument(
         ...,
-        help="The branch to simulate rebasing the checked-out commit onto",
-    )
+        help="The upstream to rebase the checked-out branch onto",
+    ),
+    onto: str = typer.Option(
+        None,
+        "--onto",
+        help="Replay the commits onto this base instead of the upstream itself",
+    ),
+    interactive: bool = typer.Option(
+        False,
+        "--interactive",
+        "-i",
+        help="Interactive rebase: takes the todo list from --todo (default: pick everything)",
+    ),
+    todo: str = typer.Option(
+        None,
+        "--todo",
+        help="With -i: path to a git rebase todo file (pick/reword/squash/fixup/drop <sha>)",
+    ),
 ):
     from git_sim.rebase import Rebase
 
-    scene = Rebase(branch=branch)
+    scene = Rebase(branch=branch, onto=onto, interactive=interactive, todo=todo)
     handle_animations(scene=scene)
 
 
@@ -294,7 +362,11 @@ def remote(
 def reset(
     commit: str = typer.Argument(
         default="HEAD",
-        help="The ref (branch/tag), or commit ID to simulate reset to",
+        help="The ref (branch/tag), or commit ID to simulate reset to (or a path to unstage)",
+    ),
+    paths: List[str] = typer.Argument(
+        default=None,
+        help="Paths to unstage (git reset [<commit>] -- <paths>)",
     ),
     mode: ResetMode = typer.Option(
         default="mixed",
@@ -316,7 +388,7 @@ def reset(
     from git_sim.reset import Reset
 
     settings.hide_first_tag = True
-    scene = Reset(commit=commit, mode=mode, soft=soft, mixed=mixed, hard=hard)
+    scene = Reset(commit=commit, mode=mode, soft=soft, mixed=mixed, hard=hard, paths=paths)
     handle_animations(scene=scene)
 
 
@@ -330,11 +402,17 @@ def restore(
         "--staged",
         help="Restore staged file to working directory",
     ),
+    source: str = typer.Option(
+        None,
+        "--source",
+        "-s",
+        help="Restore the files' content from this commit instead of the index",
+    ),
 ):
     from git_sim.restore import Restore
 
     settings.hide_first_tag = True
-    scene = Restore(files=files, staged=staged)
+    scene = Restore(files=files, staged=staged, source=source)
     handle_animations(scene=scene)
 
 
@@ -342,12 +420,24 @@ def revert(
     commit: str = typer.Argument(
         default="HEAD",
         help="The ref (branch/tag), or commit ID to simulate revert",
-    )
+    ),
+    mainline: int = typer.Option(
+        None,
+        "--mainline",
+        "-m",
+        help="For a merge commit: the parent number (1-based) to keep",
+    ),
+    no_commit: bool = typer.Option(
+        False,
+        "--no-commit",
+        "-n",
+        help="Apply the reverse changes to the index and working tree without committing",
+    ),
 ):
     from git_sim.revert import Revert
 
     settings.hide_first_tag = True
-    scene = Revert(commit=commit)
+    scene = Revert(commit=commit, mainline=mainline, no_commit=no_commit)
     handle_animations(scene=scene)
 
 
@@ -367,7 +457,7 @@ def rm(
 def stash(
     command: StashSubCommand = typer.Argument(
         default=None,
-        help="Stash subcommand (push, pop, apply)",
+        help="Stash subcommand (push, pop, apply, drop, clear, list, show)",
     ),
     files: List[str] = typer.Argument(
         default=None,
@@ -435,4 +525,54 @@ def tag(
     from git_sim.tag import Tag
 
     scene = Tag(name=name, commit=commit, d=d)
+    handle_animations(scene=scene)
+
+
+def worktree(
+    command: WorktreeSubCommand = typer.Argument(
+        default=WorktreeSubCommand.LIST,
+        help="Worktree subcommand (add, remove, list, prune)",
+    ),
+    path: str = typer.Argument(default=None, help="Worktree path (add/remove)"),
+    branch: str = typer.Argument(
+        default=None, help="With add: existing branch or commit to check out (default: a new branch named after the path)"
+    ),
+    new_branch: str = typer.Option(
+        None, "-b", "--new-branch", help="With add: create this new branch and check it out"
+    ),
+    force: bool = typer.Option(False, "--force", "-f", help="With remove: discard uncommitted changes"),
+):
+    from git_sim.worktree import Worktree
+
+    settings.hide_first_tag = True
+    scene = Worktree(
+        command=command, path=path, branch=branch, force=force, new_branch=new_branch
+    )
+    handle_animations(scene=scene)
+
+
+def reflog(
+    n: int = typer.Option(5, "-n", help="Number of HEAD reflog entries to show"),
+):
+    from git_sim.reflog import Reflog
+
+    settings.hide_first_tag = True
+    scene = Reflog(n=n)
+    handle_animations(scene=scene)
+
+
+def submodule(
+    command: SubmoduleSubCommand = typer.Argument(
+        default=SubmoduleSubCommand.STATUS,
+        help="Submodule subcommand (add, update, init, status, deinit)",
+    ),
+    url_or_path: str = typer.Argument(default=None, help="With add: repository URL; with deinit: submodule path"),
+    path: str = typer.Argument(default=None, help="With add: where to place the submodule"),
+    init: bool = typer.Option(False, "--init", help="With update: also initialize new submodules"),
+    force: bool = typer.Option(False, "--force", "-f", help="With deinit: discard local changes in the submodule"),
+):
+    from git_sim.submodule import Submodule
+
+    settings.hide_first_tag = True
+    scene = Submodule(command=command, url_or_path=url_or_path, path=path, init=init, force=force)
     handle_animations(scene=scene)

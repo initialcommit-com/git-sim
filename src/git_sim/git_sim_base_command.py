@@ -701,9 +701,14 @@ class GitSimBaseCommand(m.MovingCameraScene):
             color=self.fontColor,
         ).shift(m.LEFT * 8)
 
+        # reverse flips the arrow direction (first -> second column). Callers
+        # that relied on the old implicit renaming still get it; explicit
+        # names are kept as given.
         if reverse:
-            first_column_name = "Staging area"
-            third_column_name = "Deleted changes"
+            if first_column_name == "Untracked files":
+                first_column_name = "Staging area"
+            if third_column_name == "Staged files":
+                third_column_name = "Deleted changes"
 
         title_v_shift = abs(horizontal2.get_start()[1] - horizontal.get_start()[1]) / 2
         firstColumnTitle = (
@@ -1051,7 +1056,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
         shift=numpy.array([0.0, 0.0, 0.0]),
         draw_arrow=True,
         color=m.RED,
+        new_id="abcdef",
     ):
+        """Draw a simulated new commit whose parent is ``child`` (a Commit, or
+        the key of an already drawn commit such as a previous simulated one)."""
+        child_key = child if isinstance(child, str) else child.hexsha
         circle = m.Circle(
             stroke_color=color,
             stroke_width=self.commit_stroke_width,
@@ -1059,18 +1068,18 @@ class GitSimBaseCommand(m.MovingCameraScene):
             fill_opacity=self.ref_fill_opacity,
         )
         circle.height = 1
-        if child != "dark":
+        if child_key != "dark":
             circle.next_to(
-                self.drawnCommits[child.hexsha],
+                self.drawnCommits[child_key],
                 m.LEFT if settings.reverse else m.RIGHT,
                 buff=1.5,
             )
 
         circle.shift(shift)
 
-        if child != "dark":
+        if child_key != "dark":
             start = circle.get_center()
-            end = self.drawnCommits[child.hexsha].get_center()
+            end = self.drawnCommits[child_key].get_center()
             arrow = m.Arrow(
                 start,
                 end,
@@ -1083,13 +1092,14 @@ class GitSimBaseCommand(m.MovingCameraScene):
             arrow.set_length(length)
 
         commitId = m.Text(
-            "abcdef",
+            new_id,
             font=self.font,
             font_size=20,
             color=self.fontColor,
             weight=self.font_weight,
         ).next_to(circle, m.UP)
         self.toFadeOut.add(commitId)
+        self.drawnCommitIds[new_id] = commitId
 
         commitMessage = commitMessage.split("\n")[0][:40].replace("\n", " ")
         message = m.Text(
@@ -1115,10 +1125,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.camera.frame.move_to(circle.get_center())
             self.add(circle, commitId, message)
 
-        self.drawnCommits["abcdef"] = circle
+        self.drawnCommits[new_id] = circle
         self.toFadeOut.add(circle)
 
-        if draw_arrow and child != "dark":
+        if draw_arrow and child_key != "dark":
             if settings.animate:
                 self.play(m.Create(arrow), run_time=1 / settings.speed)
             else:
@@ -1275,6 +1285,63 @@ class GitSimBaseCommand(m.MovingCameraScene):
             thirdColumnFiles.add(text)
             thirdColumnFilesDict[f] = text
 
+    def create_zone_text_from_rows(
+        self,
+        rows,
+        firstColumnFiles,
+        secondColumnFiles,
+        thirdColumnFiles,
+        firstColumnFilesDict,
+        secondColumnFilesDict,
+        thirdColumnFilesDict,
+        firstColumnTitle,
+        secondColumnTitle,
+        thirdColumnTitle,
+        horizontal2,
+    ):
+        """Row-aligned table in the three zones. ``rows`` holds
+        (col1, col2, col3, struck, bold) tuples; a column value of None leaves
+        that cell empty. Used by scenes that list worktrees, submodules or
+        stash entries, where the columns describe one thing per row."""
+        columns = (
+            (firstColumnTitle, firstColumnFiles, firstColumnFilesDict),
+            (secondColumnTitle, secondColumnFiles, secondColumnFilesDict),
+            (thirdColumnTitle, thirdColumnFiles, thirdColumnFilesDict),
+        )
+        for i, row in enumerate(rows):
+            values = row[:3]
+            struck = row[3] if len(row) > 3 else False
+            bold = row[4] if len(row) > 4 else False
+            for value, (title, group, lookup) in zip(values, columns):
+                if value is None:
+                    continue
+                label = self.trim_cmd(str(value), 30)
+                if struck:
+                    text = m.MarkupText(
+                        "<span strikethrough='true' strikethrough_color='"
+                        + self.fontColor
+                        + "'>"
+                        + label
+                        + "</span>",
+                        font=self.font,
+                        font_size=24,
+                        color=self.fontColor,
+                        weight=m.BOLD if bold else m.NORMAL,
+                    )
+                else:
+                    text = m.Text(
+                        label,
+                        font=self.font,
+                        font_size=24,
+                        color=self.fontColor,
+                        weight=m.BOLD if bold else m.NORMAL,
+                    )
+                text.move_to(
+                    (title.get_center()[0], horizontal2.get_center()[1], 0)
+                ).shift(m.DOWN * 0.5 * (i + 1))
+                group.add(text)
+                lookup[value] = text
+
     def color_by(self, offset=0):
         if settings.color_by == ColorByOptions.AUTHOR:
             sorted_authors = sorted(
@@ -1327,6 +1394,79 @@ class GitSimBaseCommand(m.MovingCameraScene):
         else:
             self.author_groups[author].append(group)
 
+    def add_notes(self, lines, color=None, gap=1.0):
+        """Explanatory text lines stacked above everything drawn so far.
+
+        Each item is a string or a (string, color) pair. Used by scenes that
+        need to say what happened (force-push overwrote N commits, branch
+        deletion orphaned M commits, ...)."""
+        if not lines:
+            return
+        top = max(
+            (e.get_top()[1] for e in self.toFadeOut if e.has_points()), default=0
+        )
+        texts = []
+        for k, item in enumerate(lines):
+            text, text_color = (item, color) if isinstance(item, str) else item
+            mob = m.Text(
+                text,
+                font=self.font,
+                font_size=20,
+                color=text_color or self.fontColor,
+                weight=m.BOLD,
+            )
+            mob.move_to(
+                [self.camera.frame.get_center()[0], top + gap + 0.5 * (len(lines) - k), 0]
+            )
+            texts.append(mob)
+        self.toFadeOut.add(*texts)
+        if settings.animate:
+            self.play(*[m.AddTextLetterByLetter(t) for t in texts])
+        else:
+            self.add(*texts)
+        self.recenter_frame()
+        self.scale_frame()
+
+    def mark_commits(self, shas, color=None):
+        """Recolor drawn commits (and their ids) — e.g. gold for commits that
+        become unreachable."""
+        color = color or m.GOLD
+        for sha in shas:
+            circle = self.drawnCommits.get(sha)
+            if circle is not None:
+                circle.set_color(color)
+            commit_id = self.drawnCommitIds.get(sha)
+            if commit_id is not None:
+                commit_id.set_color(color)
+
+    def remove_ref(self, name):
+        """Take a drawn ref label off the scene (branch -d, tag -d, ...)."""
+        ref = self.drawnRefs.pop(name, None)
+        if ref is None:
+            return
+        if settings.animate:
+            self.play(m.Uncreate(ref), run_time=1 / settings.speed)
+        else:
+            self.remove(ref)
+        self.toFadeOut.remove(ref)
+
+    def unreachable_after_losing(self, ref_names):
+        """Commits reachable only through the given refs (what deleting them orphans)."""
+        keep = [
+            r.name
+            for r in list(self.repo.heads) + list(self.repo.tags)
+            if r.name not in ref_names
+        ]
+        exclude = [f"^{k}" for k in keep] if keep else []
+        orphaned = []
+        for name in ref_names:
+            try:
+                out = self.repo.git.rev_list(name, *exclude)
+            except GitCommandError:
+                continue
+            orphaned.extend(s for s in out.split() if s not in orphaned)
+        return orphaned
+
     def show_command_as_title(self):
         if settings.show_command_as_title:
             titleText = m.Text(
@@ -1352,10 +1492,31 @@ class GitSimBaseCommand(m.MovingCameraScene):
             )
             self.toFadeOut.add(titleText, ul)
             self.scale_frame()
+            self.fit_title_in_frame(titleText)
             if settings.animate:
                 self.play(m.AddTextLetterByLetter(titleText), m.Create(ul))
             else:
                 self.add(titleText, ul)
+
+    def fit_title_in_frame(self, titleText, margin=0.5):
+        """Scenes with notes stacked above the graph can be nearly as tall as
+        the frame; the title then lands above the top edge. Recenter on the
+        drawn content (title included) and grow the frame if it still does
+        not fit. Scenes that already fit are left exactly as they were."""
+        frame = self.camera.frame
+        if titleText.get_top()[1] <= frame.get_top()[1]:
+            return
+        target = [frame.get_center()[0], self.toFadeOut.get_center()[1], 0]
+        needed = self.toFadeOut.get_height() + 2 * margin
+        if settings.animate:
+            anims = [frame.animate.move_to(target)]
+            if needed > frame.get_height():
+                anims.append(frame.animate.scale_to_fit_height(needed))
+            self.play(*anims, run_time=1 / settings.speed)
+        else:
+            frame.move_to(target)
+            if needed > frame.get_height():
+                frame.scale_to_fit_height(needed)
 
     def del_rw(self, action, name, exc):
         os.chmod(name, stat.S_IWRITE)

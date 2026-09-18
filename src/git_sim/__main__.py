@@ -288,6 +288,9 @@ app.command()(git_sim.commands.stash)
 app.command()(git_sim.commands.status)
 app.command()(git_sim.commands.switch)
 app.command()(git_sim.commands.tag)
+app.command()(git_sim.commands.worktree)
+app.command()(git_sim.commands.reflog)
+app.command()(git_sim.commands.submodule)
 
 # Agent integration (not git subcommands).
 from git_sim.install import install, uninstall  # noqa: E402

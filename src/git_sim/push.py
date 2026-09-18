@@ -1,35 +1,52 @@
-import sys
 import os
-from argparse import Namespace
+import shutil
+import sys
+import tempfile
 
 import git
 from git_sim.backend import m
-import numpy
-import tempfile
-import shutil
-import stat
-import re
 
+from git_sim.enums import ColorByOptions
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
-from git_sim.enums import ColorByOptions
 
 
 class Push(GitSimBaseCommand):
     def __init__(
-        self, remote: str = None, branch: str = None, set_upstream: bool = False
+        self,
+        remote: str = None,
+        branch: str = None,
+        set_upstream: bool = False,
+        force: bool = False,
+        force_with_lease: bool = False,
     ):
         super().__init__()
         self.remote = remote
         self.branch = branch
         self.set_upstream = set_upstream
+        self.force = force
+        self.force_with_lease = force_with_lease
         settings.max_branches_per_commit = 2
 
+        if self.force and self.force_with_lease:
+            print("git-sim error: use either --force or --force-with-lease, not both")
+            sys.exit(1)
+        if not self.repo.remotes:
+            print("git-sim error: this repository has no remotes")
+            sys.exit(1)
         if self.remote and self.remote not in self.repo.remotes:
             print("git-sim error: no remote with name '" + self.remote + "'")
             sys.exit(1)
 
-        self.cmd += f"{type(self).__name__.lower()} {'--set-upstream ' if self.set_upstream else ''}{self.remote if self.remote else ''} {self.branch if self.branch else ''}"
+        parts = [type(self).__name__.lower()]
+        if self.set_upstream:
+            parts.append("--set-upstream")
+        if self.force:
+            parts.append("--force")
+        if self.force_with_lease:
+            parts.append("--force-with-lease")
+        parts += [p for p in (self.remote, self.branch) if p]
+        self.cmd += " ".join(parts)
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
@@ -44,17 +61,26 @@ class Push(GitSimBaseCommand):
         new_dir2 = os.path.join(tempfile.gettempdir(), "git_sim", repo_name + "2")
 
         # Save remotes
+        user_repo = self.repo
         orig_remotes = self.repo.remotes
+        remote_name = self.remote or orig_remotes[0].name
+        try:
+            branch_name = self.branch or user_repo.active_branch.name
+        except TypeError:
+            print("git-sim error: HEAD is detached; name the branch to push")
+            sys.exit(1)
+
+        # --force-with-lease compares the remote against the user's last
+        # fetched view of it, so remember that view before cloning.
+        expected = None
+        try:
+            expected = user_repo.commit(f"{remote_name}/{branch_name}").hexsha
+        except Exception:
+            pass
 
         # Create local clone of local repo
         self.repo = git.Repo.clone_from(git_root, new_dir, no_hardlinks=True)
-        if self.remote:
-            for r in orig_remotes:
-                if self.remote == r.name:
-                    remote_url = r.url
-                    break
-        else:
-            remote_url = orig_remotes[0].url
+        remote_url = next(r.url for r in orig_remotes if r.name == remote_name)
 
         # Create local clone of remote repo to simulate push to so we don't touch the real remote
         self.remote_repo = git.Repo.clone_from(
@@ -62,21 +88,41 @@ class Push(GitSimBaseCommand):
         )
 
         # Reset local clone remote to the local clone of remote repo
-        if self.remote:
-            for r in self.repo.remotes:
-                if self.remote == r.name:
-                    r.set_url(new_dir2)
-        else:
-            self.repo.remotes[0].set_url(new_dir2)
+        for r in self.repo.remotes:
+            if remote_name == r.name:
+                r.set_url(new_dir2)
+        self.repo.git.fetch(remote_name)
+
+        # Commits only the remote has: what a force-push would overwrite.
+        remote_only = []
+        try:
+            remote_only = list(
+                self.repo.iter_commits(f"{branch_name}..{remote_name}/{branch_name}")
+            )
+        except git.GitCommandError:
+            pass
+
+        args = []
+        if self.force:
+            args.append("--force")
+        elif self.force_with_lease:
+            args.append(
+                f"--force-with-lease={branch_name}:{expected}"
+                if expected
+                else "--force-with-lease"
+            )
+        args += [remote_name, branch_name]
 
         # Push the local clone into the local clone of the remote repo
         push_result = 0
         self.orig_repo = None
         try:
-            self.repo.git.push(self.remote, self.branch)
+            self.repo.git.push(*args)
         # If push fails...
         except git.GitCommandError as e:
-            if "rejected" in e.stderr and ("fetch first" in e.stderr):
+            if "stale info" in e.stderr:
+                push_result = 3
+            elif "rejected" in e.stderr and ("fetch first" in e.stderr):
                 push_result = 1
                 self.orig_repo = self.repo
                 self.repo = self.remote_repo
@@ -91,15 +137,23 @@ class Push(GitSimBaseCommand):
                 return
 
         head_commit = self.get_commit()
-        if push_result > 0:
-            self.parse_commits(
-                head_commit,
-                make_branches_remote=(
-                    self.remote if self.remote else self.repo.remotes[0].name
-                ),
-            )
+        if push_result in (1, 2):
+            self.parse_commits(head_commit, make_branches_remote=remote_name)
         else:
             self.parse_commits(head_commit)
+
+        if push_result == 0 and (self.force or self.force_with_lease):
+            self.show_overwritten(remote_name, branch_name, head_commit, remote_only)
+        elif push_result == 3:
+            self.add_notes(
+                [
+                    (
+                        f"--force-with-lease rejected: {remote_name}/{branch_name} moved since your last fetch.",
+                        m.GOLD,
+                    ),
+                    f"You expected {expected[:6] if expected else '?'}; fetch, review the new commits, then retry.",
+                ]
+            )
 
         self.recenter_frame()
         self.scale_frame()
@@ -117,6 +171,29 @@ class Push(GitSimBaseCommand):
         # Delete the local clones
         shutil.rmtree(new_dir, onerror=self.del_rw)
         shutil.rmtree(new_dir2, onerror=self.del_rw)
+
+    def show_overwritten(self, remote_name, branch_name, head_commit, remote_only):
+        flag = "--force" if self.force else "--force-with-lease"
+        if not remote_only:
+            self.add_notes(
+                [
+                    f"{flag} was not needed: {remote_name}/{branch_name} had no commits you lack."
+                ]
+            )
+            return
+        # Draw the remote's abandoned history below the local one.
+        self.parse_commits(remote_only[0], shift=4 * m.DOWN)
+        self.mark_commits([c.hexsha for c in remote_only])
+        self.add_notes(
+            [
+                f"{flag} moved {remote_name}/{branch_name} from {remote_only[0].hexsha[:6]} to {head_commit.hexsha[:6]}.",
+                (
+                    f"{len(remote_only)} remote commit(s) were overwritten (gold) and are no longer reachable from the remote branch.",
+                    m.GOLD,
+                ),
+                "Anyone who pulled them now has divergent history.",
+            ]
+        )
 
     def failed_push(self, push_result):
         texts = []
@@ -196,6 +273,8 @@ class Push(GitSimBaseCommand):
             text4.move_to(text3.get_center()).shift(m.DOWN / 2)
             texts = [text1, text2, text3, text4]
 
+        if not texts:
+            return
         self.toFadeOut.add(*texts)
         self.recenter_frame()
         self.scale_frame()

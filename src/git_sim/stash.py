@@ -1,6 +1,6 @@
 import re
 import sys
-from enum import Enum
+
 from git_sim.backend import m
 
 from typing import List
@@ -8,6 +8,13 @@ from typing import List
 from git_sim.enums import StashSubCommand
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
+
+LIST_COMMANDS = (
+    StashSubCommand.DROP,
+    StashSubCommand.CLEAR,
+    StashSubCommand.LIST,
+    StashSubCommand.SHOW,
+)
 
 
 class Stash(GitSimBaseCommand):
@@ -29,7 +36,20 @@ class Stash(GitSimBaseCommand):
         except TypeError:
             pass
 
-        if self.command in [StashSubCommand.PUSH, None]:
+        self.entries = self.repo.git.stash("list").splitlines()
+
+        if self.command in LIST_COMMANDS:
+            if not self.entries:
+                print("git-sim error: the stash list is empty")
+                sys.exit(1)
+            if self.command in (StashSubCommand.DROP, StashSubCommand.SHOW) and (
+                self.stash_index >= len(self.entries)
+            ):
+                print(
+                    f"git-sim error: No stash entry with index {self.stash_index} exists in stash"
+                )
+                sys.exit(1)
+        elif self.command in [StashSubCommand.PUSH, None]:
             for file in self.files:
                 if file not in [x.a_path for x in self.repo.index.diff(None)] + [
                     y.a_path for y in self.repo.index.diff("HEAD")
@@ -53,7 +73,12 @@ class Stash(GitSimBaseCommand):
                     "Files are not required in apply/pop subcommand. Ignoring the file list..."
                 )
 
-        self.cmd += f"{type(self).__name__.lower()} {self.command.value if self.command else ''} {' '.join(self.files) if not self.no_files else ''}"
+        if self.command in (StashSubCommand.DROP, StashSubCommand.SHOW):
+            self.cmd += f"stash {self.command.value} stash@{{{self.stash_index}}}"
+        elif self.command in (StashSubCommand.CLEAR, StashSubCommand.LIST):
+            self.cmd += f"stash {self.command.value}"
+        else:
+            self.cmd += f"{type(self).__name__.lower()} {self.command.value if self.command else ''} {' '.join(self.files) if not self.no_files else ''}"
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
@@ -64,14 +89,49 @@ class Stash(GitSimBaseCommand):
         self.recenter_frame()
         self.scale_frame()
         self.vsplit_frame()
-        self.setup_and_draw_zones(
-            first_column_name="Working directory",
-            second_column_name="Staging area",
-            third_column_name="Stashed changes",
-        )
+        if self.command in LIST_COMMANDS:
+            third = (
+                "Dropped entries"
+                if self.command in (StashSubCommand.DROP, StashSubCommand.CLEAR)
+                else "----"
+            )
+            self.setup_and_draw_zones(
+                first_column_name="Stash entries",
+                second_column_name=f"Files in stash@{{{self.stash_index}}}",
+                third_column_name=third,
+            )
+            if self.command == StashSubCommand.CLEAR:
+                self.add_notes(
+                    [
+                        (
+                            f"All {len(self.entries)} stash entries are deleted; only 'git fsck --lost-found' can find them afterwards.",
+                            m.GOLD,
+                        )
+                    ]
+                )
+            elif self.command == StashSubCommand.DROP:
+                self.add_notes(
+                    [
+                        f"stash@{{{self.stash_index}}} is deleted; later entries move up one index.",
+                        "Recover soon after with: git stash apply <sha from 'git fsck --lost-found'>",
+                    ]
+                )
+        else:
+            self.setup_and_draw_zones(
+                first_column_name="Working directory",
+                second_column_name="Staging area",
+                third_column_name="Stashed changes",
+            )
         self.show_command_as_title()
         self.fadeout()
         self.show_outro()
+
+    def entry_label(self, index):
+        entry = self.entries[index]
+        # "stash@{0}: WIP on main: abc123 message" -> "stash@{0} WIP on main: message"
+        ref, _, rest = entry.partition(": ")
+        rest = re.sub(r":\s*[0-9a-f]{7,}\s", ": ", rest, count=1)
+        return f"{ref} {rest}"
 
     def create_zone_text(
         self,
@@ -89,10 +149,15 @@ class Stash(GitSimBaseCommand):
         thirdColumnTitle,
         horizontal2,
     ):
+        strike_third = self.command in (
+            StashSubCommand.POP,
+            StashSubCommand.DROP,
+            StashSubCommand.CLEAR,
+        )
         for i, f in enumerate(firstColumnFileNames):
             text = (
                 m.Text(
-                    self.trim_path(f),
+                    self.trim_cmd(f, 30),
                     font=self.font,
                     font_size=24,
                     color=self.fontColor,
@@ -122,15 +187,18 @@ class Stash(GitSimBaseCommand):
             secondColumnFilesDict[f] = text
 
         for h, f in enumerate(thirdColumnFileNames):
+            label = self.trim_cmd(f, 30)
             text = (
                 m.MarkupText(
-                    "<span strikethrough='true' strikethrough_color='"
-                    + self.fontColor
-                    + "'>"
-                    + self.trim_path(f)
-                    + "</span>"
-                    if self.command == StashSubCommand.POP
-                    else self.trim_path(f),
+                    (
+                        "<span strikethrough='true' strikethrough_color='"
+                        + self.fontColor
+                        + "'>"
+                        + label
+                        + "</span>"
+                        if strike_third
+                        else label
+                    ),
                     font=self.font,
                     font_size=24,
                     color=self.fontColor,
@@ -143,6 +211,14 @@ class Stash(GitSimBaseCommand):
             thirdColumnFiles.add(text)
             thirdColumnFilesDict[f] = text
 
+    def stashed_files(self, index):
+        try:
+            out = self.repo.git.stash("show", "--name-only", f"stash@{{{index}}}")
+        except Exception:
+            print(f"git-sim error: No stash entry with index {index} exists in stash")
+            sys.exit()
+        return [line for line in out.split("\n") if line]
+
     def populate_zones(
         self,
         firstColumnFileNames,
@@ -152,23 +228,29 @@ class Stash(GitSimBaseCommand):
         secondColumnArrowMap={},
         thirdColumnArrowMap={},
     ):
+        if self.command in LIST_COMMANDS:
+            labels = [self.entry_label(i) for i in range(len(self.entries))]
+            # Sets lose order; entries are kept in index order via a dict-backed set.
+            for label in labels:
+                firstColumnFileNames.add(label)
+            for f in self.stashed_files(self.stash_index):
+                secondColumnFileNames.add(f)
+            dropped = []
+            if self.command == StashSubCommand.DROP:
+                dropped = [labels[self.stash_index]]
+            elif self.command == StashSubCommand.CLEAR:
+                dropped = labels
+            for label in dropped:
+                thirdColumnFileNames.add(label)
+                firstColumnArrowMap[label] = m.Arrow(
+                    stroke_width=3, color=self.fontColor
+                )
+            return
+
         if self.command in [StashSubCommand.POP, StashSubCommand.APPLY]:
-            try:
-                stashedFileNames = self.repo.git.stash(
-                    "show", "--name-only", self.stash_index
-                )
-                stashedFileNames = stashedFileNames.split("\n")
-            except:
-                print(
-                    f"git-sim error: No stash entry with index {self.stash_index} exists in stash"
-                )
-                sys.exit()
-            for s in stashedFileNames:
+            for s in self.stashed_files(self.stash_index):
                 thirdColumnFileNames.add(s)
                 firstColumnFileNames.add(s)
-                thirdColumnArrowMap[s] = m.Arrow(stroke_width=3, color=self.fontColor)
-                firstColumnFileNames.add(s)
-                thirdColumnFileNames.add(s)
                 thirdColumnArrowMap[s] = m.Arrow(stroke_width=3, color=self.fontColor)
 
         else:

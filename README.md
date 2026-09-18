@@ -202,10 +202,13 @@ Usage: `git-sim add <file 1> <file 2> ... <file n>`
 ![git-sim-add_01-05-23_22-07-40](https://user-images.githubusercontent.com/49353917/210940814-7e8dc318-6116-4e56-b415-bc547401a56a.jpg)
 
 ### git branch
-Usage: `git-sim branch <new branch name>`
+Usage: `git-sim branch <new branch name>` | `git-sim branch -d|-D <branch>` | `git-sim branch -m <branch> <new name>`
 
 - Specify `<new branch name>` as the name of the new branch to simulate creation of
 - Simulated output will show the newly create branch ref along with most recent 5 commits on the active branch
+- `-d` deletes a branch that is merged into the active branch; git-sim refuses (like git) if it is not
+- `-D` force-deletes: commits that only the deleted branch reached are drawn in gold, with the `git branch <name> <sha>` command that brings them back
+- `-m` renames a branch, moving its label in place
 
 ![git-sim-branch_01-05-23_22-13-17](https://user-images.githubusercontent.com/49353917/210941509-2a42a7a4-2168-4f62-913f-3f6fe74a0684.jpg)
 
@@ -218,18 +221,21 @@ Usage: `git-sim checkout [-b] <branch>`
 ![git-sim-checkout_04-09-23_21-46-04](https://user-images.githubusercontent.com/49353917/230827836-e9f23a0e-2576-4716-b2fb-6327d3cf9b22.jpg)
 
 ### git cherry-pick
-Usage: `git-sim cherry-pick <commit>`
+Usage: `git-sim cherry-pick <commit>|<A..B> [-n]`
 
 - Specify `<commit>` as a ref (branch name/tag) or commit ID to cherry-pick onto the active branch
+- A range `A..B` picks every commit reachable from `B` but not `A`, oldest first, as a chain of new commits
+- `-n`/`--no-commit` applies the changes to the index and working tree without creating a commit
 - Supports editing the cherry-picked commit message with: `$ git-sim cherry-pick <commit> -e "Edited commit message"`
 
 ![git-sim-cherry-pick_01-05-23_22-23-08](https://user-images.githubusercontent.com/49353917/210942811-fa5155b1-4c6f-4afc-bea2-d39b4cd594aa.jpg)
 
 ### git clean
-Usage: `git-sim clean`
+Usage: `git-sim clean [-f] [-n] [-d] [-x]`
 
-- Simulated output will show untracked files being deleted
-- Since this is just a simulation, no need to specify `-i`, `-n`, `-f` as in regular Git
+- Simulated output will show untracked files being deleted, taken from git's own dry run (`git clean -n` with the same flags)
+- `-d` includes untracked directories, `-x` includes ignored files (build output, virtualenvs)
+- Without `-f` or `-n` the simulation notes that real git would refuse to run
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
 ![git-sim-clean_04-09-23_22-05-54](https://user-images.githubusercontent.com/49353917/230830043-779e7230-f439-461a-a408-b19b263e86e4.jpg)
@@ -250,6 +256,8 @@ Usage: `git-sim commit -m "Commit message"`
 - HEAD and the active branch will be moved to the new commit
 - Simulated output will show files in the staging area being included in the new commit
 - Supports amending the last commit with: `$ git-sim commit --amend -m "Amended commit message"`
+- `--amend --no-edit` keeps the current commit message
+- `-a` stages every modified tracked file first (untracked files are not included)
 
 ![git-sim-commit_01-05-23_22-10-21](https://user-images.githubusercontent.com/49353917/210941149-d83677a1-3ab7-4880-bc0f-871b1f150087.jpg)
 
@@ -316,20 +324,30 @@ Usage: `git-sim pull [<remote> <branch>]`
 ![git-sim-pull_04-09-23_21-50-15](https://user-images.githubusercontent.com/49353917/230828298-455c0a9d-cf94-499e-9e35-623e7b218772.jpg)
 
 ### git push
-Usage: `git-sim push [<remote> <branch>]`
+Usage: `git-sim push [<remote> <branch>] [--force|--force-with-lease]`
 
 - Pushes the specified `<branch>` to the specified `<remote>` and displays the local result
+- `--force` overwrites the remote branch: commits that only the remote had are drawn in gold, since nobody can reach them from the remote afterwards
+- `--force-with-lease` does the same only if the remote still matches your last fetch; otherwise the simulation shows the rejection
 - If `<remote>` and `<branch>` are not specified, the active branch is pushed to the default remote
 - If the push fails due to remote changes that don't exist in the local repo, a message is included telling the user to pull first, along with color coding which commits need to be pulled
 
 ![git-sim-push_04-21-23_13-41-57](https://user-images.githubusercontent.com/49353917/233731005-51fd7887-ae14-4ceb-a5d5-e5aed79e9fd8.jpg)
 
 ### git rebase
-Usage: `git-sim rebase <new-base>`
+Usage: `git-sim rebase <new-base> [--onto <commit>] [-i [--todo <file>]]`
 
 - Specify `<new-base>` as the branch name to rebase the active branch onto
+- `--onto <commit>` replays the commits after `<new-base>` on top of `<commit>` instead
+- `-i` replays each commit individually; `--todo <file>` takes a rebase todo list (`pick`, `reword`, `edit`, `squash`, `fixup`, `drop` + sha) so squashes fold into the previous copy and drops are shown in gold
 
 ![git-sim-rebase_01-05-23_09-53-34](https://user-images.githubusercontent.com/49353917/210942598-4ff8d1e6-464d-48f3-afb9-f46f7ec4828c.jpg)
+
+### git reflog
+Usage: `git-sim reflog [-n <number>]`
+
+- Draws the last `<number>` positions of HEAD (default 5) as purple `HEAD@{k}` labels
+- Commits that no branch or tag reaches any more are drawn in gold, with the `git reset --hard HEAD@{k}` command that brings them back
 
 ### git remote
 Usage: `git-sim remote [add|rename|remove|get-url|set-url] [<remote>] [<url>]`
@@ -340,27 +358,31 @@ Usage: `git-sim remote [add|rename|remove|get-url|set-url] [<remote>] [<url>]`
 ![git-sim-remote_04-16-24_08-40-37](https://github.com/initialcommit-com/git-sim/assets/49353917/ebaff04c-d5b6-4691-97b3-60bb502ba444)
 
 ### git reset
-Usage: `git-sim reset <reset-to> [--mixed|--soft|--hard]`
+Usage: `git-sim reset <reset-to> [--mixed|--soft|--hard]` | `git-sim reset [<commit>] <path>...`
 
 - Specify `<reset-to>` as any commit id, branch name, tag, or other ref to simulate reset to from the current HEAD (default: `HEAD`)
+- With paths, HEAD stays put and the named files are unstaged (their index entries return to the commit's version)
 - As with a normal git reset command, default reset mode is `--mixed`, but can be specified using `--soft`, `--hard`, or `--mixed`
 - Simulated output will show branch/HEAD resets and resulting state of the working directory, staging area, and whether any file changes would be deleted by running the actual command
 
 ![git-sim-reset_01-05-23_22-15-49](https://user-images.githubusercontent.com/49353917/210941835-80f032d2-4f06-4032-8dd0-98c8a2569049.jpg)
 
 ### git restore
-Usage: `git-sim restore <file 1> <file 2> ... <file n>`
+Usage: `git-sim restore [--staged] [--source <commit>] <file 1> <file 2> ... <file n>`
 
 - Specify one or more `<file>` as a *modified* working directory file, or staged file
+- `--source <commit>` restores the files' content from that commit (HEAD does not move); git-sim checks each file exists there
 - Simulated output will show files being moved back to the working directory or discarded changes
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
 ![git-sim-restore_01-05-23_22-09-14](https://user-images.githubusercontent.com/49353917/210941009-e6bf7271-ce9b-4e41-9a0b-24cc4b8d3b15.jpg)
 
 ### git revert
-Usage: `git-sim revert <to-revert>`
+Usage: `git-sim revert <to-revert> [-m <parent-number>] [-n]`
 
 - Specify `<to-revert>` as any commit id, branch name, tag, or other ref to simulate revert for
+- Reverting a merge commit needs `-m <parent-number>` (as in git); the reverted files are those the merge brought in relative to that parent
+- `-n`/`--no-commit` stages the reverse changes without creating a commit
 - Simulated output will show the new commit which reverts the changes from `<to-revert>`
 - Simulated output will include the next 4 most recent commits on the active branch
 
@@ -376,10 +398,11 @@ Usage: `git-sim rm <file 1> <file 2> ... <file n>`
 ![git-sim-rm_04-09-23_22-01-29](https://user-images.githubusercontent.com/49353917/230829899-f5d688ea-bc8e-46f9-a54a-55d251c8915d.jpg)
 
 ### git stash
-Usage: `git-sim stash [push|pop|apply] <file>`
+Usage: `git-sim stash [push|pop|apply] <file>` | `git-sim stash list|show|drop|clear [<stash-index>]`
 
 - Specify one or more `<file>` as a *modified* working directory file, or staged file
 - If no `<file>` is specified, all available files will be included
+- `list`, `show` and `drop` take a stash index (`1` or `stash@{1}`); `drop` and `clear` show the deleted entries struck through
 - Simulated output will show files being moved in/out of the Git stash
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
@@ -392,6 +415,12 @@ Usage: `git-sim status`
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
 ![git-sim-status_01-05-23_22-06-28](https://user-images.githubusercontent.com/49353917/210940685-735665e2-fa12-4043-979c-54c295b13800.jpg)
+
+### git submodule
+Usage: `git-sim submodule [status|add <url> [<path>]|init|update [--init]|deinit [--force] <path>]`
+
+- Draws the superproject's history plus a table with one row per submodule: its path, the pinned commit, and its state
+- `add` records a new pinned submodule; `update --init` initializes and checks out; `deinit` empties the submodule's working tree (refused without `--force` when it has local changes)
 
 ### git switch
 Usage: `git-sim switch [-c] <branch>`
@@ -408,6 +437,13 @@ Usage: `git-sim tag <new tag name>`
 - Simulated output will show the newly create tag ref along with most recent 5 commits on the active branch
 
 ![git-sim-tag_01-05-23_22-14-18](https://user-images.githubusercontent.com/49353917/210941647-79376ff7-2941-42b3-964a-b1d3a404a4fe.jpg)
+
+### git worktree
+Usage: `git-sim worktree [list|add [-b <new-branch>] <path> [<branch>]|remove [--force] <path>|prune]`
+
+- Draws the commit graph plus a table with one row per worktree: its directory, branch and state (clean, N uncommitted changes, directory missing)
+- `remove` is refused (as in git) when the worktree has uncommitted changes unless `--force` is given, in which case the row is struck through and the deleted change count shown
+- `prune` strikes through worktree records whose directory no longer exists
 
 ## Video animation examples
 ```console

@@ -34,6 +34,25 @@ class StashSubCommand(Enum):
     POP = "pop"
     APPLY = "apply"
     PUSH = "push"
+    DROP = "drop"
+    CLEAR = "clear"
+    LIST = "list"
+    SHOW = "show"
+
+
+class WorktreeSubCommand(Enum):
+    ADD = "add"
+    REMOVE = "remove"
+    LIST = "list"
+    PRUNE = "prune"
+
+
+class SubmoduleSubCommand(Enum):
+    ADD = "add"
+    UPDATE = "update"
+    INIT = "init"
+    STATUS = "status"
+    DEINIT = "deinit"
 
 
 class RemoteSubCommand(Enum):

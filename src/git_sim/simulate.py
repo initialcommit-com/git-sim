@@ -17,7 +17,7 @@ RENDERABLE_COMMANDS = {
     "add", "branch", "checkout", "cherry-pick", "clean", "clone", "commit",
     "config", "fetch", "init", "log", "merge", "mv", "pull", "push", "rebase",
     "remote", "reset", "restore", "revert", "rm", "stash", "status", "switch",
-    "tag",
+    "tag", "worktree", "reflog", "submodule",
 }
 
 RENDER_TIMEOUT_SECONDS = 180

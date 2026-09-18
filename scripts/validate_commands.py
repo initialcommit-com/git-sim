@@ -189,8 +189,10 @@ class Capture:
             reverse=False,
         ):
             names = [first_column_name, second_column_name, third_column_name]
-            if reverse:
-                names[0], names[2] = "Staging area", "Deleted changes"
+            if reverse and first_column_name == "Untracked files":
+                names[0] = "Staging area"
+            if reverse and third_column_name == "Staged files":
+                names[2] = "Deleted changes"
             self.cols = tuple(names)
             return orig_sdz(
                 first_column_name=first_column_name,
@@ -1413,6 +1415,1078 @@ def case_meta():
     )
 
 
+def note_texts(cap):
+    return [t.text for t in cap.texts()]
+
+
+def has_text(cap, needle):
+    return any(needle in t for t in note_texts(cap))
+
+
+def case_branch_flags():
+    from git_sim.branch import Branch
+
+    repo = fresh()
+    r = git.Repo(repo)
+    b2 = r.heads["branch2"].commit.hexsha
+    orphaned = set(r.git.rev_list("branch2", "^main", "^branch1", "^branch3").split())
+    run_case(
+        "branch -d branch1 (merged)",
+        repo,
+        lambda: Branch(name="branch1", delete=True),
+        [
+            ("branch1 label removed", lambda c: "branch1" not in c.refs()),
+            ("title", lambda c: c.scene.cmd == "git branch -d branch1"),
+        ],
+    )
+    run_case(
+        "branch -d branch2 (unmerged -> refuses)",
+        fresh(),
+        lambda: Branch(name="branch2", delete=True),
+        [],
+        expect_exit=True,
+    )
+    run_case(
+        "branch -D branch2 (unmerged, forced)",
+        fresh(),
+        lambda: Branch(name="branch2", force_delete=True),
+        [
+            ("branch2 label removed", lambda c: "branch2" not in c.refs()),
+            (
+                "orphaned commits = rev-list branch2 ^others",
+                lambda c: set(c.scene.orphaned) == orphaned,
+            ),
+            (
+                "recovery note names the tip sha",
+                lambda c: has_text(c, f"git branch branch2 {b2[:6]}"),
+            ),
+        ],
+    )
+    run_case(
+        "branch -m branch2 renamed",
+        fresh(),
+        lambda: Branch(name="branch2", new_name="renamed", move=True),
+        [
+            ("new label on branch2 tip", lambda c: c.refs().get("renamed") == b2),
+            ("old label gone", lambda c: "branch2" not in c.refs()),
+            ("title", lambda c: c.scene.cmd == "git branch -m branch2 renamed"),
+        ],
+    )
+    run_case(
+        "branch -m onto existing name (refuses)",
+        fresh(),
+        lambda: Branch(name="branch2", new_name="branch3", move=True),
+        [],
+        expect_exit=True,
+    )
+
+
+def case_stash_flags():
+    from git_sim.enums import StashSubCommand
+    from git_sim.stash import Stash
+
+    def two_stashes(repo):
+        with_stash(repo)
+        (repo / "main.6").write_text("second stash\n")
+        g(repo, "stash")
+
+    run_case(
+        "stash list (2 entries)",
+        fresh(two_stashes),
+        lambda: Stash(files=[], command=StashSubCommand.LIST, stash_index="0"),
+        [
+            ("two entries listed", lambda c: len(c.zone_files["first"]) == 2),
+            ("stash@{0} files shown", lambda c: c.zone_files["second"] == {"main.6"}),
+            ("nothing dropped", lambda c: c.zone_files["third"] == set()),
+            ("title", lambda c: c.scene.cmd == "git stash list"),
+        ],
+    )
+    run_case(
+        "stash show stash@{1}",
+        fresh(two_stashes),
+        lambda: Stash(files=[], command=StashSubCommand.SHOW, stash_index="stash@{1}"),
+        [
+            ("stash@{1} files shown", lambda c: c.zone_files["second"] == {"main.5"}),
+            ("title", lambda c: c.scene.cmd == "git stash show stash@{1}"),
+        ],
+    )
+    run_case(
+        "stash drop 1",
+        fresh(two_stashes),
+        lambda: Stash(files=[], command=StashSubCommand.DROP, stash_index="1"),
+        [
+            (
+                "exactly stash@{1} struck through in Dropped",
+                lambda c: [t for t, s in c.column_texts("third") if s]
+                == [t for t, _ in c.column_texts("third")]
+                and len(c.zone_files["third"]) == 1
+                and next(iter(c.zone_files["third"])).startswith("stash@{1}"),
+            ),
+            ("arrow from entry to dropped", lambda c: len(c.zone_arrows["first"]) == 1),
+        ],
+    )
+    run_case(
+        "stash drop 5 (out of range -> refuses)",
+        fresh(two_stashes),
+        lambda: Stash(files=[], command=StashSubCommand.DROP, stash_index="5"),
+        [],
+        expect_exit=True,
+    )
+    run_case(
+        "stash clear",
+        fresh(two_stashes),
+        lambda: Stash(files=[], command=StashSubCommand.CLEAR, stash_index="0"),
+        [
+            ("both entries dropped", lambda c: len(c.zone_files["third"]) == 2),
+            ("warning note", lambda c: has_text(c, "All 2 stash entries are deleted")),
+        ],
+    )
+    run_case(
+        "stash clear (empty list -> refuses)",
+        fresh(),
+        lambda: Stash(files=[], command=StashSubCommand.CLEAR, stash_index="0"),
+        [],
+        expect_exit=True,
+    )
+
+
+def case_push_flags():
+    from git_sim.push import Push
+
+    def diverged(repo):
+        remote_ahead(repo, n=2, conflict=True)
+
+    def diverged_fetched(repo):
+        diverged(repo)
+        g(repo, "fetch", "-q", "origin")
+
+    repo = fresh(diverged, name="pushf")
+    r = git.Repo(repo)
+    local_head = r.head.commit.hexsha
+    other = git.Repo(repo.parent / (repo.name + "_other"))
+    remote_tip = other.head.commit.hexsha
+    remote_only = set(
+        other.git.rev_list("HEAD", f"^{r.commit('origin/main').hexsha}").split()
+    )
+    run_case(
+        "push --force (diverged)",
+        repo,
+        lambda: Push(force=True),
+        [
+            (
+                "remote-only commits drawn and marked",
+                lambda c: remote_only <= set(c.commits()),
+            ),
+            (
+                "note explains overwrite",
+                lambda c: has_text(c, "--force moved origin/main"),
+            ),
+            (
+                "origin/main label on local head after the push",
+                lambda c: c.refs().get("origin/main") == local_head,
+            ),
+            ("title", lambda c: c.scene.cmd == "git push --force"),
+        ],
+    )
+    run_case(
+        "push --force-with-lease (stale view -> rejected)",
+        fresh(diverged, name="pushl"),
+        lambda: Push(force_with_lease=True),
+        [
+            ("rejection note", lambda c: has_text(c, "--force-with-lease rejected")),
+            (
+                "remote tip not drawn as overwritten",
+                lambda c: not has_text(c, "were overwritten"),
+            ),
+        ],
+    )
+    repo3 = fresh(diverged_fetched, name="pushl2")
+    other3 = git.Repo(repo3.parent / (repo3.name + "_other"))
+    remote_only3 = set(
+        other3.git.rev_list(
+            "HEAD", f"^{git.Repo(repo3).commit('origin/main~2').hexsha}"
+        ).split()
+    )
+    run_case(
+        "push --force-with-lease (fresh view -> overwrites)",
+        repo3,
+        lambda: Push(force_with_lease=True),
+        [
+            (
+                "overwrite note",
+                lambda c: has_text(c, "--force-with-lease moved origin/main"),
+            ),
+            ("remote-only commits drawn", lambda c: remote_only3 <= set(c.commits())),
+        ],
+    )
+    run_case(
+        "push --force (nothing to overwrite)",
+        fresh(local_ahead),
+        lambda: Push(force=True),
+        [("not-needed note", lambda c: has_text(c, "was not needed"))],
+    )
+    run_case(
+        "push --force --force-with-lease (refuses)",
+        fresh(with_remote),
+        lambda: Push(force=True, force_with_lease=True),
+        [],
+        expect_exit=True,
+    )
+
+
+def case_rebase_flags():
+    from git_sim.rebase import Rebase
+
+    repo = fresh()
+    r = git.Repo(repo)
+    real = set(r.git.rev_list("--all").split())
+    b3 = r.heads["branch3"].commit.hexsha
+    to_replay = list(
+        reversed(list(r.iter_commits("branch2..HEAD", first_parent=True))[:5])
+    )
+    run_case(
+        "rebase --onto branch3 branch2",
+        repo,
+        lambda: Rebase(branch="branch2", onto="branch3"),
+        [
+            (
+                "first copy is a child of branch3 tip, not branch2",
+                lambda c: any(e[1] == b3 and e[0] not in real for e in c.edges()),
+            ),
+            (
+                f"{len(to_replay)} copies with dotted arrows",
+                lambda c: len([s for s in c.commits() if s not in real])
+                == len(to_replay)
+                and all(
+                    any(e[0] == tr.hexsha and e[1] not in real for e in c.edges())
+                    for tr in to_replay
+                ),
+            ),
+            (
+                "HEAD/main on a copy",
+                lambda c: c.refs().get("HEAD") not in real
+                and c.refs().get("HEAD") == c.refs().get("main"),
+            ),
+            ("onto note", lambda c: has_text(c, "--onto")),
+            ("title", lambda c: c.scene.cmd == "git rebase --onto branch3 branch2"),
+        ],
+    )
+
+    todo = ROOT / "todo.txt"
+    c0, c1, c2, c3, c4 = to_replay
+    todo.write_text(
+        "\n".join(
+            [
+                f"pick {c0.hexsha[:7]} {c0.summary}",
+                f"squash {c1.hexsha[:7]} {c1.summary}",
+                f"# drop {c2.hexsha[:7]} left out on purpose -> dropped",
+                f"p {c3.hexsha[:7]} {c3.summary}",
+                f"reword {c4.hexsha[:7]} {c4.summary}",
+                "",
+            ]
+        )
+    )
+    run_case(
+        "rebase -i branch2 --todo (pick/squash/drop/reword)",
+        fresh(),
+        lambda: Rebase(branch="branch2", interactive=True, todo=str(todo)),
+        [
+            (
+                "3 copies (squash folds, drop skips)",
+                lambda c: len([s for s in c.commits() if s not in real]) == 3,
+            ),
+            (
+                "squashed commit points at the copy of the one before it",
+                lambda c: any(
+                    e[0] == c1.hexsha
+                    and e[1] not in real
+                    and (c0.hexsha, e[1]) in c.edges()
+                    for e in c.edges()
+                ),
+            ),
+            (
+                "dropped commit has no copy",
+                lambda c: not any(
+                    e[0] == c2.hexsha and e[1] not in real for e in c.edges()
+                ),
+            ),
+            ("reword marked", lambda c: has_text(c, "(reworded)")),
+            (
+                "summary note",
+                lambda c: has_text(
+                    c,
+                    "3 commit(s) replayed, 1 squashed/fixed up into the previous one, 1 dropped",
+                ),
+            ),
+            ("title", lambda c: c.scene.cmd == "git rebase -i branch2"),
+        ],
+    )
+    run_case(
+        "rebase -i branch2 (no todo -> all picked)",
+        fresh(),
+        lambda: Rebase(branch="branch2", interactive=True),
+        [
+            (
+                "5 copies",
+                lambda c: len([s for s in c.commits() if s not in real]) == 5,
+            ),
+            ("hint about --todo", lambda c: has_text(c, "--todo")),
+        ],
+    )
+    run_case(
+        "rebase --todo without -i (refuses)",
+        fresh(),
+        lambda: Rebase(branch="branch2", todo=str(todo)),
+        [],
+        expect_exit=True,
+    )
+
+
+def case_clean_flags():
+    from git_sim.clean import Clean
+
+    def messy(repo):
+        dirty(repo)
+        (repo / "newdir").mkdir()
+        (repo / "newdir" / "inner.txt").write_text("x\n")
+        (repo / ".gitignore").write_text("*.log\n")
+        g(repo, "add", ".gitignore")
+        g(repo, "commit", "-q", "-m", "ignore logs")
+        (repo / "build.log").write_text("log\n")
+
+    run_case(
+        "clean (no flags -> note, files only)",
+        fresh(messy),
+        lambda: Clean(),
+        [
+            (
+                "untracked files only",
+                lambda c: c.zone_files["first"] == {"untracked.txt"},
+            ),
+            ("refusal note", lambda c: has_text(c, "refuses to run without -f")),
+            ("title", lambda c: c.scene.cmd == "git clean"),
+        ],
+    )
+    run_case(
+        "clean -n",
+        fresh(messy),
+        lambda: Clean(dry_run=True),
+        [
+            ("dry run column", lambda c: c.cols[2] == "Deleted files (dry run)"),
+            ("title", lambda c: c.scene.cmd == "git clean -n"),
+        ],
+    )
+    run_case(
+        "clean -fd",
+        fresh(messy),
+        lambda: Clean(force=True, directories=True),
+        [
+            (
+                "directory included",
+                lambda c: c.zone_files["first"] == {"untracked.txt", "newdir/"},
+            ),
+            ("title", lambda c: c.scene.cmd == "git clean -f -d"),
+        ],
+    )
+    run_case(
+        "clean -fdx",
+        fresh(messy),
+        lambda: Clean(force=True, directories=True, ignored=True),
+        [
+            (
+                "ignored file included",
+                lambda c: c.zone_files["first"]
+                == {"untracked.txt", "newdir/", "build.log"},
+            ),
+            ("-x warning", lambda c: has_text(c, "-x also deletes ignored files")),
+        ],
+    )
+
+
+def case_cherry_pick_flags():
+    from git_sim.cherrypick import CherryPick
+
+    repo = fresh()
+    r = git.Repo(repo)
+    h = r.head.commit.hexsha
+    b2 = r.heads["branch2"].commit
+    b2p = b2.parents[0].hexsha
+    run_case(
+        "cherry-pick branch2~2..branch2 (range)",
+        repo,
+        lambda: CherryPick(commit="branch2~2..branch2", edit=None),
+        [
+            (
+                "two chained copies after HEAD",
+                lambda c: ("abcdef", h) in c.edges()
+                and ("abcdeg", "abcdef") in c.edges(),
+            ),
+            (
+                "each copy has a dotted arrow from its original, oldest first",
+                lambda c: (b2p, "abcdef") in c.edges()
+                and (b2.hexsha, "abcdeg") in c.edges(),
+            ),
+            ("HEAD/main on the last copy", lambda c: c.refs().get("HEAD") == "abcdeg"),
+            ("title", lambda c: c.scene.cmd == "git cherry-pick branch2~2..branch2"),
+        ],
+    )
+    run_case(
+        "cherry-pick -n branch2",
+        fresh(),
+        lambda: CherryPick(commit="branch2", edit=None, no_commit=True),
+        [
+            ("no new commit", lambda c: "abcdef" not in c.commits()),
+            (
+                "files staged, not committed",
+                lambda c: c.cols[1] == "Changes staged from branch2"
+                and c.zone_files["second"] == set(b2.stats.files),
+            ),
+            ("title", lambda c: c.scene.cmd == "git cherry-pick -n branch2"),
+        ],
+    )
+    run_case(
+        "cherry-pick empty range (refuses)",
+        fresh(),
+        lambda: CherryPick(commit="branch2..branch2", edit=None),
+        [],
+        expect_exit=True,
+    )
+
+
+def case_revert_flags():
+    from git_sim.revert import Revert
+
+    repo = fresh()
+    r = git.Repo(repo)
+    merge = r.commit(r.git.rev_list("--merges", "-n", "1", "main"))
+    side = {d.a_path or d.b_path for d in merge.parents[0].diff(merge)}
+    run_case(
+        "revert <merge> without -m (refuses)",
+        repo,
+        lambda: Revert(commit=merge.hexsha),
+        [],
+        expect_exit=True,
+    )
+    run_case(
+        "revert -m 1 <merge>",
+        fresh(),
+        lambda: Revert(commit=merge.hexsha[:7], mainline=1),
+        [
+            ("revert commit drawn", lambda c: "abcdef" in c.commits()),
+            (
+                "files = what the merge brought in relative to parent 1",
+                lambda c: c.zone_files["second"] == side,
+            ),
+            ("-m note", lambda c: has_text(c, "-m 1: keeps parent 1")),
+            ("title", lambda c: c.scene.cmd == f"git revert -m 1 {merge.hexsha[:7]}"),
+        ],
+    )
+    run_case(
+        "revert -m 3 <merge> (no such parent -> refuses)",
+        fresh(),
+        lambda: Revert(commit=merge.hexsha, mainline=3),
+        [],
+        expect_exit=True,
+    )
+    target = r.commit("HEAD~1")
+    run_case(
+        "revert -n HEAD~1",
+        fresh(),
+        lambda: Revert(commit="HEAD~1", no_commit=True),
+        [
+            ("no new commit", lambda c: "abcdef" not in c.commits()),
+            ("HEAD unchanged", lambda c: c.refs().get("HEAD") == r.head.commit.hexsha),
+            (
+                "staged changes column",
+                lambda c: c.cols[1] == f"Changes staged (revert of {target.hexsha[:6]})"
+                and c.zone_files["second"] == set(target.stats.files),
+            ),
+        ],
+    )
+
+
+def case_commit_flags():
+    from git_sim.commit import Commit
+
+    repo = fresh(dirty)
+    r = git.Repo(repo)
+    h = r.head.commit
+    run_case(
+        "commit --amend --no-edit",
+        repo,
+        lambda: Commit(message="New commit", amend=True, no_edit=True),
+        [
+            ("old HEAD dropped", lambda c: h.hexsha not in c.commits()),
+            ("message kept", lambda c: has_text(c, h.summary[:20])),
+            ("title", lambda c: c.scene.cmd == "git commit --amend --no-edit"),
+        ],
+    )
+    run_case(
+        "commit --no-edit without --amend (refuses)",
+        fresh(),
+        lambda: Commit(message="New commit", amend=False, no_edit=True),
+        [],
+        expect_exit=True,
+    )
+    run_case(
+        "commit -a -m",
+        fresh(dirty),
+        lambda: Commit(message="all", amend=False, all=True),
+        [
+            (
+                "modified + staged files flow into the commit, untracked does not",
+                lambda c: c.zone_files["third"] == {"main.3", "main.4"}
+                and "untracked.txt"
+                not in c.zone_files["first"] | c.zone_files["third"],
+            ),
+            (
+                "arrow from working directory for main.3",
+                lambda c: "main.3" in c.zone_arrows["first"],
+            ),
+            ("title", lambda c: c.scene.cmd == 'git commit -a -m "all"'),
+        ],
+    )
+
+
+def case_reset_paths():
+    from git_sim.enums import ResetMode
+    from git_sim.reset import Reset
+
+    def two_staged(repo):
+        dirty(repo)
+        (repo / "main.5").write_text("also staged\n")
+        g(repo, "add", "main.5")
+
+    repo = fresh(two_staged)
+    r = git.Repo(repo)
+    h = r.head.commit.hexsha
+
+    def mk(commit, paths):
+        return Reset(
+            commit=commit,
+            mode=ResetMode.DEFAULT,
+            soft=False,
+            mixed=False,
+            hard=False,
+            paths=paths,
+        )
+
+    run_case(
+        "reset HEAD main.4 (unstage one path)",
+        repo,
+        lambda: mk("HEAD", ["main.4"]),
+        [
+            ("HEAD stays", lambda c: c.refs().get("HEAD") == h),
+            (
+                "columns",
+                lambda c: c.cols == ("Staged files", "Working directory", "----"),
+            ),
+            (
+                "both staged files listed",
+                lambda c: c.zone_files["first"] == {"main.4", "main.5"},
+            ),
+            (
+                "only main.4 moves to the working directory",
+                lambda c: c.zone_arrows["first"] == {"main.4"}
+                and "main.4" in c.zone_files["second"],
+            ),
+            ("title", lambda c: c.scene.cmd == "git reset main.4"),
+        ],
+    )
+    run_case(
+        "reset main.4 (path given as first arg)",
+        fresh(two_staged),
+        lambda: mk("main.4", None),
+        [
+            (
+                "detected as a path",
+                lambda c: c.scene.paths == ["main.4"] and c.scene.commit == "HEAD",
+            ),
+            ("title", lambda c: c.scene.cmd == "git reset main.4"),
+        ],
+    )
+    run_case(
+        "reset --hard HEAD main.4 (refuses)",
+        fresh(two_staged),
+        lambda: Reset(
+            commit="HEAD",
+            mode=ResetMode.DEFAULT,
+            soft=False,
+            mixed=False,
+            hard=True,
+            paths=["main.4"],
+        ),
+        [],
+        expect_exit=True,
+    )
+    run_case(
+        "reset HEAD nope.txt (untracked -> refuses)",
+        fresh(two_staged),
+        lambda: mk("HEAD", ["nope.txt"]),
+        [],
+        expect_exit=True,
+    )
+
+
+def case_restore_source():
+    from git_sim.restore import Restore
+
+    repo = fresh()
+    r = git.Repo(repo)
+    src = r.commit("HEAD~3").hexsha
+    run_case(
+        "restore --source HEAD~3 main.1",
+        repo,
+        lambda: Restore(files=["main.1"], staged=False, source="HEAD~3"),
+        [
+            (
+                "columns",
+                lambda c: c.cols
+                == ("Working directory", f"Restored from {src[:6]}", "----"),
+            ),
+            (
+                "file flows from the source into the working directory",
+                lambda c: c.zone_files["first"] == {"main.1"}
+                and c.zone_files["second"] == {"main.1"}
+                and c.zone_arrows["first"] == {"main.1"},
+            ),
+            ("HEAD unchanged", lambda c: c.refs().get("HEAD") == r.head.commit.hexsha),
+            ("title", lambda c: c.scene.cmd == "git restore --source HEAD~3 main.1"),
+        ],
+    )
+    run_case(
+        "restore --staged --source HEAD~3 main.1",
+        fresh(),
+        lambda: Restore(files=["main.1"], staged=True, source="HEAD~3"),
+        [
+            (
+                "note mentions the index",
+                lambda c: has_text(c, "index and working tree"),
+            ),
+            (
+                "title",
+                lambda c: c.scene.cmd == "git restore --staged --source HEAD~3 main.1",
+            ),
+        ],
+    )
+    run_case(
+        "restore --source HEAD~3 nope.txt (refuses)",
+        fresh(),
+        lambda: Restore(files=["nope.txt"], staged=False, source="HEAD~3"),
+        [],
+        expect_exit=True,
+    )
+
+
+def case_worktree():
+    from git_sim.enums import WorktreeSubCommand
+    from git_sim.worktree import Worktree
+
+    def with_wt(repo):
+        g(
+            repo,
+            "worktree",
+            "add",
+            "-q",
+            str(repo.parent / (repo.name + "_wt")),
+            "branch3",
+        )
+        (repo.parent / (repo.name + "_wt") / "scratch.txt").write_text("wip\n")
+
+    def with_stale_wt(repo):
+        with_wt(repo)
+        shutil.rmtree(repo.parent / (repo.name + "_wt"))
+
+    repo = fresh(with_wt, name="wt")
+    wt_name = repo.name + "_wt"
+    run_case(
+        "worktree list",
+        repo,
+        lambda: Worktree(
+            command=WorktreeSubCommand.LIST, path=None, branch=None, force=False
+        ),
+        [
+            ("columns", lambda c: c.cols == ("Worktree", "Branch", "State")),
+            (
+                "both worktrees listed with branches",
+                lambda c: {f"{repo.name}  (main)", wt_name} <= c.zone_files["first"]
+                and {"main", "branch3"} <= c.zone_files["second"],
+            ),
+            (
+                "dirty count shown",
+                lambda c: "1 uncommitted change(s)" in c.zone_files["third"],
+            ),
+            ("title", lambda c: c.scene.cmd == "git worktree list"),
+        ],
+    )
+    run_case(
+        "worktree add ../new_wt -b newbranch",
+        fresh(with_wt, name="wt"),
+        lambda: Worktree(
+            command=WorktreeSubCommand.ADD,
+            path="../new_wt",
+            branch="newbranch",
+            force=False,
+        ),
+        [
+            ("new row", lambda c: "new_wt  (new)" in c.zone_files["first"]),
+            (
+                "new branch flagged",
+                lambda c: "newbranch  (new branch)" in c.zone_files["second"],
+            ),
+            (
+                "note",
+                lambda c: has_text(
+                    c, "New worktree at ../new_wt on new branch 'newbranch'"
+                ),
+            ),
+        ],
+    )
+    run_case(
+        "worktree add -b newbranch ../new_wt",
+        fresh(with_wt, name="wt"),
+        lambda: Worktree(
+            command=WorktreeSubCommand.ADD,
+            path="../new_wt",
+            branch=None,
+            force=False,
+            new_branch="newbranch",
+        ),
+        [
+            (
+                "new branch flagged",
+                lambda c: "newbranch  (new branch)" in c.zone_files["second"],
+            ),
+            (
+                "title",
+                lambda c: c.scene.cmd == "git worktree add -b newbranch ../new_wt",
+            ),
+        ],
+    )
+    run_case(
+        "worktree add -b branch3 (exists -> refuses)",
+        fresh(with_wt, name="wt"),
+        lambda: Worktree(
+            command=WorktreeSubCommand.ADD,
+            path="../new_wt",
+            branch=None,
+            force=False,
+            new_branch="branch3",
+        ),
+        [],
+        expect_exit=True,
+    )
+    repo2 = fresh(with_wt, name="wt")
+    wt2 = repo2.name + "_wt"
+    run_case(
+        "worktree remove <dirty> (refuses without --force)",
+        repo2,
+        lambda: Worktree(
+            command=WorktreeSubCommand.REMOVE, path=wt2, branch=None, force=False
+        ),
+        [
+            (
+                "refusal row",
+                lambda c: "refused: 1 uncommitted change(s)" in c.zone_files["third"],
+            ),
+            ("note about --force", lambda c: has_text(c, "--force would delete them")),
+        ],
+    )
+    repo3 = fresh(with_wt, name="wt")
+    wt3 = repo3.name + "_wt"
+    run_case(
+        "worktree remove --force <dirty>",
+        repo3,
+        lambda: Worktree(
+            command=WorktreeSubCommand.REMOVE, path=wt3, branch=None, force=True
+        ),
+        [
+            (
+                "removed row",
+                lambda c: "REMOVED (1 change(s) deleted)" in c.zone_files["third"],
+            ),
+            (
+                "row struck through",
+                lambda c: any(
+                    s for t, s in c.column_texts("first") if t.startswith(wt3)
+                ),
+            ),
+            ("title", lambda c: c.scene.cmd == f"git worktree remove --force {wt3}"),
+        ],
+    )
+    run_case(
+        "worktree remove <unknown> (refuses)",
+        fresh(with_wt, name="wt"),
+        lambda: Worktree(
+            command=WorktreeSubCommand.REMOVE, path="nope", branch=None, force=False
+        ),
+        [],
+        expect_exit=True,
+    )
+    run_case(
+        "worktree prune (stale entry)",
+        fresh(with_stale_wt, name="wt"),
+        lambda: Worktree(
+            command=WorktreeSubCommand.PRUNE, path=None, branch=None, force=False
+        ),
+        [
+            (
+                "pruned row",
+                lambda c: "PRUNED (directory missing)" in c.zone_files["third"],
+            ),
+        ],
+    )
+    run_case(
+        "worktree prune (nothing stale)",
+        fresh(with_wt, name="wt"),
+        lambda: Worktree(
+            command=WorktreeSubCommand.PRUNE, path=None, branch=None, force=False
+        ),
+        [("nothing-to-prune note", lambda c: has_text(c, "Nothing to prune"))],
+    )
+
+
+def case_reflog():
+    from git_sim.reflog import Reflog
+
+    def orphan(repo):
+        (repo / "lost.txt").write_text("lost\n")
+        g(repo, "add", "lost.txt")
+        g(repo, "commit", "-q", "-m", "commit that will be lost")
+        g(repo, "reset", "-q", "--hard", "HEAD~1")
+
+    repo = fresh(orphan)
+    r = git.Repo(repo)
+    lost = r.git.rev_parse("HEAD@{1}")
+    run_case(
+        "reflog (after reset --hard)",
+        repo,
+        lambda: Reflog(n=5),
+        [
+            (
+                "HEAD@{0..4} labels drawn",
+                lambda c: {f"HEAD@{{{i}}}" for i in range(5)} <= set(c.scene.drawnRefs),
+            ),
+            ("lost commit drawn", lambda c: lost in c.commits()),
+            (
+                "HEAD@{1} sits on the lost commit",
+                lambda c: c.refs().get("HEAD@{1}") == lost,
+            ),
+            (
+                "recovery note names HEAD@{1}",
+                lambda c: has_text(c, "git reset --hard HEAD@{1}"),
+            ),
+            ("title", lambda c: c.scene.cmd == "git reflog"),
+        ],
+    )
+    run_case(
+        "reflog -n 2 (all reachable)",
+        fresh(),
+        lambda: Reflog(n=2),
+        [
+            (
+                "two labels",
+                lambda c: {"HEAD@{0}", "HEAD@{1}"} <= set(c.scene.drawnRefs),
+            ),
+            ("all-reachable note", lambda c: has_text(c, "still reachable")),
+            ("title", lambda c: c.scene.cmd == "git reflog -n 2"),
+        ],
+    )
+
+
+def case_submodule():
+    from git_sim.enums import SubmoduleSubCommand
+    from git_sim.submodule import Submodule
+
+    lib = base_repo()  # reused as the submodule's upstream
+
+    def with_sub(repo):
+        g(
+            repo,
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            "-q",
+            str(lib),
+            "lib",
+        )
+        g(repo, "commit", "-q", "-m", "add lib submodule")
+
+    def with_uninit_sub(repo):
+        with_sub(repo)
+        g(repo, "submodule", "deinit", "-q", "-f", "lib")
+
+    pinned = git.Repo(lib).head.commit.hexsha[:6]
+    run_case(
+        "submodule status",
+        fresh(with_sub, name="sub"),
+        lambda: Submodule(
+            command=SubmoduleSubCommand.STATUS,
+            url_or_path=None,
+            path=None,
+            init=False,
+            force=False,
+        ),
+        [
+            ("columns", lambda c: c.cols == ("Submodule", "Pinned commit", "State")),
+            (
+                "lib row with pin",
+                lambda c: c.zone_files["first"] == {"lib"}
+                and c.zone_files["second"] == {pinned},
+            ),
+            ("up to date", lambda c: c.zone_files["third"] == {"up to date"}),
+            ("title", lambda c: c.scene.cmd == "git submodule status"),
+        ],
+    )
+    run_case(
+        "submodule status (none configured)",
+        fresh(name="sub"),
+        lambda: Submodule(
+            command=SubmoduleSubCommand.STATUS,
+            url_or_path=None,
+            path=None,
+            init=False,
+            force=False,
+        ),
+        [("no-submodules note", lambda c: has_text(c, "No submodules are configured"))],
+    )
+    run_case(
+        "submodule add <url> vendor/lib",
+        fresh(name="sub"),
+        lambda: Submodule(
+            command=SubmoduleSubCommand.ADD,
+            url_or_path="https://example.com/lib.git",
+            path="vendor/lib",
+            init=False,
+            force=False,
+        ),
+        [
+            ("new row", lambda c: "vendor/lib  (new)" in c.zone_files["first"]),
+            (
+                "note",
+                lambda c: has_text(c, "a pinned commit, not the files, is recorded"),
+            ),
+            (
+                "title",
+                lambda c: c.scene.cmd
+                == "git submodule add https://example.com/lib.git vendor/lib",
+            ),
+        ],
+    )
+    run_case(
+        "submodule add (path defaults to repo name)",
+        fresh(name="sub"),
+        lambda: Submodule(
+            command=SubmoduleSubCommand.ADD,
+            url_or_path="https://example.com/lib.git",
+            path=None,
+            init=False,
+            force=False,
+        ),
+        [("path from url", lambda c: c.scene.path == "lib")],
+    )
+    run_case(
+        "submodule add existing path (refuses)",
+        fresh(with_sub, name="sub"),
+        lambda: Submodule(
+            command=SubmoduleSubCommand.ADD,
+            url_or_path="x",
+            path="lib",
+            init=False,
+            force=False,
+        ),
+        [],
+        expect_exit=True,
+    )
+    run_case(
+        "submodule update (uninitialized -> skipped)",
+        fresh(with_uninit_sub, name="sub"),
+        lambda: Submodule(
+            command=SubmoduleSubCommand.UPDATE,
+            url_or_path=None,
+            path=None,
+            init=False,
+            force=False,
+        ),
+        [
+            (
+                "skipped row",
+                lambda c: "skipped (not initialized; use --init)"
+                in c.zone_files["third"],
+            )
+        ],
+    )
+    run_case(
+        "submodule update --init",
+        fresh(with_uninit_sub, name="sub"),
+        lambda: Submodule(
+            command=SubmoduleSubCommand.UPDATE,
+            url_or_path=None,
+            path=None,
+            init=True,
+            force=False,
+        ),
+        [
+            (
+                "initialized row",
+                lambda c: "initialized + checked out" in c.zone_files["third"],
+            ),
+            ("title", lambda c: c.scene.cmd == "git submodule update --init"),
+        ],
+    )
+    run_case(
+        "submodule init",
+        fresh(with_uninit_sub, name="sub"),
+        lambda: Submodule(
+            command=SubmoduleSubCommand.INIT,
+            url_or_path=None,
+            path=None,
+            init=False,
+            force=False,
+        ),
+        [
+            (
+                "init row",
+                lambda c: "initialized (url copied to .git/config)"
+                in c.zone_files["third"],
+            )
+        ],
+    )
+    run_case(
+        "submodule deinit lib",
+        fresh(with_sub, name="sub"),
+        lambda: Submodule(
+            command=SubmoduleSubCommand.DEINIT,
+            url_or_path="lib",
+            path=None,
+            init=False,
+            force=False,
+        ),
+        [
+            (
+                "deinit row struck",
+                lambda c: "DEINITIALIZED (working tree emptied)"
+                in c.zone_files["third"],
+            ),
+            ("title", lambda c: c.scene.cmd == "git submodule deinit lib"),
+        ],
+    )
+    run_case(
+        "submodule deinit nope (refuses)",
+        fresh(with_sub, name="sub"),
+        lambda: Submodule(
+            command=SubmoduleSubCommand.DEINIT,
+            url_or_path="nope",
+            path=None,
+            init=False,
+            force=False,
+        ),
+        [],
+        expect_exit=True,
+    )
+
+
 for fn in (
     case_log,
     case_reset,
@@ -1426,6 +2500,19 @@ for fn in (
     case_zones,
     case_remote_ops,
     case_meta,
+    case_branch_flags,
+    case_stash_flags,
+    case_push_flags,
+    case_rebase_flags,
+    case_clean_flags,
+    case_cherry_pick_flags,
+    case_revert_flags,
+    case_commit_flags,
+    case_reset_paths,
+    case_restore_source,
+    case_worktree,
+    case_reflog,
+    case_submodule,
 ):
     try:
         fn()
