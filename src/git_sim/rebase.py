@@ -349,7 +349,16 @@ class Rebase(GitSimBaseCommand):
         self.drawnCommits[sha] = circle
         self.toFadeOut.add(circle)
         self.tag_commit(
-            circle, sha, phase="after", message=commitMessage, parents=child
+            circle,
+            sha,
+            phase="after",
+            message=(
+                "Older replayed commits are not shown."
+                if commitMessage == "..."
+                else commitMessage
+            ),
+            parents=child,
+            kind="elided" if commitMessage == "..." else "commit",
         )
         self.tag(commitId, role="commit-label", sha=sha, phase="after")
         self.tag(message, role="commit-label", sha=sha, phase="after")

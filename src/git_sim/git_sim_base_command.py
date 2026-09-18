@@ -57,7 +57,6 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         self.logo = m.ImageMobject(settings.logo)
         self.logo.width = 3
-        self.hide_first_tag = settings.hide_first_tag
 
         self.fill_opacity = 0.25
         self.ref_fill_opacity = 0.25
@@ -446,8 +445,6 @@ class GitSimBaseCommand(m.MovingCameraScene):
             isNewCommit = True
         if isNewCommit:
             self.paint_commit_for_lane(circle, kind)
-        if commit != "dark":
-            self.tag_commit(circle, commit, kind=kind)
 
         if isNewCommit:
             start = (
@@ -466,9 +463,6 @@ class GitSimBaseCommand(m.MovingCameraScene):
             end = self.drawnCommits[commit.hexsha].get_center()
 
         arrow = self.lane_arrow(start, end)
-        if commit != "dark":
-            child_sha = (getattr(prevCircle, "meta", None) or {}).get("sha", "")
-            self.tag(arrow, role="edge", src=child_sha, dst=commit.hexsha, phase="before")
 
         if commit == "dark":
             arrow = m.Arrow(start, end, color=self.theme.bg)
@@ -509,23 +503,51 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.wrap_message(commitMessage),
             font=self.font,
             font_size=20 if settings.highlight_commit_messages else 14,
-            color=self.fontColor if settings.highlight_commit_messages else self.mutedColor,
-            weight=m.BOLD
-            if settings.highlight_commit_messages
-            or settings.style == StyleOptions.THICK
-            else m.NORMAL,
+            color=(
+                self.fontColor
+                if settings.highlight_commit_messages
+                else self.mutedColor
+            ),
+            weight=(
+                m.BOLD
+                if settings.highlight_commit_messages
+                or settings.style == StyleOptions.THICK
+                else m.NORMAL
+            ),
         ).next_to(circle, m.DOWN)
         if commit != "dark":
+            # Tag after build_commit_id_and_message: a scene may show this
+            # position as a "..." placeholder for skipped commits, or swap in
+            # the commit it really wants drawn there (reset/revert targets),
+            # and the hover data must describe what is actually shown.
+            if commitMessage == "...":
+                self.tag(
+                    circle,
+                    role="commit",
+                    kind="elided",
+                    phase="before",
+                    sha=commit.hexsha,
+                    parents=" ".join(p.hexsha for p in commit.parents),
+                    message="Older commits between these two are not shown.",
+                )
+            else:
+                self.tag_commit(circle, commit, kind=kind)
             self.tag(commitId, role="commit-label", sha=commit.hexsha, phase="before")
             self.tag(message, role="commit-label", sha=commit.hexsha, phase="before")
+            child_sha = (getattr(prevCircle, "meta", None) or {}).get("sha", "")
+            self.tag(
+                arrow, role="edge", src=child_sha, dst=commit.hexsha, phase="before"
+            )
 
         if settings.animate and commit != "dark" and isNewCommit:
             self.play(
                 self.camera.frame.animate.move_to(circle.get_center()),
                 m.Create(circle),
-                m.Text("")
-                if settings.highlight_commit_messages
-                else m.AddTextLetterByLetter(commitId),
+                (
+                    m.Text("")
+                    if settings.highlight_commit_messages
+                    else m.AddTextLetterByLetter(commitId)
+                ),
                 m.AddTextLetterByLetter(message),
                 run_time=1 / settings.speed,
             )
@@ -679,9 +701,6 @@ class GitSimBaseCommand(m.MovingCameraScene):
     def draw_tag(self, commit, i):
         x = 0
 
-        if self.hide_first_tag and i == 0:
-            return
-
         for tag in self.repo.tags:
             try:
                 if commit.hexsha == tag.commit.hexsha:
@@ -691,9 +710,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     self.center_label(tagText, tagRec)
 
                     fulltag = m.VGroup(tagRec, tagText)
-                    self.tag(fulltag, role="ref", name=tag.name, kind="tag", phase="before")
+                    self.tag(
+                        fulltag, role="ref", name=tag.name, kind="tag", phase="before"
+                    )
 
-                    self.prevRef = tagRec
+                    self.prevRef = fulltag
 
                     if settings.animate:
                         self.play(
@@ -770,6 +791,15 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.camera.frame.scale_to_fit_height(self.camera.frame.get_height() * 2)
 
         try:
+            # The graph sits 2.25 below the frame's top edge and the zone
+            # table's header rule 1.75 above its center. A tall label stack
+            # can need more room than that leaves: widen the frame first.
+            needed = 2 * (self.toFadeOut.get_height() + 2.25 + 1.75 + 0.1)
+            if needed > self.camera.frame.get_height():
+                if settings.animate:
+                    self.play(self.camera.frame.animate.scale_to_fit_height(needed))
+                else:
+                    self.camera.frame.scale_to_fit_height(needed)
             if settings.animate:
                 self.play(
                     self.toFadeOut.animate.align_to(self.camera.frame, m.UP).shift(
@@ -1042,6 +1072,22 @@ class GitSimBaseCommand(m.MovingCameraScene):
             else:
                 self.add(*[s for s in thirdColumnFiles])
 
+        # The separators start at the frame's bottom edge, but a long file list
+        # can run past it: extend them to the last row.
+        rows = [
+            t
+            for group in (firstColumnFiles, secondColumnFiles, thirdColumnFiles)
+            for t in group
+        ]
+        if rows:
+            lowest = min(t.get_bottom()[1] for t in rows) - 0.6
+            for vert in (vert1, vert2):
+                start, end = vert.get_start(), vert.get_end()
+                bottom, top = (start, end) if start[1] < end[1] else (end, start)
+                if lowest < bottom[1]:
+                    vert.put_start_and_end_on((bottom[0], lowest, 0), top)
+        self.zoneSeparators = (vert1, vert2)
+
         for filename in firstColumnArrowMap:
             if reverse:
                 firstColumnArrowMap[filename].put_start_and_end_on(
@@ -1177,104 +1223,160 @@ class GitSimBaseCommand(m.MovingCameraScene):
         else:
             self.camera.frame.move_to(self.drawnCommits[commit.hexsha].get_center())
 
+    # ------------------------------------------------------------- moving labels
+    def refs_on(self, hexsha):
+        """The ref labels currently stacked on a drawn commit."""
+        return list(self.drawnRefsByCommit.get(hexsha, []))
+
+    def commit_holding(self, ref):
+        """The hexsha whose label stack contains ``ref`` (None if unknown)."""
+        for hexsha, refs in self.drawnRefsByCommit.items():
+            if any(r is ref for r in refs):
+                return hexsha
+        return None
+
+    def ref_name(self, ref):
+        for name, drawn in self.drawnRefs.items():
+            if drawn is ref:
+                return name
+        return None
+
+    def stack_top(self, hexsha, exclude=()):
+        """What the next label on ``hexsha`` stacks above: the highest label
+        already there (ignoring ``exclude``), else the commit's id text, else
+        its disc. None when the commit isn't drawn."""
+        refs = [r for r in self.refs_on(hexsha) if not any(r is e for e in exclude)]
+        if refs:
+            return max(refs, key=lambda r: r.get_top()[1])
+        return self.drawnCommitIds.get(hexsha) or self.drawnCommits.get(hexsha)
+
+    def move_refs(
+        self,
+        names,
+        hexsha=None,
+        above=None,
+        shift=numpy.array([0.0, 0.0, 0.0]),
+        offsets=(),
+    ):
+        """Slide the labels ``names`` (listed bottom to top) onto commit
+        ``hexsha``, or onto the mobject ``above``. They stack on top of
+        whatever already sits there rather than covering it, and the labels
+        they leave behind close ranks so no gap remains where they were.
+        ``offsets`` are the classic heights above the commit's center, used
+        when the commit has no other labels (keeps plain layouts as they
+        always were). Labels already on the target stay put."""
+        moving = []
+        for i, name in enumerate(names):
+            ref = self.drawnRefs.get(name)
+            if ref is None:
+                continue
+            if hexsha is not None and self.commit_holding(ref) == hexsha:
+                continue
+            moving.append((name, ref, offsets[i] if i < len(offsets) else None))
+        if not moving:
+            return
+        refs = [ref for _, ref, _ in moving]
+
+        # Whoever stays behind on the commits these labels came from.
+        origins = {self.commit_holding(ref) for ref in refs} - {None, hexsha}
+        left_behind = {
+            h: sorted(
+                (r for r in self.refs_on(h) if not any(r is x for x in refs)),
+                key=lambda r: r.get_center()[1],
+            )
+            for h in origins
+        }
+        staying = [self.ref_name(r) for rs in left_behind.values() for r in rs]
+        snapshot = self.snapshot_refs(*names, *[n for n in staying if n])
+
+        # Where each moving label ends up.
+        if above is None:
+            above = self.stack_top(hexsha, exclude=refs)
+        landing_on_labels = above is not None and any(
+            above is r for r in (self.refs_on(hexsha) if hexsha is not None else [])
+        )
+        commit = self.drawnCommits.get(hexsha) if hexsha is not None else None
+        use_offsets = (
+            commit is not None
+            and not landing_on_labels
+            and all(off is not None for _, _, off in moving)
+        )
+        targets = []
+        if use_offsets:
+            for _, ref, off in moving:
+                point = numpy.array(
+                    [
+                        commit.get_center()[0] + shift[0],
+                        commit.get_center()[1] + off + shift[1],
+                        0.0,
+                    ]
+                )
+                targets.append((ref, point))
+        else:
+            prev = above
+            for _, ref, _ in moving:
+                ghost = ref.copy().next_to(prev, m.UP)
+                targets.append((ref, ghost.get_center()))
+                prev = ghost
+
+        # Labels left behind drop down to sit right above their commit again.
+        for h, rest in left_behind.items():
+            prev = self.drawnCommitIds.get(h) or self.drawnCommits.get(h)
+            for ref in rest:
+                if prev is None:
+                    break
+                ghost = ref.copy().next_to(prev, m.UP)
+                if numpy.linalg.norm(ghost.get_center() - ref.get_center()) > 1e-6:
+                    targets.append((ref, ghost.get_center()))
+                prev = ghost
+
+        if settings.animate:
+            self.play(*[ref.animate.move_to(point) for ref, point in targets])
+        else:
+            for ref, point in targets:
+                ref.move_to(point)
+
+        # Keep the per-commit stacks current for whatever moves or draws next.
+        for h in origins:
+            self.drawnRefsByCommit[h] = [
+                r for r in self.refs_on(h) if not any(r is x for x in refs)
+            ]
+        target_sha = hexsha if hexsha is not None else self.commit_holding(above)
+        if target_sha is not None:
+            for ref in refs:
+                self.add_ref_to_drawn_refs_by_commit(target_sha, ref)
+        self.tag_moves(snapshot)
+
+        # A taller stack can poke out of a frame that was fitted before the
+        # move; refit only then, so plain layouts keep their framing.
+        frame = self.camera.frame
+        if (
+            self.toFadeOut.get_top()[1] > frame.get_top()[1]
+            or self.toFadeOut.get_bottom()[1] < frame.get_bottom()[1]
+        ):
+            self.recenter_frame()
+            self.scale_frame()
+
     def reset_head_branch(self, hexsha, shift=numpy.array([0.0, 0.0, 0.0])):
         if not self.head_exists():
             return
-        moved = self.snapshot_refs("HEAD", self.repo.active_branch.name)
-
-        if settings.animate:
-            self.play(
-                self.drawnRefs["HEAD"].animate.move_to(
-                    (
-                        self.drawnCommits[hexsha].get_center()[0] + shift[0],
-                        self.drawnCommits[hexsha].get_center()[1] + 1.4 + shift[1],
-                        0,
-                    )
-                ),
-                self.drawnRefs[self.repo.active_branch.name].animate.move_to(
-                    (
-                        self.drawnCommits[hexsha].get_center()[0] + shift[0],
-                        self.drawnCommits[hexsha].get_center()[1] + 2 + shift[1],
-                        0,
-                    )
-                ),
-            )
-        else:
-            self.drawnRefs["HEAD"].move_to(
-                (
-                    self.drawnCommits[hexsha].get_center()[0] + shift[0],
-                    self.drawnCommits[hexsha].get_center()[1] + 1.4 + shift[1],
-                    0,
-                )
-            )
-            self.drawnRefs[self.repo.active_branch.name].move_to(
-                (
-                    self.drawnCommits[hexsha].get_center()[0] + shift[0],
-                    self.drawnCommits[hexsha].get_center()[1] + 2 + shift[1],
-                    0,
-                )
-            )
-        self.tag_moves(moved)
+        self.move_refs(
+            ["HEAD", self.repo.active_branch.name],
+            hexsha,
+            shift=shift,
+            offsets=(1.4, 2.0),
+        )
 
     def reset_head(self, hexsha, shift=numpy.array([0.0, 0.0, 0.0])):
-        moved = self.snapshot_refs("HEAD")
-        if settings.animate:
-            self.play(
-                self.drawnRefs["HEAD"].animate.move_to(
-                    (
-                        self.drawnCommits[hexsha].get_center()[0] + shift[0],
-                        self.drawnCommits[hexsha].get_center()[1] + 2.0 + shift[1],
-                        0,
-                    )
-                ),
-            )
-        else:
-            self.drawnRefs["HEAD"].move_to(
-                (
-                    self.drawnCommits[hexsha].get_center()[0] + shift[0],
-                    self.drawnCommits[hexsha].get_center()[1] + 2.0 + shift[1],
-                    0,
-                )
-            )
-        self.tag_moves(moved)
+        self.move_refs(["HEAD"], hexsha, shift=shift, offsets=(1.4,))
 
     def reset_branch(self, hexsha, shift=numpy.array([0.0, 0.0, 0.0])):
-        moved = self.snapshot_refs(self.repo.active_branch.name)
-        if settings.animate:
-            self.play(
-                self.drawnRefs[self.repo.active_branch.name].animate.move_to(
-                    (
-                        self.drawnCommits[hexsha].get_center()[0] + shift[0],
-                        self.drawnCommits[hexsha].get_center()[1] + 1.4 + shift[1],
-                        0,
-                    )
-                ),
-            )
-        else:
-            self.drawnRefs[self.repo.active_branch.name].move_to(
-                (
-                    self.drawnCommits[hexsha].get_center()[0] + shift[0],
-                    self.drawnCommits[hexsha].get_center()[1] + 1.4 + shift[1],
-                    0,
-                )
-            )
-        self.tag_moves(moved)
+        self.move_refs(
+            [self.repo.active_branch.name], hexsha, shift=shift, offsets=(1.4,)
+        )
 
     def reset_head_branch_to_ref(self, ref, shift=numpy.array([0.0, 0.0, 0.0])):
-        moved = self.snapshot_refs("HEAD", self.repo.active_branch.name)
-        if settings.animate:
-            self.play(self.drawnRefs["HEAD"].animate.next_to(ref, m.UP))
-            self.play(
-                self.drawnRefs[self.repo.active_branch.name].animate.next_to(
-                    self.drawnRefs["HEAD"], m.UP
-                )
-            )
-        else:
-            self.drawnRefs["HEAD"].next_to(ref, m.UP)
-            self.drawnRefs[self.repo.active_branch.name].next_to(
-                self.drawnRefs["HEAD"], m.UP
-            )
-        self.tag_moves(moved)
+        self.move_refs(["HEAD", self.repo.active_branch.name], above=ref)
 
     def translate_frame(self, shift):
         if settings.animate:
@@ -1298,7 +1400,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         if color in (m.GRAY, "merge"):
             circle = self.commit_circle("merge")
         else:
-            circle = self.commit_circle("commit", fill=None if color == m.RED else color)
+            circle = self.commit_circle(
+                "commit", fill=None if color == m.RED else color
+            )
         if child_key != "dark":
             circle.next_to(
                 self.drawnCommits[child_key],
@@ -1433,6 +1537,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.toFadeOut.add(ref)
         self.drawnRefs[text] = ref
         self.prevRef = ref
+        if hasattr(commit, "hexsha"):
+            self.add_ref_to_drawn_refs_by_commit(commit.hexsha, ref)
 
         if i == 0 and self.first_parse:
             self.topref = self.prevRef
@@ -1645,9 +1751,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         deletion orphaned M commits, ...)."""
         if not lines:
             return
-        top = max(
-            (e.get_top()[1] for e in self.toFadeOut if e.has_points()), default=0
-        )
+        top = max((e.get_top()[1] for e in self.toFadeOut if e.has_points()), default=0)
         texts = []
         for k, item in enumerate(lines):
             text, text_color = (item, color) if isinstance(item, str) else item
@@ -1659,7 +1763,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 weight=m.BOLD,
             )
             mob.move_to(
-                [self.camera.frame.get_center()[0], top + gap + 0.5 * (len(lines) - k), 0]
+                [
+                    self.camera.frame.get_center()[0],
+                    top + gap + 0.5 * (len(lines) - k),
+                    0,
+                ]
             )
             texts.append(mob)
         self.toFadeOut.add(*texts)

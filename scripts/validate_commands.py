@@ -1,4 +1,4 @@
-"""Validate every git-sim subcommand against git ground truth.
+﻿"""Validate every git-sim subcommand against git ground truth.
 
 Usage: python scripts/validate_commands.py [image-output-dir]
 Needs the dev environment (git-dummy, skia). Prints a PASS/FAIL table.
@@ -510,7 +510,6 @@ def case_reset():
                     ),
                 ),
             ],
-            hide_first_tag=True,
         )
 
 
@@ -551,7 +550,6 @@ def case_commit():
                 lambda c: c.cols == ("Working directory", "Staged files", "New commit"),
             ),
         ],
-        hide_first_tag=True,
     )
 
     repo2 = fresh()
@@ -583,7 +581,6 @@ def case_commit():
             ),
             ("amended message drawn", lambda c: "Amended message" in c.text_values()),
         ],
-        hide_first_tag=True,
     )
 
 
@@ -781,7 +778,6 @@ def case_revert():
                 and c.cols[1] == "Changes reverted from",
             ),
         ],
-        hide_first_tag=True,
     )
 
 
@@ -956,7 +952,6 @@ def case_zones():
                 == ("Untracked files", "Modified files", "Staged files"),
             ),
         ],
-        hide_first_tag=True,
         allow_no_commits=True,
     )
     run_case(
@@ -971,7 +966,6 @@ def case_zones():
                 and not c.zone_arrows["second"],
             ),
         ],
-        hide_first_tag=True,
     )
     run_case(
         "add untracked.txt main.3",
@@ -989,7 +983,6 @@ def case_zones():
             ),
             ("title", lambda c: c.scene.cmd == "git add untracked.txt main.3"),
         ],
-        hide_first_tag=True,
     )
     run_case(
         "add nope.txt (refuses)",
@@ -997,7 +990,6 @@ def case_zones():
         lambda: Add(files=["nope.txt"]),
         [],
         expect_exit=True,
-        hide_first_tag=True,
     )
     run_case(
         "restore main.3",
@@ -1015,7 +1007,6 @@ def case_zones():
                 == ("Staging area", "Modified files", "Deleted changes"),
             ),
         ],
-        hide_first_tag=True,
     )
     run_case(
         "restore --staged main.4",
@@ -1028,7 +1019,6 @@ def case_zones():
                 and c.zone_arrows["first"] == {"main.4"},
             ),
         ],
-        hide_first_tag=True,
     )
     run_case(
         "rm main.1",
@@ -1047,7 +1037,6 @@ def case_zones():
                 == ("Working directory", "Staging area", "Removed files"),
             ),
         ],
-        hide_first_tag=True,
     )
     run_case(
         "rm main.4 (staged file)",
@@ -1060,7 +1049,6 @@ def case_zones():
                 and c.zone_arrows["second"] == {"main.4"},
             ),
         ],
-        hide_first_tag=True,
     )
     run_case(
         "rm nope.txt (refuses)",
@@ -1068,7 +1056,6 @@ def case_zones():
         lambda: Rm(files=["nope.txt"]),
         [],
         expect_exit=True,
-        hide_first_tag=True,
     )
     run_case(
         "mv main.1 main.100",
@@ -1085,7 +1072,6 @@ def case_zones():
                 lambda c: not any(t == "main.1" for t, _ in c.column_texts("third")),
             ),
         ],
-        hide_first_tag=True,
     )
     run_case(
         "mv nope.txt x (should refuse)",
@@ -1093,7 +1079,6 @@ def case_zones():
         lambda: Mv(file="nope.txt", new_file="x"),
         [],
         expect_exit=True,
-        hide_first_tag=True,
     )
     run_case(
         "clean",
@@ -1107,7 +1092,6 @@ def case_zones():
                 and c.zone_arrows["first"] == st["untracked"],
             ),
         ],
-        hide_first_tag=True,
     )
     run_case(
         "stash",
@@ -1126,7 +1110,6 @@ def case_zones():
                 == ("Working directory", "Staging area", "Stashed changes"),
             ),
         ],
-        hide_first_tag=True,
     )
     run_case(
         "stash push main.3",
@@ -1139,7 +1122,6 @@ def case_zones():
                 and c.zone_arrows["first"] == {"main.3"},
             ),
         ],
-        hide_first_tag=True,
     )
     run_case(
         "stash pop",
@@ -1153,7 +1135,6 @@ def case_zones():
                 and all(s for _, s in c.column_texts("third")),
             ),
         ],
-        hide_first_tag=True,
     )
     run_case(
         "stash apply",
@@ -1166,7 +1147,6 @@ def case_zones():
                 and not any(s for _, s in c.column_texts("third")),
             ),
         ],
-        hide_first_tag=True,
     )
     run_case(
         "stash pop 3 (missing index, should refuse)",
@@ -1174,7 +1154,6 @@ def case_zones():
         lambda: Stash(files=[], command=StashSubCommand.POP, stash_index="3"),
         [],
         expect_exit=True,
-        hide_first_tag=True,
     )
 
 

@@ -18,8 +18,13 @@ The git-sim MCP (Model Context Protocol) server gives any MCP client
   visually.
   Pass `interactive=true` to get a self-contained HTML page instead of an
   image: hover details, pan/zoom and a Before/After toggle that replays the
-  operation (step by step for multi-action commands). The CLI equivalent is
-  `git-sim --interactive <command>`.
+  operation (step by step for multi-action commands). Both tools render a
+  jpg by default so the agent can look at the result; the CLI itself writes
+  the interactive page by default. The page's Share button produces a link
+  to the hosted viewer (`initialcommit.com/tools/git-sim/view`) with the graph
+  compressed in the URL fragment, so the repository's data never reaches the
+  server; the viewer's stylesheet, script and header are exported from
+  `git_sim/render/html.py` with `python -m git_sim.render.html <dir>`.
 
 Both tools are strictly read-only with respect to the repository.
 

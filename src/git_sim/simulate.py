@@ -56,6 +56,8 @@ def _media_dir() -> str:
 def _run_git_sim(
     cli_args: List[str], repo_path: str, img_format: str = None
 ) -> subprocess.CompletedProcess:
+    # The CLI's default output is the interactive page; agents and hooks want
+    # a picture they can look at, so an image format is always passed.
     cmd = [
         sys.executable,
         "-m",
@@ -64,9 +66,9 @@ def _run_git_sim(
         "--output-only-path",
         "--media-dir",
         _media_dir(),
+        "--img-format",
+        img_format or "jpg",
     ]
-    if img_format:
-        cmd += ["--img-format", img_format]
     cmd += list(cli_args)
     return subprocess.run(
         cmd,
@@ -78,8 +80,8 @@ def _run_git_sim(
 
 
 def render_simulation(command: str, repo_path: str, img_format: str = None) -> dict:
-    """Render a git-sim image (or, with img_format="html", a self-contained
-    interactive page) for the given git command.
+    """Render a git-sim image (jpg unless img_format says otherwise; "html"
+    gives the self-contained interactive page) for the given git command.
 
     Tries the command verbatim first; if git-sim rejects an option git-sim
     doesn't support, retries with positional arguments only so the user still

@@ -33,7 +33,6 @@ def add(
 ):
     from git_sim.add import Add
 
-    settings.hide_first_tag = True
     scene = Add(files=files)
     handle_animations(scene=scene)
 
@@ -47,8 +46,12 @@ def branch(
         default=None,
         help="With -m: the new name for the branch",
     ),
-    d: bool = typer.Option(False, "-d", "--delete", help="Delete the branch (refused if unmerged)"),
-    D: bool = typer.Option(False, "-D", help="Force-delete the branch even if unmerged"),
+    d: bool = typer.Option(
+        False, "-d", "--delete", help="Delete the branch (refused if unmerged)"
+    ),
+    D: bool = typer.Option(
+        False, "-D", help="Force-delete the branch even if unmerged"
+    ),
     m: bool = typer.Option(False, "-m", "--move", help="Rename the branch to NEW_NAME"),
 ):
     from git_sim.branch import Branch
@@ -99,14 +102,17 @@ def cherry_pick(
 
 
 def clean(
-    force: bool = typer.Option(False, "-f", "--force", help="Actually delete (git refuses without -f or -n)"),
-    dry_run: bool = typer.Option(False, "-n", "--dry-run", help="Show what would be deleted"),
+    force: bool = typer.Option(
+        False, "-f", "--force", help="Actually delete (git refuses without -f or -n)"
+    ),
+    dry_run: bool = typer.Option(
+        False, "-n", "--dry-run", help="Show what would be deleted"
+    ),
     d: bool = typer.Option(False, "-d", help="Also remove untracked directories"),
     x: bool = typer.Option(False, "-x", help="Also remove ignored files"),
 ):
     from git_sim.clean import Clean
 
-    settings.hide_first_tag = True
     scene = Clean(force=force, dry_run=dry_run, directories=d, ignored=x)
     handle_animations(scene=scene)
 
@@ -152,7 +158,6 @@ def commit(
 ):
     from git_sim.commit import Commit
 
-    settings.hide_first_tag = True
     scene = Commit(message=message, amend=amend, no_edit=no_edit, all=all)
     handle_animations(scene=scene)
 
@@ -252,7 +257,6 @@ def mv(
 ):
     from git_sim.mv import Mv
 
-    settings.hide_first_tag = True
     scene = Mv(file=file, new_file=new_file)
     handle_animations(scene=scene)
 
@@ -387,8 +391,9 @@ def reset(
 ):
     from git_sim.reset import Reset
 
-    settings.hide_first_tag = True
-    scene = Reset(commit=commit, mode=mode, soft=soft, mixed=mixed, hard=hard, paths=paths)
+    scene = Reset(
+        commit=commit, mode=mode, soft=soft, mixed=mixed, hard=hard, paths=paths
+    )
     handle_animations(scene=scene)
 
 
@@ -411,7 +416,6 @@ def restore(
 ):
     from git_sim.restore import Restore
 
-    settings.hide_first_tag = True
     scene = Restore(files=files, staged=staged, source=source)
     handle_animations(scene=scene)
 
@@ -436,7 +440,6 @@ def revert(
 ):
     from git_sim.revert import Revert
 
-    settings.hide_first_tag = True
     scene = Revert(commit=commit, mainline=mainline, no_commit=no_commit)
     handle_animations(scene=scene)
 
@@ -449,7 +452,6 @@ def rm(
 ):
     from git_sim.rm import Rm
 
-    settings.hide_first_tag = True
     scene = Rm(files=files)
     handle_animations(scene=scene)
 
@@ -470,7 +472,6 @@ def stash(
 ):
     from git_sim.stash import Stash
 
-    settings.hide_first_tag = True
     scene = Stash(files=files, command=command, stash_index=stash_index)
     handle_animations(scene=scene)
 
@@ -478,7 +479,6 @@ def stash(
 def status():
     from git_sim.status import Status
 
-    settings.hide_first_tag = True
     settings.allow_no_commits = True
 
     scene = Status()
@@ -535,16 +535,21 @@ def worktree(
     ),
     path: str = typer.Argument(default=None, help="Worktree path (add/remove)"),
     branch: str = typer.Argument(
-        default=None, help="With add: existing branch or commit to check out (default: a new branch named after the path)"
+        default=None,
+        help="With add: existing branch or commit to check out (default: a new branch named after the path)",
     ),
     new_branch: str = typer.Option(
-        None, "-b", "--new-branch", help="With add: create this new branch and check it out"
+        None,
+        "-b",
+        "--new-branch",
+        help="With add: create this new branch and check it out",
     ),
-    force: bool = typer.Option(False, "--force", "-f", help="With remove: discard uncommitted changes"),
+    force: bool = typer.Option(
+        False, "--force", "-f", help="With remove: discard uncommitted changes"
+    ),
 ):
     from git_sim.worktree import Worktree
 
-    settings.hide_first_tag = True
     scene = Worktree(
         command=command, path=path, branch=branch, force=force, new_branch=new_branch
     )
@@ -556,7 +561,6 @@ def reflog(
 ):
     from git_sim.reflog import Reflog
 
-    settings.hide_first_tag = True
     scene = Reflog(n=n)
     handle_animations(scene=scene)
 
@@ -566,13 +570,25 @@ def submodule(
         default=SubmoduleSubCommand.STATUS,
         help="Submodule subcommand (add, update, init, status, deinit)",
     ),
-    url_or_path: str = typer.Argument(default=None, help="With add: repository URL; with deinit: submodule path"),
-    path: str = typer.Argument(default=None, help="With add: where to place the submodule"),
-    init: bool = typer.Option(False, "--init", help="With update: also initialize new submodules"),
-    force: bool = typer.Option(False, "--force", "-f", help="With deinit: discard local changes in the submodule"),
+    url_or_path: str = typer.Argument(
+        default=None, help="With add: repository URL; with deinit: submodule path"
+    ),
+    path: str = typer.Argument(
+        default=None, help="With add: where to place the submodule"
+    ),
+    init: bool = typer.Option(
+        False, "--init", help="With update: also initialize new submodules"
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="With deinit: discard local changes in the submodule",
+    ),
 ):
     from git_sim.submodule import Submodule
 
-    settings.hide_first_tag = True
-    scene = Submodule(command=command, url_or_path=url_or_path, path=path, init=init, force=force)
+    scene = Submodule(
+        command=command, url_or_path=url_or_path, path=path, init=init, force=force
+    )
     handle_animations(scene=scene)

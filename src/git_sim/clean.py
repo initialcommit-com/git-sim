@@ -21,7 +21,6 @@ class Clean(GitSimBaseCommand):
         self.dry_run = dry_run
         self.directories = directories
         self.ignored = ignored
-        self.hide_first_tag = True
         self.allow_no_commits = True
         settings.hide_merged_branches = True
         self.n = self.n_default

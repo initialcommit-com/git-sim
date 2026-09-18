@@ -16,6 +16,7 @@ from git_sim.settings import (
     ColorByOptions,
     StyleOptions,
     ImgFormat,
+    OpenIn,
     VideoFormat,
     settings,
 )
@@ -55,12 +56,17 @@ def main(
     ),
     img_format: ImgFormat = typer.Option(
         settings.img_format,
-        help="Output format for the image files (jpg, png, or html for an interactive page).",
+        help="Output format: html (default; a self-contained interactive page with hover details, zoom and a Before / After slider), or jpg / png for a plain image.",
     ),
     interactive: bool = typer.Option(
         False,
         "--interactive",
-        help="Write a self-contained interactive HTML page (hover details, pan/zoom, before/after) instead of an image; same as --img-format html",
+        help="Write the interactive HTML page. This is already the default; the flag is kept for scripts written before it was (same as --img-format html).",
+    ),
+    open_in: OpenIn = typer.Option(
+        settings.open_in,
+        "--open-in",
+        help="Where the interactive page opens: hosted (default) shows it in the git-sim viewer at initialcommit.com, with the graph carried in the link's #fragment so it never reaches the server; local opens the saved .html file. Set git_sim_open_in=local to make local the default. The page is saved locally either way.",
     ),
     light_mode: bool = typer.Option(
         settings.light_mode,
@@ -132,7 +138,7 @@ def main(
     ),
     stdout: bool = typer.Option(
         settings.stdout,
-        help="Write raw image data to stdout while suppressing all other program output",
+        help="Write raw image data to stdout while suppressing all other program output (png unless --img-format jpg is given)",
     ),
     output_only_path: bool = typer.Option(
         settings.output_only_path,
@@ -196,6 +202,7 @@ def main(
     settings.n = n
     settings.auto_open = auto_open
     settings.img_format = ImgFormat.HTML if interactive else img_format
+    settings.open_in = open_in
     settings.light_mode = light_mode
     settings.transparent_bg = transparent_bg
     settings.logo = logo
@@ -250,6 +257,10 @@ def main(
     settings.media_dir = os.path.join(settings.media_dir, repo_name)
 
     if settings.transparent_bg:
+        settings.img_format = ImgFormat.PNG
+
+    # A pipe wants picture bytes, not a web page.
+    if settings.stdout and settings.img_format == ImgFormat.HTML:
         settings.img_format = ImgFormat.PNG
 
     if settings.animate:

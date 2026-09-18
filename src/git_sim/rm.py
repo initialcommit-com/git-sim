@@ -11,7 +11,6 @@ from git_sim.settings import settings
 class Rm(GitSimBaseCommand):
     def __init__(self, files: List[str]):
         super().__init__()
-        self.hide_first_tag = True
         self.allow_no_commits = True
         self.files = files or []  # newer typer passes None for an omitted list
         settings.hide_merged_branches = True

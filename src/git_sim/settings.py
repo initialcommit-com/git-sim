@@ -3,7 +3,7 @@ from typing import List, Union
 
 from pydantic_settings import BaseSettings
 
-from git_sim.enums import StyleOptions, ColorByOptions, ImgFormat, VideoFormat
+from git_sim.enums import StyleOptions, ColorByOptions, ImgFormat, OpenIn, VideoFormat
 
 
 class Settings(BaseSettings):
@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     n_default: int = 5
     n: int = 5
     files: Union[List[pathlib.Path], None] = None
-    hide_first_tag: bool = False
-    img_format: ImgFormat = ImgFormat.JPG
+    # The interactive page is the default output; jpg/png give a plain image.
+    img_format: ImgFormat = ImgFormat.HTML
     INFO_STRING: str = "Simulating:"
     light_mode: bool = False
     transparent_bg: bool = False
@@ -45,6 +45,12 @@ class Settings(BaseSettings):
     font: str = "Monospace"
     font_context: bool = False
     show_command_as_title: bool = True
+    # Hosted viewer that "Copy link" on an interactive page points at. The
+    # graph travels in the URL fragment, so the host never receives it.
+    viewer_url: str = "https://initialcommit.com/tools/git-sim/view"
+    # Where the interactive page opens: the hosted viewer above (the page is
+    # still saved locally) or the saved file. git_sim_open_in=local switches.
+    open_in: OpenIn = OpenIn.HOSTED
 
     class Config:
         env_prefix = "git_sim_"

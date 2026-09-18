@@ -31,6 +31,13 @@ class ImgFormat(str, Enum):
     HTML = "html"  # self-contained interactive page (see git_sim.render.html)
 
 
+class OpenIn(str, Enum):
+    """Where the interactive page opens after it is written."""
+
+    HOSTED = "hosted"  # the viewer on initialcommit.com; graph in the #fragment
+    LOCAL = "local"  # the saved .html file itself
+
+
 class StashSubCommand(Enum):
     POP = "pop"
     APPLY = "apply"

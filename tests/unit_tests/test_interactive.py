@@ -2,6 +2,7 @@
 before/after tagging the scenes do for it."""
 
 import os
+import pathlib
 import re
 import subprocess
 
@@ -59,7 +60,12 @@ def test_svg_painter_mirrors_the_raster_primitives(tmp_path):
     scene.add(disc, pill, label, curve, dashed)
     svg = scene.render_svg(background=DARK.bg)
     assert svg.startswith('<svg id="scene"') and svg.endswith("</svg>")
-    assert 'viewBox="0 0 1920 1080"' in svg
+    # The viewBox frames the drawn content (padded), not the whole 16:9 frame.
+    vb = re.search(r'viewBox="([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+)"', svg)
+    assert vb is not None
+    x, y, w, h = (float(v) for v in vb.groups())
+    assert 0 < w < 1920 and 0 < h < 1080
+    assert f'width="{vb.group(3)}"' in svg and f'height="{vb.group(4)}"' in svg
     assert "feDropShadow" in svg and 'filter="url(#shadow1)"' in svg
     circle = attrs(svg, "<circle")[0]
     assert 'data-role="commit"' in circle and 'data-sha="abc123"' in circle
@@ -83,10 +89,25 @@ def test_html_page_is_self_contained_and_wires_the_controls(tmp_path):
     page = data.decode("utf-8")
     assert out.exists() and page.startswith("<!DOCTYPE html>")
     assert "<title>git commit -m x</title>" in page
-    assert 'id="before"' in page and 'id="afterBtn"' in page and 'id="steps"' in page
+    assert 'id="toBefore"' in page and 'id="toAfter"' in page
+    # #before / #auto / #step=N are page states, so no element may carry those ids.
+    assert 'id="before"' not in page and 'id="auto"' not in page
+    assert 'id="scrub"' in page and 'type="range"' in page, "a before/after scrubber"
+    assert 'id="play"' in page and "startPlay" in page and "stopPlay" in page
+    assert 'id="bar"' in page and "position:sticky" in page
     assert "data-phase" in page and "ancestry" in page and "viewBox" in page
-    assert "http://" not in page.replace("http://www.w3.org/2000/svg", "")
-    assert "https://" not in page, "no external requests"
+    # Links the reader may click are fine; nothing is fetched on load.
+    assert 'src="http' not in page and "<link" not in page and "@import" not in page
+    assert 'href="https://initialcommit.com"' in page
+    assert 'href="https://devlands.com"' in page
+    assert 'id="help"' in page and 'id="helpMenu"' in page
+    assert 'id="share"' in page and 'data-action="image"' in page
+    assert "intent/tweet" in page and "bsky.app" in page and "linkedin.com" in page
+    assert "startPlay();" in page and "before|after|step=" in page, "plays on open"
+    assert "forEach(el => link(el.dataset.src, el.dataset.dst))" in page
+    assert "GitSimViewer.init();" in page
+    assert '"viewer_url": "https://initialcommit.com/tools/git-sim/view"' in page
+    assert "mousedown" not in page, "no drag-to-pan"
     assert f"--bg:{DARK.bg}" in page
 
 
@@ -178,6 +199,7 @@ def test_interactive_flag_selects_the_html_format():
     from git_sim.enums import ImgFormat
 
     assert ImgFormat("html") is ImgFormat.HTML
+    assert Settings().img_format is ImgFormat.HTML, "the page is the default output"
     from git_sim.__main__ import app  # noqa: F401  (the option is registered)
 
     import inspect
@@ -185,3 +207,232 @@ def test_interactive_flag_selects_the_html_format():
     from git_sim.__main__ import main
 
     assert "interactive" in inspect.signature(main).parameters
+
+
+def test_hosted_viewer_link_carries_the_graph_in_the_fragment():
+    import base64
+    import urllib.parse
+    import zlib
+
+    from git_sim.enums import OpenIn
+    from git_sim.render.html import viewer_link
+
+    assert Settings().open_in is OpenIn.HOSTED, "the hosted viewer is the default"
+    svg = '<svg id="scene"><circle data-sha="abc"/></svg>'
+    link = viewer_link(
+        svg,
+        title="git  reset --hard HEAD~2",
+        theme_name="light",
+        summary="* abc (HEAD -> main) top",
+        local_path=r"C:\repo\git-sim_media\page.html",
+    )
+    parts = urllib.parse.urlsplit(link)
+    assert parts.scheme == "https" and parts.netloc == "initialcommit.com"
+    query = dict(urllib.parse.parse_qsl(parts.query))
+    assert query["t"] == "git reset --hard HEAD~2" and query["m"] == "light"
+    fragment = dict(urllib.parse.parse_qsl(parts.fragment))
+    assert (
+        fragment["s"] == "after" and fragment["p"] == r"C:\repo\git-sim_media\page.html"
+    )
+
+    def unpack(packed):
+        padded = packed + "=" * (-len(packed) % 4)
+        return zlib.decompress(base64.urlsafe_b64decode(padded)).decode("utf-8")
+
+    assert unpack(fragment["d"]) == svg, "the graph round-trips through the link"
+    assert unpack(query["g"]) == "* abc (HEAD -> main) top"
+    assert (
+        svg not in link and "abc" not in parts.query
+    ), "nothing of the graph in the query"
+    # The page knows how to say where the local copy is.
+    from git_sim.render.html import VIEWER_JS
+
+    assert "function openedNote" in VIEWER_JS and "params.p" in VIEWER_JS
+    assert "--open-in local" in VIEWER_JS and "git_sim_open_in=local" in VIEWER_JS
+
+
+def test_page_opens_in_the_hosted_viewer_unless_told_otherwise(
+    repo, tmp_path, monkeypatch, capsys
+):
+    from git_sim import animations
+    from git_sim.commit import Commit
+    from git_sim.enums import OpenIn
+    from git_sim.render import scene as scene_module
+    from git_sim.theme import DARK
+
+    opened = {"urls": [], "files": []}
+    monkeypatch.setattr(
+        scene_module, "open_url", lambda url: opened["urls"].append(url)
+    )
+    monkeypatch.setattr(
+        scene_module, "open_file", lambda path: opened["files"].append(path)
+    )
+    monkeypatch.setattr(
+        "git_sim.render.open_file", lambda path: opened["files"].append(path)
+    )
+    settings.auto_open = True
+    scene = Commit(message="new", amend=False)
+    scene.construct()
+    page = tmp_path / "page.html"
+    scene.render_html(str(page), theme=DARK, title=scene.cmd)
+
+    animations._open_page(scene, str(page), DARK)
+    assert len(opened["urls"]) == 1 and not opened["files"]
+    url = opened["urls"][0]
+    assert url.startswith(settings.viewer_url + "?t=git+commit")
+    assert "#d=" in url and "p=" in url and str(page.name) in url
+    out = capsys.readouterr().out
+    assert "Opened in the git-sim viewer at initialcommit.com" in out
+    assert "--open-in local" in out and "git_sim_open_in=local" in out
+
+    settings.open_in = OpenIn.LOCAL
+    animations._open_page(scene, str(page), DARK)
+    assert opened["files"] == [str(page)] and len(opened["urls"]) == 1
+
+
+def run_cli(args, cwd):
+    """Run the CLI in a fresh interpreter with the user's git_sim_* settings
+    stripped, returning the completed process (bytes output)."""
+    import subprocess
+    import sys
+
+    env = {k: v for k, v in os.environ.items() if not k.lower().startswith("git_sim_")}
+    code = f"from git_sim.__main__ import app; app({args!r})"
+    return subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        timeout=180,
+        cwd=cwd,
+        env=env,
+    )
+
+
+def test_cli_writes_the_page_by_default_and_an_image_to_a_pipe(repo, tmp_path):
+    media = str(tmp_path / "media")
+    result = run_cli(["-d", "--output-only-path", "--media-dir", media, "log"], repo)
+    assert result.returncode == 0, result.stderr.decode()
+    page = pathlib.Path(result.stdout.decode().strip().splitlines()[-1])
+    assert page.suffix == ".html" and "git-sim-log" in page.name
+    assert page.read_text(encoding="utf-8").startswith("<!DOCTYPE html>")
+
+    # --img-format still gives the classic image.
+    result = run_cli(
+        [
+            "-d",
+            "--output-only-path",
+            "--img-format",
+            "jpg",
+            "--media-dir",
+            media,
+            "log",
+        ],
+        repo,
+    )
+    assert result.returncode == 0, result.stderr.decode()
+    image = pathlib.Path(result.stdout.decode().strip().splitlines()[-1])
+    assert image.suffix == ".jpg" and image.read_bytes()[:3] == b"\xff\xd8\xff"
+
+    # A pipe gets picture bytes, never a page.
+    result = run_cli(["-d", "--stdout", "--media-dir", media, "log"], repo)
+    assert result.returncode == 0, result.stderr.decode()
+    assert result.stdout[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_zone_separators_reach_the_last_row(repo):
+    from git_sim.add import Add
+
+    for i in range(14):
+        (repo / f"loose{i:02d}.txt").write_text("x\n")
+    scene = Add(files=["loose00.txt"])
+    scene.construct()
+    lowest_row = min(t.get_bottom()[1] for t in scene.firstColumnFiles)
+    for separator in scene.zoneSeparators:
+        assert separator.get_bottom()[1] <= lowest_row - 0.5
+
+
+def test_viewer_assets_export_matches_the_page(tmp_path):
+    """initialcommit.com serves the same stylesheet, script and header the
+    standalone page embeds, exported from here so there is one source."""
+    from git_sim import render as m
+    from git_sim.render.html import VIEWER_CSS, VIEWER_JS, export_viewer_assets
+
+    written = export_viewer_assets(str(tmp_path))
+    names = {pathlib.Path(p).name for p in written}
+    assert names == {
+        "git-sim-viewer.css",
+        "git-sim-viewer.js",
+        "git-sim-viewer-header.html",
+    }
+    css = (tmp_path / "git-sim-viewer.css").read_text(encoding="utf-8")
+    js = (tmp_path / "git-sim-viewer.js").read_text(encoding="utf-8")
+    header = (tmp_path / "git-sim-viewer-header.html").read_text(encoding="utf-8")
+    assert css.strip() == VIEWER_CSS.strip() and js.strip() == VIEWER_JS.strip()
+    assert ':root[data-theme="light"]' in css and f"--bg:{DARK.bg}" in css
+    assert "boot" in js and "DecompressionStream" in js and "CompressionStream" in js
+    # Both palettes ride along so a graph drawn in one theme can be shown in the other.
+    assert (
+        "__PALETTES__" not in js and '"lane_rings"' in js and "function retheme" in js
+    )
+    assert f'"bg": "{DARK.bg}"' in js and '"light": {' in js
+    assert '<header id="bar" th:fragment="header">' in header and 'id="scrub"' in header
+    # The standalone page carries the very same CSS and JS inline.
+    scene = m.Scene()
+    scene.add(m.Circle().set_meta(role="commit", sha="a"))
+    page = scene.render_html(str(tmp_path / "p.html"), theme=DARK, title="git log")
+    assert VIEWER_CSS in page.decode("utf-8") and VIEWER_JS in page.decode("utf-8")
+
+
+def stacked_right_above(label, base):
+    """``label`` sits directly above ``base``: same column, a small gap."""
+    gap = label.get_bottom()[1] - base.get_top()[1]
+    return abs(label.get_center()[0] - base.get_center()[0]) < 1e-6 and 0 < gap < 0.5
+
+
+def test_tags_on_the_head_commit_stay_drawn_when_head_moves_on(repo):
+    from git_sim.commit import Commit
+
+    run_git(repo, "tag", "v5")
+    scene = Commit(message="new", amend=False)
+    scene.construct()
+    old_head = run_git(repo, "rev-parse", "HEAD").strip()
+    assert "v5" in scene.drawnRefs, "the tag on the first commit is drawn"
+    # HEAD and main left for abcdef; the tag closed the gap they left behind.
+    assert stacked_right_above(scene.drawnRefs["v5"], scene.drawnCommitIds[old_head])
+    svg = scene.render_svg(background=DARK.bg)
+    pill = [e for e in attrs(svg, 'data-name="v5"') if e.startswith("<rect")][0]
+    assert 'data-phase="before"' in pill and "data-dy=" in pill
+
+
+def test_moving_labels_stack_above_the_labels_already_there(repo):
+    from git_sim.enums import ResetMode
+    from git_sim.reset import Reset
+
+    run_git(repo, "tag", "v5")
+    run_git(repo, "tag", "v3", "HEAD~2")
+    target = run_git(repo, "rev-parse", "HEAD~2").strip()
+    scene = Reset(
+        commit="HEAD~2", mode=ResetMode.DEFAULT, soft=False, mixed=False, hard=False
+    )
+    scene.construct()
+    head, main, v3 = (scene.drawnRefs[n] for n in ("HEAD", "main", "v3"))
+    assert "v3" in scene.drawnRefs, "the target keeps its own labels"
+    assert stacked_right_above(v3, scene.drawnCommitIds[target])
+    assert stacked_right_above(head, v3), "HEAD lands above the tag, not on it"
+    assert stacked_right_above(main, head)
+    assert [r for r in scene.refs_on(target)] and scene.commit_holding(head) == target
+
+
+def test_new_tags_stack_on_their_commit_and_deleted_ones_are_removed(repo):
+    from git_sim.tag import Tag
+
+    run_git(repo, "tag", "v3", "HEAD~2")
+    scene = Tag(name="v9", commit="HEAD~2", d=False)
+    scene.construct()
+    assert stacked_right_above(scene.drawnRefs["v9"], scene.drawnRefs["v3"])
+    svg = scene.render_svg(background=DARK.bg)
+    pill = [e for e in attrs(svg, 'data-name="v9"') if e.startswith("<rect")][0]
+    assert 'data-phase="after"' in pill
+
+    gone = Tag(name="v3", commit=None, d=True)
+    gone.construct()
+    assert len(gone.removed_mobjects) == 1 and "v3" not in gone.drawnRefs

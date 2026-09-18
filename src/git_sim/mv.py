@@ -11,7 +11,6 @@ from git_sim.settings import settings
 class Mv(GitSimBaseCommand):
     def __init__(self, file: str, new_file: str):
         super().__init__()
-        self.hide_first_tag = True
         self.allow_no_commits = True
         self.file = file
         self.new_file = new_file

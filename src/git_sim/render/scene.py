@@ -341,9 +341,10 @@ class Scene:
         painter = SvgPainter(
             self.camera.frame, pixel_width, pixel_height, font_stack=font_stack
         )
-        for mobject in list(self.mobjects) + list(extra_mobjects):
+        everything = list(self.mobjects) + list(extra_mobjects)
+        for mobject in everything:
             mobject.draw(painter)
-        return painter.document(background)
+        return painter.document(background, painter.content_view_box(everything))
 
     def render_html(
         self,
@@ -353,10 +354,15 @@ class Scene:
         theme=None,
         title="",
         extra_mobjects=(),
+        summary="",
+        viewer_url=None,
     ) -> bytes:
         """Write a self-contained interactive page (inline SVG plus a small
-        script: tooltips, ancestry highlighting, pan/zoom, before/after)."""
-        from git_sim.render.html import FONT_STACK, build_html
+        script: tooltips, ancestry highlighting, zoom, before/after scrubber,
+        sharing). ``summary`` is a short text graph carried in shared links
+        for the preview card; ``viewer_url`` is the hosted viewer those links
+        open."""
+        from git_sim.render.html import DEFAULT_VIEWER_URL, FONT_STACK, build_html
 
         svg = self.render_svg(
             pixel_width,
@@ -366,12 +372,20 @@ class Scene:
             extra_mobjects=extra_mobjects,
         )
         page = build_html(
-            svg, title=title, theme=theme, width=pixel_width, height=pixel_height
+            svg,
+            title=title,
+            theme=theme,
+            width=pixel_width,
+            height=pixel_height,
+            summary=summary,
+            viewer_url=viewer_url or DEFAULT_VIEWER_URL,
         )
         payload = page.encode("utf-8")
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
         with open(path, "wb") as f:
             f.write(payload)
+        # Kept so the caller can build a hosted-viewer link without redrawing.
+        self.rendered_svg = svg
         return payload
 
 
@@ -387,3 +401,28 @@ def open_file(file_path):
         subprocess.Popen(["open", file_path])
     else:
         subprocess.Popen(["xdg-open", file_path])
+
+
+def open_url(url):
+    """Open a web address in the default browser. The hosted-viewer links are
+    tens of kilobytes long (the graph rides in the fragment); Windows'
+    ShellExecute truncates URLs that long, so there the browser is pointed at
+    a one-line local page that forwards to the address instead."""
+    if sys.platform == "win32":
+        import json
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(
+            "w", encoding="utf-8", prefix="git-sim-open-", suffix=".html", delete=False
+        ) as stub:
+            stub.write(
+                '<!DOCTYPE html><meta charset="utf-8"><title>git-sim</title>'
+                "<script>location.replace(" + json.dumps(url) + ")</script>"
+                "<p>Opening the git-sim viewer&hellip; "
+                '<a href="' + url.replace('"', "%22") + '">continue</a></p>'
+            )
+        os.startfile(stub.name)  # noqa: S606
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", url])
+    else:
+        subprocess.Popen(["xdg-open", url])

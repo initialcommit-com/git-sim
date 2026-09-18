@@ -134,7 +134,6 @@ class Reset(GitSimBaseCommand):
             )
             commitMessage = self.resetTo.message.split("\n")[0][:40].replace("\n", " ")
             commit = self.resetTo
-            hide_refs = True
         else:
             commitId = m.Text(
                 commit.hexsha[:6],
@@ -144,14 +143,8 @@ class Reset(GitSimBaseCommand):
             )
             commitMessage = commit.message.split("\n")[0][:40].replace("\n", " ")
 
-        if (
-            commit != "dark"
-            and commit.hexsha == self.resetTo.hexsha
-            and commit.hexsha != self.repo.head.commit.hexsha
-            and not self.paths
-        ):
-            hide_refs = True
-
+        # The target commit keeps its own labels: HEAD and the branch stack on
+        # top of them when they arrive (see move_refs).
         return commitId, commitMessage, commit, hide_refs
 
     def populate_zones(

@@ -240,14 +240,40 @@ class SvgPainter:
         out.append("</defs>")
         return "".join(out)
 
-    def document(self, background=None):
-        w, h = int(self.pixel_width), int(self.pixel_height)
+    def content_view_box(self, mobjects, padding_px=28.0):
+        """The pixel rectangle that just contains the drawn mobjects, padded,
+        so the page opens framed on the content rather than on the camera's
+        16:9 frame with its empty margins."""
+        lo = np.array([np.inf, np.inf])
+        hi = np.array([-np.inf, -np.inf])
+        for mob in mobjects:
+            if not mob.has_points():
+                continue
+            a, b = mob.get_bounding_box()
+            for corner in (a, b):
+                x, y = self.to_px(corner)
+                lo = np.minimum(lo, [x, y])
+                hi = np.maximum(hi, [x, y])
+        if not np.all(np.isfinite(lo)):
+            return (0.0, 0.0, float(self.pixel_width), float(self.pixel_height))
+        lo -= padding_px
+        hi += padding_px
+        return (float(lo[0]), float(lo[1]), float(hi[0] - lo[0]), float(hi[1] - lo[1]))
+
+    def document(self, background=None, view_box=None):
+        if view_box is None:
+            view_box = (0.0, 0.0, float(self.pixel_width), float(self.pixel_height))
+        x, y, w, h = view_box
+        vb = " ".join(_fmt(v) for v in view_box)
         bg = ""
         if background:
             r, g, b, _ = parse_color(background)
-            bg = f'<rect width="{w}" height="{h}" fill="{_hex(r, g, b)}" data-role="background"/>'
+            bg = (
+                f'<rect x="{_fmt(x)}" y="{_fmt(y)}" width="{_fmt(w)}" height="{_fmt(h)}" '
+                f'fill="{_hex(r, g, b)}" data-role="background"/>'
+            )
         return (
-            f'<svg id="scene" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" '
-            f'width="{w}" height="{h}" font-family=\'{self.font_stack}\'>'
+            f'<svg id="scene" xmlns="http://www.w3.org/2000/svg" viewBox="{vb}" '
+            f'width="{_fmt(w)}" height="{_fmt(h)}" font-family=\'{self.font_stack}\'>'
             f"{self._defs()}{bg}{''.join(self.parts)}</svg>"
         )

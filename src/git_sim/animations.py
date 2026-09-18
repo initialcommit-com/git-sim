@@ -10,6 +10,7 @@ import os
 import subprocess
 import sys
 import time
+import urllib.parse
 
 from git_sim.enums import VideoFormat
 from git_sim.settings import settings
@@ -49,6 +50,63 @@ def _auto_open(path: str, opener) -> None:
             )
 
 
+def _talking() -> bool:
+    return not settings.stdout and not settings.output_only_path and not settings.quiet
+
+
+def _open_page(scene, page_path: str, theme) -> None:
+    """Open the interactive page: in the hosted viewer (default) or the saved
+    file. The hosted link carries the graph in its #fragment, which never
+    reaches the server; only the command and a short text graph go in the
+    query string, for the preview card."""
+    from git_sim.enums import OpenIn
+    from git_sim.render import open_file
+    from git_sim.render.html import viewer_link
+    from git_sim.render.scene import open_url
+
+    if not settings.auto_open or settings.stdout:
+        return
+    hosted = settings.open_in == OpenIn.HOSTED and getattr(scene, "rendered_svg", None)
+    if not hosted:
+        _auto_open(page_path, open_file)
+        return
+    url = viewer_link(
+        scene.rendered_svg,
+        title=getattr(scene, "cmd", ""),
+        theme_name=theme.name,
+        summary=_share_summary(scene),
+        viewer_url=settings.viewer_url,
+        local_path=page_path,
+    )
+    try:
+        open_url(url)
+    except Exception:
+        _auto_open(page_path, open_file)
+        return
+    if _talking():
+        host = urllib.parse.urlsplit(settings.viewer_url).netloc or settings.viewer_url
+        print(
+            f"Opened in the git-sim viewer at {host} (the graph travels inside the link; "
+            "nothing is uploaded). To open the saved page instead, pass --open-in local "
+            "or set git_sim_open_in=local."
+        )
+
+
+def _share_summary(scene, max_lines: int = 12) -> str:
+    """A short plain-text commit graph for the preview card of a shared link.
+    Small enough to travel in a query string (a few hundred bytes compressed);
+    the full interactive graph goes in the URL fragment, never to the server."""
+    repo = getattr(scene, "repo", None)
+    if repo is None:
+        return ""
+    try:
+        out = repo.git.log("--graph", "--oneline", "--decorate=short", f"-n{max_lines}")
+    except Exception:
+        return ""
+    lines = [line[:90] for line in out.splitlines()[: max_lines + 6]]
+    return "\n".join(lines)
+
+
 # --------------------------------------------------------------------- static
 def _render_image(scene, command_name: str) -> None:
     from git_sim.render import open_file
@@ -81,6 +139,8 @@ def _render_image(scene, command_name: str) -> None:
             theme=theme,
             title=getattr(scene, "cmd", ""),
             extra_mobjects=getattr(scene, "removed_mobjects", ()),
+            summary=_share_summary(scene),
+            viewer_url=settings.viewer_url,
         )
     else:
         data = scene.render_image(
@@ -95,7 +155,10 @@ def _render_image(scene, command_name: str) -> None:
     _announce("page" if fmt == "html" else "image", image_file_path)
     if settings.stdout and not settings.quiet:
         sys.stdout.buffer.write(data)
-    _auto_open(image_file_path, open_file)
+    if fmt == "html":
+        _open_page(scene, image_file_path, theme)
+    else:
+        _auto_open(image_file_path, open_file)
 
 
 # ------------------------------------------------------------------- animated

@@ -27,20 +27,20 @@ Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work 
 ## Use cases
 - Visualize Git commands to understand their effects on your repo before actually running them
 - Prevent unexpected working directory and repository states by simulating before running
-- Share visualizations (jpg/png image or mp4/webm video) of your Git commands with your team, or the world
+- Share visualizations (interactive HTML page, jpg/png image or mp4/webm video) of your Git commands with your team, or the world
 - Save visualizations as a part of your team documentation to document workflow and prevent recurring issues
-- Create static Git diagrams (jpg/png) or dynamic animated videos (mp4/webm) to speed up content creation
+- Create interactive Git graphs (html), static diagrams (jpg/png) or animated videos (mp4/webm) to speed up content creation
 - Help visual learners understand how Git commands work
 - Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
 
 ## Features
-- Run a one-liner git-sim command in the terminal to generate a custom Git command visualization (.jpg) from your repo
+- Run a one-liner git-sim command in the terminal to generate a custom Git command visualization from your repo: an interactive `.html` page by default, or a `.jpg` / `.png` image with `--img-format`
 - Supported commands: `add`, `branch`, `checkout`, `cherry-pick`, `clean`, `clone`, `commit`, `config`, `fetch`, `init`, `log`, `merge`, `mv`, `pull`, `push`, `rebase`, `remote`, `reset`, `restore`, `revert`, `rm`, `stash`, `status`, `switch`, `tag`
 - Generate an animated video (.mp4) instead of a static image using the `--animate` flag (note: significant performance slowdown, it is recommended to use `--low-quality` to speed up testing and remove when ready to generate presentation-quality video)
 - Color commits by parameter, such as author with the `--color-by=author` option
 - Choose between dark mode (default) and light mode
-- Specify output formats of either jpg, png, mp4, or webm
-- NEW: `--interactive` writes a self-contained HTML page instead of an image: hover a commit for its full message, author, date and ancestry, click to copy its sha, pan and zoom, and flip a **Before / After** switch that replays the command (step by step for `rebase -i` and cherry-pick ranges). One file, no external requests, easy to attach to a PR or share
+- Specify output formats of either html, jpg, png, mp4, or webm
+- NEW in 0.4: the default output is a self-contained interactive HTML page, opened in the git-sim viewer at initialcommit.com (the graph rides inside the link, nothing is uploaded; `--open-in local` opens the saved file instead): hover a commit for its full message, author, date and ancestry, click to copy its sha, zoom, and drag a **Before / After** slider (or press play) to watch the command happen, step by step for `rebase -i` and cherry-pick ranges. One file, with PNG / SVG download and sharing built in. `--img-format jpg` (or `png`) gives the classic image, and `git_sim_img_format=jpg` in your environment makes that the default again
 - Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
 - Animation only: Add custom branded intro/outro sequences if desired
 - Animation only: Speed up or slow down animation speed as desired
@@ -101,7 +101,7 @@ Or if you want to do it all in a single command:
 $ git-dummy --no-subdir --branches=3 --commits=10 && git-sim [global options] <subcommand> [subcommand options]
 ```
 
-5) Simulated output will be created as a `.jpg` file. Output files are named using the subcommand executed combined with a timestamp, and by default are stored in a subdirectory called `git-sim_media/`. The location of this subdirectory is customizable using the command line flag `--media-dir=path/to/output`. Note that when the `--animate` global flag is used, render times will be much longer and a `.mp4` video output file will be produced.
+5) Simulated output will be created as an interactive `.html` page (or a `.jpg` / `.png` image with `--img-format`). Output files are named using the subcommand executed combined with a timestamp, and by default are stored in a subdirectory called `git-sim_media/`. The location of this subdirectory is customizable using the command line flag `--media-dir=path/to/output`. Note that when the `--animate` global flag is used, render times will be much longer and a `.mp4` video output file will be produced.
 
 6) For convenience, environment variables can be set for any global command-line option available in git-sim. All environment variables start with `git_sim_` followed by the name of the option.
 
@@ -169,8 +169,9 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 `-d`: Disable the automatic opening of the image/video file after generation. Useful to avoid errors in console mode with no GUI.  
 `--light-mode`: Use a light mode color scheme instead of default dark mode.  
 `--reverse, -r` / `--no-reverse`: By default the newest commit is on the left and arrows point right toward parents, so history reads left to right. `--no-reverse` puts the newest commit on the right with arrows pointing left, the original layout.  
-`--img-format`: Output format for the image file, i.e. `jpg` or `png`. Default output format is `jpg`.  
-`--stdout`: Write raw image data to stdout while suppressing all other program output.  
+`--img-format`: Output format, i.e. `html` (default: the interactive page), `jpg` or `png`. Set `git_sim_img_format=jpg` in your environment to make an image the default.  
+`--open-in`: Where the interactive page opens: `hosted` (default) shows it in the git-sim viewer at initialcommit.com, `local` opens the saved `.html` file. The page is saved locally either way, and the hosted page says where. Set `git_sim_open_in=local` to make local the default.  
+`--stdout`: Write raw image data to stdout while suppressing all other program output. Writes a `png` unless `--img-format jpg` is given.  
 `--output-only-path`: Only output the path to the generated media file to stdout. Useful for other programs to ingest.  
 `--quiet, -q`: Suppress all output except errors.  
 `--highlight-commit-messages`: Make commit message text bigger and bold, and hide commit ids.  
@@ -561,10 +562,22 @@ Use light mode (soft off-white background, dark text) instead of the default dar
 $ git-sim --light-mode status
 ```
 
-Write a self-contained interactive HTML page instead of an image. Open it in any browser; hover commits for details, drag to pan, wheel to zoom, and use the Before / After switch (or the arrow keys) to replay the command. Add `#before` to the URL to open on the "before" view:
+The default output is a self-contained interactive HTML page, saved under `git-sim_media/` and opened in the git-sim viewer at initialcommit.com. Drag the Before / After slider (or press play) to watch the command happen, hover commits for details, ctrl + wheel to zoom. The graph travels compressed in the link's `#fragment`, which browsers never send to a server, so nothing about your repository is uploaded; only the command and a short text graph (the `git log --oneline` summary) go in the query string so a shared link gets a proper preview card. The hosted page notes that git-sim opened it and where the local copy is. The Share button copies that same link; `#before`, `#after` or `#step=N` in it pins the state, and `git_sim_viewer_url` points links at your own copy of the viewer:
 
 ```console
-$ git-sim --interactive rebase -i main --todo todo.txt
+$ git-sim rebase -i main --todo todo.txt
+```
+
+Open the saved page in the browser directly instead of the hosted viewer (works offline; set `git_sim_open_in=local` to make it the default):
+
+```console
+$ git-sim --open-in local rebase -i main --todo todo.txt
+```
+
+Write a plain image instead (the page's Share menu can also save a PNG or SVG of the graph as shown):
+
+```console
+$ git-sim --img-format jpg status
 ```
 
 Animate the simulated output as a .mp4 video file:

@@ -50,41 +50,34 @@ class Tag(GitSimBaseCommand):
         if not self.d:
             tagRec, tagText = self.ref_pill(self.name, self.theme.tag)
 
-            if self.commit:
-                commit = self.repo.commit(self.commit)
-                try:
-                    tagRec.next_to(self.drawnRefsByCommit[commit.hexsha][-1], m.UP)
-                except KeyError:
-                    try:
-                        tagRec.next_to(self.drawnCommitIds[commit.hexsha], m.UP)
-                    except KeyError:
-                        print(
-                            "git-sim error: can't create tag '"
-                            + self.name
-                            + "' on commit '"
-                            + self.commit
-                            + "', commit not in frame"
-                        )
-                        sys.exit(1)
-            else:
-                tagRec.next_to(self.topref, m.UP)
+            commit = self.repo.commit(self.commit) if self.commit else self.get_commit()
+            # Stack above whatever labels the commit already carries.
+            top = self.stack_top(commit.hexsha)
+            if top is None:
+                print(
+                    "git-sim error: can't create tag '"
+                    + self.name
+                    + "' on commit '"
+                    + self.commit
+                    + "', commit not in frame"
+                )
+                sys.exit(1)
+            tagRec.next_to(top, m.UP)
             self.center_label(tagText, tagRec)
 
             fulltag = m.VGroup(tagRec, tagText)
+            self.tag(fulltag, role="ref", name=self.name, kind="tag", phase="after")
 
             if settings.animate:
                 self.play(m.Create(fulltag), run_time=1 / settings.speed)
             else:
                 self.add(fulltag)
 
-            self.toFadeOut.add(tagRec, tagText)
+            self.toFadeOut.add(fulltag)
             self.drawnRefs[self.name] = fulltag
+            self.add_ref_to_drawn_refs_by_commit(commit.hexsha, fulltag)
         else:
-            fulltag = self.drawnRefs[self.name]
-            if settings.animate:
-                self.play(m.Uncreate(fulltag), run_time=1 / settings.speed)
-            else:
-                self.remove(fulltag)
+            self.remove_ref(self.name)
 
         self.recenter_frame()
         self.scale_frame()
