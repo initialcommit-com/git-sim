@@ -604,6 +604,9 @@ window.GitSimViewer = (function(){
   // site's own header), but never below about half size: past that,
   // scrolling beats squinting.
   function fit(){
+    // A demo graph sits below an introduction on purpose; it is read by
+    // scrolling, so it keeps its natural size.
+    if (document.documentElement.dataset.mode === 'demo') { svg.style.height = ''; return; }
     const natural = stage.clientWidth * vb0.h / vb0.w;
     const top = stage.getBoundingClientRect().top + window.scrollY;  // as if scrolled to the top
     const available = window.innerHeight - top - 24;
