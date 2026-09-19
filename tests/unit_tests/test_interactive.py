@@ -111,7 +111,7 @@ def test_html_page_is_self_contained_and_wires_the_controls(tmp_path):
     assert "commit-hit" in page and "getBBox()" in page, "one hit area per commit"
     assert "forEach(el => link(el.dataset.src, el.dataset.dst))" in page
     assert "GitSimViewer.init();" in page
-    assert '"viewer_url": "https://initialcommit.com/tools/git-sim/view"' in page
+    assert '"viewer_url": "https://initialcommit.com/tools/git-sim"' in page
     assert "mousedown" not in page, "no drag-to-pan"
     assert f"--bg:{DARK.bg}" in page
 

@@ -38,7 +38,7 @@ import zlib
 from git_sim.render.svg import DEFAULT_FONT_STACK as FONT_STACK
 from git_sim.theme import DARK, LIGHT
 
-DEFAULT_VIEWER_URL = "https://initialcommit.com/tools/git-sim/view"
+DEFAULT_VIEWER_URL = "https://initialcommit.com/tools/git-sim"
 
 
 def _theme_vars(theme):
@@ -264,8 +264,13 @@ window.GitSimViewer = (function(){
   // Hosted viewer: the graph arrives compressed in the URL fragment (#d=...),
   // so it never reaches the server; the query string only carried the
   // command and a short text graph for the preview card.
-  async function boot(){
+  // boot({demo, title}) shows a canned graph (an SVG at the demo URL) when
+  // the link carries none, which is how the tool page doubles as the viewer.
+  async function boot(options){
+    options = options || {};
     const params = hashParams();
+    const demo = !params.d && options.demo ? options.demo : null;
+    document.documentElement.dataset.mode = params.d ? 'shared' : demo ? 'demo' : 'empty';
     const note = document.getElementById('viewerNote');
     // When the graph cannot be shown, fall back to the text graph the link
     // carried for its preview card (the only other thing we have).
@@ -275,10 +280,14 @@ window.GitSimViewer = (function(){
       const plain = s => String(s).replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]));
       note.innerHTML = message + (summary ? '<pre style="text-align:left;white-space:pre;overflow-x:auto;margin:24px 0 0;color:var(--muted)">' + plain(summary) + '</pre>' : '');
     };
-    if (!params.d) { fail('<b>Nothing to show.</b> This page displays a git-sim simulation shared as a link; the link you followed has no graph in it.'); return; }
-    if (typeof DecompressionStream === 'undefined') { fail('<b>This browser cannot open the link.</b> Shared git-sim graphs need a browser with DecompressionStream (Chrome 80+, Edge 80+, Firefox 113+, Safari 16.4+).'); return; }
+    if (!params.d && !demo) { fail('<b>Nothing to show.</b> This page displays a git-sim simulation shared as a link; the link you followed has no graph in it.'); return; }
+    if (!demo && typeof DecompressionStream === 'undefined') { fail('<b>This browser cannot open the link.</b> Shared git-sim graphs need a browser with DecompressionStream (Chrome 80+, Edge 80+, Firefox 113+, Safari 16.4+).'); return; }
     try {
-      const svgText = await inflate(params.d);
+      if (demo && options.title) {  // the demo's command stands in for a shared link's
+        const el = document.getElementById('git-sim-meta');
+        try { const j = JSON.parse(el.textContent); j.title = options.title; el.textContent = JSON.stringify(j); } catch (e) {}
+      }
+      const svgText = demo ? await (await fetch(demo)).text() : await inflate(params.d);
       const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
       const svgEl = doc.documentElement;
       if (svgEl.nodeName !== 'svg') throw new Error('not an svg');
@@ -295,7 +304,7 @@ window.GitSimViewer = (function(){
       const want = siteTheme() || info.theme;
       if (want && shown.dataset.theme !== want) retheme(shown, shown.dataset.theme, want);
       if (want) document.documentElement.dataset.theme = want;
-      if (params.p) openedNote(params.p);  // before init, so the fit accounts for it
+      if (params.d && params.p) openedNote(params.p);  // before init, so the fit accounts for it
       init();
     } catch (e) {
       fail('<b>Could not open this link.</b> The graph data in it is damaged or truncated (some apps cut long links). Ask for the link again, or for the image.');

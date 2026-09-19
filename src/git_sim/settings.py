@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     show_command_as_title: bool = True
     # Hosted viewer that "Copy link" on an interactive page points at. The
     # graph travels in the URL fragment, so the host never receives it.
-    viewer_url: str = "https://initialcommit.com/tools/git-sim/view"
+    viewer_url: str = "https://initialcommit.com/tools/git-sim"
     # Where the interactive page opens: the hosted viewer above (the page is
     # still saved locally) or the saved file. git_sim_open_in=local switches.
     open_in: OpenIn = OpenIn.HOSTED
