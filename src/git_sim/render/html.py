@@ -283,32 +283,61 @@ window.GitSimViewer = (function(){
     if (!params.d && !demo) { fail('<b>Nothing to show.</b> This page displays a git-sim simulation shared as a link; the link you followed has no graph in it.'); return; }
     if (!demo && typeof DecompressionStream === 'undefined') { fail('<b>This browser cannot open the link.</b> Shared git-sim graphs need a browser with DecompressionStream (Chrome 80+, Edge 80+, Firefox 113+, Safari 16.4+).'); return; }
     try {
-      if (demo && options.title) {  // the demo's command stands in for a shared link's
-        const el = document.getElementById('git-sim-meta');
-        try { const j = JSON.parse(el.textContent); j.title = options.title; el.textContent = JSON.stringify(j); } catch (e) {}
-      }
       const svgText = demo ? await (await fetch(demo)).text() : await inflate(params.d);
-      const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
-      const svgEl = doc.documentElement;
-      if (svgEl.nodeName !== 'svg') throw new Error('not an svg');
-      $('script', svgEl).forEach(el => el.remove());
-      svgEl.querySelectorAll('*').forEach(el => { Array.from(el.attributes).forEach(a => { if (/^on/i.test(a.name) || (a.name === 'href' && !a.value.startsWith('data:image/'))) el.removeAttribute(a.name); }); });
-      svgEl.id = 'scene';
-      const stage = document.getElementById('stage');
-      stage.innerHTML = ''; stage.appendChild(document.importNode(svgEl, true));
       if (note) note.remove();
-      // The link says which theme drew the graph; the page says which it shows.
-      const info = meta();
-      const shown = document.getElementById('scene');
-      shown.dataset.theme = info.svg_theme || info.theme || 'dark';
-      const want = siteTheme() || info.theme;
-      if (want && shown.dataset.theme !== want) retheme(shown, shown.dataset.theme, want);
-      if (want) document.documentElement.dataset.theme = want;
       if (params.d && params.p) openedNote(params.p);  // before init, so the fit accounts for it
-      init();
+      mount(svgText, {title: demo ? options.title : ''});
     } catch (e) {
       fail('<b>Could not open this link.</b> The graph data in it is damaged or truncated (some apps cut long links). Ask for the link again, or for the image.');
     }
+  }
+
+  // ---- mounting a graph -------------------------------------------------------
+  // One graph is shown at a time. mount() puts an SVG (as text) on the stage
+  // and starts the viewer on it; a graph already there is disposed of first,
+  // listeners and playback included, so a page can show one graph after
+  // another (a lesson stepping through a scenario) without leaks.
+  // options: title (the command, for the share text), svgTheme (the theme the
+  // graph was drawn in), state ('before', 'after', 'step=N'; else it plays).
+  let dispose = null;      // tears down the viewer currently on the stage
+  let pendingState = null; // the state the next init() opens on, when mount() sets one
+  let control = null;      // the playback of the graph on the stage, for a host page (a lesson's terminal)
+  function mount(svgText, options){
+    options = options || {};
+    if (dispose) { try { dispose(); } catch (e) {} dispose = null; }
+    const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+    const svgEl = doc.documentElement;
+    if (svgEl.nodeName !== 'svg') throw new Error('not an svg');
+    $('script', svgEl).forEach(el => el.remove());
+    svgEl.querySelectorAll('*').forEach(el => { Array.from(el.attributes).forEach(a => { if (/^on/i.test(a.name) || (a.name === 'href' && !a.value.startsWith('data:image/'))) el.removeAttribute(a.name); }); });
+    svgEl.id = 'scene';
+    const stage = document.getElementById('stage');
+    stage.innerHTML = ''; stage.appendChild(document.importNode(svgEl, true));
+    if (options.title) {  // this graph's command stands in for the page's
+      const el = document.getElementById('git-sim-meta');
+      if (el) { try { const j = JSON.parse(el.textContent); j.title = options.title; el.textContent = JSON.stringify(j); } catch (e) {} }
+    }
+    // The graph says which theme drew it; the page says which it shows.
+    const info = meta();
+    const shown = document.getElementById('scene');
+    shown.dataset.theme = options.svgTheme || info.svg_theme || info.theme || 'dark';
+    const want = siteTheme() || info.theme;
+    if (want && shown.dataset.theme !== want) retheme(shown, shown.dataset.theme, want);
+    if (want) document.documentElement.dataset.theme = want;
+    pendingState = options.state || null;
+    try { init(); } finally { pendingState = null; }
+  }
+  // load(url | svgText, options): fetch when given a URL, then mount.
+  async function load(source, options){
+    const text = /^\s*</.test(source) ? source : await (await fetch(source)).text();
+    mount(text, options);
+  }
+  // unmount(): take the graph down and leave the stage empty (a lesson shows a
+  // message there when git would refuse the command instead of drawing it).
+  function unmount(){
+    if (dispose) { try { dispose(); } catch (e) {} dispose = null; }
+    const stage = document.getElementById('stage');
+    if (stage) stage.innerHTML = '';
   }
 
   function init(){
@@ -317,6 +346,10 @@ window.GitSimViewer = (function(){
   const stage = document.getElementById('stage');
   const tip = document.getElementById('tip');
   const info = meta();
+  // Every listener on something that outlives the graph (the document, the
+  // window, the bar's controls) is recorded so mount() can remove it.
+  const offs = [];
+  const on = (target, type, fn, opts) => { target.addEventListener(type, fn, opts); offs.push(() => target.removeEventListener(type, fn, opts)); };
   const pristine = svg.outerHTML;  // the graph as generated, before the scrubber touches it
   const pristineTheme = svg.dataset.theme || meta().theme || 'dark';  // the theme pristine is drawn in
 
@@ -461,18 +494,28 @@ window.GitSimViewer = (function(){
     playing = false; cancelAnimationFrame(raf); clearTimeout(hold);
     play.innerHTML = '&#9654;'; play.title = 'play the command from before to after, on a loop (A)';
   }
+  // A host page can play the command once, before to after, and leave it there
+  // (a lesson does this when the learner types the command), or pin a state.
+  function playOnce(then){
+    stopPlay();
+    if (!animatable) { if (then) then(); return; }
+    setProgress(0);
+    playing = true; play.innerHTML = '&#10074;&#10074;'; play.title = 'pause (A)';
+    tween(maxStep, perStep * maxStep + 200, () => { stopPlay(); if (then) then(); });
+  }
+  control = { playOnce, setState: s => { stopPlay(); setProgress(s === 'after' ? maxStep : s === 'before' ? 0 : clamp(parseInt(String(s).replace(/^step=/, ''), 10) || 0, 0, maxStep)); } };
   // Manual controls never wait for the loop: they stop it and apply at once.
   const manual = fn => (...args) => { stopPlay(); fn(...args); };
   play.onclick = () => playing ? stopPlay() : startPlay();
   btnBefore.onclick = manual(() => setProgress(0));
   btnAfter.onclick = manual(() => setProgress(maxStep));
-  scrub.addEventListener('input', manual(() => setProgress(parseInt(scrub.value, 10) / RES)));
-  scrub.addEventListener('pointerdown', () => stopPlay());
+  on(scrub, 'input', manual(() => setProgress(parseInt(scrub.value, 10) / RES)));
+  on(scrub, 'pointerdown', () => stopPlay());
 
   const animatable = after.length + removed.length + moved.length + recolored.length > 0;
-  if (!animatable) document.getElementById('controls').classList.add('off');
+  document.getElementById('controls').classList.toggle('off', !animatable);
   const params = hashParams();
-  const state = params.s || '';
+  const state = pendingState !== null ? pendingState : (params.s || '');
   const pinned = /^(before|after|step=\d+)$/.test(state);
   // Opens on "before" and plays, unless the link pins a state (#before,
   // #after, #step=N). A graph nothing changes in just shows its one state.
@@ -482,14 +525,18 @@ window.GitSimViewer = (function(){
   render();
   if (animatable && !pinned) startPlay();
 
-  document.addEventListener('keydown', e => {
+  on(document, 'keydown', e => {
+    // Typing in a field on the host page is never a shortcut here.
+    const t = e.target;
+    if (t && t !== scrub && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
     if (e.target === scrub && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); }
     if (e.key === 'Escape') { stopPlay(); resetView(); return; }
     if (!animatable) return;
     if (e.key === 'a' || e.key === 'A') { playing ? stopPlay() : startPlay(); return; }
     if (e.key === 'ArrowLeft') manual(() => setProgress(Math.ceil(progress - 0.001) - 1))();
     else if (e.key === 'ArrowRight') manual(() => setProgress(Math.floor(progress + 0.001) + 1))();
-    else if (e.key === ' ') { e.preventDefault(); manual(() => setProgress(progress >= maxStep - 0.001 ? 0 : maxStep))(); }
+    // Embedded in a page with its own controls (a lesson), the space bar belongs to the page.
+    else if (e.key === ' ' && document.documentElement.dataset.mode !== 'demo') { e.preventDefault(); manual(() => setProgress(progress >= maxStep - 0.001 ? 0 : maxStep))(); }
   });
 
   // ---- ancestry highlight + tooltip ---------------------------------------
@@ -584,7 +631,7 @@ window.GitSimViewer = (function(){
     const ox = (r.width - vb.w / k) / 2, oy = (r.height - vb.h / k) / 2;
     return {x: vb.x + (cx - r.left - ox) * k, y: vb.y + (cy - r.top - oy) * k, k};
   }
-  stage.addEventListener('wheel', e => {
+  on(stage, 'wheel', e => {
     if (!(e.ctrlKey || e.metaKey)) return;
     e.preventDefault();
     const f = Math.exp(e.deltaY * 0.0015);
@@ -594,7 +641,7 @@ window.GitSimViewer = (function(){
     vb = {x: p.x - (p.x - vb.x) * s, y: p.y - (p.y - vb.y) * s, w: nw, h: vb.h * s};
     setView();
   }, {passive: false});
-  stage.addEventListener('dblclick', resetView);
+  on(stage, 'dblclick', resetView);
 
   // ---- fit ------------------------------------------------------------------
   // The graph fills the width, which suits the usual five commits plus a zone
@@ -613,15 +660,15 @@ window.GitSimViewer = (function(){
     svg.style.height = (available > 240 && natural > available) ? Math.max(available, natural * 0.55) + 'px' : '';
   }
   fit();
-  window.addEventListener('resize', fit);
-  window.addEventListener('git-sim:layout', fit);
+  on(window, 'resize', fit);
+  on(window, 'git-sim:layout', fit);
 
   // ---- help menu --------------------------------------------------------------
   const help = document.getElementById('help'), helpMenu = document.getElementById('helpMenu');
   const showHelp = on => { helpMenu.hidden = !on; help.classList.toggle('on', on); };
   help.onclick = e => { e.stopPropagation(); showHelp(helpMenu.hidden); };
-  document.addEventListener('click', e => { if (!helpMenu.hidden && !helpMenu.contains(e.target)) showHelp(false); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') showHelp(false); if (e.key === '?') showHelp(helpMenu.hidden); });
+  on(document, 'click', e => { if (!helpMenu.hidden && !helpMenu.contains(e.target)) showHelp(false); });
+  on(document, 'keydown', e => { if (e.key === 'Escape') showHelp(false); if (e.key === '?') showHelp(helpMenu.hidden); });
 
   // ---- share ---------------------------------------------------------------------
   const shareBtn = document.getElementById('share'), shareMenu = document.getElementById('shareMenu');
@@ -630,8 +677,8 @@ window.GitSimViewer = (function(){
   const say = msg => { toast.textContent = msg; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 1900); };
   const showShare = on => { shareMenu.hidden = !on; shareBtn.classList.toggle('on', on); if (on) showHelp(false); };
   shareBtn.onclick = e => { e.stopPropagation(); showShare(shareMenu.hidden); };
-  document.addEventListener('click', e => { if (!shareMenu.hidden && !shareMenu.contains(e.target)) showShare(false); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') showShare(false); });
+  on(document, 'click', e => { if (!shareMenu.hidden && !shareMenu.contains(e.target)) showShare(false); });
+  on(document, 'keydown', e => { if (e.key === 'Escape') showShare(false); });
   // The command: from the page's meta, else from the link's fragment (git-sim
   // opening the hosted viewer keeps it out of the query string).
   const title = (info.title && info.title !== 'git-sim' ? info.title : '') || params.t || document.title;
@@ -700,7 +747,7 @@ window.GitSimViewer = (function(){
     email: u => `mailto:?subject=${enc(shareText())}&body=${enc(u)}`,
   };
   const shortOnly = {x: 4096, bluesky: 280};  // platforms that refuse long URLs
-  shareMenu.addEventListener('click', e => {
+  on(shareMenu, 'click', e => {
     const b = e.target.closest('[data-action],[data-intent]');
     if (!b) return;
     e.preventDefault();
@@ -716,9 +763,17 @@ window.GitSimViewer = (function(){
   if (!navigator.share) $('[data-action="native"]', shareMenu).forEach(el => el.remove());
   const localNote = document.getElementById('localNote');
   if (localNote && location.protocol === 'file:' && !(info.viewer_url && canPack)) localNote.style.display = 'block';
+
+  // What mount() calls before putting the next graph on the stage.
+  dispose = () => { stopPlay(); clearNow(); showHelp(false); showShare(false); offs.forEach(off => off()); offs.length = 0; control = null; };
   }
 
-  return {init, boot, deflate, inflate, setTheme, retheme};
+  // playOnce(then): play the graph on the stage from before to after, once,
+  // then call then(). setState('before' | 'after' | 'step=N'): jump there.
+  function playOnce(then){ if (control) control.playOnce(then); else if (then) then(); }
+  function setState(s){ if (control) control.setState(s); }
+
+  return {init, boot, mount, load, unmount, deflate, inflate, setTheme, retheme, playOnce, setState};
 })();
 """
 VIEWER_JS = VIEWER_JS.replace("__PALETTES__", _palettes_json())
