@@ -473,7 +473,7 @@ class LiveSession {
   handleLine(line) {
     let msg;
     try { msg = JSON.parse(line); } catch (e) { output.appendLine(line); return; }
-    if (msg.event === 'start') { output.appendLine(`live: watching ${msg.repo}, changes saved under ${msg.dir}`); return; }
+    if (msg.event === 'start') { this.dir = msg.dir; output.appendLine(`live: watching ${msg.repo}, changes saved under ${msg.dir}`); return; }
     if (msg.event !== 'snapshot') return;
     let svg;
     try { svg = fs.readFileSync(msg.svg, 'utf8'); } catch (e) { output.appendLine(`live: could not read ${msg.svg}`); return; }
@@ -551,6 +551,31 @@ async function livePageHtml(repo) {
   return html;
 }
 
+// Save bytes the page hands over (a recorded video, a session file): a
+// webview cannot download, so the page posts them and the editor asks where.
+async function saveFromPage(name, data, mime) {
+  const filters = /\.mp4$/i.test(name) ? { 'MP4 video': ['mp4'] } : /\.webm$/i.test(name) ? { 'WebM video': ['webm'] } : { 'HTML page': ['html'] };
+  const folders = vscode.workspace.workspaceFolders || [];
+  const target = await vscode.window.showSaveDialog({
+    defaultUri: vscode.Uri.file(path.join(folders.length ? path.dirname(folders[0].uri.fsPath) : require('os').homedir(), name)),
+    filters, saveLabel: 'Save'
+  });
+  if (!target) return;
+  const bytes = Buffer.isBuffer(data) ? data : Buffer.from(data, 'base64');
+  await vscode.workspace.fs.writeFile(target, bytes);
+  const pick = await vscode.window.showInformationMessage(`Saved ${path.basename(target.fsPath)} (${(bytes.length / 1024).toFixed(0)} KB)`, 'Show in folder');
+  if (pick === 'Show in folder') vscode.commands.executeCommand('revealFileInOS', target);
+}
+
+// The whole session as one page: git-sim keeps session.html current in the
+// session folder, so saving is a copy.
+async function saveSessionOf(session) {
+  const file = session.dir && path.join(session.dir, 'session.html');
+  if (!file || !fs.existsSync(file)) { vscode.window.showWarningMessage('git-sim has not written this session yet; make a change first.'); return; }
+  const stamp = path.basename(session.dir);
+  await saveFromPage(`${path.basename(session.repo)}-live-${stamp}.html`, fs.readFileSync(file), 'text/html');
+}
+
 function wireLiveWebview(webview, repo, zones, onDispose) {
   const session = liveSession(repo, zones);
   const sub = webview.onDidReceiveMessage(msg => {
@@ -558,8 +583,34 @@ function wireLiveWebview(webview, repo, zones, onDispose) {
     if (msg.type === 'ready') session.attach(webview);
     else if (msg.type === 'clear') session.clear(Number(msg.keep) || 0);
     else if (msg.type === 'openPage' && msg.page) vscode.env.openExternal(vscode.Uri.file(msg.page));
+    else if (msg.type === 'saveSession') saveSessionOf(session).catch(e => vscode.window.showErrorMessage(`git-sim: ${e.message}`));
+    else if (msg.type === 'saveFile' && msg.name && msg.data) saveFromPage(msg.name, msg.data, msg.mime).catch(e => vscode.window.showErrorMessage(`git-sim: ${e.message}`));
   });
   onDispose(() => { sub.dispose(); session.detach(webview); });
+}
+
+// Recorded sessions: git-sim lists them (`live --sessions --json`), each a
+// self-contained page that the ordinary page viewer shows.
+async function commandLiveSessions(context) {
+  const repo = await pickRepo();
+  if (!repo) return;
+  let result;
+  try { result = await runGitSim(['live', '--sessions', '--json', '-C', repo], repo, timeoutMs()); }
+  catch (e) { return e.code === 'ENOENT' ? explainMissing(e) : vscode.window.showErrorMessage(`git-sim: ${e.message}`); }
+  const sessions = result.stdout.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => { try { return JSON.parse(l); } catch (e) { return null; } }).filter(s => s && s.event === 'session');
+  if (!sessions.length) return vscode.window.showInformationMessage('No recorded live sessions for this repository yet. Open the live graph and make a change.');
+  const pick = await vscode.window.showQuickPick(
+    sessions.map(s => ({
+      label: `$(pulse) ${new Date(s.started * 1000).toLocaleString()}`,
+      description: `${s.changes} change${s.changes === 1 ? '' : 's'}`,
+      detail: s.dir, session: s
+    })),
+    { placeHolder: 'Which recorded session?' });
+  if (!pick) return;
+  const panel = showPage(context, pick.session.page, `live session ${new Date(pick.session.started * 1000).toLocaleDateString()}`);
+  panel.webview.onDidReceiveMessage(msg => {
+    if (msg && msg.type === 'saveFile' && msg.name && msg.data) saveFromPage(msg.name, msg.data, msg.mime).catch(e => vscode.window.showErrorMessage(`git-sim: ${e.message}`));
+  });
 }
 
 function noteHtml(text) {
@@ -673,6 +724,7 @@ function activate(context) {
   reg('git-sim.openLearn', () => vscode.env.openExternal(vscode.Uri.parse(LEARN_URL)));
   reg('git-sim.live', async () => { const repo = await pickRepo(); if (repo) await openLivePanel(context, repo); });
   reg('git-sim.liveSidebar', () => vscode.commands.executeCommand('git-sim.liveView.focus'));
+  reg('git-sim.liveSessions', () => commandLiveSessions(context));
   context.subscriptions.push(vscode.window.registerWebviewViewProvider('git-sim.liveView', new LiveViewProvider(context),
     { webviewOptions: { retainContextWhenHidden: true } }));
 

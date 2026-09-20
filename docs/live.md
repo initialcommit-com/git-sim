@@ -22,9 +22,25 @@ and starts from the current state. Shift+click opens a change as a page of
 its own. Each change is saved as a standalone interactive page under
 `git-sim media-dir`, in `<repo>/live/<session>/`.
 
+## Saving and sharing a session
+
+- **Save session** writes the whole session as one HTML file: every change,
+  the strip, the viewer, nothing to install. Attach it to a pull request,
+  email it, drop it in a chat; it opens anywhere, steps through the changes,
+  and can still record the video below. The same file is kept current as
+  `session.html` in the session folder while live mode runs.
+- **Record video** plays the session's changes one after another and
+  records them frame by frame (MP4 where the browser can encode it, WebM
+  otherwise, 1600 px wide, paced as the page plays). Esc stops early. That
+  is the thing to post on X, Bluesky or LinkedIn, which do not carry links
+  as long as a graph.
+- `git-sim live --sessions` lists the repository's recorded sessions and
+  `git-sim live --replay` opens the latest (`--session <folder>` for another)
+  in the browser. In VS Code, **git-sim: Open a recorded live session...**.
+
 Options: `--no-zones`, `--interval <seconds>` (default 1), `--port <n>`,
 `--json` (one JSON line per change, for editors), `--once` (draw the current
-state and exit), `-C <repo>`. The global `--open-in local` opens the page
+state and exit), `--sessions`, `--replay [--session <path>]`, `-C <repo>`. The global `--open-in local` opens the page
 served by git-sim itself instead of the hosted one, and `-d` opens nothing
 and just prints the addresses. Global options (`--all`, `-n`, `--light-mode`,
 `--media-dir`) apply to every drawing; live mode shows up to three branch

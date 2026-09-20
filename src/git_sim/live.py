@@ -52,6 +52,8 @@ SETTLE_SECONDS = 0.6  # a change must hold still this long before it is drawn
 SETTLE_LIMIT_SECONDS = 6.0  # ...but a long rebase is drawn at least this often
 HISTORY_LIMIT = 300
 REFLOG_DEPTH = 40
+SESSION_PAGE = "session.html"  # the whole session as one page, kept current
+SESSION_META = "session.json"  # what a listing of sessions needs
 
 
 # ------------------------------------------------------------------ reading
@@ -390,9 +392,74 @@ class LiveSession:
         self.errors: List[str] = []
         # Presented by the page on every request to the local server.
         self.key = secrets.token_urlsafe(18)
+        self.started = time.time()
         # Asked before each poll; returning True ends the session (the
         # editor that started us went away).
         self.before_poll: Optional[Callable[[], bool]] = None
+
+    # -- the session as a file ----------------------------------------------------
+    def session_data(self) -> dict:
+        """Everything the recorded-session page needs: each change with its
+        graph inline."""
+        with self.lock:
+            snaps = list(self.snapshots)
+        items = []
+        for s in snaps:
+            try:
+                with open(s.svg_path, encoding="utf-8") as f:
+                    svg = f.read()
+            except OSError:
+                continue
+            item = s.to_json()
+            item.pop("svg", None)
+            item.pop("page", None)
+            item["svg"] = svg
+            items.append(item)
+        return {
+            "repo": self.name,
+            "path": self.repo,
+            "started": self.started,
+            "items": items,
+        }
+
+    def session_page(self) -> str:
+        from git_sim.render.live_html import build_live_html
+        from git_sim.theme import theme_for
+
+        return build_live_html(
+            theme=theme_for(settings.light_mode),
+            repo=self.name,
+            viewer_url=settings.viewer_url,
+            session=self.session_data(),
+        )
+
+    def write_session_page(self) -> Optional[str]:
+        """Keep session.html (the whole session as one page) and session.json
+        (what a listing needs) current in the session folder. Written to a
+        temporary name and renamed, so a reader never sees half a file."""
+        try:
+            os.makedirs(self.out_dir, exist_ok=True)
+            page = os.path.join(self.out_dir, SESSION_PAGE)
+            tmp = page + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                f.write(self.session_page())
+            os.replace(tmp, page)
+            meta = {
+                "repo": self.name,
+                "path": self.repo,
+                "started": self.started,
+                "changes": max(0, len(self.snapshots) - 1),
+                "dir": self.out_dir,
+                "page": page,
+            }
+            with open(
+                os.path.join(self.out_dir, SESSION_META), "w", encoding="utf-8"
+            ) as f:
+                json.dump(meta, f)
+            return page
+        except Exception as exc:
+            self._error(f"could not write the session page ({exc!r})")
+            return None
 
     # -- history ----------------------------------------------------------------
     def history(self) -> List[dict]:
@@ -458,6 +525,7 @@ class LiveSession:
                 fn(snap)
             except Exception:
                 pass
+        self.write_session_page()
 
     def start(self) -> Snapshot:
         """Read the repository and draw its current state (change 0)."""
@@ -634,6 +702,21 @@ class LiveHandler(http.server.BaseHTTPRequestHandler):
             return self._send(
                 json.dumps(session.history()).encode("utf-8"), "application/json"
             )
+        if path == "/" + SESSION_PAGE:
+            # The whole session as one page, offered as a download.
+            body = session.session_page().encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            stem = f"{session.name}-live-{time.strftime('%Y%m%d-%H%M%S', time.localtime(session.started))}"
+            self.send_header(
+                "Content-Disposition", f'attachment; filename="{stem}.html"'
+            )
+            self._cors()
+            self.end_headers()
+            self.wfile.write(body)
+            return
         m = re.match(r"^/(svg|page)/(\d+)$", path)
         if m:
             snap = session.get(int(m.group(2)))
@@ -691,6 +774,50 @@ class LiveServer(http.server.ThreadingHTTPServer):
     def __init__(self, address, session: LiveSession):
         super().__init__(address, LiveHandler)
         self.session = session
+
+
+# ----------------------------------------------------------------- sessions
+def _sessions_dir(root: str) -> str:
+    """Where this repository's live sessions are kept: <media>/<repo>/live."""
+    media = os.path.expanduser(str(settings.media_dir))
+    # The CLI callback appended the repository name of the *current* folder;
+    # live may watch another one (--repo), so name the folder after it.
+    if os.path.basename(media) != os.path.basename(root):
+        media = os.path.join(os.path.dirname(media), os.path.basename(root))
+    return os.path.join(media, "live")
+
+
+def list_sessions(sessions_dir: str) -> List[dict]:
+    """Recorded sessions, newest first, from each folder's session.json."""
+    found = []
+    try:
+        names = os.listdir(sessions_dir)
+    except OSError:
+        return found
+    for name in names:
+        folder = os.path.join(sessions_dir, name)
+        meta_path = os.path.join(folder, SESSION_META)
+        try:
+            with open(meta_path, encoding="utf-8") as f:
+                meta = json.load(f)
+        except (OSError, ValueError):
+            continue
+        if not os.path.exists(meta.get("page", "")):
+            continue
+        found.append(meta)
+    found.sort(key=lambda m: m.get("started", 0), reverse=True)
+    return found
+
+
+def _replay_page(which: str, sessions_dir: str) -> Optional[str]:
+    """The session page to open for --replay: the latest, a folder, or a page."""
+    if which == "latest":
+        found = list_sessions(sessions_dir)
+        return found[0]["page"] if found else None
+    path = os.path.abspath(os.path.expanduser(which))
+    if os.path.isdir(path):
+        path = os.path.join(path, SESSION_PAGE)
+    return path if os.path.isfile(path) else None
 
 
 # ------------------------------------------------------------------ command
@@ -765,6 +892,21 @@ def live(
         "--print-page",
         help="Print the live page's HTML and exit (for editors embedding it).",
     ),
+    replay: bool = typer.Option(
+        False,
+        "--replay",
+        help="Open a recorded session instead of watching: the latest, or the one --session names.",
+    ),
+    session_path: Optional[str] = typer.Option(
+        None,
+        "--session",
+        help="With --replay: the session to open, as its folder or its session.html.",
+    ),
+    sessions: bool = typer.Option(
+        False,
+        "--sessions",
+        help="List the recorded sessions of this repository and exit (with --json, one JSON line each).",
+    ),
     zones: bool = typer.Option(
         True,
         "--zones/--no-zones",
@@ -812,13 +954,41 @@ def live(
     # to three labels on a commit instead of the one a single simulation shows.
     _default_setting(ctx, "max_branches_per_commit", 3)
 
+    sessions_dir = _sessions_dir(root)
+    if sessions:
+        found = list_sessions(sessions_dir)
+        if as_json:
+            for s in found:
+                sys.stdout.write(json.dumps({"event": "session", **s}) + "\n")
+            sys.stdout.flush()
+        elif not found:
+            _say(
+                f"no recorded live sessions for {root} (they are kept under {sessions_dir})"
+            )
+        else:
+            for s in found:
+                when = time.strftime("%Y-%m-%d %H:%M", time.localtime(s["started"]))
+                typer.echo(f"{when}  {s['changes']:3d} change(s)  {s['page']}")
+        return
+    if replay or session_path:
+        which = session_path or "latest"
+        page = _replay_page(which, sessions_dir)
+        if not page:
+            typer.echo(
+                f"git-sim error: no recorded session found ({which}); "
+                f"sessions are kept under {sessions_dir}",
+                err=True,
+            )
+            raise typer.Exit(code=1)
+        typer.echo(page)
+        if settings.auto_open:
+            from git_sim.render import open_file
+
+            open_file(page)
+        return
+
     stamp = time.strftime("%Y%m%d-%H%M%S")
-    media = os.path.expanduser(str(settings.media_dir))
-    # The CLI callback appended the repository name of the *current* folder;
-    # live may watch another one (--repo), so name the folder after it.
-    if os.path.basename(media) != os.path.basename(root):
-        media = os.path.join(os.path.dirname(media), os.path.basename(root))
-    out_dir = os.path.join(media, "live", stamp)
+    out_dir = os.path.join(sessions_dir, stamp)
     session = LiveSession(root, out_dir, zones=zones, poll=max(0.2, interval))
 
     def emit(snap: Snapshot) -> None:

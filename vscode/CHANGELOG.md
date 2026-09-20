@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0
+
+- Save a live session as one page (**Save session** in the strip): every
+  change and the strip in a single HTML file that opens anywhere.
+- Record the replay as a video (**Record video**), MP4 where the browser
+  can encode it, WebM otherwise, saved through a save dialog.
+- **git-sim: Open a recorded live session...** lists past sessions of the
+  repository (git-sim keeps each one under its media folder) and opens one.
+
 ## 0.2.0
 
 - Live graph: follow the repository as it changes. Every commit, branch,

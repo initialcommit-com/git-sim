@@ -445,6 +445,12 @@ def test_the_local_server_requires_the_key_and_answers_the_site(repo, tmp_path):
                 and r.headers["Access-Control-Allow-Origin"]
                 == "https://initialcommit.com"
             )
+        # the whole session as a downloadable page
+        with urllib.request.urlopen(base + f"/session.html?k={session.key}") as r:
+            assert r.headers["Content-Disposition"].startswith(
+                'attachment; filename="repo-live-'
+            )
+            assert b'id="git-sim-session"' in r.read()
     finally:
         session.stop.set()
         server.shutdown()
@@ -483,6 +489,103 @@ def test_cli_once_prints_the_first_snapshot(repo, tmp_path):
     assert (
         os.sep + "repo" + os.sep + "live" + os.sep in snap["svg"]
     ), "saved under the watched repository's media folder"
+
+
+def test_a_session_is_kept_as_one_page_and_listed(repo, tmp_path):
+    from git_sim.live import SESSION_PAGE, list_sessions
+    from git_sim.render.live_html import build_live_html
+
+    out = tmp_path / "sessions" / "20260920-120000"
+    session = LiveSession(str(repo), str(out), zones=False, poll=0.1)
+    session.start()
+    (repo / "file1.txt").write_text("changed\n")
+    run_git(repo, "add", "file1.txt")
+    run_git(repo, "commit", "-q", "-m", "commit 4")
+    assert session.check() is not None
+    page = (out / SESSION_PAGE).read_text(encoding="utf-8")
+    assert 'id="git-sim-session"' in page and 'data-live-recorded="1"' in page
+    data = session.session_data()
+    assert data["repo"] == "repo" and [i["index"] for i in data["items"]] == [0, 1]
+    assert data["items"][1]["label"] == "git commit" and data["items"][1][
+        "svg"
+    ].lstrip().startswith("<svg")
+    assert "git-sim live session" in page and page.count("<svg") >= 2
+    listed = list_sessions(str(tmp_path / "sessions"))
+    assert (
+        len(listed) == 1
+        and listed[0]["changes"] == 1
+        and listed[0]["page"] == str(out / SESSION_PAGE)
+    )
+    # a recorded page from data alone, for the extension and the server
+    alone = build_live_html(repo="repo", session=data)
+    assert '"items":' in alone and "Record video" in alone and "Save session" in alone
+
+
+def test_cli_lists_and_replays_sessions(repo, tmp_path):
+    env = {k: v for k, v in os.environ.items() if not k.lower().startswith("git_sim_")}
+    env["PYTHONIOENCODING"] = "utf-8"
+    media = str(tmp_path / "m")
+    base = [sys.executable, "-m", "git_sim", "-d", "--media-dir", media, "live"]
+    # nothing yet
+    out = subprocess.run(
+        base + ["--sessions", "--json", "-C", str(repo)],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=str(tmp_path),
+    ).stdout
+    assert out.strip() == ""
+    result = subprocess.run(
+        base + ["--replay", "-C", str(repo)],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=str(tmp_path),
+    )
+    assert result.returncode == 1 and "no recorded session" in result.stderr
+    # one run that draws the start state writes a session
+    subprocess.run(
+        base + ["--json", "--once", "-C", str(repo)],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=str(tmp_path),
+        check=True,
+    )
+    out = subprocess.run(
+        base + ["--sessions", "--json", "-C", str(repo)],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=str(tmp_path),
+        check=True,
+    ).stdout
+    listed = [json.loads(l) for l in out.splitlines() if l.strip()]
+    assert (
+        len(listed) == 1
+        and listed[0]["event"] == "session"
+        and listed[0]["changes"] == 0
+    )
+    page = subprocess.run(
+        base + ["--replay", "-C", str(repo)],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=str(tmp_path),
+        check=True,
+    ).stdout.strip()
+    assert page == listed[0]["page"] and os.path.exists(page)
+    assert (
+        subprocess.run(
+            base + ["--replay", "--session", os.path.dirname(page), "-C", str(repo)],
+            capture_output=True,
+            text=True,
+            env=env,
+            cwd=str(tmp_path),
+            check=True,
+        ).stdout.strip()
+        == page
+    )
 
 
 def test_cli_prints_the_live_page(repo, tmp_path):

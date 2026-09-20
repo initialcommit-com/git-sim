@@ -2,7 +2,7 @@
   "name": "git-sim",
   "displayName": "git-sim",
   "description": "See what a Git command will do before you run it, and watch your repository change live: interactive before / after simulations, deterministic pre-flight checks and a live graph of your real repository, powered by git-sim.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "initialcommit",
   "license": "GPL-2.0-only",
   "icon": "media/icon.png",
@@ -48,6 +48,7 @@
     "commands": [
       { "command": "git-sim.live", "title": "Live graph: follow the repository as it changes", "category": "git-sim", "icon": "$(pulse)" },
       { "command": "git-sim.liveSidebar", "title": "Show the live graph in the sidebar", "category": "git-sim" },
+      { "command": "git-sim.liveSessions", "title": "Open a recorded live session...", "category": "git-sim", "icon": "$(history)" },
       { "command": "git-sim.simulate", "title": "Simulate a Git command...", "category": "git-sim", "icon": "$(beaker)" },
       { "command": "git-sim.preflight", "title": "Pre-flight a Git command...", "category": "git-sim", "icon": "$(shield)" },
       { "command": "git-sim.simulateRecent", "title": "Simulate a recent command", "category": "git-sim" },
@@ -64,6 +65,7 @@
       ],
       "view/title": [
         { "command": "git-sim.live", "group": "navigation", "when": "view == git-sim.liveView" },
+        { "command": "git-sim.liveSessions", "group": "navigation", "when": "view == git-sim.liveView" },
         { "command": "git-sim.simulate", "group": "navigation", "when": "view == git-sim.liveView" }
       ],
       "editor/context": [

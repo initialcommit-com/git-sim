@@ -40,6 +40,7 @@ If it lives somewhere else, set `git-sim.executable` to its path.
 | --- | --- |
 | git-sim: Live graph | Opens the live graph of the repository in an editor tab (also the pulse button in the Source Control toolbar) |
 | git-sim: Show the live graph in the sidebar | Focuses the git-sim view in the sidebar |
+| git-sim: Open a recorded live session... | Lists the repository's past live sessions and opens one |
 | git-sim: Simulate a Git command... | Asks for a command (`rebase main`, `reset --hard HEAD~2`, ...) and opens the simulation |
 | git-sim: Pre-flight a Git command... | Asks for a command and shows what it would do, lose, and how to undo it |
 | git-sim: Simulate a recent command | Picks from the commands you simulated before |
@@ -77,6 +78,13 @@ Activity Bar). Drag the view into the secondary sidebar next to your AI chat,
 or into the panel next to the terminal, and it follows along while you or the
 agent type git commands. The sidebar view draws the commit graph alone by
 default (`git-sim.liveZones`).
+
+**Save session** in the strip writes the whole session as one HTML file
+(every change, the strip, nothing to install), and **Record video** records
+the replay as a video to post (MP4 where the browser can encode it, WebM
+otherwise; Esc stops early). git-sim keeps every session under its media
+folder too: **git-sim: Open a recorded live session...** lists them for the
+repository and opens one in a tab.
 
 The change names come from git itself: the HEAD reflog for commits, resets,
 checkouts, merges and rebases, and the difference between two readings of the

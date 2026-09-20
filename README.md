@@ -207,7 +207,10 @@ What changed is read from git itself (the refs, HEAD, `git status`, the stash li
 `--no-zones`: draw the commit graph alone, without the untracked / modified / staged table.  
 `--interval <seconds>`: how often to check the repository (default 1; each check runs a few quick git commands).  
 `--port <n>`: the port for the page (default: any free port).  
-`--json`: no browser and no server; print one JSON line per change, naming the graph and page written. This is what the [VS Code extension](docs/vscode.md) uses for its live tab and sidebar view.
+`--json`: no browser and no server; print one JSON line per change, naming the graph and page written. This is what the [VS Code extension](docs/vscode.md) uses for its live tab and sidebar view.  
+`--sessions`: list the repository's recorded sessions; `--replay` opens the latest one (or `--session <folder>`).
+
+**Save session** in the page writes the whole session as one HTML file that opens anywhere, and **Record video** records the replay as an MP4 or WebM to post; git-sim also keeps every session as `session.html` under the media folder. See [docs/live.md](docs/live.md).
 
 Nothing in the repository is modified. The local server listens on `127.0.0.1` only, answers cross-origin requests from the viewer's origin alone, and requires the session key on every request, so another web page you visit cannot read your graph off localhost.
 

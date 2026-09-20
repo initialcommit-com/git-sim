@@ -577,7 +577,14 @@ window.GitSimViewer = (function(){
     controls.title = locked ? 'Type the command in the terminal to play it' : '';
     [play, btnBefore, btnAfter, scrub].forEach(el => { el.disabled = locked; });
   }
-  control = { playOnce, setLocked, setState: s => { stopPlay(); setProgress(s === 'after' ? maxStep : s === 'before' ? 0 : clamp(parseInt(String(s).replace(/^step=/, ''), 10) || 0, 0, maxStep)); } };
+  control = {
+    playOnce, setLocked,
+    setState: s => { stopPlay(); setProgress(s === 'after' ? maxStep : s === 'before' ? 0 : clamp(parseInt(String(s).replace(/^step=/, ''), 10) || 0, 0, maxStep)); },
+    // A host that drives the animation itself (the live page recording a video) sets a fractional progress.
+    setProgress: p => { stopPlay(); setProgress(p); },
+    steps: () => maxStep,
+    animatable: () => animatable,
+  };
   // Manual controls never wait for the loop: they stop it and apply at once.
   const manual = fn => (...args) => { if (locked) return; stopPlay(); fn(...args); };
   play.onclick = () => { if (locked) return; playing ? stopPlay() : startPlay(); };
@@ -849,8 +856,12 @@ window.GitSimViewer = (function(){
   function setState(s){ if (control) control.setState(s); }
   // setLocked(true | false): lock or free the playback controls of the graph on the stage.
   function setLocked(v){ if (control) control.setLocked(v); }
+  // setProgress(p): put the graph at a fractional point of its animation (0 = before, steps() = after).
+  function setProgress(p){ if (control) control.setProgress(p); }
+  function steps(){ return control ? control.steps() : 0; }
+  function animatable(){ return !!(control && control.animatable()); }
 
-  return {init, boot, mount, load, unmount, deflate, inflate, setTheme, retheme, playOnce, setState, setLocked};
+  return {init, boot, mount, load, unmount, deflate, inflate, setTheme, retheme, playOnce, setState, setLocked, setProgress, steps, animatable};
 })();
 """
 VIEWER_JS = VIEWER_JS.replace("__PALETTES__", _palettes_json())
