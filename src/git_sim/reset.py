@@ -50,6 +50,16 @@ class Reset(GitSimBaseCommand):
 
         self.commitsSinceResetTo = list(self.repo.iter_commits(self.commit + "...HEAD"))
         self.n = self.n_default
+        # A reset to a descendant of HEAD (undoing an earlier reset, from the
+        # reflog) moves the branch forward. The graph is then parsed from the
+        # target, so both it and HEAD are drawn and the labels have somewhere
+        # to go; the files involved are restored rather than deleted.
+        head = self.get_commit()
+        self.forward = (
+            head != "dark"
+            and self.resetTo.hexsha != head.hexsha
+            and self.repo.is_ancestor(head, self.resetTo)
+        )
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
@@ -86,7 +96,7 @@ class Reset(GitSimBaseCommand):
             print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
-        self.parse_commits()
+        self.parse_commits(self.resetTo if self.forward else None)
         self.recenter_frame()
         self.scale_frame()
         if self.paths:
@@ -107,7 +117,9 @@ class Reset(GitSimBaseCommand):
         else:
             self.reset_head_branch(self.resetTo.hexsha)
             self.vsplit_frame()
-            self.setup_and_draw_zones(first_column_name="Changes deleted from")
+            self.setup_and_draw_zones(
+                first_column_name="Files restored in" if self.forward else "Changes deleted from"
+            )
         self.show_command_as_title()
         self.fadeout()
         self.show_outro()
@@ -117,15 +129,19 @@ class Reset(GitSimBaseCommand):
         if commit == "dark":
             commitId = m.Text("", font=self.font, font_size=20, color=self.fontColor)
             commitMessage = ""
-        elif i == 3 and self.resetTo.hexsha not in [
-            c.hexsha for c in self.get_default_commits()
-        ]:
+        elif (
+            i == 3
+            and not self.forward
+            and self.resetTo.hexsha not in [c.hexsha for c in self.get_default_commits()]
+        ):
             commitId = m.Text("...", font=self.font, font_size=20, color=self.fontColor)
             commitMessage = "..."
             hide_refs = True
-        elif i == 4 and self.resetTo.hexsha not in [
-            c.hexsha for c in self.get_default_commits()
-        ]:
+        elif (
+            i == 4
+            and not self.forward
+            and self.resetTo.hexsha not in [c.hexsha for c in self.get_default_commits()]
+        ):
             commitId = m.Text(
                 self.resetTo.hexsha[:6],
                 font=self.font,

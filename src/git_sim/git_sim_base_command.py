@@ -109,8 +109,12 @@ class GitSimBaseCommand(m.MovingCameraScene):
         return "dark"
 
     def get_default_commits(self):
+        """HEAD and up to n_default - 1 first-parent ancestors, stopping at
+        the root commit when the history is shorter than that."""
         defaultCommits = [self.get_commit()]
         for x in range(self.n_default - 1):
+            if not defaultCommits[-1].parents:
+                break
             defaultCommits.append(defaultCommits[-1].parents[0])
         return defaultCommits
 
@@ -1405,26 +1409,26 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.recenter_frame()
             self.scale_frame()
 
+    def head_refs(self):
+        """The labels that travel with HEAD: HEAD and the active branch, or
+        HEAD alone when it is detached."""
+        if self.repo.head.is_detached:
+            return ["HEAD"]
+        return ["HEAD", self.repo.active_branch.name]
+
     def reset_head_branch(self, hexsha, shift=numpy.array([0.0, 0.0, 0.0])):
         if not self.head_exists():
             return
-        self.move_refs(
-            ["HEAD", self.repo.active_branch.name],
-            hexsha,
-            shift=shift,
-            offsets=(1.4, 2.0),
-        )
+        self.move_refs(self.head_refs(), hexsha, shift=shift, offsets=(1.4, 2.0))
 
     def reset_head(self, hexsha, shift=numpy.array([0.0, 0.0, 0.0])):
         self.move_refs(["HEAD"], hexsha, shift=shift, offsets=(1.4,))
 
     def reset_branch(self, hexsha, shift=numpy.array([0.0, 0.0, 0.0])):
-        self.move_refs(
-            [self.repo.active_branch.name], hexsha, shift=shift, offsets=(1.4,)
-        )
+        self.move_refs(self.head_refs()[1:], hexsha, shift=shift, offsets=(1.4,))
 
     def reset_head_branch_to_ref(self, ref, shift=numpy.array([0.0, 0.0, 0.0])):
-        self.move_refs(["HEAD", self.repo.active_branch.name], above=ref)
+        self.move_refs(self.head_refs(), above=ref)
 
     def translate_frame(self, shift):
         if settings.animate:

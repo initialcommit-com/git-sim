@@ -289,6 +289,7 @@ def push(
     set_upstream: bool = typer.Option(
         False,
         "--set-upstream",
+        "-u",
         help="Map the local branch to the specified upstream branch",
     ),
     force: bool = typer.Option(

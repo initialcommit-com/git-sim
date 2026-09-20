@@ -58,6 +58,8 @@ class Switch(GitSimBaseCommand):
             branch_names = branch_names.split("\n")
             for i, bn in enumerate(branch_names):
                 branch_names[i] = bn.strip("*").strip()
+            # a detached HEAD is listed as "(HEAD detached at ...)", which is not a branch
+            branch_names = [bn for bn in branch_names if bn and not bn.startswith("(")]
             branch_hexshas = [
                 self.repo.branches[branch].commit.hexsha for branch in branch_names
             ]
