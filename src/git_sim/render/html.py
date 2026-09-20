@@ -114,6 +114,8 @@ html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-f
 #brand:hover{color:var(--text)}
 #controls{display:flex;align-items:center;gap:14px;padding:6px 10px 6px 6px;border:1px solid var(--rule);border-radius:999px;background:var(--panel)}
 #controls.off{visibility:hidden}
+#controls.locked{opacity:.45;cursor:not-allowed}
+#controls.locked button,#controls.locked input{pointer-events:none}
 #play{width:40px;height:40px;border-radius:50%;border:0;background:var(--accent);color:var(--bg);font:700 15px/1 var(--font);cursor:pointer;display:grid;place-items:center;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
 #play:hover{filter:brightness(1.08)}
 .end{border:0;background:transparent;color:var(--muted);font:700 15px/1 var(--font);padding:6px 4px;cursor:pointer;letter-spacing:.02em}
@@ -301,6 +303,7 @@ window.GitSimViewer = (function(){
   // graph was drawn in), state ('before', 'after', 'step=N'; else it plays).
   let dispose = null;      // tears down the viewer currently on the stage
   let pendingState = null; // the state the next init() opens on, when mount() sets one
+  let pendingLocked = false; // whether the next init() starts with its playback controls locked
   let control = null;      // the playback of the graph on the stage, for a host page (a lesson's terminal)
   function mount(svgText, options){
     options = options || {};
@@ -325,7 +328,8 @@ window.GitSimViewer = (function(){
     if (want && shown.dataset.theme !== want) retheme(shown, shown.dataset.theme, want);
     if (want) document.documentElement.dataset.theme = want;
     pendingState = options.state || null;
-    try { init(); } finally { pendingState = null; }
+    pendingLocked = !!options.locked;
+    try { init(); } finally { pendingState = null; pendingLocked = false; }
   }
   // load(url | svgText, options): fetch when given a URL, then mount.
   async function load(source, options){
@@ -560,17 +564,31 @@ window.GitSimViewer = (function(){
     playing = true; play.innerHTML = '&#10074;&#10074;'; play.title = 'pause (A)';
     tween(maxStep, perStep * maxStep + 200, () => { stopPlay(); if (then) then(); });
   }
-  control = { playOnce, setState: s => { stopPlay(); setProgress(s === 'after' ? maxStep : s === 'before' ? 0 : clamp(parseInt(String(s).replace(/^step=/, ''), 10) || 0, 0, maxStep)); } };
+  // A host page can lock the playback controls (a lesson does until the
+  // learner has typed the command, so "After" cannot stand in for typing it):
+  // the bar's buttons, the slider and the shortcuts do nothing; playOnce and
+  // setState, which the page itself calls, still work.
+  let locked = false;
+  const controls = document.getElementById('controls');
+  function setLocked(v){
+    locked = !!v;
+    if (locked) stopPlay();
+    controls.classList.toggle('locked', locked);
+    controls.title = locked ? 'Type the command in the terminal to play it' : '';
+    [play, btnBefore, btnAfter, scrub].forEach(el => { el.disabled = locked; });
+  }
+  control = { playOnce, setLocked, setState: s => { stopPlay(); setProgress(s === 'after' ? maxStep : s === 'before' ? 0 : clamp(parseInt(String(s).replace(/^step=/, ''), 10) || 0, 0, maxStep)); } };
   // Manual controls never wait for the loop: they stop it and apply at once.
-  const manual = fn => (...args) => { stopPlay(); fn(...args); };
-  play.onclick = () => playing ? stopPlay() : startPlay();
+  const manual = fn => (...args) => { if (locked) return; stopPlay(); fn(...args); };
+  play.onclick = () => { if (locked) return; playing ? stopPlay() : startPlay(); };
   btnBefore.onclick = manual(() => setProgress(0));
   btnAfter.onclick = manual(() => setProgress(maxStep));
   on(scrub, 'input', manual(() => setProgress(parseInt(scrub.value, 10) / RES)));
   on(scrub, 'pointerdown', () => stopPlay());
 
   const animatable = after.length + removed.length + moved.length + recolored.length > 0;
-  document.getElementById('controls').classList.toggle('off', !animatable);
+  controls.classList.toggle('off', !animatable);
+  if (pendingLocked) setLocked(true);
   const params = hashParams();
   const state = pendingState !== null ? pendingState : (params.s || '');
   const pinned = /^(before|after|step=\d+)$/.test(state);
@@ -588,7 +606,7 @@ window.GitSimViewer = (function(){
     if (t && t !== scrub && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
     if (e.target === scrub && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); }
     if (e.key === 'Escape') { stopPlay(); resetView(); return; }
-    if (!animatable) return;
+    if (!animatable || locked) return;
     if (e.key === 'a' || e.key === 'A') { playing ? stopPlay() : startPlay(); return; }
     if (e.key === 'ArrowLeft') manual(() => setProgress(Math.ceil(progress - 0.001) - 1))();
     else if (e.key === 'ArrowRight') manual(() => setProgress(Math.floor(progress + 0.001) + 1))();
@@ -829,8 +847,10 @@ window.GitSimViewer = (function(){
   // then call then(). setState('before' | 'after' | 'step=N'): jump there.
   function playOnce(then){ if (control) control.playOnce(then); else if (then) then(); }
   function setState(s){ if (control) control.setState(s); }
+  // setLocked(true | false): lock or free the playback controls of the graph on the stage.
+  function setLocked(v){ if (control) control.setLocked(v); }
 
-  return {init, boot, mount, load, unmount, deflate, inflate, setTheme, retheme, playOnce, setState};
+  return {init, boot, mount, load, unmount, deflate, inflate, setTheme, retheme, playOnce, setState, setLocked};
 })();
 """
 VIEWER_JS = VIEWER_JS.replace("__PALETTES__", _palettes_json())
