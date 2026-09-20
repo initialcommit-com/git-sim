@@ -7,10 +7,11 @@ deterministic facts — what would be lost, and how to undo it — plus a
 rendered git-sim image of the operation.
 
 It speaks the hook dialects of Claude Code, Codex CLI, Cursor, GitHub
-Copilot CLI and Gemini CLI. The agent is taken from ``--agent <name>`` when
-the installer put it in the config, and detected from the payload shape
-otherwise. Agents whose hooks can ask the user (Claude Code, Cursor,
-Copilot) get an "ask" decision; agents whose hooks can only allow or deny
+Copilot CLI, Gemini CLI and VS Code's agent hooks (which read Copilot CLI
+hook files, so the two share one). The agent is taken from ``--agent <name>``
+when the installer put it in the config, and detected from the payload shape
+otherwise. Agents whose hooks can ask the user (Claude Code, Cursor, Copilot,
+VS Code) get an "ask" decision; agents whose hooks can only allow or deny
 (Codex, Gemini) get a deny whose reason carries the facts and tells the
 agent how to proceed once the user has approved.
 
@@ -28,6 +29,17 @@ Environment variables:
     GIT_SIM_HOOK_OPEN    "0" to skip auto-opening the rendered image.
     GIT_SIM_HOOK_TEXT    "0" to omit the plain-text commit graph.
     GIT_SIM_HOOK_AGENT   force the agent dialect (same values as --agent).
+    GIT_SIM_HOOK_REPORT_SAFE
+                         "1": also answer for git commands the engine rated
+                         below the threshold, with an "allow" that carries a
+                         one-line "SAFE" (or "CAUTION") note, so the user sees
+                         the level every time. Default "1" inside VS Code,
+                         "0" elsewhere (where it would only add noise).
+
+Inside VS Code (its agent hooks, or Copilot CLI's shared hook file running
+under VS Code) the hook renders the interactive page instead of an image, does
+not pop a viewer window, and leaves a note in git-sim_media/inbox for the
+git-sim extension, which opens the page in an editor tab.
 
 Approval override: a command prefixed with ``GIT_SIM_APPROVE=1`` (or
 ``$env:GIT_SIM_APPROVE=1;`` in PowerShell) is let through without a
@@ -40,6 +52,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from typing import List, Optional, Tuple
 
 from git_sim.preflight import (
@@ -70,8 +83,18 @@ AGENTS = {
     "cursor": {"label": "Cursor", "asks": True},
     "copilot": {"label": "GitHub Copilot CLI", "asks": True},
     "gemini": {"label": "Gemini CLI", "asks": False},
+    "vscode": {"label": "VS Code", "asks": True},
 }
-SHELL_TOOLS = {"bash", "powershell", "shell", "run_shell_command", "run_terminal_cmd"}
+SHELL_TOOLS = {
+    "bash",
+    "powershell",
+    "shell",
+    "run_shell_command",
+    "run_terminal_cmd",
+    "runterminalcommand",  # VS Code agent hooks
+    "run_in_terminal",
+}
+VSCODE_TOOLS = {"runterminalcommand", "run_in_terminal"}
 
 
 def extract_git_commands(shell_command: str) -> List[str]:
@@ -136,7 +159,58 @@ def _open_file(path: str) -> None:
         pass
 
 
-def format_reason(reports: List[PreflightReport], image_path: Optional[str]) -> str:
+def in_vscode(agent: Optional[str], hook_input: dict) -> bool:
+    """Whether this hook call comes from VS Code: its own agent dialect, its
+    terminal tool in the payload (the shared Copilot hook file runs there too),
+    or VS Code's process environment around us."""
+    tool = str(hook_input.get("tool_name") or "").lower()
+    return (
+        agent == "vscode" or tool in VSCODE_TOOLS or bool(os.environ.get("VSCODE_PID"))
+    )
+
+
+def post_to_inbox(page_path: str, report: PreflightReport, cwd: str) -> Optional[str]:
+    """Leave a note for the VS Code extension about an interactive page just
+    written, so it can open it in an editor tab. Written to a temporary name
+    and renamed, so a watcher never reads a half-written file."""
+    from git_sim.paths import inbox_dir
+
+    try:
+        inbox = inbox_dir()
+        inbox.mkdir(parents=True, exist_ok=True)
+        stamp = time.time_ns()
+        record = {
+            "page": page_path,
+            "command": report.command,  # already starts with "git"
+            "risk": report.risk.value,
+            "repo": cwd,
+            "time": stamp,
+        }
+        tmp = inbox / f".{os.getpid()}-{stamp}.tmp"
+        final = inbox / f"{stamp}.json"
+        tmp.write_text(json.dumps(record), encoding="utf-8")
+        tmp.replace(final)
+        return str(final)
+    except Exception:
+        return None
+
+
+def safe_note(reports: List[PreflightReport]) -> str:
+    """One line per analysed command that stayed below the threshold."""
+    lines = []
+    for report in reports:
+        line = f"git-sim preflight: {report.risk.value.upper()} — {report.command}"
+        if report.summary:
+            line += f" ({report.summary.rstrip('.')})"
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def format_reason(
+    reports: List[PreflightReport],
+    image_path: Optional[str],
+    page_path: Optional[str] = None,
+) -> str:
     lines = []
     for report in reports:
         lines.append(
@@ -162,6 +236,10 @@ def format_reason(reports: List[PreflightReport], image_path: Optional[str]) -> 
         lines.append("")
     if image_path:
         lines.append(f"Simulation image: {image_path}")
+    if page_path:
+        lines.append(
+            f"Interactive simulation: {page_path} (opening in a git-sim tab in VS Code)"
+        )
     return "\n".join(lines).strip()
 
 
@@ -223,6 +301,8 @@ def parse_hook_input(
         return agent, command, cwd
     if event == "BeforeTool" or tool == "run_shell_command":
         return "gemini", command, cwd
+    if tool.lower() in VSCODE_TOOLS:
+        return "vscode", command, cwd
     return "claude", command, cwd
 
 
@@ -249,8 +329,22 @@ def build_output(agent: str, decision: str, reason: str) -> dict:
     """The decision in the agent's own hook output schema."""
     if agent == "cursor":
         return {"permission": decision, "user_message": reason, "agent_message": reason}
-    if agent == "copilot":
-        return {"permissionDecision": decision, "permissionDecisionReason": reason}
+    if agent in ("copilot", "vscode"):
+        # Copilot CLI reads the decision at the top level; VS Code's agent hooks
+        # read Copilot's hook files but take it under hookSpecificOutput. One
+        # answer carries both, so the shared hook file works in either.
+        output = {
+            "permissionDecision": decision,
+            "permissionDecisionReason": reason,
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": decision,
+                "permissionDecisionReason": reason,
+            },
+        }
+        if decision == "allow":
+            output["systemMessage"] = reason  # VS Code shows this beside the call
+        return output
     if agent == "gemini":
         output = {"decision": decision, "systemMessage": reason}
         if decision != "allow":
@@ -287,29 +381,46 @@ def run_hook(hook_input: dict, agent: Optional[str] = None) -> Optional[dict]:
     if APPROVAL_OVERRIDE.search(command):
         return None  # the user already approved this exact command
 
+    vscode = in_vscode(agent, hook_input)
     threshold = os.environ.get("GIT_SIM_HOOK_ASK_ON", "caution")
     render_text = os.environ.get("GIT_SIM_HOOK_TEXT", "1") != "0"
-    flagged = []
+    analysed, flagged = [], []
     for git_command in risky_git_commands(command):
         report = analyze(git_command, cwd, render_text=render_text)
-        if report.error is None and _risk_triggers(report.risk, threshold):
+        if report.error is not None:
+            continue
+        analysed.append(report)
+        if _risk_triggers(report.risk, threshold):
             flagged.append(report)
 
     if not flagged:
+        # Below the threshold: silent by default, or an "allow" that still names
+        # the level, so the user sees a verdict on every git command (VS Code).
+        report_safe = os.environ.get("GIT_SIM_HOOK_REPORT_SAFE", "1" if vscode else "0")
+        if analysed and report_safe != "0":
+            return build_output(agent, "allow", safe_note(analysed))
         return None
 
-    image_path = None
+    image_path = page_path = None
     if os.environ.get("GIT_SIM_HOOK_RENDER", "1") != "0":
         from git_sim.simulate import render_simulation
 
-        rendered = render_simulation(flagged[0].command, cwd)
-        image_path = rendered.get("image_path")
-        if image_path and os.environ.get("GIT_SIM_HOOK_OPEN", "1") != "0":
-            _open_file(image_path)
+        if vscode:
+            # The interactive page, opened by the git-sim extension in an editor
+            # tab (via the inbox note) rather than a picture in a viewer window.
+            rendered = render_simulation(flagged[0].command, cwd, img_format="html")
+            page_path = rendered.get("image_path")
+            if page_path:
+                post_to_inbox(page_path, flagged[0], cwd)
+        else:
+            rendered = render_simulation(flagged[0].command, cwd)
+            image_path = rendered.get("image_path")
+            if image_path and os.environ.get("GIT_SIM_HOOK_OPEN", "1") != "0":
+                _open_file(image_path)
 
     mode = os.environ.get("GIT_SIM_HOOK_MODE", "ask").lower()
     decision = _decide(agent, mode)
-    reason = format_reason(flagged, image_path)
+    reason = format_reason(flagged, image_path, page_path)
     if decision == "deny" and mode == "ask":
         reason += _cannot_ask_note(agent)
     return build_output(agent, decision, reason)

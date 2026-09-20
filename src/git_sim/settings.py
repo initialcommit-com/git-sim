@@ -4,6 +4,7 @@ from typing import List, Union
 from pydantic_settings import BaseSettings
 
 from git_sim.enums import StyleOptions, ColorByOptions, ImgFormat, OpenIn, VideoFormat
+from git_sim.paths import default_media_root
 
 
 class Settings(BaseSettings):
@@ -22,7 +23,9 @@ class Settings(BaseSettings):
     low_quality: bool = False
     max_branches_per_commit: int = 1
     max_tags_per_commit: int = 1
-    media_dir: pathlib.Path = pathlib.Path().cwd()
+    # git-sim_media is created here: the user's cache area, outside any
+    # repository (see paths.py). --media-dir / git_sim_media_dir override it.
+    media_dir: pathlib.Path = default_media_root()
     outro_bottom_text: str = "Learn more at initialcommit.com"
     outro_top_text: str = "Thanks for using Initial Commit!"
     # Newest commit on the left, arrows pointing right toward parents, so

@@ -45,6 +45,7 @@ Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work 
 - Animation only: Add custom branded intro/outro sequences if desired
 - Animation only: Speed up or slow down animation speed as desired
 - NEW: [MCP server and Claude Code hook](docs/mcp.md) so AI coding agents (Claude Code, Cursor, etc.) run deterministic pre-flight checks — facts, a text commit graph and a simulation image — before executing destructive git commands in your repo. Included in the default install.
+- NEW: `git-sim preflight <command>` runs that same check from the terminal, and the [VS Code extension](docs/vscode.md) puts simulations and pre-flight checks in an editor tab.
 
 ## Quickstart
 Note: If you prefer to install git-sim with Docker, skip steps (1) and (2) here and jump to the [Docker installation](#docker-installation) section below, then come back here to step (3).
@@ -101,7 +102,7 @@ Or if you want to do it all in a single command:
 $ git-dummy --no-subdir --branches=3 --commits=10 && git-sim [global options] <subcommand> [subcommand options]
 ```
 
-5) Simulated output will be created as an interactive `.html` page (or a `.jpg` / `.png` image with `--img-format`). Output files are named using the subcommand executed combined with a timestamp, and by default are stored in a subdirectory called `git-sim_media/`. The location of this subdirectory is customizable using the command line flag `--media-dir=path/to/output`. Note that when the `--animate` global flag is used, render times will be much longer and a `.mp4` video output file will be produced.
+5) Simulated output will be created as an interactive `.html` page (or a `.jpg` / `.png` image with `--img-format`). Output files are named using the subcommand executed combined with a timestamp, and are stored in a `git-sim_media/` folder with a subfolder per repository. By default that folder lives in your user cache area, outside any repository (`%LOCALAPPDATA%\git-sim_media` on Windows, `~/Library/Caches/git-sim_media` on macOS, `~/.cache/git-sim_media` on Linux); `git-sim media-dir` prints it. Move it with `--media-dir=path/to/output` or the `git_sim_media_dir` environment variable (`--media-dir .` puts it in the current folder, as older versions did). Note that when the `--animate` global flag is used, render times will be much longer and a `.mp4` video output file will be produced.
 
 6) For convenience, environment variables can be set for any global command-line option available in git-sim. All environment variables start with `git_sim_` followed by the name of the option.
 
@@ -562,7 +563,7 @@ Use light mode (soft off-white background, dark text) instead of the default dar
 $ git-sim --light-mode status
 ```
 
-The default output is a self-contained interactive HTML page, saved under `git-sim_media/` and opened in the git-sim viewer at initialcommit.com. Drag the Before / After slider (or press play) to watch the command happen, hover commits for details, ctrl + wheel to zoom. The graph travels compressed in the link's `#fragment`, which browsers never send to a server, and the link git-sim opens carries nothing else about you or your repository (the command rides in the fragment too), so the server learns nothing about your code. The hosted page notes that git-sim opened it and the name of the local copy. The Share button builds a link meant for posting: that one also puts the command and a short text graph (`git log --oneline`, up to 12 lines) in the query string so the link gets a preview card. `#before`, `#after` or `#step=N` in a link pins the state, and `git_sim_viewer_url` points links at your own copy of the viewer:
+The default output is a self-contained interactive HTML page, saved under `git-sim_media/` in your user cache area (see `git-sim media-dir`) and opened in the git-sim viewer at initialcommit.com. Drag the Before / After slider (or press play) to watch the command happen, hover commits for details, ctrl + wheel to zoom. The graph travels compressed in the link's `#fragment`, which browsers never send to a server, and the link git-sim opens carries nothing else about you or your repository (the command rides in the fragment too), so the server learns nothing about your code. The hosted page notes that git-sim opened it and the name of the local copy. The Share button builds a link meant for posting: that one also puts the command and a short text graph (`git log --oneline`, up to 12 lines) in the query string so the link gets a preview card. `#before`, `#after` or `#step=N` in a link pins the state, and `git_sim_viewer_url` points links at your own copy of the viewer:
 
 ```console
 $ git-sim rebase -i main --todo todo.txt

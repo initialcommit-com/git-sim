@@ -202,6 +202,89 @@ def test_copilot_payload_with_json_string_args(repo):
     assert run_hook({**payload, "toolName": "edit"}) is None
 
 
+def test_vscode_agent_hook_payload_gets_both_answer_shapes(repo):
+    # VS Code's agent hooks send tool_name "runTerminalCommand" and read the
+    # decision under hookSpecificOutput; they load Copilot CLI's hook file, so
+    # the same answer must also satisfy Copilot, which reads it at the top level.
+    dirty(repo)
+    payload = {
+        "hook_event_name": "PreToolUse",
+        "tool_name": "runTerminalCommand",
+        "tool_input": {"command": "git reset --hard HEAD~1"},
+        "cwd": str(repo),
+    }
+    for agent in (None, "copilot", "vscode"):
+        output = run_hook(payload, agent)
+        assert output["permissionDecision"] == "ask"
+        assert output["hookSpecificOutput"]["permissionDecision"] == "ask"
+        assert "file1.txt" in output["hookSpecificOutput"]["permissionDecisionReason"]
+    assert run_hook({**payload, "tool_name": "editFile"}) is None
+
+
+def test_vscode_gets_the_interactive_page_through_the_inbox(
+    repo, monkeypatch, tmp_path
+):
+    import json
+
+    from git_sim import simulate
+    from git_sim.settings import settings
+
+    dirty(repo)
+    monkeypatch.setenv("GIT_SIM_HOOK_RENDER", "1")
+    monkeypatch.setattr(settings, "media_dir", tmp_path)
+    page = tmp_path / "git-sim_media" / "repo" / "images" / "git-sim-reset.html"
+    page.parent.mkdir(parents=True)
+    page.write_text("<html></html>")
+    calls = []
+
+    def fake_render(command, repo_path, img_format=None):
+        calls.append(img_format)
+        return {"image_path": str(page), "render_note": None}
+
+    monkeypatch.setattr(simulate, "render_simulation", fake_render)
+    opened = []
+    monkeypatch.setattr("git_sim.claude_hook._open_file", lambda p: opened.append(p))
+    payload = {
+        "hook_event_name": "PreToolUse",
+        "tool_name": "runTerminalCommand",
+        "tool_input": {"command": "git reset --hard HEAD~1"},
+        "cwd": str(repo),
+    }
+    output = run_hook(
+        payload, "copilot"
+    )  # the shared Copilot hook file, run by VS Code
+    assert calls == ["html"] and opened == []  # a page, and no viewer window
+    assert (
+        "Interactive simulation"
+        in output["hookSpecificOutput"]["permissionDecisionReason"]
+    )
+    notes = list((tmp_path / "git-sim_media" / "inbox").glob("*.json"))
+    assert len(notes) == 1
+    note = json.loads(notes[0].read_text())
+    assert note["page"] == str(page) and note["command"] == "git reset --hard HEAD~1"
+    assert note["risk"] == "destructive" and note["repo"] == str(repo)
+
+
+def test_vscode_reports_the_level_of_a_safe_command(repo, monkeypatch):
+    payload = {
+        "hook_event_name": "PreToolUse",
+        "tool_name": "runTerminalCommand",
+        "tool_input": {"command": "git branch"},
+        "cwd": str(repo),
+    }
+    output = run_hook(payload)
+    assert output["permissionDecision"] == "allow"
+    assert output["systemMessage"].startswith("git-sim preflight: SAFE — git branch")
+    monkeypatch.setenv("GIT_SIM_HOOK_REPORT_SAFE", "0")
+    assert run_hook(payload) is None
+    # elsewhere the default stays silent, and the switch turns it on
+    assert run_hook(hook_input("git branch", repo)) is None
+    monkeypatch.setenv("GIT_SIM_HOOK_REPORT_SAFE", "1")
+    assert run_hook(hook_input("git branch", repo))["systemMessage"].startswith(
+        "git-sim preflight: SAFE"
+    )
+
+
 def test_gemini_cannot_ask_so_it_denies_with_instructions(repo):
     dirty(repo)
     payload = {

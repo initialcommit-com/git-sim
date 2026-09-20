@@ -1,0 +1,109 @@
+{
+  "name": "git-sim",
+  "displayName": "git-sim",
+  "description": "See what a Git command will do before you run it: interactive before / after simulations and deterministic pre-flight checks of your real repository, powered by git-sim.",
+  "version": "0.1.0",
+  "publisher": "initialcommit",
+  "license": "GPL-2.0-only",
+  "icon": "media/icon.png",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Visualization",
+    "Education"
+  ],
+  "keywords": [
+    "git",
+    "simulation",
+    "pre-flight",
+    "safety",
+    "visualization",
+    "learn git"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/initialcommit-com/git-sim"
+  },
+  "homepage": "https://initialcommit.com/tools/git-sim",
+  "bugs": {
+    "url": "https://github.com/initialcommit-com/git-sim/issues"
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      { "command": "git-sim.simulate", "title": "Simulate a Git command...", "category": "git-sim", "icon": "$(beaker)" },
+      { "command": "git-sim.preflight", "title": "Pre-flight a Git command...", "category": "git-sim", "icon": "$(shield)" },
+      { "command": "git-sim.simulateRecent", "title": "Simulate a recent command", "category": "git-sim" },
+      { "command": "git-sim.showLog", "title": "Show the repository graph (git log)", "category": "git-sim" },
+      { "command": "git-sim.simulateSelection", "title": "Simulate the selected command", "category": "git-sim" },
+      { "command": "git-sim.preflightSelection", "title": "Pre-flight the selected command", "category": "git-sim" },
+      { "command": "git-sim.installAgents", "title": "Wire git-sim into AI coding agents", "category": "git-sim" },
+      { "command": "git-sim.openLearn", "title": "Learn Git with git-sim (initialcommit.com)", "category": "git-sim" }
+    ],
+    "menus": {
+      "scm/title": [
+        { "command": "git-sim.simulate", "group": "navigation", "when": "scmProvider == git" }
+      ],
+      "editor/context": [
+        { "command": "git-sim.simulateSelection", "when": "editorHasSelection", "group": "z_git-sim@1" },
+        { "command": "git-sim.preflightSelection", "when": "editorHasSelection", "group": "z_git-sim@2" }
+      ],
+      "terminal/context": [
+        { "command": "git-sim.simulate", "group": "z_git-sim@1" },
+        { "command": "git-sim.preflight", "group": "z_git-sim@2" }
+      ],
+      "commandPalette": [
+        { "command": "git-sim.simulateSelection", "when": "editorHasSelection" },
+        { "command": "git-sim.preflightSelection", "when": "editorHasSelection" }
+      ]
+    },
+    "keybindings": [
+      { "command": "git-sim.simulate", "key": "ctrl+alt+g", "mac": "cmd+alt+g" }
+    ],
+    "configuration": {
+      "title": "git-sim",
+      "properties": {
+        "git-sim.executable": {
+          "type": "string",
+          "default": "git-sim",
+          "description": "The git-sim executable. Leave as 'git-sim' when it is on your PATH (pipx install git-sim, or uv tool install git-sim); otherwise the full path."
+        },
+        "git-sim.extraArgs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Extra global options passed to every simulation, for example [\"--no-reverse\"] or [\"--all\"]. See git-sim --help."
+        },
+        "git-sim.followEditorTheme": {
+          "type": "boolean",
+          "default": true,
+          "description": "Draw simulations in light mode when the editor's colour theme is light."
+        },
+        "git-sim.openInBrowser": {
+          "type": "boolean",
+          "default": false,
+          "description": "Open simulations in your browser instead of an editor tab."
+        },
+        "git-sim.openHookSimulations": {
+          "type": "boolean",
+          "default": true,
+          "description": "When git-sim's pre-flight hook stops an AI agent's risky git command, open the interactive simulation it rendered in an editor tab."
+        },
+        "git-sim.timeoutSeconds": {
+          "type": "number",
+          "default": 90,
+          "minimum": 5,
+          "description": "How long to wait for git-sim before giving up."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "package": "python build_vsix.py"
+  }
+}

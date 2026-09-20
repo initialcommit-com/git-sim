@@ -14,8 +14,8 @@ def fake_env(tmp_path, monkeypatch):
     project = tmp_path / "project"
     home.mkdir()
     project.mkdir()
-    monkeypatch.setattr(inst, "hook_executable", lambda: "C:/tools/git-sim-hook.exe")
-    monkeypatch.setattr(inst, "mcp_executable", lambda: "C:/tools/git-sim-mcp.exe")
+    monkeypatch.setattr(inst, "hook_argv", lambda: ["C:/tools/git-sim-hook.exe"])
+    monkeypatch.setattr(inst, "mcp_argv", lambda: ["C:/tools/git-sim-mcp.exe"])
     monkeypatch.setenv("APPDATA", str(home / "AppData" / "Roaming"))
     return home, project
 
@@ -31,8 +31,9 @@ def test_user_scope_writes_every_agent(fake_env):
     home, project = fake_env
     installer = inst.Installer(home=home, project=project, scope="user")
     statuses = run_all(installer)
+    # VS Code reads Copilot CLI's hook file, so its hook is the one Copilot just wrote
+    assert statuses.pop(("vscode", "hook")) == "unchanged"
     assert set(statuses.values()) == {"added"}
-    assert ("vscode", "hook") not in statuses  # VS Code has no shell hook
 
     claude = json.loads((home / ".claude" / "settings.json").read_text())
     group = claude["hooks"]["PreToolUse"][0]
@@ -84,11 +85,10 @@ def test_install_is_idempotent_and_updates_in_place(fake_env, monkeypatch):
     second = run_all(installer)
     assert set(second.values()) == {"unchanged"}
 
-    monkeypatch.setattr(
-        inst, "hook_executable", lambda: "C:/elsewhere/git-sim-hook.exe"
-    )
-    monkeypatch.setattr(inst, "mcp_executable", lambda: "C:/elsewhere/git-sim-mcp.exe")
+    monkeypatch.setattr(inst, "hook_argv", lambda: ["C:/elsewhere/git-sim-hook.exe"])
+    monkeypatch.setattr(inst, "mcp_argv", lambda: ["C:/elsewhere/git-sim-mcp.exe"])
     third = run_all(inst.Installer(home=home, project=project, scope="user"))
+    assert third.pop(("vscode", "hook")) == "unchanged"  # Copilot's write came first
     assert set(third.values()) == {"updated"}
     claude = json.loads((home / ".claude" / "settings.json").read_text())
     assert len(claude["hooks"]["PreToolUse"]) == 1
@@ -148,6 +148,7 @@ def test_uninstall_removes_everything_it_added(fake_env):
     installer = inst.Installer(home=home, project=project, scope="user")
     run_all(installer)
     removed = run_all(installer, remove=True)
+    assert removed.pop(("vscode", "hook")) == "absent"  # gone with Copilot's
     assert set(removed.values()) == {"removed"}
     again = run_all(installer, remove=True)
     assert set(again.values()) == {"absent"}
@@ -171,7 +172,78 @@ def test_project_scope_paths(fake_env):
     assert paths[("copilot", "hook")] == project / ".github" / "hooks" / "git-sim.json"
     assert paths[("gemini", "mcp")] == project / ".gemini" / "settings.json"
     assert paths[("vscode", "mcp")] == project / ".vscode" / "mcp.json"
+    assert paths[("vscode", "hook")] == project / ".github" / "hooks" / "git-sim.json"
     assert all(str(p).startswith(str(project)) for p in paths.values())
+
+
+def test_programs_fall_back_to_the_interpreter_when_scripts_are_missing(
+    tmp_path, monkeypatch
+):
+    # An editable install made before the console scripts existed has no
+    # git-sim-hook.exe beside its python; the written command must still run.
+    fake_python = tmp_path / "py" / "python.exe"
+    fake_python.parent.mkdir()
+    fake_python.write_text("")
+    monkeypatch.setattr(inst.sys, "executable", str(fake_python))
+    monkeypatch.setattr(inst.shutil, "which", lambda name: None)
+    assert inst.hook_argv() == [
+        fake_python.resolve().as_posix(),
+        "-m",
+        "git_sim.claude_hook",
+    ]
+    assert inst.mcp_argv() == [
+        fake_python.resolve().as_posix(),
+        "-m",
+        "git_sim.mcp_server",
+    ]
+    assert inst.hook_command("copilot").endswith(
+        "-m git_sim.claude_hook --agent copilot"
+    )
+
+    # ... and the scripts are preferred when they are there
+    (fake_python.parent / "git-sim-hook.exe").write_text("")
+    assert inst.hook_argv() == [
+        (fake_python.parent / "git-sim-hook.exe").resolve().as_posix()
+    ]
+
+    # a path with a space is quoted in the one-string form only
+    spaced = tmp_path / "Program Files" / "python.exe"
+    spaced.parent.mkdir()
+    spaced.write_text("")
+    monkeypatch.setattr(inst.sys, "executable", str(spaced))
+    assert inst.mcp_executable().startswith('"') and inst.mcp_argv()[0].startswith(
+        spaced.parent.resolve().as_posix()
+    )
+
+
+def test_interpreter_fallback_is_written_and_recognised(fake_env, monkeypatch):
+    home, project = fake_env
+    monkeypatch.setattr(
+        inst, "hook_argv", lambda: ["C:/py/python.exe", "-m", "git_sim.claude_hook"]
+    )
+    monkeypatch.setattr(
+        inst, "mcp_argv", lambda: ["C:/py/python.exe", "-m", "git_sim.mcp_server"]
+    )
+    installer = inst.Installer(home=home, project=project, scope="user")
+    run_all(installer)
+    vscode = json.loads((inst._vscode_user_dir(home) / "mcp.json").read_text())[
+        "servers"
+    ]["git-sim"]
+    assert vscode["command"] == "C:/py/python.exe" and vscode["args"] == [
+        "-m",
+        "git_sim.mcp_server",
+    ]
+    toml = (home / ".codex" / "config.toml").read_text()
+    assert 'args = ["-m", "git_sim.mcp_server"]' in toml
+    claude = json.loads((home / ".claude" / "settings.json").read_text())
+    assert claude["hooks"]["PreToolUse"][0]["hooks"][0]["command"].startswith(
+        "C:/py/python.exe -m git_sim.claude_hook"
+    )
+    # the module form is recognised as ours on the next run and on removal
+    assert set(run_all(installer).values()) == {"unchanged"}
+    removed = run_all(installer, remove=True)
+    assert removed[("claude", "hook")] == "removed"
+    assert "git_sim.claude_hook" not in (home / ".claude" / "settings.json").read_text()
 
 
 def test_detect_agents_from_config_dirs(fake_env, monkeypatch):

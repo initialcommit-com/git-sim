@@ -8,7 +8,6 @@ renderer, so the caller's process stays isolated from the scene code.
 import os
 import subprocess
 import sys
-import tempfile
 from typing import List
 
 from git_sim.preflight import parse_command
@@ -48,7 +47,11 @@ RENDER_TIMEOUT_SECONDS = 180
 
 
 def _media_dir() -> str:
-    root = os.path.join(tempfile.gettempdir(), "git-sim-mcp")
+    """The same place the CLI writes to (the user's cache area, or the
+    configured media dir), so an agent's renders sit beside the user's own."""
+    from git_sim.settings import settings
+
+    root = os.path.expanduser(str(settings.media_dir))
     os.makedirs(root, exist_ok=True)
     return root
 

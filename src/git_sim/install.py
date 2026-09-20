@@ -9,7 +9,10 @@ and ``git-sim uninstall`` removes exactly what was added.
 The hook command is the absolute path of ``git-sim-hook`` with forward
 slashes (Claude Code runs hooks through Git Bash on Windows, which eats
 backslashes) plus ``--agent <name>`` so the hook answers in the agent's
-dialect. VS Code Copilot has no shell hook, so it gets the MCP server only.
+dialect. When the console scripts are missing (an editable install made
+before they existed), the current interpreter runs the module instead, so the
+written command always works. VS Code reads Copilot CLI hook files, so it
+shares Copilot's hook file and gets the MCP server in its own ``mcp.json``.
 """
 
 import json
@@ -24,18 +27,23 @@ from typing import Callable, Dict, List, Optional
 import typer
 
 HOOK_MARKER = "git-sim-hook"
+HOOK_MODULE = "git_sim.claude_hook"
 MCP_MARKER = "git-sim-mcp"
+MCP_MODULE = "git_sim.mcp_server"
 MCP_NAME = "git-sim"
 HOOK_TIMEOUT_SECONDS = 120
 
 
 # --------------------------------------------------------------------------
-# Locating our executables
+# Locating our programs
 # --------------------------------------------------------------------------
 
 
-def _script_path(name: str) -> str:
-    """Absolute, forward-slash path of a console script installed with git-sim."""
+def _program(name: str, module: str) -> List[str]:
+    """How to run one of git-sim's programs, as an argument list: the console
+    script installed with git-sim (an absolute, forward-slash path) when it
+    exists, else the running interpreter with ``-m module``. A bare name that
+    might not be on the agent's PATH is never written."""
     candidates = []
     scripts_dir = Path(sys.executable).parent
     for suffix in (".exe", ""):
@@ -45,16 +53,25 @@ def _script_path(name: str) -> str:
         candidates.append(Path(found))
     for candidate in candidates:
         if candidate.exists():
-            return candidate.resolve().as_posix()
-    return name  # hope it is on PATH
+            return [candidate.resolve().as_posix()]
+    return [Path(sys.executable).resolve().as_posix(), "-m", module]
+
+
+def hook_argv() -> List[str]:
+    return _program(HOOK_MARKER, HOOK_MODULE)
+
+
+def mcp_argv() -> List[str]:
+    return _program(MCP_MARKER, MCP_MODULE)
 
 
 def hook_executable() -> str:
-    return _script_path(HOOK_MARKER)
+    """The hook as one shell command string (quoted where a path has spaces)."""
+    return " ".join(_quote(part) for part in hook_argv())
 
 
 def mcp_executable() -> str:
-    return _script_path(MCP_MARKER)
+    return " ".join(_quote(part) for part in mcp_argv())
 
 
 def _quote(path: str) -> str:
@@ -63,7 +80,12 @@ def _quote(path: str) -> str:
 
 def hook_command(agent: str) -> str:
     """Shell command string an agent should run for its pre-tool hook."""
-    return f"{_quote(hook_executable())} --agent {agent}"
+    return f"{hook_executable()} --agent {agent}"
+
+
+def _is_hook(value) -> bool:
+    """Whether a hook entry is ours, however the command was written."""
+    return _has_marker(value, HOOK_MARKER) or _has_marker(value, HOOK_MODULE)
 
 
 # --------------------------------------------------------------------------
@@ -104,7 +126,7 @@ def _upsert_hook_group(groups: list, new_group: dict) -> str:
     Gemini; plain commands for Cursor). Replace the one that already runs
     git-sim, or append."""
     for i, group in enumerate(groups):
-        if _has_marker(group, HOOK_MARKER):
+        if _is_hook(group):
             changed = groups[i] != new_group
             groups[i] = new_group
             return "updated" if changed else "unchanged"
@@ -114,7 +136,8 @@ def _upsert_hook_group(groups: list, new_group: dict) -> str:
 
 def _remove_marked(groups: list, marker: str) -> int:
     before = len(groups)
-    groups[:] = [g for g in groups if not _has_marker(g, marker)]
+    ours = _is_hook if marker == HOOK_MARKER else (lambda g: _has_marker(g, marker))
+    groups[:] = [g for g in groups if not ours(g)]
     return before - len(groups)
 
 
@@ -147,9 +170,7 @@ AGENT_SPECS: Dict[str, AgentSpec] = {
     "cursor": AgentSpec("cursor", "Cursor", ["~/.cursor"], ["cursor", "cursor-agent"]),
     "copilot": AgentSpec("copilot", "GitHub Copilot CLI", ["~/.copilot"], ["copilot"]),
     "gemini": AgentSpec("gemini", "Gemini CLI", ["~/.gemini"], ["gemini"]),
-    "vscode": AgentSpec(
-        "vscode", "VS Code (Copilot)", [], ["code"], supports_hook=False
-    ),
+    "vscode": AgentSpec("vscode", "VS Code (Copilot)", [], ["code"]),
 }
 
 
@@ -187,7 +208,10 @@ class Installer:
         self.home = Path(home) if home else Path.home()
         self.project = Path(project) if project else Path.cwd()
         self.scope = scope
-        self.hook_exe = hook_executable()
+        self.hook_exe = hook_executable()  # one shell command string
+        self.mcp_argv = (
+            mcp_argv()
+        )  # program and arguments, for configs that take them apart
         self.mcp_exe = mcp_executable()
 
     # ---- per-agent paths -------------------------------------------------
@@ -244,7 +268,11 @@ class Installer:
                 servers.pop(MCP_NAME, None)
                 _save_json(path, data)
                 return "removed" if existed else "absent"
-            entry = {"type": "stdio", "command": self.mcp_exe, "args": []}
+            entry = {
+                "type": "stdio",
+                "command": self.mcp_argv[0],
+                "args": self.mcp_argv[1:],
+            }
             status = (
                 "unchanged"
                 if servers.get(MCP_NAME) == entry
@@ -298,7 +326,7 @@ class Installer:
 
         def apply() -> str:
             text = path.read_text(encoding="utf-8") if path.exists() else ""
-            block = f'[mcp_servers.{MCP_NAME}]\ncommand = "{self.mcp_exe}"\nargs = []\n'
+            block = f'[mcp_servers.{MCP_NAME}]\ncommand = "{self.mcp_argv[0]}"\nargs = {json.dumps(self.mcp_argv[1:])}\n'
             match = section.search(text)
             if remove:
                 if not match:
@@ -346,7 +374,11 @@ class Installer:
     def cursor_mcp(self, remove: bool = False) -> Action:
         path = self._root(".cursor", ".cursor") / "mcp.json"
         return self._simple_mcp(
-            "cursor", path, "mcpServers", {"command": self.mcp_exe, "args": []}, remove
+            "cursor",
+            path,
+            "mcpServers",
+            {"command": self.mcp_argv[0], "args": self.mcp_argv[1:]},
+            remove,
         )
 
     # ---- GitHub Copilot CLI -----------------------------------------------
@@ -362,7 +394,7 @@ class Installer:
                     path.unlink()
                     return "removed"
                 return "absent"
-            exe = _quote(self.hook_exe)
+            exe = self.hook_exe  # already quoted where a path has spaces
             data = {
                 "version": 1,
                 "hooks": {
@@ -391,8 +423,24 @@ class Installer:
             path = self.project / ".github" / "copilot" / "mcp-config.json"
         else:
             path = self.home / ".copilot" / "mcp-config.json"
-        entry = {"type": "local", "command": self.mcp_exe, "args": [], "tools": ["*"]}
+        entry = {
+            "type": "local",
+            "command": self.mcp_argv[0],
+            "args": self.mcp_argv[1:],
+            "tools": ["*"],
+        }
         return self._simple_mcp("copilot", path, "mcpServers", entry, remove)
+
+    # ---- VS Code (Copilot) ------------------------------------------------
+    def vscode_hook(self, remove: bool = False) -> Action:
+        """VS Code's agent hooks read Copilot CLI hook files (~/.copilot/hooks,
+        or .github/hooks in a project), so VS Code and Copilot CLI share one.
+        The hook recognises VS Code's payload shape and answers in a form both
+        accept."""
+        action = self.copilot_hook(remove)
+        return Action(
+            "vscode", "hook", action.path, action.apply, "shared with Copilot CLI"
+        )
 
     # ---- Gemini CLI -------------------------------------------------------
     def gemini_settings_path(self) -> Path:
@@ -437,7 +485,11 @@ class Installer:
         )
 
     def gemini_mcp(self, remove: bool = False) -> Action:
-        entry = {"command": self.mcp_exe, "args": [], "timeout": 60000}
+        entry = {
+            "command": self.mcp_argv[0],
+            "args": self.mcp_argv[1:],
+            "timeout": 60000,
+        }
         return self._simple_mcp(
             "gemini", self.gemini_settings_path(), "mcpServers", entry, remove
         )
@@ -448,7 +500,11 @@ class Installer:
             path = self.project / ".vscode" / "mcp.json"
         else:
             path = _vscode_user_dir(self.home) / "mcp.json"
-        entry = {"type": "stdio", "command": self.mcp_exe, "args": []}
+        entry = {
+            "type": "stdio",
+            "command": self.mcp_argv[0],
+            "args": self.mcp_argv[1:],
+        }
         return self._simple_mcp("vscode", path, "servers", entry, remove)
 
     # ---- shared -----------------------------------------------------------

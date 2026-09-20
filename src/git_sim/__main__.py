@@ -309,11 +309,18 @@ app.command()(git_sim.commands.worktree)
 app.command()(git_sim.commands.reflog)
 app.command()(git_sim.commands.submodule)
 
-# Agent integration (not git subcommands).
+# Agent integration and the pre-flight check (not git subcommands).
 from git_sim.install import install, uninstall  # noqa: E402
+from git_sim.paths import media_dir  # noqa: E402
+from git_sim.preflight_cli import preflight  # noqa: E402
 
 app.command()(install)
 app.command()(uninstall)
+app.command()(media_dir)
+# git's own options (--hard, -f, ...) must pass through to the command being checked
+app.command(
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+)(preflight)
 
 
 if __name__ == "__main__":

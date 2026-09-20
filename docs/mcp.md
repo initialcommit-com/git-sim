@@ -150,7 +150,20 @@ its own format:
 | Cursor | `~/.cursor/hooks.json` → `hooks.beforeShellExecution` | `~/.cursor/mcp.json` |
 | GitHub Copilot CLI | `~/.copilot/hooks/git-sim.json` → `hooks.preToolUse` | `~/.copilot/mcp-config.json` |
 | Gemini CLI | `~/.gemini/settings.json` → `hooks.BeforeTool` (matcher `run_shell_command`) | same file → `mcpServers` |
-| VS Code (Copilot) | — (no shell hook) | user `mcp.json` → `servers` |
+| VS Code (Copilot) | shares Copilot CLI's `~/.copilot/hooks/git-sim.json` (VS Code's agent hooks read it) | user `mcp.json` → `servers` |
+
+Under VS Code the hook behaves a little differently: it renders the
+interactive page instead of an image, does not open a viewer window, and leaves
+a note in `git-sim_media/inbox/` that the git-sim extension picks up to open the
+page in an editor tab. It also answers for git commands that rate below the
+threshold with an "allow" carrying a one-line SAFE or CAUTION note, so a
+verdict shows on every git command (`GIT_SIM_HOOK_REPORT_SAFE=0` turns that
+off; `=1` turns it on for other agents).
+
+The hook and MCP commands are written as absolute paths. Where the console
+scripts are missing (an editable install made before they existed) the
+interpreter runs the module instead (`python -m git_sim.claude_hook`), so a
+bare name that might not be on the agent's PATH is never written.
 
 Options: `--agent claude --agent cursor` to pick agents, `--all` for every
 supported one, `--scope project` to write into the current repo instead of

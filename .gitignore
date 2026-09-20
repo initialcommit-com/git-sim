@@ -11,3 +11,7 @@ git_sim.egg-info/
 
 # Claude Code local (per-machine) settings
 .claude/settings.local.json
+
+# VS Code extension build output
+vscode/*.vsix
+vscode/LICENSE.txt
