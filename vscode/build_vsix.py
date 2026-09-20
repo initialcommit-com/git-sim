@@ -18,6 +18,7 @@ FILES = [
     "CHANGELOG.md",
     "LICENSE.txt",
     "media/icon.png",
+    "media/live.svg",
 ]
 CONTENT_TYPES = {
     ".json": "application/json",
@@ -25,6 +26,7 @@ CONTENT_TYPES = {
     ".md": "text/markdown",
     ".txt": "text/plain",
     ".png": "image/png",
+    ".svg": "image/svg+xml",
     ".vsixmanifest": "text/xml",
 }
 

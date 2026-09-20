@@ -46,6 +46,7 @@ Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work 
 - Animation only: Speed up or slow down animation speed as desired
 - NEW: [MCP server and Claude Code hook](docs/mcp.md) so AI coding agents (Claude Code, Cursor, etc.) run deterministic pre-flight checks — facts, a text commit graph and a simulation image — before executing destructive git commands in your repo. Included in the default install.
 - NEW: `git-sim preflight <command>` runs that same check from the terminal, and the [VS Code extension](docs/vscode.md) puts simulations and pre-flight checks in an editor tab.
+- NEW: `git-sim live` follows your repository as it changes: every commit, branch, checkout, reset, rebase, stash or staged file plays as a before / after animation the moment it happens, in your browser or in a VS Code tab or sidebar view, with the session's changes kept for stepping back and replaying (see [Live mode](#live-mode)).
 
 ## Quickstart
 Note: If you prefer to install git-sim with Docker, skip steps (1) and (2) here and jump to the [Docker installation](#docker-installation) section below, then come back here to step (3).
@@ -192,6 +193,23 @@ Animation-only global options (to be used in conjunction with `--animate`):
 `--font`: Font family used to display rendered text.
 
 The `[subcommand options]` are like regular Git options specific to the specified subcommand (see below for a full list).
+
+## Live mode
+
+```console
+$ git-sim live
+```
+
+opens the live page in the git-sim viewer at initialcommit.com and follows the repository in the current folder (or `-C <path>`). As with simulations, the site only serves the page: the graphs come from a small server git-sim runs on your machine, whose address and session key travel in the link's `#fragment`, which browsers never send, so nothing about the repository reaches the site. Chrome and Edge ask once whether the site may talk to your computer; `--open-in local` (or `git_sim_open_in=local`) opens the same page served by git-sim itself, which needs no permission. After every change, whoever made it (a command in a terminal, an IDE's Source Control button, an AI agent), the graph plays the change the way a simulation does: the new commit fades in, labels slide over, a dropped branch fades out, a staged file crosses to its new column. The changes stay in a strip above the graph, so you can click back to any of them, step with `[` and `]`, or **Replay all** to watch the session end to end. Each change is also saved as a standalone page under `git-sim media-dir` in `<repo>/live/`.
+
+What changed is read from git itself (the refs, HEAD, `git status`, the stash list and the HEAD reflog, compared between polls), so the graph names the command that ran: `git commit`, `git reset HEAD~1`, `git checkout -b topic`, `git rebase`, `git stash`, `git add a.txt`, ... The global options apply to every drawing: `--all` for every branch, `-n` for depth, `--light-mode`. Options of `live` itself:
+
+`--no-zones`: draw the commit graph alone, without the untracked / modified / staged table.  
+`--interval <seconds>`: how often to check the repository (default 1; each check runs a few quick git commands).  
+`--port <n>`: the port for the page (default: any free port).  
+`--json`: no browser and no server; print one JSON line per change, naming the graph and page written. This is what the [VS Code extension](docs/vscode.md) uses for its live tab and sidebar view.
+
+Nothing in the repository is modified. The local server listens on `127.0.0.1` only, answers cross-origin requests from the viewer's origin alone, and requires the session key on every request, so another web page you visit cannot read your graph off localhost.
 
 The following is a list of Git commands that can be simulated and their corresponding options/flags.
 

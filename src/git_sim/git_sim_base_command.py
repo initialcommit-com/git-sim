@@ -686,7 +686,13 @@ class GitSimBaseCommand(m.MovingCameraScene):
         for b1 in branches:
             for b2 in branches:
                 if b1.name != b2.name:
-                    if self.repo.is_ancestor(b1.commit, b2.commit):
+                    if b1.commit == b2.commit:
+                        # Two branches on one commit are each other's
+                        # ancestor; keep one of them (the first by name)
+                        # instead of dropping both.
+                        if b1.name > b2.name:
+                            exclude.append(b1.name)
+                    elif self.repo.is_ancestor(b1.commit, b2.commit):
                         exclude.append(b1.name)
         return [b for b in branches if b.name not in exclude]
 

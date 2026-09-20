@@ -21,6 +21,18 @@ Select a command in a file or a terminal and the context menu offers both.
 Settings live under `git-sim` (executable, extra options, light-mode graphs when
 the editor theme is light, open in the browser instead of a tab, timeout).
 
+## The live graph
+
+**git-sim: Live graph** (or the pulse button in the Source Control toolbar)
+opens a graph that follows the repository: after every change, whoever made it
+(a terminal, the Source Control view, an AI agent), the graph plays the change
+as a before / after animation and keeps it in a strip, so the session can be
+stepped through or replayed. The same graph is a view in the sidebar (the
+git-sim icon in the Activity Bar) that can be dragged next to a chat or the
+terminal. It runs `git-sim live --json` in the repository; see
+[live.md](live.md) for how the engine works and how `git-sim live` serves the
+same page in a browser.
+
 ## The `preflight` command
 
 The extension calls `git-sim preflight --json`, which is also useful on its own:
@@ -48,8 +60,8 @@ The extension is plain JavaScript, so there is nothing to compile. To package
 it without Node, run the bundled script (Python 3.10+):
 
 ```
-python vscode/build_vsix.py        # -> vscode/git-sim-0.1.0.vsix
-code --install-extension vscode/git-sim-0.1.0.vsix
+python vscode/build_vsix.py        # -> vscode/git-sim-0.2.0.vsix
+code --install-extension vscode/git-sim-0.2.0.vsix
 ```
 
 With Node available, `npx @vscode/vsce package` in `vscode/` produces the same
@@ -62,6 +74,12 @@ file. To try changes live, open `vscode/` in VS Code and press F5.
   webview with a content-security policy allowing only its inline parts.
 - Pre-flight: `git-sim preflight --json -- <command>`, rendered as a small
   report page with a Simulate button.
+- Live graph: `git-sim live --json -C <repo>`, one process per repository
+  shared by every tab and view showing it. Each JSON line names the animated
+  SVG git-sim wrote; the extension reads it and posts it into git-sim's own
+  live page (`git-sim live --print-page`), which runs unchanged in the
+  webview. The process ends when its stdin closes, so it never outlives the
+  window.
 - The repository is the one holding the active file, else the workspace folder
   (a quick pick when there are several).
 - `git-sim: Wire git-sim into AI coding agents` runs `git-sim install`, which

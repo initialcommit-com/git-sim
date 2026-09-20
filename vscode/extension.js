@@ -2,10 +2,12 @@
 //
 // Nothing about Git is reimplemented here. Simulations come from
 // `git-sim --img-format html <command>` (a self-contained interactive page,
-// shown in an editor tab) and pre-flight checks from `git-sim preflight --json`
-// (the same deterministic analysis the MCP server and the agent hook use).
-// The extension picks the repository, asks for the command, runs git-sim in
-// that repository and shows what comes back.
+// shown in an editor tab), pre-flight checks from `git-sim preflight --json`
+// (the same deterministic analysis the MCP server and the agent hook use), and
+// the live graph from `git-sim live --json` (one JSON line per change in the
+// repository, fed to git-sim's own live page in a webview). The extension
+// picks the repository, asks for the command, runs git-sim in that repository
+// and shows what comes back.
 
 'use strict';
 
@@ -405,6 +407,217 @@ async function startInbox(context) {
 }
 
 // ---------------------------------------------------------------------------
+// live: the repository as it changes, in an editor tab or the sidebar
+// ---------------------------------------------------------------------------
+// `git-sim live --json` watches a repository and prints one JSON line per
+// change, each naming the animated graph it wrote (the drawing before the
+// change merged with the one after). A LiveSession owns that process for one
+// repository and feeds every webview showing it: the live page git-sim ships
+// (`git-sim live --print-page`) runs unchanged inside the webview, receiving
+// through postMessage what a browser would get from the command's server.
+const liveSessions = new Map();   // "<repo>|<zones>" -> LiveSession
+const livePanels = new Map();     // repo -> WebviewPanel
+const livePages = new Map();      // "<repo>|<light>" -> page HTML
+
+class LiveSession {
+  constructor(repo, zones) {
+    this.repo = repo;
+    this.zones = zones;
+    this.items = [];
+    this.svgs = new Map();
+    this.views = new Set();
+    this.proc = null;
+    this.buffer = '';
+    this.stopping = false;
+  }
+
+  static key(repo, zones) { return `${repo}|${zones ? 1 : 0}`; }
+
+  start() {
+    const exe = executable();
+    const args = [...(config().get('extraArgs') || []), '-d'];
+    if (lightMode()) args.push('--light-mode');
+    args.push('live', '--json', this.zones ? '--zones' : '--no-zones',
+      '--interval', String(Math.max(0.2, Number(config().get('liveInterval')) || 1)), '-C', this.repo);
+    const env = Object.assign({}, process.env, { git_sim_auto_open: 'false' });
+    const useShell = process.platform === 'win32' && /\.(cmd|bat)$/i.test(exe);
+    output.appendLine(`$ ${exe} ${args.map(quoteForLog).join(' ')}    (live, in ${this.repo})`);
+    try {
+      this.proc = cp.spawn(exe, args, { cwd: this.repo, env, windowsHide: true, shell: useShell, stdio: ['pipe', 'pipe', 'pipe'] });
+    } catch (e) {
+      this.broadcast({ type: 'status', connected: false, text: `git-sim could not start: ${e.message}` });
+      return;
+    }
+    this.proc.stdout.setEncoding('utf8');
+    this.proc.stdout.on('data', chunk => {
+      this.buffer += chunk;
+      let nl;
+      while ((nl = this.buffer.indexOf('\n')) >= 0) {
+        const line = this.buffer.slice(0, nl).trim();
+        this.buffer = this.buffer.slice(nl + 1);
+        if (line) this.handleLine(line);
+      }
+    });
+    this.proc.stderr.on('data', d => { const s = String(d).trimEnd(); if (s) output.appendLine(s); });
+    this.proc.on('error', err => {
+      this.proc = null;
+      this.broadcast({ type: 'status', connected: false, text: `git-sim could not start: ${err.message}` });
+      if (err.code === 'ENOENT') explainMissing(err);
+    });
+    this.proc.on('close', code => {
+      this.proc = null;
+      if (!this.stopping) this.broadcast({ type: 'status', connected: false, text: `git-sim live stopped (exit ${code})` });
+    });
+  }
+
+  handleLine(line) {
+    let msg;
+    try { msg = JSON.parse(line); } catch (e) { output.appendLine(line); return; }
+    if (msg.event === 'start') { output.appendLine(`live: watching ${msg.repo}, changes saved under ${msg.dir}`); return; }
+    if (msg.event !== 'snapshot') return;
+    let svg;
+    try { svg = fs.readFileSync(msg.svg, 'utf8'); } catch (e) { output.appendLine(`live: could not read ${msg.svg}`); return; }
+    const item = { index: msg.index, label: msg.label, detail: msg.detail, time: msg.time, page: msg.page };
+    this.items.push(item);
+    this.svgs.set(item.index, svg);
+    while (this.items.length > 300) { const dropped = this.items.shift(); this.svgs.delete(dropped.index); }
+    this.broadcast({ type: 'snapshot', item, svg });
+  }
+
+  attach(webview) {
+    this.views.add(webview);
+    webview.postMessage({ type: 'history', items: this.items.map(i => Object.assign({}, i, { svg: this.svgs.get(i.index) })) }).then(undefined, () => {});
+    if (!this.proc && !this.stopping) this.start();
+  }
+
+  detach(webview) {
+    this.views.delete(webview);
+    if (!this.views.size) this.stop();
+  }
+
+  clear(keep) {
+    this.items = this.items.filter(i => i.index >= keep);
+    Array.from(this.svgs.keys()).forEach(k => { if (k < keep) this.svgs.delete(k); });
+  }
+
+  broadcast(msg) {
+    this.views.forEach(v => v.postMessage(msg).then(undefined, () => {}));
+  }
+
+  stop() {
+    this.stopping = true;
+    liveSessions.delete(LiveSession.key(this.repo, this.zones));
+    const proc = this.proc;
+    if (!proc) return;
+    this.proc = null;
+    try { proc.stdin.end(); } catch (e) {}  // git-sim live exits when its stdin closes
+    setTimeout(() => {
+      try {
+        if (process.platform === 'win32') cp.spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { windowsHide: true });
+        else proc.kill();
+      } catch (e) {}
+    }, 1500);
+  }
+}
+
+function liveSession(repo, zones) {
+  const key = LiveSession.key(repo, zones);
+  let session = liveSessions.get(key);
+  if (!session) {
+    session = new LiveSession(repo, zones);
+    liveSessions.set(key, session);
+    session.start();
+  }
+  return session;
+}
+
+function liveZones(where) {
+  const mode = config().get('liveZones') || 'tab';
+  return mode === 'always' || (mode === 'tab' && where === 'tab');
+}
+
+// The live page, from git-sim itself, with the webview's content-security policy.
+async function livePageHtml(repo) {
+  const key = `${repo}|${lightMode() ? 1 : 0}`;
+  if (livePages.has(key)) return livePages.get(key);
+  const args = [];
+  if (lightMode()) args.push('--light-mode');
+  args.push('live', '--print-page', '-C', repo);
+  const r = await runGitSim(args, repo, timeoutMs());
+  if (r.code !== 0 || !/<html/i.test(r.stdout)) throw new Error(gitSimError(r) || 'git-sim did not print the live page (live mode needs a git-sim that has the "live" command; update it with pipx upgrade git-sim)');
+  const csp = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data: https:; style-src \'unsafe-inline\'; script-src \'unsafe-inline\'; font-src data:;">';
+  const html = r.stdout.replace(/<head[^>]*>/i, m => m + csp);
+  livePages.set(key, html);
+  return html;
+}
+
+function wireLiveWebview(webview, repo, zones, onDispose) {
+  const session = liveSession(repo, zones);
+  const sub = webview.onDidReceiveMessage(msg => {
+    if (!msg || !msg.type) return;
+    if (msg.type === 'ready') session.attach(webview);
+    else if (msg.type === 'clear') session.clear(Number(msg.keep) || 0);
+    else if (msg.type === 'openPage' && msg.page) vscode.env.openExternal(vscode.Uri.file(msg.page));
+  });
+  onDispose(() => { sub.dispose(); session.detach(webview); });
+}
+
+function noteHtml(text) {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';"><style>body{font:13px/1.5 var(--vscode-font-family);color:var(--vscode-descriptionForeground);padding:14px}</style></head><body>${esc(text)}</body></html>`;
+}
+
+async function openLivePanel(context, repo) {
+  const existing = livePanels.get(repo);
+  if (existing) { existing.reveal(); return existing; }
+  let html;
+  try { html = await livePageHtml(repo); } catch (e) {
+    if (e.code === 'ENOENT') return explainMissing(e);
+    return vscode.window.showErrorMessage(`git-sim: ${e.message}`);
+  }
+  const panel = vscode.window.createWebviewPanel('git-sim.live', `git-sim live: ${path.basename(repo)}`, vscode.ViewColumn.Beside,
+    { enableScripts: true, retainContextWhenHidden: true, localResourceRoots: [] });
+  panel.iconPath = vscode.Uri.file(path.join(context.extensionPath, 'media', 'icon.png'));
+  panel.webview.html = html;
+  livePanels.set(repo, panel);
+  wireLiveWebview(panel.webview, repo, liveZones('tab'), fn => panel.onDidDispose(() => { livePanels.delete(repo); fn(); }));
+  return panel;
+}
+
+// The repository the sidebar view follows: the active file's, else the first
+// workspace folder that is one. Chosen without asking, since the view opens on
+// its own when the window is restored.
+function quietRepo() {
+  const editor = vscode.window.activeTextEditor;
+  if (editor && editor.document.uri.scheme === 'file') {
+    const root = repoRootOf(editor.document.uri.fsPath);
+    if (root) return root;
+  }
+  const folders = (vscode.workspace.workspaceFolders || []).map(f => f.uri.fsPath);
+  return folders.find(isRepo) || null;
+}
+
+class LiveViewProvider {
+  constructor(context) { this.context = context; }
+
+  async resolveWebviewView(view) {
+    view.webview.options = { enableScripts: true, localResourceRoots: [] };
+    const repo = quietRepo();
+    if (!repo) {
+      view.webview.html = noteHtml('Open a folder with a Git repository, and git-sim will follow it here as it changes.');
+      return;
+    }
+    let html;
+    try { html = await livePageHtml(repo); } catch (e) {
+      view.webview.html = noteHtml(`git-sim could not draw the live graph: ${e.message}`);
+      return;
+    }
+    view.title = `Live graph: ${path.basename(repo)}`;
+    view.webview.html = html;
+    wireLiveWebview(view.webview, repo, liveZones('sidebar'), fn => view.onDidDispose(fn));
+  }
+}
+
+// ---------------------------------------------------------------------------
 // commands
 // ---------------------------------------------------------------------------
 async function commandSimulate(context, prefill) {
@@ -458,13 +671,21 @@ function activate(context) {
   reg('git-sim.preflightSelection', () => commandPreflight(context, selectedText()));
   reg('git-sim.installAgents', commandInstallAgents);
   reg('git-sim.openLearn', () => vscode.env.openExternal(vscode.Uri.parse(LEARN_URL)));
+  reg('git-sim.live', async () => { const repo = await pickRepo(); if (repo) await openLivePanel(context, repo); });
+  reg('git-sim.liveSidebar', () => vscode.commands.executeCommand('git-sim.liveView.focus'));
+  context.subscriptions.push(vscode.window.registerWebviewViewProvider('git-sim.liveView', new LiveViewProvider(context),
+    { webviewOptions: { retainContextWhenHidden: true } }));
 
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
-    if (e.affectsConfiguration('git-sim.executable')) checkAvailable().then(() => { if (available) startInbox(context); });
+    if (e.affectsConfiguration('git-sim.executable')) { livePages.clear(); checkAvailable().then(() => { if (available) startInbox(context); }); }
     else if (e.affectsConfiguration('git-sim.openHookSimulations')) startInbox(context);
   }));
+  context.subscriptions.push(vscode.window.onDidChangeActiveColorTheme(() => livePages.clear()));
+  context.subscriptions.push({ dispose: () => liveSessions.forEach(s => s.stop()) });
 }
 
-function deactivate() {}
+function deactivate() {
+  liveSessions.forEach(s => s.stop());
+}
 
-module.exports = { activate, deactivate, _internal: { words, cleanCommand, gitSimError } };
+module.exports = { activate, deactivate, _internal: { words, cleanCommand, gitSimError, LiveSession } };

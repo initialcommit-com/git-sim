@@ -457,6 +457,10 @@ def test_viewer_assets_export_matches_the_page(tmp_path):
         "git-sim-viewer.css",
         "git-sim-viewer.js",
         "git-sim-viewer-header.html",
+        # the live page's strip, stylesheet and script (see test_live.py)
+        "git-sim-live.css",
+        "git-sim-live.js",
+        "git-sim-live-strip.html",
     }
     css = (tmp_path / "git-sim-viewer.css").read_text(encoding="utf-8")
     js = (tmp_path / "git-sim-viewer.js").read_text(encoding="utf-8")

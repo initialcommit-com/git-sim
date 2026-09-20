@@ -272,8 +272,17 @@ class SvgPainter:
                 f'<rect x="{_fmt(x)}" y="{_fmt(y)}" width="{_fmt(w)}" height="{_fmt(h)}" '
                 f'fill="{_hex(r, g, b)}" data-role="background"/>'
             )
+        # How scene units became pixels (scale, frame centre, frame size), so
+        # two renders of the same repository with different camera framing
+        # can be brought into one coordinate space (git_sim.render.merge).
+        camera = (
+            f'data-scale="{self.scale:.6f}" '
+            f'data-center="{self.frame_center[0]:.6f} {self.frame_center[1]:.6f}" '
+            f'data-frame="{_fmt(self.pixel_width)} {_fmt(self.pixel_height)}"'
+        )
         return (
             f'<svg id="scene" xmlns="http://www.w3.org/2000/svg" viewBox="{vb}" '
-            f'width="{_fmt(w)}" height="{_fmt(h)}" font-family=\'{self.font_stack}\'>'
+            f'width="{_fmt(w)}" height="{_fmt(h)}" font-family=\'{self.font_stack}\' '
+            f"{camera}>"
             f"{self._defs()}{bg}{''.join(self.parts)}</svg>"
         )

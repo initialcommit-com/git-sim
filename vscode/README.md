@@ -8,6 +8,12 @@ See what a Git command will do to your repository before you run it.
 - **Pre-flight** a command first: the risk level, exactly which commits would
   become unreachable and which files would be lost, how to undo it, and a text
   commit graph. Computed from the repository by code, never guessed.
+- **Live graph**: follow the repository as it changes. Each commit, branch,
+  checkout, reset, rebase, stash or staged file plays as a before / after
+  animation the moment it happens, whoever made it (you in a terminal, the
+  Source Control view, an AI agent). The changes stay in a strip so you can
+  step back through them or replay the session. In an editor tab, or in the
+  git-sim sidebar view (drag it next to your chat or terminal).
 - Works from the Command Palette, the Source Control view's toolbar, the
   editor's context menu (select a command in a script or a README), the
   terminal's context menu, and `Ctrl+Alt+G`.
@@ -24,12 +30,16 @@ git-sim on your PATH (Python 3.10 or newer, and Git):
 pipx install git-sim       # or: uv tool install git-sim, or pip install git-sim
 ```
 
+The live graph needs a git-sim that has the `live` command (`pipx upgrade git-sim`).
+
 If it lives somewhere else, set `git-sim.executable` to its path.
 
 ## Commands
 
 | Command | What it does |
 | --- | --- |
+| git-sim: Live graph | Opens the live graph of the repository in an editor tab (also the pulse button in the Source Control toolbar) |
+| git-sim: Show the live graph in the sidebar | Focuses the git-sim view in the sidebar |
 | git-sim: Simulate a Git command... | Asks for a command (`rebase main`, `reset --hard HEAD~2`, ...) and opens the simulation |
 | git-sim: Pre-flight a Git command... | Asks for a command and shows what it would do, lose, and how to undo it |
 | git-sim: Simulate a recent command | Picks from the commands you simulated before |
@@ -48,6 +58,31 @@ If it lives somewhere else, set `git-sim.executable` to its path.
 | `git-sim.openInBrowser` | `false` | Open simulations in the browser instead of a tab |
 | `git-sim.openHookSimulations` | `true` | Open the pages the agent hook renders in a tab |
 | `git-sim.timeoutSeconds` | `90` | How long to wait for git-sim |
+| `git-sim.liveZones` | `tab` | Draw the untracked / modified / staged table under the live graph: in tabs only, `always`, or `never` |
+| `git-sim.liveInterval` | `1` | Seconds between checks of the repository in live mode |
+
+## The live graph
+
+**git-sim: Live graph** watches the repository and redraws it after every
+change, whatever made it. Each change is played the way a simulation is:
+before on the left of the slider, after on the right, with the new commit
+fading in, labels sliding over, a dropped branch fading out. The strip above
+the graph keeps every change of the session; click one to see it again,
+`[` and `]` step through them, **Replay all** plays the session end to end,
+and shift+click opens a change as a page of its own (they are saved under
+`git-sim media-dir`, in `<repo>/live/`).
+
+The same graph is available as a view in the sidebar (the git-sim icon in the
+Activity Bar). Drag the view into the secondary sidebar next to your AI chat,
+or into the panel next to the terminal, and it follows along while you or the
+agent type git commands. The sidebar view draws the commit graph alone by
+default (`git-sim.liveZones`).
+
+The change names come from git itself: the HEAD reflog for commits, resets,
+checkouts, merges and rebases, and the difference between two readings of the
+refs, the status and the stash for the rest (a branch created, a file staged,
+a stash pushed). Outside the editor, `git-sim live` serves the same page in
+your browser.
 
 ## Copilot and other agents
 

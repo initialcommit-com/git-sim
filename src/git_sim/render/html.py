@@ -1039,12 +1039,20 @@ def export_viewer_assets(directory):
     """Write the viewer's stylesheet, script and header markup (as a Thymeleaf
     fragment) for the hosted viewer on initialcommit.com. Returns the paths
     written."""
+    from git_sim.render.live_html import LIVE_CSS, LIVE_JS, strip_markup
+
     os.makedirs(directory, exist_ok=True)
     files = {
         "git-sim-viewer.css": VIEWER_CSS,
         "git-sim-viewer.js": VIEWER_JS,
         "git-sim-viewer-header.html": THYMELEAF_HEADER_TEMPLATE.format(
             header=header_markup(' th:fragment="header"')
+        ),
+        # The live page's strip, stylesheet and script, for /tools/git-sim/live
+        "git-sim-live.css": LIVE_CSS,
+        "git-sim-live.js": LIVE_JS,
+        "git-sim-live-strip.html": THYMELEAF_HEADER_TEMPLATE.format(
+            header=strip_markup(' th:fragment="strip"')
         ),
     }
     written = []

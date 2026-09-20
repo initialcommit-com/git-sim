@@ -1,8 +1,8 @@
 {
   "name": "git-sim",
   "displayName": "git-sim",
-  "description": "See what a Git command will do before you run it: interactive before / after simulations and deterministic pre-flight checks of your real repository, powered by git-sim.",
-  "version": "0.1.0",
+  "description": "See what a Git command will do before you run it, and watch your repository change live: interactive before / after simulations, deterministic pre-flight checks and a live graph of your real repository, powered by git-sim.",
+  "version": "0.2.0",
   "publisher": "initialcommit",
   "license": "GPL-2.0-only",
   "icon": "media/icon.png",
@@ -35,7 +35,19 @@
     "onStartupFinished"
   ],
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        { "id": "git-sim", "title": "git-sim", "icon": "media/live.svg" }
+      ]
+    },
+    "views": {
+      "git-sim": [
+        { "type": "webview", "id": "git-sim.liveView", "name": "Live graph", "contextualTitle": "git-sim", "icon": "media/live.svg" }
+      ]
+    },
     "commands": [
+      { "command": "git-sim.live", "title": "Live graph: follow the repository as it changes", "category": "git-sim", "icon": "$(pulse)" },
+      { "command": "git-sim.liveSidebar", "title": "Show the live graph in the sidebar", "category": "git-sim" },
       { "command": "git-sim.simulate", "title": "Simulate a Git command...", "category": "git-sim", "icon": "$(beaker)" },
       { "command": "git-sim.preflight", "title": "Pre-flight a Git command...", "category": "git-sim", "icon": "$(shield)" },
       { "command": "git-sim.simulateRecent", "title": "Simulate a recent command", "category": "git-sim" },
@@ -47,7 +59,12 @@
     ],
     "menus": {
       "scm/title": [
-        { "command": "git-sim.simulate", "group": "navigation", "when": "scmProvider == git" }
+        { "command": "git-sim.simulate", "group": "navigation", "when": "scmProvider == git" },
+        { "command": "git-sim.live", "group": "navigation", "when": "scmProvider == git" }
+      ],
+      "view/title": [
+        { "command": "git-sim.live", "group": "navigation", "when": "view == git-sim.liveView" },
+        { "command": "git-sim.simulate", "group": "navigation", "when": "view == git-sim.liveView" }
       ],
       "editor/context": [
         { "command": "git-sim.simulateSelection", "when": "editorHasSelection", "group": "z_git-sim@1" },
@@ -99,6 +116,23 @@
           "default": 90,
           "minimum": 5,
           "description": "How long to wait for git-sim before giving up."
+        },
+        "git-sim.liveZones": {
+          "type": "string",
+          "enum": ["tab", "always", "never"],
+          "enumDescriptions": [
+            "In editor tabs only: the sidebar view is too narrow for the table and shows the graph alone.",
+            "Under every live graph, sidebar included.",
+            "Never: the commit graph alone."
+          ],
+          "default": "tab",
+          "description": "Whether the live graph draws the untracked / modified / staged table under the commit graph."
+        },
+        "git-sim.liveInterval": {
+          "type": "number",
+          "default": 1,
+          "minimum": 0.2,
+          "description": "Seconds between checks of the repository in live mode. Each check runs a few quick git commands."
         }
       }
     }
