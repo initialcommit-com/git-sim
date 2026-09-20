@@ -1900,7 +1900,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
     def show_command_as_title(self):
         if settings.show_command_as_title:
             titleText = m.Text(
-                self.trim_cmd(self.cmd),
+                self.trim_cmd(self.cmd, getattr(self, "title_length", 30)),
                 font=self.font,
                 font_size=36,
                 color=self.fontColor,

@@ -1,321 +1,241 @@
-import sys
+"""git init: the folder before, and the .git/ repository that appears in it.
+
+The picture is the project folder as a card. Whatever files are already in
+it sit at the top as chips. Running the command adds the hidden .git/ folder
+inside it, drawn as a panel that names the parts a beginner meets first: HEAD
+pointing at a branch that has no commits yet, config, the object database,
+refs, and the housekeeping files. In the interactive page the .git/ panel is
+what the before/after slider brings in.
+"""
+
 import os
-from argparse import Namespace
+import subprocess
 
-import git
-from git_sim.backend import m
-import numpy
-import tempfile
-import shutil
-import stat
-import re
-
-from git.exc import GitCommandError, InvalidGitRepositoryError
+from git.exc import InvalidGitRepositoryError, NoSuchPathError
 from git.repo import Repo
 
+from git_sim.backend import m
+from git_sim.cards import Cards
 from git_sim.git_sim_base_command import GitSimBaseCommand
 from git_sim.settings import settings
 
+SKIP = {".git", "git-sim_media", "__pycache__"}
 
-class Init(GitSimBaseCommand):
+
+class Init(Cards, GitSimBaseCommand):
     def __init__(self):
         super().__init__()
-        self.cmd += f"{type(self).__name__.lower()}"
+        self.cmd += "init"
 
     def init_repo(self):
-        pass
+        # git init needs no repository. One that is already here is
+        # "reinitialized", which changes nothing; the picture says so.
+        try:
+            self.repo = Repo(os.getcwd())
+        except (InvalidGitRepositoryError, NoSuchPathError):
+            self.repo = None
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
-        self.add_details()
+        self.draw()
         self.recenter_frame()
         self.scale_frame()
+        self.show_command_as_title()
         self.fadeout()
         self.show_outro()
 
-    def add_details(self):
-        self.camera.frame.scale_to_fit_width(18 * 1.1)
-        project_root = m.Rectangle(
-            height=9.0,
-            width=18.0,
-            color=self.fontColor,
-        )
-
-        cmd_text = m.Text(
-            self.cmd,
-            font=self.font,
-            font_size=36,
-            color=self.fontColor,
-        )
-        cmd_text.align_to(project_root, m.UP).shift(m.UP * 0.25 + cmd_text.height)
-
-        project_root_text = m.Text(
-            os.path.basename(os.getcwd()) + "/",
-            font=self.font,
-            font_size=20,
-            color=self.fontColor,
-        )
-        project_root_text.align_to(project_root, m.LEFT).align_to(
-            project_root, m.UP
-        ).shift(m.RIGHT * 0.25).shift(m.DOWN * 0.25)
-
-        dot_git_text = m.Text(
-            ".git/",
-            font=self.font,
-            font_size=20,
-            color=self.fontColor,
-        )
-        dot_git_text.align_to(project_root_text, m.UP).shift(m.DOWN).align_to(
-            project_root_text, m.LEFT
-        ).shift(m.RIGHT * 0.5)
-
-        head_text = (
-            m.Text("HEAD", font=self.font, color=self.fontColor, font_size=20)
-            .align_to(dot_git_text, m.UP)
-            .shift(m.DOWN)
-            .align_to(dot_git_text, m.LEFT)
-            .shift(m.RIGHT * 0.5)
-        )
-
-        down_shift = m.DOWN
-        config_text = (
-            m.Text("config", font=self.font, color=self.fontColor, font_size=20)
-            .align_to(head_text, m.UP)
-            .shift(down_shift)
-            .align_to(dot_git_text, m.LEFT)
-            .shift(m.RIGHT * 0.5)
-        )
-        description_text = (
-            m.Text("description", font=self.font, color=self.fontColor, font_size=20)
-            .align_to(config_text, m.UP)
-            .shift(down_shift)
-            .align_to(dot_git_text, m.LEFT)
-            .shift(m.RIGHT * 0.5)
-        )
-        hooks_text = (
-            m.Text("hooks/", font=self.font, color=self.fontColor, font_size=20)
-            .align_to(description_text, m.UP)
-            .shift(down_shift)
-            .align_to(dot_git_text, m.LEFT)
-            .shift(m.RIGHT * 0.5)
-        )
-        info_text = (
-            m.Text("info/", font=self.font, color=self.fontColor, font_size=20)
-            .align_to(hooks_text, m.UP)
-            .shift(down_shift)
-            .align_to(dot_git_text, m.LEFT)
-            .shift(m.RIGHT * 0.5)
-        )
-        objects_text = (
-            m.Text("objects/", font=self.font, color=self.fontColor, font_size=20)
-            .align_to(info_text, m.UP)
-            .shift(down_shift)
-            .align_to(dot_git_text, m.LEFT)
-            .shift(m.RIGHT * 0.5)
-        )
-        refs_text = (
-            m.Text("refs/", font=self.font, color=self.fontColor, font_size=20)
-            .align_to(objects_text, m.UP)
-            .shift(down_shift)
-            .align_to(dot_git_text, m.LEFT)
-            .shift(m.RIGHT * 0.5)
-        )
-
-        dot_git_text_arrow = m.Arrow(
-            start=dot_git_text.get_right(),
-            end=dot_git_text.get_right() + m.RIGHT * 3.5,
-            color=self.fontColor,
-        )
-        head_text_arrow = m.Arrow(
-            start=head_text.get_right(),
-            end=(dot_git_text_arrow.end[0], head_text.get_right()[1], 0),
-            color=self.fontColor,
-        )
-        config_text_arrow = m.Arrow(
-            start=config_text.get_right(),
-            end=(dot_git_text_arrow.end[0], config_text.get_right()[1], 0),
-            color=self.fontColor,
-        )
-        description_text_arrow = m.Arrow(
-            start=description_text.get_right(),
-            end=(dot_git_text_arrow.end[0], description_text.get_right()[1], 0),
-            color=self.fontColor,
-        )
-        hooks_text_arrow = m.Arrow(
-            start=hooks_text.get_right(),
-            end=(dot_git_text_arrow.end[0], hooks_text.get_right()[1], 0),
-            color=self.fontColor,
-        )
-        info_text_arrow = m.Arrow(
-            start=info_text.get_right(),
-            end=(dot_git_text_arrow.end[0], info_text.get_right()[1], 0),
-            color=self.fontColor,
-        )
-        objects_text_arrow = m.Arrow(
-            start=objects_text.get_right(),
-            end=(dot_git_text_arrow.end[0], objects_text.get_right()[1], 0),
-            color=self.fontColor,
-        )
-        refs_text_arrow = m.Arrow(
-            start=refs_text.get_right(),
-            end=(dot_git_text_arrow.end[0], refs_text.get_right()[1], 0),
-            color=self.fontColor,
-        )
-
-        dot_git_desc = m.Text(
-            "The hidden .git/ folder is created after running the 'git init' command.",
-            font=self.font,
-            font_size=18,
-            color=self.fontColor,
-        ).next_to(dot_git_text_arrow, m.RIGHT)
-        head_desc = m.Text(
-            "A label (ref) that points to the currently checked-out commit.",
-            font=self.font,
-            font_size=18,
-            color=self.fontColor,
-        ).next_to(head_text_arrow, m.RIGHT)
-        config_desc = m.Text(
-            "A file containing Git configuration settings for the local repo.",
-            font=self.font,
-            font_size=18,
-            color=self.fontColor,
-        ).next_to(config_text_arrow, m.RIGHT)
-        description_desc = m.Text(
-            "A file containing an optional description for your Git repo.",
-            font=self.font,
-            font_size=18,
-            color=self.fontColor,
-        ).next_to(description_text_arrow, m.RIGHT)
-        hooks_desc = m.Text(
-            "A folder containing 'hooks' which allow triggering custom\nscripts after running Git actions.",
-            font=self.font,
-            font_size=18,
-            color=self.fontColor,
-        ).next_to(hooks_text_arrow, m.RIGHT)
-        info_desc = m.Text(
-            "A folder containing the 'exclude' file, tells Git to ignore\nspecific file patterns on your system.",
-            font=self.font,
-            font_size=18,
-            color=self.fontColor,
-        ).next_to(info_text_arrow, m.RIGHT)
-        objects_desc = m.Text(
-            "A folder containing Git's object database, which stores the\nobjects representing code files, changes and commits tracked by Git.",
-            font=self.font,
-            font_size=18,
-            color=self.fontColor,
-        ).next_to(objects_text_arrow, m.RIGHT)
-        refs_desc = m.Text(
-            "A folder holding the refs (labels) Git uses to represent branches & tags.",
-            font=self.font,
-            font_size=18,
-            color=self.fontColor,
-        ).next_to(refs_text_arrow, m.RIGHT)
-
-        if settings.animate:
-            if settings.show_command_as_title:
-                self.play(m.AddTextLetterByLetter(cmd_text))
-            self.play(m.Create(project_root))
-            self.play(m.AddTextLetterByLetter(project_root_text))
-            self.play(
-                m.AddTextLetterByLetter(dot_git_text),
-                m.Create(dot_git_text_arrow),
-                m.AddTextLetterByLetter(dot_git_desc),
+    # ---- what the picture is about ------------------------------------------------
+    def default_branch(self):
+        """The branch git init would create: init.defaultBranch, else master."""
+        try:
+            out = subprocess.run(
+                ["git", "config", "--get", "init.defaultBranch"],
+                capture_output=True,
+                text=True,
+                check=False,
             )
-            self.play(
-                m.AddTextLetterByLetter(head_text),
-                m.Create(head_text_arrow),
-                m.AddTextLetterByLetter(head_desc),
-            )
-            self.play(
-                m.AddTextLetterByLetter(config_text),
-                m.Create(config_text_arrow),
-                m.AddTextLetterByLetter(config_desc),
-            )
-            self.play(
-                m.AddTextLetterByLetter(description_text),
-                m.Create(description_text_arrow),
-                m.AddTextLetterByLetter(description_desc),
-            )
-            self.play(
-                m.AddTextLetterByLetter(hooks_text),
-                m.Create(hooks_text_arrow),
-                m.AddTextLetterByLetter(hooks_desc),
-            )
-            self.play(
-                m.AddTextLetterByLetter(info_text),
-                m.Create(info_text_arrow),
-                m.AddTextLetterByLetter(info_desc),
-            )
-            self.play(
-                m.AddTextLetterByLetter(objects_text),
-                m.Create(objects_text_arrow),
-                m.AddTextLetterByLetter(objects_desc),
-            )
-            self.play(
-                m.AddTextLetterByLetter(refs_text),
-                m.Create(refs_text_arrow),
-                m.AddTextLetterByLetter(refs_desc),
-            )
+            name = out.stdout.strip()
+            return name or "master"
+        except OSError:
+            return "master"
+
+    def folder_entries(self):
+        try:
+            names = sorted(os.listdir(os.getcwd()), key=str.lower)
+        except OSError:
+            return []
+        out = []
+        for name in names:
+            if name in SKIP or name.startswith(".git-sim"):
+                continue
+            out.append(name + "/" if os.path.isdir(name) else name)
+        return out
+
+    # ---- drawing -----------------------------------------------------------------
+    def draw(self):
+        theme = self.theme
+        cwd = os.getcwd()
+        folder = os.path.basename(cwd.rstrip("\\/")) or cwd
+        already = self.repo is not None
+        entries = self.folder_entries()
+        phase = "before" if already else "after"  # the .git/ panel: there already, or new
+
+        if already:
+            try:
+                branch = self.repo.active_branch.name
+            except TypeError:
+                branch = None  # detached
+            commits = len(list(self.repo.iter_commits())) if self.head_exists() else 0
         else:
-            if settings.show_command_as_title:
-                self.add(cmd_text)
-            self.add(project_root)
-            self.add(project_root_text)
-            self.add(dot_git_text)
-            self.add(
-                head_text,
-                config_text,
-                description_text,
-                hooks_text,
-                info_text,
-                objects_text,
-                refs_text,
-            )
-            self.add(
-                dot_git_text_arrow,
-                head_text_arrow,
-                config_text_arrow,
-                description_text_arrow,
-                hooks_text_arrow,
-                info_text_arrow,
-                objects_text_arrow,
-                refs_text_arrow,
-            )
-            self.add(
-                dot_git_desc,
-                head_desc,
-                config_desc,
-                description_desc,
-                hooks_desc,
-                info_desc,
-                objects_desc,
-                refs_desc,
-            )
+            branch, commits = self.default_branch(), 0
 
-        if settings.show_command_as_title:
-            self.toFadeOut.add(cmd_text)
-        self.toFadeOut.add(project_root)
-        self.toFadeOut.add(project_root_text)
-        self.toFadeOut.add(
-            head_text,
-            config_text,
-            description_text,
-            hooks_text,
-            info_text,
-            objects_text,
-            refs_text,
+        W = 14.6
+        pad = 0.5
+        x0, y0 = -W / 2, 3.2  # the card's left edge and top edge
+        left = x0 + pad
+
+        # The folder tab sits on the card's top edge.
+        tab, tab_label = self.tab(folder + "/")
+        tab.move_to((x0 + 0.35 + tab.width / 2, y0 + tab.height / 2 + 0.04, 0))
+        tab_label.move_to(tab.get_center())
+        caption = self.put(
+            self.mono("your project folder", size=18, color=self.mutedColor),
+            tab.get_right()[0] + 0.3,
+            tab.get_center()[1],
         )
-        self.toFadeOut.add(
-            dot_git_text_arrow,
-            head_text_arrow,
-            config_text_arrow,
-            description_text_arrow,
-            hooks_text_arrow,
-            info_text_arrow,
-            objects_text_arrow,
-            refs_text_arrow,
+
+        # Files already in the folder, as chips.
+        y = y0 - 0.55
+        files_label = self.put(self.mono("files", size=16, color=self.mutedColor), left, y)
+        chips = []
+        if entries:
+            cx, cy = left + files_label.width + 0.35, y
+            shown = entries[:8]
+            for name in shown:
+                text = self.mono(name, size=18)
+                chip = self.panel(
+                    text.width + 0.4, 0.46, corner=0.14, stroke_width=2, opacity=theme.panel_opacity * 2
+                )
+                if cx + chip.width > x0 + W - pad:
+                    cx, cy = left + files_label.width + 0.35, cy - 0.6
+                chip.move_to((cx + chip.width / 2, cy, 0))
+                text.move_to(chip.get_center())
+                chips += [chip, text]
+                cx += chip.width + 0.18
+            if len(entries) > len(shown):
+                more = self.mono(f"+{len(entries) - len(shown)} more", size=16, color=self.mutedColor)
+                if cx + 0.05 + more.width > x0 + W - pad:  # no room left on this row
+                    cx, cy = left + files_label.width + 0.35, cy - 0.6
+                chips.append(self.put(more, cx + 0.05, cy))
+            y = cy - 0.75
+        else:
+            chips.append(
+                self.put(
+                    self.mono("nothing here yet: an empty folder", size=18, color=self.mutedColor),
+                    left + files_label.width + 0.35,
+                    y,
+                )
+            )
+            y -= 0.75
+
+        # The .git/ panel: the repository itself.
+        px0 = left
+        pw = W - 2 * pad
+        prow = 0.64
+        rows = [
+            ("config", "this repository's own settings: your name, its remotes, and more"),
+            (
+                "objects/",
+                "the object database: every file, folder and commit is stored here. Empty for now"
+                if commits == 0
+                else "the object database: every file, folder and commit of the history so far",
+            ),
+            ("refs/", "heads/ holds the branches and tags/ the tags, one tiny file per label"),
+            ("hooks/, info/", "scripts Git can run on events, and local ignore rules"),
+        ]
+        name_x, desc_x = px0 + 0.45, px0 + 3.9
+        desc_w = pw - (desc_x - px0) - 0.4
+        # measure the rows first so the panel is exactly as tall as it needs to be
+        built = []
+        for name, desc in rows:
+            label = self.mono(name, size=20, bold=True)
+            para = self.paragraph(desc, size=18, max_width=desc_w, color=self.mutedColor)
+            built.append((label, para, max(label.height, para.height) + 0.28))
+        ph = 0.95 + prow + sum(h for _, _, h in built) + 0.2
+        panel = self.panel(pw, ph, corner=0.26, stroke=theme.head, stroke_width=3, opacity=theme.panel_opacity * 1.6)
+        panel.move_to((px0 + pw / 2, y - ph / 2, 0))
+        py = y - 0.5
+        title = self.put(self.mono(".git/", size=24, bold=True), px0 + 0.45, py)
+        subtitle = self.put(
+            self.mono(
+                "the repository: Git's own hidden folder, created by git init" if not already else "the repository: already here, so git init changed nothing",
+                size=18,
+                color=self.mutedColor,
+            ),
+            title.get_right()[0] + 0.3,
+            py,
         )
-        self.toFadeOut.add(dot_git_desc, head_desc)
+        panel_mobs = [panel, title, subtitle]
+
+        # HEAD -> branch, the row that explains where you are.
+        py -= 0.95
+        head = self.pill("HEAD", theme.head)
+        head.move_to((name_x + head.width / 2, py, 0))
+        row_x = desc_x  # where the description starts; a long branch pill pushes it right
+        if branch:
+            unborn = commits == 0
+            shown = branch if len(branch) <= 24 else branch[:22] + "..."
+            target = self.pill(shown, theme.branch, opacity=0.4 if unborn else 1.0)
+            arrow = m.Arrow(
+                start=(head.get_right()[0] + 0.05, py, 0),
+                end=(head.get_right()[0] + 0.85, py, 0),
+                color=self.arrowColor,
+                stroke_width=4,
+                buff=0,
+            )
+            target.move_to((arrow.get_end()[0] + 0.05 + target.width / 2, py, 0))
+            row_x = max(desc_x, target.get_right()[0] + 0.4)
+            if unborn:
+                what = "where you are: this branch has no commits yet"
+            else:
+                what = f"where you are: this branch, {commits} commit{'s' if commits != 1 else ''} so far"
+            panel_mobs += [head, arrow, target]
+        else:
+            what = "where you are: detached, on a commit with no branch"
+            panel_mobs += [head]
+        panel_mobs.append(
+            self.put(self.paragraph(what, size=18, max_width=px0 + pw - 0.4 - row_x, color=self.mutedColor), row_x, py)
+        )
+
+        py -= prow / 2
+        for label, para, h in built:
+            py -= h / 2
+            panel_mobs.append(self.put(label, name_x, py))
+            panel_mobs.append(self.put(para, desc_x, py))
+            py -= h / 2
+
+        # The folder card itself, sized to hold everything above.
+        bottom = panel.get_bottom()[1] - pad
+        card = self.panel(W, y0 - bottom, corner=0.34, stroke_width=3)
+        card.move_to((0, (y0 + bottom) / 2, 0))
+
+        # What git prints, and what comes next.
+        ny = bottom - 0.6
+        where = self.shorten_path(os.path.join(cwd, ".git"), keep=2) + "/"
+        said = ("Reinitialized existing Git repository in " if already else "Initialized empty Git repository in ") + where
+        note1 = self.mono(said, size=18, color=self.mutedColor)
+        note1.move_to((0, ny, 0))
+        if already:
+            hint = "Nothing changed. The repository, its history and its settings are all still here."
+        else:
+            hint = "Nothing is tracked yet: git add stages files, then git commit makes the first commit."
+        note2 = self.mono(hint, size=20, bold=True)
+        note2.move_to((0, ny - 0.55, 0))
+
+        # Draw order: card behind, then the tab and chips, then the .git/ panel.
+        self.show(card, tab, tab_label, caption, files_label, *chips)
+        self.show(*panel_mobs, phase=phase)
+        self.show(note1, note2, phase="after")
