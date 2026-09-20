@@ -51,12 +51,13 @@ class Clean(GitSimBaseCommand):
         self.recenter_frame()
         self.scale_frame()
         self.vsplit_frame()
+        # Deleting moves files backwards, off the table: the arrows point left.
         self.setup_and_draw_zones(
-            first_column_name="Untracked files"
-            + (" + ignored" if self.ignored else ""),
-            second_column_name="----",
-            third_column_name="Deleted files"
+            first_column_name="Deleted files"
             + (" (dry run)" if self.dry_run and not self.force else ""),
+            second_column_name="Untracked files"
+            + (" + ignored" if self.ignored else ""),
+            third_column_name="----",
         )
         notes = []
         if not self.force and not self.dry_run:
@@ -76,73 +77,8 @@ class Clean(GitSimBaseCommand):
         self.fadeout()
         self.show_outro()
 
-    def create_zone_text(
-        self,
-        firstColumnFileNames,
-        secondColumnFileNames,
-        thirdColumnFileNames,
-        firstColumnFiles,
-        secondColumnFiles,
-        thirdColumnFiles,
-        firstColumnFilesDict,
-        secondColumnFilesDict,
-        thirdColumnFilesDict,
-        firstColumnTitle,
-        secondColumnTitle,
-        thirdColumnTitle,
-        horizontal2,
-    ):
-        for i, f in enumerate(firstColumnFileNames):
-            text = (
-                m.Text(
-                    self.trim_path(f),
-                    font=self.font,
-                    font_size=24,
-                    color=self.fontColor,
-                )
-                .move_to(
-                    (firstColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
-                )
-                .shift(m.DOWN * 0.5 * (i + 1))
-            )
-            firstColumnFiles.add(text)
-            firstColumnFilesDict[f] = text
-
-        for j, f in enumerate(secondColumnFileNames):
-            text = (
-                m.Text(
-                    self.trim_path(f),
-                    font=self.font,
-                    font_size=24,
-                    color=self.fontColor,
-                )
-                .move_to(
-                    (secondColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
-                )
-                .shift(m.DOWN * 0.5 * (j + 1))
-            )
-            secondColumnFiles.add(text)
-            secondColumnFilesDict[f] = text
-
-        for h, f in enumerate(thirdColumnFileNames):
-            text = (
-                m.MarkupText(
-                    "<span strikethrough='true' strikethrough_color='"
-                    + self.fontColor
-                    + "'>"
-                    + self.trim_path(f)
-                    + "</span>",
-                    font=self.font,
-                    font_size=24,
-                    color=self.fontColor,
-                )
-                .move_to(
-                    (thirdColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
-                )
-                .shift(m.DOWN * 0.5 * (h + 1))
-            )
-            thirdColumnFiles.add(text)
-            thirdColumnFilesDict[f] = text
+    def zone_struck(self, column, name):
+        return column == 1  # the deleted files
 
     def would_remove(self):
         """Exactly what git would delete, from its own dry run with the same flags."""
@@ -171,6 +107,6 @@ class Clean(GitSimBaseCommand):
         thirdColumnArrowMap={},
     ):
         for z in self.would_remove():
+            secondColumnFileNames.add(z)
             firstColumnFileNames.add(z)
-            thirdColumnFileNames.add(z)
-            firstColumnArrowMap[z] = m.Arrow(stroke_width=3, color=self.fontColor)
+            self.zone_arrows.append((z, 2, 1))

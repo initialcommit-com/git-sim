@@ -39,82 +39,19 @@ class Rm(GitSimBaseCommand):
         self.recenter_frame()
         self.scale_frame()
         self.vsplit_frame()
+        # Removing moves a file backwards out of the pipeline, so the arrows
+        # point left: out of the staging area or the working directory and gone.
         self.setup_and_draw_zones(
-            first_column_name="Working directory",
-            second_column_name="Staging area",
-            third_column_name="Removed files",
+            first_column_name="Removed files",
+            second_column_name="Working directory",
+            third_column_name="Staging area",
         )
         self.show_command_as_title()
         self.fadeout()
         self.show_outro()
 
-    def create_zone_text(
-        self,
-        firstColumnFileNames,
-        secondColumnFileNames,
-        thirdColumnFileNames,
-        firstColumnFiles,
-        secondColumnFiles,
-        thirdColumnFiles,
-        firstColumnFilesDict,
-        secondColumnFilesDict,
-        thirdColumnFilesDict,
-        firstColumnTitle,
-        secondColumnTitle,
-        thirdColumnTitle,
-        horizontal2,
-    ):
-        for i, f in enumerate(firstColumnFileNames):
-            text = (
-                m.Text(
-                    self.trim_path(f),
-                    font=self.font,
-                    font_size=24,
-                    color=self.fontColor,
-                )
-                .move_to(
-                    (firstColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
-                )
-                .shift(m.DOWN * 0.5 * (i + 1))
-            )
-            firstColumnFiles.add(text)
-            firstColumnFilesDict[f] = text
-
-        for j, f in enumerate(secondColumnFileNames):
-            text = (
-                m.Text(
-                    self.trim_path(f),
-                    font=self.font,
-                    font_size=24,
-                    color=self.fontColor,
-                )
-                .move_to(
-                    (secondColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
-                )
-                .shift(m.DOWN * 0.5 * (j + 1))
-            )
-            secondColumnFiles.add(text)
-            secondColumnFilesDict[f] = text
-
-        for h, f in enumerate(thirdColumnFileNames):
-            text = (
-                m.MarkupText(
-                    "<span strikethrough='true' strikethrough_color='"
-                    + self.fontColor
-                    + "'>"
-                    + self.trim_path(f)
-                    + "</span>",
-                    font=self.font,
-                    font_size=24,
-                    color=self.fontColor,
-                )
-                .move_to(
-                    (thirdColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
-                )
-                .shift(m.DOWN * 0.5 * (h + 1))
-            )
-            thirdColumnFiles.add(text)
-            thirdColumnFilesDict[f] = text
+    def zone_struck(self, column, name):
+        return column == 1  # the removed files
 
     def populate_zones(
         self,
@@ -125,16 +62,12 @@ class Rm(GitSimBaseCommand):
         secondColumnArrowMap={},
         thirdColumnArrowMap={},
     ):
+        staged = [x.a_path for x in self.repo.index.diff("HEAD")]
         for file in self.files:
-            if file in [x.a_path for x in self.repo.index.diff("HEAD")]:
-                secondColumnFileNames.add(file)
-                secondColumnArrowMap[file] = m.Arrow(
-                    stroke_width=3, color=self.fontColor
-                )
+            if file in staged:  # its staged change goes with it
+                thirdColumnFileNames.add(file)
+                self.zone_arrows.append((file, 3, 1))
             else:
-                firstColumnFileNames.add(file)
-                firstColumnArrowMap[file] = m.Arrow(
-                    stroke_width=3, color=self.fontColor
-                )
-
-            thirdColumnFileNames.add(file)
+                secondColumnFileNames.add(file)
+                self.zone_arrows.append((file, 2, 1))
+            firstColumnFileNames.add(file)

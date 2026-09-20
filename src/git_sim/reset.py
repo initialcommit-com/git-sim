@@ -104,10 +104,9 @@ class Reset(GitSimBaseCommand):
             # commit's version, so the file shows up as an unstaged change.
             self.vsplit_frame()
             self.setup_and_draw_zones(
-                first_column_name="Staged files",
-                second_column_name="Working directory",
+                first_column_name="Working directory",
+                second_column_name="Staged files",
                 third_column_name="----",
-                reverse=True,
             )
             self.add_notes(
                 [
@@ -117,8 +116,10 @@ class Reset(GitSimBaseCommand):
         else:
             self.reset_head_branch(self.resetTo.hexsha)
             self.vsplit_frame()
+            # Discarded | Modified | Staged: a reset moves changes leftwards
+            # (soft keeps them staged, mixed puts them on the table, hard drops them).
             self.setup_and_draw_zones(
-                first_column_name="Files restored in" if self.forward else "Changes deleted from"
+                first_column_name="Files restored in" if self.forward else "Discarded changes"
             )
         self.show_command_as_title()
         self.fadeout()
@@ -173,18 +174,17 @@ class Reset(GitSimBaseCommand):
         thirdColumnArrowMap={},
     ):
         if self.paths:
+            # unstaging: the entry leaves the staging area (right) for the working directory (left)
             staged = [y.a_path for y in self.repo.index.diff("HEAD")]
             for f in staged:
-                firstColumnFileNames.add(f)
+                secondColumnFileNames.add(f)
             for x in self.repo.index.diff(None):
                 if "git-sim_media" not in x.a_path:
-                    secondColumnFileNames.add(x.a_path)
+                    firstColumnFileNames.add(x.a_path)
             for path in self.paths:
                 if path in staged:
-                    secondColumnFileNames.add(path)
-                    firstColumnArrowMap[path] = m.Arrow(
-                        stroke_width=3, color=self.fontColor
-                    )
+                    firstColumnFileNames.add(path)
+                    self.zone_arrows.append((path, 2, 1))
             return
 
         for commit in self.commitsSinceResetTo:

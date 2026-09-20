@@ -17,6 +17,54 @@ from git_sim.settings import settings
 from git_sim.theme import apply_shadow, theme_for
 
 
+class ZoneNames(dict):
+    """The file names of one zone-table column: a set that keeps insertion
+    order (a dict whose values are unused), with the set's ``add``."""
+
+    def add(self, name):
+        self[name] = None
+
+
+class GrowArrow(m.Animation):
+    """Animated output: the arrow extends from its tail with the head riding
+    the growing line, rather than manim's Create, which traces the line and
+    then draws the head in place. Works for straight and curved arrows."""
+
+    def __init__(self, arrow, **kwargs):
+        super().__init__(arrow, **kwargs)
+        self.body = None
+        self.tip_shape = None
+        self.tip_length = None
+        self.min_alpha = 0.0
+
+    def begin(self):
+        arrow = self.mobject
+        tip = arrow.tip if arrow.has_tip() else None
+        if tip is not None:
+            self.tip_shape = type(tip)
+            self.tip_length = tip.length
+        # the full line, tail to tip point, that each frame takes a part of
+        self.body = arrow.copy()
+        self.body.pop_tips()
+        total = self.body.get_arc_length()
+        if tip is not None and total > 0:
+            # long enough for the head from the first frame
+            self.min_alpha = min(0.5, tip.length / total)
+        super().begin()
+
+    def interpolate_mobject(self, alpha):
+        a = max(self.rate_func(alpha), self.min_alpha)
+        arrow = self.mobject
+        arrow.pop_tips()
+        arrow.pointwise_become_partial(self.body, 0, a)
+        if self.tip_shape is not None:
+            arrow.add_tip(tip_shape=self.tip_shape, tip_length=self.tip_length)
+
+    def apply(self, scene):  # static backend stand-in: the finished arrow
+        if self.mobject is not None:
+            scene.add(self.mobject)
+
+
 class GitSimBaseCommand(m.MovingCameraScene):
     def __init__(self):
         super().__init__()
@@ -262,9 +310,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
     def tag(self, mob, **meta):
         """Attach semantic metadata for the interactive (HTML) output. A no-op
         on manim mobjects. ``phase="after"`` elements get the current step."""
-        setter = getattr(mob, "set_meta", None)
-        if setter is None:
+        # Looked up on the class: manim's Mobject fabricates a set_<attr>
+        # method for any name asked of an instance.
+        if getattr(type(mob), "set_meta", None) is None:
             return mob
+        setter = mob.set_meta
         if meta.get("phase") == "after" and "step" not in meta:
             # A commit's parent arrow is drawn after the commit has arrived;
             # its dotted "copied from" trail grows along with the commit.
@@ -789,10 +839,14 @@ class GitSimBaseCommand(m.MovingCameraScene):
             except ValueError:
                 pass
 
+    def grow_arrow(self, arrow, **kwargs):
+        """Animated output: draw an arrow with its head riding the line."""
+        self.play(GrowArrow(arrow), **kwargs)
+
     def draw_arrow(self, prevCircle, arrow):
         if prevCircle:
             if settings.animate:
-                self.play(m.Create(arrow), run_time=1 / settings.speed)
+                self.grow_arrow(arrow, run_time=1 / settings.speed)
             else:
                 self.add(arrow)
 
@@ -1020,13 +1074,18 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 thirdColumnTitle,
             )
 
-        firstColumnFileNames = set()
-        secondColumnFileNames = set()
-        thirdColumnFileNames = set()
+        # Insertion-ordered, so the table reads in the order a scene lists
+        # the files (a plain set would shuffle them from run to run).
+        firstColumnFileNames = ZoneNames()
+        secondColumnFileNames = ZoneNames()
+        thirdColumnFileNames = ZoneNames()
 
         firstColumnArrowMap = {}
         secondColumnArrowMap = {}
         thirdColumnArrowMap = {}
+        self.zone_arrows = (
+            []
+        )  # (name, from_column, to_column), filled by populate_zones
 
         self.populate_zones(
             firstColumnFileNames,
@@ -1037,14 +1096,37 @@ class GitSimBaseCommand(m.MovingCameraScene):
             thirdColumnArrowMap,
         )
 
+        # Arrows between columns. The columns read as a pipeline from left to
+        # right (stash, working directory, staging area, repository), so a
+        # change moving forward (add, commit, stash pop) points right and one
+        # moving back (unstage, discard, remove, stash push) points left; the
+        # head rides the growing line in animated output. A scene lists its
+        # moves in self.zone_arrows as (name, from_column, to_column) with
+        # columns numbered 1..3; the three legacy maps are read the way they
+        # always were (first -> third, or first -> second with reverse;
+        # second -> third; third -> first) and drawn the same way.
+        moves = list(self.zone_arrows)
+        moves += [
+            (f, 1, 2 if reverse else 3, a) for f, a in firstColumnArrowMap.items()
+        ]
+        moves += [(f, 2, 3, a) for f, a in secondColumnArrowMap.items()]
+        moves += [(f, 3, 1, a) for f, a in thirdColumnArrowMap.items()]
+
+        # Every entry gets a row so that an arrow runs straight across and
+        # never over another column's text (see zone_rows).
+        self._zone_rows = self.zone_rows(
+            {
+                1: firstColumnFileNames,
+                2: secondColumnFileNames,
+                3: thirdColumnFileNames,
+            },
+            moves,
+        )
+
         # Zebra stripes behind every other row, added before the row text so
         # they sit underneath it. Rows are 0.5 high, starting just below the
         # header's lower rule.
-        n_rows = max(
-            len(firstColumnFileNames),
-            len(secondColumnFileNames),
-            len(thirdColumnFileNames),
-        )
+        n_rows = max(self._zone_rows.values(), default=-1) + 1
         for row in range(1, n_rows, 2):
             stripe = m.Rectangle(
                 width=self.camera.frame.get_width(),
@@ -1140,95 +1222,37 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     vert.put_start_and_end_on((bottom[0], lowest, 0), top)
         self.zoneSeparators = (vert1, vert2)
 
-        for filename in firstColumnArrowMap:
-            if reverse:
-                firstColumnArrowMap[filename].put_start_and_end_on(
-                    (
-                        firstColumnFilesDict[filename].get_right()[0] + 0.25,
-                        firstColumnFilesDict[filename].get_right()[1],
-                        0,
-                    ),
-                    (
-                        secondColumnFilesDict[filename].get_left()[0] - 0.25,
-                        secondColumnFilesDict[filename].get_left()[1],
-                        0,
-                    ),
-                )
-            else:
-                firstColumnArrowMap[filename].put_start_and_end_on(
-                    (
-                        firstColumnFilesDict[filename].get_right()[0] + 0.25,
-                        firstColumnFilesDict[filename].get_right()[1],
-                        0,
-                    ),
-                    (
-                        thirdColumnFilesDict[filename].get_left()[0] - 0.25,
-                        thirdColumnFilesDict[filename].get_left()[1],
-                        0,
-                    ),
-                )
-            firstColumnArrowMap[filename].set_color(self.arrowColor)
-            tag_move(
-                firstColumnArrowMap[filename],
-                firstColumnFilesDict[filename],
-                (secondColumnFilesDict if reverse else thirdColumnFilesDict)[filename],
+        dicts = {
+            1: firstColumnFilesDict,
+            2: secondColumnFilesDict,
+            3: thirdColumnFilesDict,
+        }
+        for move in moves:
+            filename, src_col, dst_col = move[0], move[1], move[2]
+            arrow = (
+                move[3]
+                if len(move) > 3
+                else m.Arrow(stroke_width=3, color=self.fontColor)
             )
+            source, dest = dicts[src_col].get(filename), dicts[dst_col].get(filename)
+            if source is None or dest is None:
+                continue
+            if (
+                dst_col > src_col
+            ):  # forward: leaves the right edge, lands on the left edge
+                start = (source.get_right()[0] + 0.25, source.get_right()[1], 0)
+                end = (dest.get_left()[0] - 0.25, dest.get_left()[1], 0)
+            else:  # back: leaves the left edge, lands on the right edge
+                start = (source.get_left()[0] - 0.25, source.get_left()[1], 0)
+                end = (dest.get_right()[0] + 0.25, dest.get_right()[1], 0)
+            arrow.put_start_and_end_on(start, end)
+            arrow.set_color(self.arrowColor)
+            tag_move(arrow, source, dest)
             if settings.animate:
-                self.play(m.Create(firstColumnArrowMap[filename]))
+                self.grow_arrow(arrow)
             else:
-                self.add(firstColumnArrowMap[filename])
-            self.toFadeOut.add(firstColumnArrowMap[filename])
-
-        for filename in secondColumnArrowMap:
-            secondColumnArrowMap[filename].put_start_and_end_on(
-                (
-                    secondColumnFilesDict[filename].get_right()[0] + 0.25,
-                    secondColumnFilesDict[filename].get_right()[1],
-                    0,
-                ),
-                (
-                    thirdColumnFilesDict[filename].get_left()[0] - 0.25,
-                    thirdColumnFilesDict[filename].get_left()[1],
-                    0,
-                ),
-            )
-            secondColumnArrowMap[filename].set_color(self.arrowColor)
-            tag_move(
-                secondColumnArrowMap[filename],
-                secondColumnFilesDict[filename],
-                thirdColumnFilesDict[filename],
-            )
-            if settings.animate:
-                self.play(m.Create(secondColumnArrowMap[filename]))
-            else:
-                self.add(secondColumnArrowMap[filename])
-            self.toFadeOut.add(secondColumnArrowMap[filename])
-
-        for filename in thirdColumnArrowMap:
-            thirdColumnArrowMap[filename].put_start_and_end_on(
-                (
-                    thirdColumnFilesDict[filename].get_left()[0] - 0.25,
-                    thirdColumnFilesDict[filename].get_left()[1],
-                    0,
-                ),
-                (
-                    firstColumnFilesDict[filename].get_right()[0] + 0.25,
-                    firstColumnFilesDict[filename].get_right()[1],
-                    0,
-                ),
-            )
-
-            thirdColumnArrowMap[filename].set_color(self.arrowColor)
-            tag_move(
-                thirdColumnArrowMap[filename],
-                thirdColumnFilesDict[filename],
-                firstColumnFilesDict[filename],
-            )
-            if settings.animate:
-                self.play(m.Create(thirdColumnArrowMap[filename]))
-            else:
-                self.add(thirdColumnArrowMap[filename])
-            self.toFadeOut.add(thirdColumnArrowMap[filename])
+                self.add(arrow)
+            self.toFadeOut.add(arrow)
 
         self.toFadeOut.add(firstColumnFiles, secondColumnFiles, thirdColumnFiles)
 
@@ -1525,7 +1549,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         if draw_arrow and child_key != "dark":
             if settings.animate:
-                self.play(m.Create(arrow), run_time=1 / settings.speed)
+                self.grow_arrow(arrow, run_time=1 / settings.speed)
             else:
                 self.add(arrow)
             self.arrows.append(arrow)
@@ -1623,8 +1647,83 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.toFadeOut.add(refRec)
         self.prevRef = refRec
 
-    def trim_path(self, path):
-        return f"{path[:15]}...{path[-15:]}" if len(path) > 33 else path
+    def trim_path(self, path, max_chars=33):
+        """A path short enough for a table cell that still reads as a path:
+        the file name is kept whole and directories are dropped from the
+        middle (a/b/c/d/name.ext -> a/.../d/name.ext), keeping the first and
+        as many of the last as fit. Only a file name that is too long by
+        itself loses the middle of its stem (VeryLong...Name.ext)."""
+        if len(path) <= max_chars:
+            return path
+        parts = path.replace("\\", "/").split("/")
+        name, dirs = parts[-1], parts[:-1]
+        if dirs:
+            for keep in range(max(len(dirs) - 2, 0), -1, -1):
+                tail = "/".join(dirs[len(dirs) - keep :] + [name]) if keep else name
+                candidates = [f".../{tail}"]
+                if keep <= len(dirs) - 2:  # something is really left out
+                    candidates.insert(0, f"{dirs[0]}/.../{tail}")
+                for candidate in candidates:
+                    if len(candidate) <= max_chars:
+                        return candidate
+        prefix = ".../" if dirs else ""
+        budget = max_chars - len(prefix)
+        stem, dot, ext = name.rpartition(".")
+        if not stem or len(ext) > 8:  # no extension worth keeping
+            stem, ext = name, ""
+        else:
+            ext = dot + ext
+        room = budget - len(ext) - 3
+        if room < 4:
+            return prefix + name[: max(budget - 3, 1)] + "..."
+        head = (room + 1) // 2
+        return f"{prefix}{stem[:head]}...{stem[len(stem) - (room - head):]}{ext}"
+
+    def zone_rows(self, names_by_col, moves):
+        """Rows for the zone table: {(column, name): row}.
+
+        The two ends of a move share a row, so its arrow is horizontal, and
+        when the arrow crosses the middle column that row is kept empty
+        there, so it never runs over text. Everything else fills the lowest
+        free rows of its column in listing order."""
+        rows, used = {}, {1: set(), 2: set(), 3: set()}
+
+        def free(row, cols, name):
+            return all(row not in used[c] or rows.get((c, name)) == row for c in cols)
+
+        for move in moves:
+            name, src, dst = move[0], move[1], move[2]
+            if name not in names_by_col[src] or name not in names_by_col[dst]:
+                continue
+            crossed = [2] if {src, dst} == {1, 3} else []
+            cols = [src, dst] + crossed
+            row = rows.get((src, name), rows.get((dst, name)))
+            if row is None or not free(row, cols, name):
+                row = 0
+                while not free(row, cols, name):
+                    row += 1
+            for c in (src, dst):
+                rows[(c, name)] = row
+            for c in cols:
+                used[c].add(row)
+        for col, names in names_by_col.items():
+            for name in names:
+                if (col, name) in rows:
+                    continue
+                row = 0
+                while row in used[col]:
+                    row += 1
+                rows[(col, name)] = row
+                used[col].add(row)
+        return rows
+
+    def zone_label(self, column, name):
+        """The text shown for an entry; paths are shortened to fit."""
+        return self.trim_path(name)
+
+    def zone_struck(self, column, name):
+        """Whether an entry is struck through (deleted, dropped, consumed)."""
+        return False
 
     def trim_cmd(self, path, length=30):
         return f"{path[:length]}..." if len(path) > (length + 3) else path
@@ -1654,53 +1753,57 @@ class GitSimBaseCommand(m.MovingCameraScene):
         thirdColumnTitle,
         horizontal2,
     ):
-        for i, f in enumerate(firstColumnFileNames):
-            text = (
-                m.Text(
-                    self.trim_path(f),
-                    font=self.font,
-                    font_size=24,
-                    color=self.fontColor,
-                )
-                .move_to(
-                    (firstColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
-                )
-                .shift(m.DOWN * 0.5 * (i + 1))
-            )
-            firstColumnFiles.add(text)
-            firstColumnFilesDict[f] = text
-
-        for j, f in enumerate(secondColumnFileNames):
-            text = (
-                m.Text(
-                    self.trim_path(f),
-                    font=self.font,
-                    font_size=24,
-                    color=self.fontColor,
-                )
-                .move_to(
-                    (secondColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
-                )
-                .shift(m.DOWN * 0.5 * (j + 1))
-            )
-            secondColumnFiles.add(text)
-            secondColumnFilesDict[f] = text
-
-        for h, f in enumerate(thirdColumnFileNames):
-            text = (
-                m.Text(
-                    self.trim_path(f),
-                    font=self.font,
-                    font_size=24,
-                    color=self.fontColor,
-                )
-                .move_to(
-                    (thirdColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
-                )
-                .shift(m.DOWN * 0.5 * (h + 1))
-            )
-            thirdColumnFiles.add(text)
-            thirdColumnFilesDict[f] = text
+        """One text per entry, on the row zone_rows gave it; labels and
+        strike-through come from zone_label / zone_struck, which scenes
+        override instead of this method."""
+        columns = (
+            (
+                1,
+                firstColumnFileNames,
+                firstColumnTitle,
+                firstColumnFiles,
+                firstColumnFilesDict,
+            ),
+            (
+                2,
+                secondColumnFileNames,
+                secondColumnTitle,
+                secondColumnFiles,
+                secondColumnFilesDict,
+            ),
+            (
+                3,
+                thirdColumnFileNames,
+                thirdColumnTitle,
+                thirdColumnFiles,
+                thirdColumnFilesDict,
+            ),
+        )
+        rows = getattr(self, "_zone_rows", {})
+        for col, names, title, group, lookup in columns:
+            for i, f in enumerate(names):
+                label = self.zone_label(col, f)
+                if self.zone_struck(col, f):
+                    text = m.MarkupText(
+                        "<span strikethrough='true' strikethrough_color='"
+                        + self.fontColor
+                        + "'>"
+                        + label
+                        + "</span>",
+                        font=self.font,
+                        font_size=24,
+                        color=self.fontColor,
+                    )
+                else:
+                    text = m.Text(
+                        label, font=self.font, font_size=24, color=self.fontColor
+                    )
+                row = rows.get((col, f), i)
+                text.move_to(
+                    (title.get_center()[0], horizontal2.get_center()[1], 0)
+                ).shift(m.DOWN * 0.5 * (row + 1))
+                group.add(text)
+                lookup[f] = text
 
     def create_zone_text_from_rows(
         self,

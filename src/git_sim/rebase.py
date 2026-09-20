@@ -377,7 +377,7 @@ class Rebase(GitSimBaseCommand):
 
         if draw_arrow:
             if settings.animate:
-                self.play(m.Create(arrow), run_time=1 / settings.speed)
+                self.grow_arrow(arrow, run_time=1 / settings.speed)
             else:
                 self.add(arrow)
             self.toFadeOut.add(arrow)

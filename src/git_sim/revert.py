@@ -179,7 +179,7 @@ class Revert(GitSimBaseCommand):
         self.tag(arrow, role="edge", src="abcdef", dst=head_sha, phase="after")
 
         if settings.animate:
-            self.play(m.Create(arrow), run_time=1 / settings.speed)
+            self.grow_arrow(arrow, run_time=1 / settings.speed)
         else:
             self.add(arrow)
 

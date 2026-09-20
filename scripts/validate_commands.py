@@ -1,4 +1,4 @@
-﻿"""Validate every git-sim subcommand against git ground truth.
+"""Validate every git-sim subcommand against git ground truth.
 
 Usage: python scripts/validate_commands.py [image-output-dir]
 Needs the dev environment (git-dummy, skia). Prints a PASS/FAIL table.
@@ -31,6 +31,7 @@ from git_sim.enums import ResetMode, StashSubCommand, RemoteSubCommand  # noqa: 
 
 ROOT = Path(tempfile.mkdtemp(prefix="gitsim_validate_"))
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "images"
+ONLY = set(sys.argv[2:])  # optional case_* names to run; empty runs everything
 OUT.mkdir(exist_ok=True)
 for old in OUT.glob("*.png"):
     old.unlink()
@@ -207,7 +208,12 @@ class Capture:
             a3 = {} if a3 is None else a3
             orig_pz(f1, f2, f3, a1, a2, a3)
             self.zone_files = {"first": set(f1), "second": set(f2), "third": set(f3)}
+            # arrows keyed by the column they leave: the legacy maps plus the
+            # scene's zone_arrows list of (name, from_column, to_column)
             self.zone_arrows = {"first": set(a1), "second": set(a2), "third": set(a3)}
+            names = {1: "first", 2: "second", 3: "third"}
+            for move in getattr(scene, "zone_arrows", []):
+                self.zone_arrows[names[move[1]]].add(move[0])
 
         scene.setup_and_draw_zones = sdz
         scene.populate_zones = pz
@@ -997,14 +1003,14 @@ def case_zones():
         lambda: Restore(files=["main.3"], staged=False),
         [
             (
-                "modified file moves to 'Deleted changes'",
-                lambda c: "main.3" in c.zone_files["third"]
+                "modified file moves left to 'Discarded changes'",
+                lambda c: "main.3" in c.zone_files["first"]
                 and c.zone_arrows["second"] == {"main.3"},
             ),
             (
-                "titles reversed",
+                "titles",
                 lambda c: c.cols
-                == ("Staging area", "Modified files", "Deleted changes"),
+                == ("Discarded changes", "Working directory", "Staging area"),
             ),
         ],
     )
@@ -1014,9 +1020,9 @@ def case_zones():
         lambda: Restore(files=["main.4"], staged=True),
         [
             (
-                "staged file moves back to modified column",
+                "staged file moves left, back to the working directory",
                 lambda c: "main.4" in c.zone_files["second"]
-                and c.zone_arrows["first"] == {"main.4"},
+                and c.zone_arrows["third"] == {"main.4"},
             ),
         ],
     )
@@ -1026,15 +1032,16 @@ def case_zones():
         lambda: Rm(files=["main.1"]),
         [
             (
-                "working dir -> removed, struck through",
-                lambda c: c.zone_files["first"] == {"main.1"}
-                and c.zone_files["third"] == {"main.1"}
-                and all(strike for _, strike in c.column_texts("third")),
+                "working dir -> removed (leftwards), struck through",
+                lambda c: c.zone_files["second"] == {"main.1"}
+                and c.zone_files["first"] == {"main.1"}
+                and c.zone_arrows["second"] == {"main.1"}
+                and all(strike for _, strike in c.column_texts("first")),
             ),
             (
                 "titles",
                 lambda c: c.cols
-                == ("Working directory", "Staging area", "Removed files"),
+                == ("Removed files", "Working directory", "Staging area"),
             ),
         ],
     )
@@ -1044,9 +1051,9 @@ def case_zones():
         lambda: Rm(files=["main.4"]),
         [
             (
-                "comes from staging column",
-                lambda c: c.zone_files["second"] == {"main.4"}
-                and c.zone_arrows["second"] == {"main.4"},
+                "comes from the staging column, on the right",
+                lambda c: c.zone_files["third"] == {"main.4"}
+                and c.zone_arrows["third"] == {"main.4"},
             ),
         ],
     )
@@ -1086,10 +1093,10 @@ def case_zones():
         lambda: Clean(),
         [
             (
-                "untracked -> deleted with arrows",
-                lambda c: c.zone_files["first"] == st["untracked"]
-                and c.zone_files["third"] == st["untracked"]
-                and c.zone_arrows["first"] == st["untracked"],
+                "untracked -> deleted (leftwards) with arrows",
+                lambda c: c.zone_files["second"] == st["untracked"]
+                and c.zone_files["first"] == st["untracked"]
+                and c.zone_arrows["second"] == st["untracked"],
             ),
         ],
     )
@@ -1099,15 +1106,17 @@ def case_zones():
         lambda: Stash(files=[], command=None, stash_index="0"),
         [
             (
-                "modified and staged both stashed",
-                lambda c: c.zone_files["third"] == st["modified"] | st["staged"]
-                and c.zone_files["first"] == st["modified"]
-                and c.zone_files["second"] == st["staged"],
+                "modified and staged both stashed (leftwards)",
+                lambda c: c.zone_files["first"] == st["modified"] | st["staged"]
+                and c.zone_files["second"] == st["modified"]
+                and c.zone_files["third"] == st["staged"]
+                and c.zone_arrows["second"] == st["modified"]
+                and c.zone_arrows["third"] == st["staged"],
             ),
             (
                 "titles",
                 lambda c: c.cols
-                == ("Working directory", "Staging area", "Stashed changes"),
+                == ("Stashed changes", "Working directory", "Staging area"),
             ),
         ],
     )
@@ -1118,8 +1127,8 @@ def case_zones():
         [
             (
                 "only main.3 stashed",
-                lambda c: c.zone_files["third"] == {"main.3"}
-                and c.zone_arrows["first"] == {"main.3"},
+                lambda c: c.zone_files["first"] == {"main.3"}
+                and c.zone_arrows["second"] == {"main.3"},
             ),
         ],
     )
@@ -1129,10 +1138,11 @@ def case_zones():
         lambda: Stash(files=[], command=StashSubCommand.POP, stash_index="0"),
         [
             (
-                "stash entry files return to working dir, struck through in stash column",
-                lambda c: c.zone_files["third"] == {"main.5"}
-                and c.zone_files["first"] == {"main.5"}
-                and all(s for _, s in c.column_texts("third")),
+                "stash entry files return (rightwards) to working dir, struck through in stash column",
+                lambda c: c.zone_files["first"] == {"main.5"}
+                and c.zone_files["second"] == {"main.5"}
+                and c.zone_arrows["first"] == {"main.5"}
+                and all(s for _, s in c.column_texts("first")),
             ),
         ],
     )
@@ -1143,8 +1153,8 @@ def case_zones():
         [
             (
                 "same files, not struck through",
-                lambda c: c.zone_files["third"] == {"main.5"}
-                and not any(s for _, s in c.column_texts("third")),
+                lambda c: c.zone_files["first"] == {"main.5"}
+                and not any(s for _, s in c.column_texts("first")),
             ),
         ],
     )
@@ -1479,9 +1489,12 @@ def case_stash_flags():
         fresh(two_stashes),
         lambda: Stash(files=[], command=StashSubCommand.LIST, stash_index="0"),
         [
-            ("two entries listed", lambda c: len(c.zone_files["first"]) == 2),
+            (
+                "two entries listed (right column)",
+                lambda c: len(c.zone_files["third"]) == 2,
+            ),
             ("stash@{0} files shown", lambda c: c.zone_files["second"] == {"main.6"}),
-            ("nothing dropped", lambda c: c.zone_files["third"] == set()),
+            ("nothing dropped", lambda c: c.zone_files["first"] == set()),
             ("title", lambda c: c.scene.cmd == "git stash list"),
         ],
     )
@@ -1500,13 +1513,16 @@ def case_stash_flags():
         lambda: Stash(files=[], command=StashSubCommand.DROP, stash_index="1"),
         [
             (
-                "exactly stash@{1} struck through in Dropped",
-                lambda c: [t for t, s in c.column_texts("third") if s]
-                == [t for t, _ in c.column_texts("third")]
-                and len(c.zone_files["third"]) == 1
-                and next(iter(c.zone_files["third"])).startswith("stash@{1}"),
+                "exactly stash@{1} struck through in Dropped (left column)",
+                lambda c: [t for t, s in c.column_texts("first") if s]
+                == [t for t, _ in c.column_texts("first")]
+                and len(c.zone_files["first"]) == 1
+                and next(iter(c.zone_files["first"])).startswith("stash@{1}"),
             ),
-            ("arrow from entry to dropped", lambda c: len(c.zone_arrows["first"]) == 1),
+            (
+                "arrow from entry (right) to dropped (left)",
+                lambda c: len(c.zone_arrows["third"]) == 1,
+            ),
         ],
     )
     run_case(
@@ -1745,7 +1761,7 @@ def case_clean_flags():
         [
             (
                 "untracked files only",
-                lambda c: c.zone_files["first"] == {"untracked.txt"},
+                lambda c: c.zone_files["second"] == {"untracked.txt"},
             ),
             ("refusal note", lambda c: has_text(c, "refuses to run without -f")),
             ("title", lambda c: c.scene.cmd == "git clean"),
@@ -1756,7 +1772,7 @@ def case_clean_flags():
         fresh(messy),
         lambda: Clean(dry_run=True),
         [
-            ("dry run column", lambda c: c.cols[2] == "Deleted files (dry run)"),
+            ("dry run column", lambda c: c.cols[0] == "Deleted files (dry run)"),
             ("title", lambda c: c.scene.cmd == "git clean -n"),
         ],
     )
@@ -1963,16 +1979,16 @@ def case_reset_paths():
             ("HEAD stays", lambda c: c.refs().get("HEAD") == h),
             (
                 "columns",
-                lambda c: c.cols == ("Staged files", "Working directory", "----"),
+                lambda c: c.cols == ("Working directory", "Staged files", "----"),
             ),
             (
                 "both staged files listed",
-                lambda c: c.zone_files["first"] == {"main.4", "main.5"},
+                lambda c: c.zone_files["second"] == {"main.4", "main.5"},
             ),
             (
-                "only main.4 moves to the working directory",
-                lambda c: c.zone_arrows["first"] == {"main.4"}
-                and "main.4" in c.zone_files["second"],
+                "only main.4 moves left to the working directory",
+                lambda c: c.zone_arrows["second"] == {"main.4"}
+                and "main.4" in c.zone_files["first"],
             ),
             ("title", lambda c: c.scene.cmd == "git reset main.4"),
         ],
@@ -2026,13 +2042,13 @@ def case_restore_source():
             (
                 "columns",
                 lambda c: c.cols
-                == ("Working directory", f"Restored from {src[:6]}", "----"),
+                == ("Working directory", "----", f"Restored from {src[:6]}"),
             ),
             (
-                "file flows from the source into the working directory",
+                "file flows leftwards from the source into the working directory",
                 lambda c: c.zone_files["first"] == {"main.1"}
-                and c.zone_files["second"] == {"main.1"}
-                and c.zone_arrows["first"] == {"main.1"},
+                and c.zone_files["third"] == {"main.1"}
+                and c.zone_arrows["third"] == {"main.1"},
             ),
             ("HEAD unchanged", lambda c: c.refs().get("HEAD") == r.head.commit.hexsha),
             ("title", lambda c: c.scene.cmd == "git restore --source HEAD~3 main.1"),
@@ -2498,6 +2514,8 @@ for fn in (
     case_reflog,
     case_submodule,
 ):
+    if ONLY and fn.__name__ not in ONLY:
+        continue
     try:
         fn()
     except Exception:

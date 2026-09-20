@@ -418,12 +418,58 @@ window.GitSimViewer = (function(){
   const SETTLED = 0.28;
   const isOrigin = el => el.dataset.role === 'edge' && el.dataset.kind === 'origin';
   const isLane = el => el.dataset.role === 'edge' && el.dataset.kind !== 'origin';
-  // A parent arrow draws itself tail to tip: its line grows, then the head appears.
+  // An arrow draws itself tail to tip: its line grows and the head rides the
+  // growing end. The exporter emits the head polygon right after its line
+  // with the same tags, which is how the two are paired here.
+  const heads = new Map();  // head polygon -> the line or path it belongs to
   after.filter(el => isLane(el) && (el.tagName === 'line' || el.tagName === 'path')).forEach(el => {
     let len = 0;
     try { len = el.tagName === 'path' ? el.getTotalLength() : Math.hypot(el.x2.baseVal.value - el.x1.baseVal.value, el.y2.baseVal.value - el.y1.baseVal.value); } catch (e) {}
     if (len > 0) el.dataset.len = len;
+    const head = el.nextElementSibling;
+    if (len > 0 && head && head.tagName === 'polygon' && isLane(head) && head.dataset.step === el.dataset.step) heads.set(head, el);
   });
+  // Where a line's drawn end is when a fraction t of it has been drawn.
+  const pointAt = (line, t) => {
+    if (line.tagName === 'path') { const p = line.getPointAtLength(parseFloat(line.dataset.len) * t); return [p.x, p.y]; }
+    const x1 = line.x1.baseVal.value, y1 = line.y1.baseVal.value;
+    return [x1 + (line.x2.baseVal.value - x1) * t, y1 + (line.y2.baseVal.value - y1) * t];
+  };
+  // A file entry an arrow in the zone table points at is pushed along by the
+  // head: it appears beside the file it came from and travels just ahead of
+  // the head, keeping their final spacing all the way. (Only table arrows,
+  // which carry no data-src; a graph arrow may end on a commit that slides
+  // for its own reasons.)
+  const pushed = new Map();  // file text -> the line pushing it
+  {
+    const files = moved.filter(el => el.dataset.role === 'file' && el.dataset.phase === 'after');
+    heads.forEach((line, head) => {
+      if (line.dataset.src || line.tagName !== 'line') return;
+      const [ex, ey] = pointAt(line, 1), dir = Math.sign(line.x2.baseVal.value - line.x1.baseVal.value) || 1;
+      let reach = 40; try { reach = head.getBBox().width * 2.5 + 10; } catch (e) {}
+      let best = null, bestGap = Infinity;
+      files.forEach(f => {
+        let b; try { b = f.getBBox(); } catch (e) { return; }
+        if (!b.width || Math.abs(b.y + b.height / 2 - ey) > b.height * 0.6) return;
+        const gap = dir > 0 ? b.x - ex : ex - (b.x + b.width);
+        if (gap >= 0 && gap < reach && gap < bestGap) { best = f; bestGap = gap; }
+      });
+      if (best) pushed.set(best, line);
+    });
+  }
+  // The head, drawn at the line's final end, moved back to the drawn end
+  // (and, on a curve, turned to follow the tangent there).
+  function placeHead(head, line, t){
+    if (t >= 1) { head.removeAttribute('transform'); return; }
+    const [ex, ey] = pointAt(line, 1), [px, py] = pointAt(line, t);
+    let turn = '';
+    if (line.tagName === 'path') {
+      const [qx, qy] = pointAt(line, Math.max(t - 0.02, 0)), [rx, ry] = pointAt(line, 0.98);
+      const deg = (Math.atan2(py - qy, px - qx) - Math.atan2(ey - ry, ex - rx)) * 180 / Math.PI;
+      turn = ` rotate(${deg} ${ex} ${ey})`;
+    }
+    head.setAttribute('transform', `translate(${px - ex} ${py - ey})${turn}`);
+  }
   // A copy made by rebase or cherry-pick appears at the commit it came from
   // and slides to its place (its data-dx/dy point back at the source).
   const slides = new Set(moved.filter(el => el.dataset.phase === 'after'));
@@ -436,19 +482,30 @@ window.GitSimViewer = (function(){
         const t = el.dataset.t !== undefined ? parseFloat(el.dataset.t) : 1;
         o = a > 0 && a >= t - 1e-6 ? 1 : 0;
         o *= 1 - (1 - SETTLED) * clamp(progress - stepOf(el) - 0.35, 0, 1) / 0.65;
+      } else if (heads.has(el)) {
+        placeHead(el, heads.get(el), a);  // the head rides the growing line
+        o = a > 0 ? 1 : 0;
       } else if (isLane(el)) {
         const len = parseFloat(el.dataset.len || '0');
         if (len > 0) { el.style.strokeDasharray = `${len}`; el.style.strokeDashoffset = `${len * (1 - a)}`; o = a > 0 ? 1 : 0; }
-        else o = a > .85 ? 1 : 0;  // the arrowhead, once the line has reached it
+        else o = a > .85 ? 1 : 0;  // a head whose line could not be measured
       } else if (slides.has(el)) {
-        o = clamp(a / 0.15, 0, 1);  // visible almost at once, then on its way
+        // visible almost at once, then on its way; a pushed file fades in
+        // while it is still beside the entry it came from
+        o = clamp(a / (pushed.has(el) ? 0.3 : 0.15), 0, 1);
       }
       el.style.opacity = o; el.style.pointerEvents = o < .5 ? 'none' : '';
     });
     removed.forEach(el => { const a = 1 - amount(el, progress); el.style.opacity = a; el.style.pointerEvents = a < .5 ? 'none' : ''; });
     syncHits();
     moved.forEach(el => {
-      const back = 1 - amount(el, progress);
+      const a = amount(el, progress), back = 1 - a;
+      const line = pushed.get(el);
+      if (line) {  // rides with the arrowhead
+        const [ex, ey] = pointAt(line, 1), [px, py] = pointAt(line, a);
+        el.style.transform = back > 0 ? `translate(${px - ex}px, ${py - ey}px)` : '';
+        return;
+      }
       el.style.transform = back > 0 ? `translate(${el.dataset.dx * back}px, ${el.dataset.dy * back}px)` : '';
     });
     recolored.forEach(el => {

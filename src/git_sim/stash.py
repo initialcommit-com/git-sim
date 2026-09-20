@@ -90,15 +90,13 @@ class Stash(GitSimBaseCommand):
         self.scale_frame()
         self.vsplit_frame()
         if self.command in LIST_COMMANDS:
-            third = (
-                "Dropped entries"
-                if self.command in (StashSubCommand.DROP, StashSubCommand.CLEAR)
-                else "----"
-            )
+            # Dropping is a removal, so dropped entries land on the left with
+            # the arrows pointing that way; list and show only look.
+            dropping = self.command in (StashSubCommand.DROP, StashSubCommand.CLEAR)
             self.setup_and_draw_zones(
-                first_column_name="Stash entries",
+                first_column_name="Dropped entries" if dropping else "----",
                 second_column_name=f"Files in stash@{{{self.stash_index}}}",
-                third_column_name=third,
+                third_column_name="Stash entries",
             )
             if self.command == StashSubCommand.CLEAR:
                 self.add_notes(
@@ -117,10 +115,12 @@ class Stash(GitSimBaseCommand):
                     ]
                 )
         else:
+            # The stash sits before the working directory: pushing moves
+            # changes left, out of the way; pop and apply bring them back right.
             self.setup_and_draw_zones(
-                first_column_name="Working directory",
-                second_column_name="Staging area",
-                third_column_name="Stashed changes",
+                first_column_name="Stashed changes",
+                second_column_name="Working directory",
+                third_column_name="Staging area",
             )
         self.show_command_as_title()
         self.fadeout()
@@ -133,83 +133,20 @@ class Stash(GitSimBaseCommand):
         rest = re.sub(r":\s*[0-9a-f]{7,}\s", ": ", rest, count=1)
         return f"{ref} {rest}"
 
-    def create_zone_text(
-        self,
-        firstColumnFileNames,
-        secondColumnFileNames,
-        thirdColumnFileNames,
-        firstColumnFiles,
-        secondColumnFiles,
-        thirdColumnFiles,
-        firstColumnFilesDict,
-        secondColumnFilesDict,
-        thirdColumnFilesDict,
-        firstColumnTitle,
-        secondColumnTitle,
-        thirdColumnTitle,
-        horizontal2,
-    ):
-        strike_third = self.command in (
+    def zone_label(self, column, name):
+        # list/show/drop/clear: the outer columns hold stash entries, not paths
+        if self.command in LIST_COMMANDS and column != 2:
+            return self.trim_cmd(name, 30)
+        return self.trim_path(name)
+
+    def zone_struck(self, column, name):
+        # The left column holds what this command consumes: the stashed
+        # files a pop takes back, or the entries drop and clear delete.
+        return column == 1 and self.command in (
             StashSubCommand.POP,
             StashSubCommand.DROP,
             StashSubCommand.CLEAR,
         )
-        for i, f in enumerate(firstColumnFileNames):
-            text = (
-                m.Text(
-                    self.trim_cmd(f, 30),
-                    font=self.font,
-                    font_size=24,
-                    color=self.fontColor,
-                )
-                .move_to(
-                    (firstColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
-                )
-                .shift(m.DOWN * 0.5 * (i + 1))
-            )
-            firstColumnFiles.add(text)
-            firstColumnFilesDict[f] = text
-
-        for j, f in enumerate(secondColumnFileNames):
-            text = (
-                m.Text(
-                    self.trim_path(f),
-                    font=self.font,
-                    font_size=24,
-                    color=self.fontColor,
-                )
-                .move_to(
-                    (secondColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
-                )
-                .shift(m.DOWN * 0.5 * (j + 1))
-            )
-            secondColumnFiles.add(text)
-            secondColumnFilesDict[f] = text
-
-        for h, f in enumerate(thirdColumnFileNames):
-            label = self.trim_cmd(f, 30)
-            text = (
-                m.MarkupText(
-                    (
-                        "<span strikethrough='true' strikethrough_color='"
-                        + self.fontColor
-                        + "'>"
-                        + label
-                        + "</span>"
-                        if strike_third
-                        else label
-                    ),
-                    font=self.font,
-                    font_size=24,
-                    color=self.fontColor,
-                )
-                .move_to(
-                    (thirdColumnTitle.get_center()[0], horizontal2.get_center()[1], 0)
-                )
-                .shift(m.DOWN * 0.5 * (h + 1))
-            )
-            thirdColumnFiles.add(text)
-            thirdColumnFilesDict[f] = text
 
     def stashed_files(self, index):
         try:
@@ -232,7 +169,7 @@ class Stash(GitSimBaseCommand):
             labels = [self.entry_label(i) for i in range(len(self.entries))]
             # Sets lose order; entries are kept in index order via a dict-backed set.
             for label in labels:
-                firstColumnFileNames.add(label)
+                thirdColumnFileNames.add(label)
             for f in self.stashed_files(self.stash_index):
                 secondColumnFileNames.add(f)
             dropped = []
@@ -241,36 +178,30 @@ class Stash(GitSimBaseCommand):
             elif self.command == StashSubCommand.CLEAR:
                 dropped = labels
             for label in dropped:
-                thirdColumnFileNames.add(label)
-                firstColumnArrowMap[label] = m.Arrow(
-                    stroke_width=3, color=self.fontColor
-                )
+                firstColumnFileNames.add(label)
+                self.zone_arrows.append((label, 3, 1))
             return
 
         if self.command in [StashSubCommand.POP, StashSubCommand.APPLY]:
+            # stashed files come forward, into the working directory
             for s in self.stashed_files(self.stash_index):
-                thirdColumnFileNames.add(s)
                 firstColumnFileNames.add(s)
-                thirdColumnArrowMap[s] = m.Arrow(stroke_width=3, color=self.fontColor)
+                secondColumnFileNames.add(s)
+                self.zone_arrows.append((s, 1, 2))
+            return
 
-        else:
-            for x in self.repo.index.diff(None):
+        # push: modified and staged changes leave their columns for the stash
+        for x in self.repo.index.diff(None):
+            secondColumnFileNames.add(x.a_path)
+            if x.a_path in self.files:
                 firstColumnFileNames.add(x.a_path)
-                for file in self.files:
-                    if file == x.a_path:
-                        thirdColumnFileNames.add(x.a_path)
-                        firstColumnArrowMap[x.a_path] = m.Arrow(
-                            stroke_width=3, color=self.fontColor
-                        )
+                self.zone_arrows.append((x.a_path, 2, 1))
 
-            for y in self.repo.index.diff("HEAD"):
-                secondColumnFileNames.add(y.a_path)
-                for file in self.files:
-                    if file == y.a_path:
-                        thirdColumnFileNames.add(y.a_path)
-                        secondColumnArrowMap[y.a_path] = m.Arrow(
-                            stroke_width=3, color=self.fontColor
-                        )
+        for y in self.repo.index.diff("HEAD"):
+            thirdColumnFileNames.add(y.a_path)
+            if y.a_path in self.files:
+                firstColumnFileNames.add(y.a_path)
+                self.zone_arrows.append((y.a_path, 3, 1))
 
     def parse_stash_format(self, s):
         # Regular expression to match either a plain integer or stash@{integer}

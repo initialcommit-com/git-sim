@@ -226,6 +226,77 @@ def test_branch_move_relabels_the_same_commit(repo):
     assert scene.cmd == "git branch -m feature topic"
 
 
+def test_zone_rows_keep_arrows_straight_and_off_other_text():
+    from git_sim.git_sim_base_command import GitSimBaseCommand, ZoneNames
+
+    names = {1: ZoneNames(), 2: ZoneNames(), 3: ZoneNames()}
+    for col, items in (
+        (1, ["new.txt"]),
+        (2, ["mod.txt", "other.txt"]),
+        (3, ["new.txt", "mod.txt", "old.txt"]),
+    ):
+        for item in items:
+            names[col].add(item)
+    rows = GitSimBaseCommand.zone_rows(
+        None, names, [("new.txt", 1, 3), ("mod.txt", 2, 3)]
+    )
+    # both ends of a move share a row, so its arrow is horizontal
+    assert rows[(1, "new.txt")] == rows[(3, "new.txt")]
+    assert rows[(2, "mod.txt")] == rows[(3, "mod.txt")]
+    # the row an arrow crosses stays empty in the middle column
+    crossed = rows[(1, "new.txt")]
+    assert crossed not in {rows[(2, "mod.txt")], rows[(2, "other.txt")]}
+    # no two entries of a column share a row
+    for col in names:
+        taken = [rows[(col, n)] for n in names[col]]
+        assert len(taken) == len(set(taken))
+
+
+def test_trim_path_keeps_the_file_name_readable():
+    from git_sim.git_sim_base_command import GitSimBaseCommand
+
+    trim = lambda p: GitSimBaseCommand.trim_path(None, p)
+    assert trim("short/name.txt") == "short/name.txt"
+    assert (
+        trim("src/main/resources/static/js/learn/lesson.js")
+        == "src/.../static/js/learn/lesson.js"
+    )
+    assert (
+        trim("src/main/java/com/initialcommit/web/GitSimViewController.java")
+        == ".../web/GitSimViewController.java"
+    )
+    long_name = trim("docs/a_really_long_file_name_that_goes_on_and_on_forever.md")
+    assert (
+        long_name.startswith(".../a_really")
+        and long_name.endswith("forever.md")
+        and len(long_name) <= 33
+    )
+
+
+def test_stash_push_moves_left_and_pop_moves_right(repo):
+    from git_sim.enums import StashSubCommand
+    from git_sim.stash import Stash
+
+    (repo / "file1.txt").write_text("modified\n")
+    (repo / "file2.txt").write_text("staged\n")
+    run_git(repo, "add", "file2.txt")
+    push = Stash(files=[], command=StashSubCommand.PUSH, stash_index="0")
+    push.construct()
+    # the stash sits left of the working directory: pushing moves changes left
+    assert {t.text for t in push.firstColumnFiles} == {"file1.txt", "file2.txt"}
+    assert {t.text for t in push.secondColumnFiles} == {"file1.txt"}
+    assert {t.text for t in push.thirdColumnFiles} == {"file2.txt"}
+    assert set(push.zone_arrows) == {("file1.txt", 2, 1), ("file2.txt", 3, 1)}
+
+    run_git(repo, "stash")
+    pop = Stash(files=[], command=StashSubCommand.POP, stash_index="0")
+    pop.construct()
+    # popping brings them back to the right, consuming the entry
+    assert {t.text for t in pop.secondColumnFiles} == {"file1.txt", "file2.txt"}
+    assert all(t.strikethrough for t in pop.firstColumnFiles)
+    assert set(pop.zone_arrows) == {("file1.txt", 1, 2), ("file2.txt", 1, 2)}
+
+
 def test_stash_drop_and_clear_strike_entries(repo):
     from git_sim.enums import StashSubCommand
     from git_sim.stash import Stash
@@ -236,14 +307,16 @@ def test_stash_drop_and_clear_strike_entries(repo):
     run_git(repo, "stash")
     scene = Stash(files=[], command=StashSubCommand.DROP, stash_index="1")
     scene.construct()
-    dropped = [(t.text, t.strikethrough) for t in scene.thirdColumnFiles]
+    # dropped entries land in the left column (a removal moves right to left), struck through
+    dropped = [(t.text, t.strikethrough) for t in scene.firstColumnFiles]
     assert len(dropped) == 1 and dropped[0][0].startswith("stash@{1}") and dropped[0][1]
+    assert len(scene.thirdColumnFiles) == 2  # every entry is still listed on the right
     assert scene.cmd == "git stash drop stash@{1}"
     with pytest.raises(SystemExit):
         Stash(files=[], command=StashSubCommand.SHOW, stash_index="7")
     clear = Stash(files=[], command=StashSubCommand.CLEAR, stash_index="0")
     clear.construct()
-    assert len(clear.thirdColumnFiles) == 2
+    assert len(clear.firstColumnFiles) == 2
 
 
 def test_rebase_interactive_todo_squash_and_drop(repo, tmp_path):
