@@ -198,14 +198,17 @@ class SvgPainter:
             attrs.append('lengthAdjust="spacingAndGlyphs"')
         self._emit("text", attrs, mobject, content=html.escape(line))
 
-    def strike(self, start, end, thickness_units, color, opacity):
+    def strike(self, start, end, thickness_units, color, opacity, mobject=None):
+        # The line through struck text carries the text's own tags, so the
+        # viewer fades or moves the two together.
         r, g, b, a = parse_color(color, opacity)
         x0, y0 = self.to_px(start)
         x1, y1 = self.to_px(end)
+        meta = " " + " ".join(self._meta_attrs(mobject)) if mobject is not None else ""
         self.parts.append(
             f'<line x1="{_fmt(x0)}" y1="{_fmt(y0)}" x2="{_fmt(x1)}" y2="{_fmt(y1)}" '
             f'stroke="{_hex(r, g, b)}" stroke-opacity="{_fmt(a)}" '
-            f'stroke-width="{_fmt(max(1.0, thickness_units * self.scale))}"/>'
+            f'stroke-width="{_fmt(max(1.0, thickness_units * self.scale))}"{meta}/>'
         )
 
     def image(self, path, bbox):

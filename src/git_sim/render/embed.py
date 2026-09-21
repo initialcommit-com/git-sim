@@ -18,8 +18,8 @@ fetches the SVG itself (same origin as the post, so no cross-origin setup) and
 hands the text to the frame; the frame reports its height back so the embed
 takes exactly the room the graph needs.
 
-Attributes: ``data-src`` (the SVG, or a saved .html page, which is framed as
-is), ``data-title`` (the command, for the share text), ``data-state``
+Attributes: ``data-src`` (the SVG, or a saved .html page, which is fetched
+into the frame), ``data-title`` (the command, for the share text), ``data-state``
 (``before`` / ``after`` / ``step=N``; else it plays), ``data-theme`` (``dark``
 or ``light``; default follows the host page's ``prefers-color-scheme``),
 ``data-controls`` (``full`` or ``compact``, which drops the brand and share
@@ -89,10 +89,14 @@ EMBED_JS = r"""
     const theme = themeFor(el);
     const controls = (el.dataset.controls || 'full').toLowerCase() === 'compact' ? 'compact' : 'full';
     if (/\.html?(\?|#|$)/i.test(src)) {
-      // A saved git-sim page: framed as it is; its own script runs it.
-      iframe.src = src;
+      // A saved git-sim page (a simulation or a recorded live session): fetched
+      // and given to the frame as its document, so a host that refuses to be
+      // framed by URL (X-Frame-Options) still shows it; its own script runs it.
       if (!el.dataset.height) iframe.style.height = '560px';
       el.replaceChildren(iframe);
+      fetch(src, {credentials: 'same-origin'}).then(r => { if (!r.ok) throw new Error(r.status + ' fetching ' + src); return r.text(); })
+        .then(html => { iframe.srcdoc = html; })
+        .catch(err => { el.textContent = 'git-sim embed: ' + err.message; });
       return;
     }
     iframe.srcdoc = documentFor(id, theme, controls, el.dataset.title || '');

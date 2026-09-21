@@ -223,7 +223,7 @@ class Painter:
         )
         self.canvas.drawString(line, x, y, font, paint)
 
-    def strike(self, start, end, thickness_units, color, opacity):
+    def strike(self, start, end, thickness_units, color, opacity, mobject=None):
         paint = self._paint(
             color,
             opacity,

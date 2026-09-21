@@ -279,6 +279,7 @@ class Text(Mobject):
                         self.layout.strike_thickness * scale,
                         self.strikethrough_color or self.color,
                         self.fill_opacity,
+                        self,  # so the SVG line carries the text's tags
                     )
         super().draw(painter)
 

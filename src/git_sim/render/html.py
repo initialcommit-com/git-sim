@@ -126,6 +126,7 @@ html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-f
 #scrub::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--accent);border:3px solid var(--bg);box-shadow:0 0 0 2px var(--accent);cursor:grab}
 #scrub:active::-webkit-slider-thumb{cursor:grabbing}
 #stepLabel{color:var(--muted);font:600 12px/1 var(--font);min-width:84px;text-align:left}
+#stepLabel[hidden]{display:none}
 /* Narrow windows: the bar gives up its side links, then the brand and step label, rather than overflowing. */
 @media (max-width:1180px){#bar .right a{display:none}#scrub{width:min(36vw,520px)}}
 @media (max-width:820px){#bar{grid-template-columns:auto 1fr auto;padding:0 10px}#brand,#stepLabel{display:none}#scrub{width:min(40vw,520px)}}
@@ -410,6 +411,9 @@ window.GitSimViewer = (function(){
 
   const scrub = document.getElementById('scrub');
   const stepLabel = document.getElementById('stepLabel');
+  const showSteps = !!document.documentElement.dataset.live;
+  stepLabel.hidden = !showSteps;
+  if (!showSteps) stepLabel.textContent = '';
   const btnBefore = document.getElementById('toBefore'), btnAfter = document.getElementById('toAfter');
   const play = document.getElementById('play');
   const RES = 1000;
@@ -521,7 +525,10 @@ window.GitSimViewer = (function(){
     scrub.style.setProperty('--pct', (100 * progress / maxStep) + '%');
     btnBefore.classList.toggle('on', progress <= 0.001);
     btnAfter.classList.toggle('on', progress >= maxStep - 0.001);
-    if (maxStep > 1) {
+    // The step counter only earns its place on the live page, where a change
+    // is several steps (removals, moves, arrivals); a simulation's Before and
+    // After buttons already say where the slider is.
+    if (showSteps && maxStep > 1) {
       stepLabel.textContent = progress <= 0.001 ? 'before' : progress >= maxStep - 0.001 ? 'after' : `step ${Math.ceil(progress - 0.001)} / ${maxStep}`;
     }
   }

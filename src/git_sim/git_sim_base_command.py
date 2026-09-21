@@ -2008,6 +2008,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
     def show_command_as_title(self):
         if settings.show_command_as_title:
+            # Scenes build the command with stray spaces; measured and fitted
+            # text (textLength in the SVG) would stretch to cover them.
+            self.cmd = " ".join(self.cmd.split())
             titleText = m.Text(
                 self.trim_cmd(self.cmd, getattr(self, "title_length", 30)),
                 font=self.font,

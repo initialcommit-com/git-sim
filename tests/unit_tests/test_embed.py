@@ -37,8 +37,8 @@ def test_embed_script_carries_the_viewer_and_mounts_by_class():
     assert "#bar{position:sticky" in js and 'id=\\"toBefore\\"' in js
     assert "window.GitSimViewer = (function(){" in js
     assert "__CSS__" not in js and "__VIEWER__" not in js and "__HEADER__" not in js
-    # a saved page is framed as is; an svg is fetched by the host and posted in
-    assert "iframe.src = src" in js and "gitSimEmbedGraph" in js
+    # a saved page is fetched into the frame's document; an svg is fetched by the host and posted in
+    assert "iframe.srcdoc = html" in js and "gitSimEmbedGraph" in js
 
 
 def test_cli_writes_a_plain_svg_for_embedding(repo, tmp_path):
