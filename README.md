@@ -7,17 +7,19 @@
 [![Contributors](https://img.shields.io/github/contributors/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/graphs/contributors)
 [![Share](https://img.shields.io/twitter/url?label=Share&url=https%3A%2F%2Ftwitter.com%2Finitcommit)](https://twitter.com/intent/tweet?text=Check%20out%20%23gitsim%20%2D%20a%20tool%20to%20visualize%20%23Git%20operations%20in%20your%20local%20repos%20with%20a%20single%20terminal%20command,%20by%20%40initcommit!%20https%3A%2F%2Fgithub%2Ecom%2Finitialcommit%2Dcom%2Fgit%2Dsim)
 
-Visually simulate Git operations in your own repos with a single terminal command.
+The visual layer for Git in your own repos: simulate, record, replay, and share Git command sequences - wherever you or your agents run them.
 
-This generates an image (default) or video visualization depicting the Git command's behavior.
+Run any Git command with `git-sim` in place of `git` and it plays out on a **before / after** graph of your real repository, without changing anything. The default output is an interactive page (drag the slider, press play, hover a commit); `--img-format` gives a static image and `--animate` a video. `git-sim preflight` reports the facts about a risky command, `git-sim live` follows the repository as it changes, and the same engine runs inside VS Code, Vim, Emacs, Jupyter, GitHub pull requests and AI coding agents such as Claude Code and Copilot.
 
 Command syntax is based directly on Git's command-line syntax, so using git-sim is as familiar as possible.
 
 Example: `$ git-sim merge <branch>`
 <br/><br/>
-![git-sim-merge_04-22-23_21-04-32_cropped](https://user-images.githubusercontent.com/49353917/233821875-a7bb640d-10be-4433-a8fb-bd25646eeff4.jpg)
+[![git-sim merge branch1](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/merge-branch1.svg)](https://initialcommit.com/tools/git-sim?demo=merge-branch1)
 
-Check out the [git-sim release blog post](https://initialcommit.com/blog/git-sim) for the full scoop!
+Every graph in this README is a real git-sim render of a sample repository. **Click one** to open it in the viewer at initialcommit.com and drag the Before / After slider.
+
+Check out the [git-sim release blog post](https://initialcommit.com/blog/git-sim) for the story behind it, and the [git-sim tool page](https://initialcommit.com/tools/git-sim) for the current picture.
 
 ## Support git-sim
 Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work on it (and other Git projects) full time!
@@ -27,15 +29,15 @@ Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work 
 ## Use cases
 - Visualize Git commands to understand their effects on your repo before actually running them
 - Prevent unexpected working directory and repository states by simulating before running
-- Share visualizations (interactive HTML page, jpg/png image or mp4/webm video) of your Git commands with your team, or the world
+- Share visualizations (interactive HTML page, jpg/png/svg image or mp4/webm video) of your Git commands with your team, or the world; a live session can be saved as one page or recorded as a video
 - Save visualizations as a part of your team documentation to document workflow and prevent recurring issues
 - Create interactive Git graphs (html), static diagrams (jpg/png) or animated videos (mp4/webm) to speed up content creation
-- Help visual learners understand how Git commands work
+- Help visual learners understand how Git commands work, and let AI coding agents show their work before they run a destructive command
 - Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
 
 ## Features
 - Run a one-liner git-sim command in the terminal to generate a custom Git command visualization from your repo: an interactive `.html` page by default, or a `.jpg` / `.png` image with `--img-format`
-- Supported commands: `add`, `branch`, `checkout`, `cherry-pick`, `clean`, `clone`, `commit`, `config`, `fetch`, `init`, `log`, `merge`, `mv`, `pull`, `push`, `rebase`, `remote`, `reset`, `restore`, `revert`, `rm`, `stash`, `status`, `switch`, `tag`
+- Supported commands: `add`, `branch`, `checkout`, `cherry-pick`, `clean`, `clone`, `commit`, `config`, `fetch`, `init`, `log`, `merge`, `mv`, `pull`, `push`, `rebase`, `reflog`, `remote`, `reset`, `restore`, `revert`, `rm`, `stash`, `status`, `submodule`, `switch`, `tag`, `worktree`
 - Generate an animated video (.mp4) instead of a static image using the `--animate` flag (note: significant performance slowdown, it is recommended to use `--low-quality` to speed up testing and remove when ready to generate presentation-quality video)
 - Color commits by parameter, such as author with the `--color-by=author` option
 - Choose between dark mode (default) and light mode
@@ -155,7 +157,7 @@ $ git-sim <subcommand> -h
 * Animated output only: [Manim (Community version)](https://www.manim.community/), installed via `pip install "git-sim[extras]"`
 
 ## Commands
-Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "add", "branch", "checkout", "cherry-pick", "clean", "clone", "commit", "config", "fetch", "init", "log", "merge", "mv", "pull", "push", "rebase", "remote", "reset", "restore", "revert", "rm", "stash", "status", "switch", "tag" along with corresponding options.
+Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "add", "branch", "checkout", "cherry-pick", "clean", "clone", "commit", "config", "fetch", "init", "log", "merge", "mv", "pull", "push", "rebase", "reflog", "remote", "reset", "restore", "revert", "rm", "stash", "status", "submodule", "switch", "tag", "worktree" along with corresponding options.
 
 
 ```console
@@ -197,6 +199,14 @@ Animation-only global options (to be used in conjunction with `--animate`):
 
 The `[subcommand options]` are like regular Git options specific to the specified subcommand (see below for a full list).
 
+## Pre-flight
+
+```console
+$ git-sim preflight reset --hard HEAD~2
+```
+
+reports what a command that can lose work would do, computed from the repository rather than guessed: the risk level, the commits that would become unreachable, the files whose changes would be lost, and the command that undoes it. Nothing runs. The same check is what the [Claude Code hook and MCP server](docs/mcp.md) run before an AI agent is allowed to execute a destructive command, so the agent stops and asks you first. `--markdown` writes the report for a pull request comment (the [GitHub Action](docs/integrations.md) uses it), and the [VS Code extension](docs/vscode.md) shows it in an editor tab.
+
 ## Live mode
 
 ```console
@@ -226,7 +236,7 @@ Usage: `git-sim add <file 1> <file 2> ... <file n>`
 - Simulated output will show files being moved to the staging area
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
-![git-sim-add_01-05-23_22-07-40](https://user-images.githubusercontent.com/49353917/210940814-7e8dc318-6116-4e56-b415-bc547401a56a.jpg)
+[![git-sim add scratch.tmp main.1](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/add.svg)](https://initialcommit.com/tools/git-sim?demo=add)
 
 ### git branch
 Usage: `git-sim branch <new branch name>` | `git-sim branch -d|-D <branch>` | `git-sim branch -m <branch> <new name>`
@@ -237,7 +247,7 @@ Usage: `git-sim branch <new branch name>` | `git-sim branch -d|-D <branch>` | `g
 - `-D` force-deletes: commits that only the deleted branch reached are drawn in gold, with the `git branch <name> <sha>` command that brings them back
 - `-m` renames a branch, moving its label in place
 
-![git-sim-branch_01-05-23_22-13-17](https://user-images.githubusercontent.com/49353917/210941509-2a42a7a4-2168-4f62-913f-3f6fe74a0684.jpg)
+[![git-sim branch -D branch2](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/branch-d.svg)](https://initialcommit.com/tools/git-sim?demo=branch-d)
 
 ### git checkout
 Usage: `git-sim checkout [-b] <branch>`
@@ -245,7 +255,7 @@ Usage: `git-sim checkout [-b] <branch>`
 - Checks out `<branch>` into the working directory, i.e. moves `HEAD` to the specified `<branch>`
 - The `-b` flag creates a new branch with the specified name `<branch>` and checks it out, assuming it doesn't already exist
 
-![git-sim-checkout_04-09-23_21-46-04](https://user-images.githubusercontent.com/49353917/230827836-e9f23a0e-2576-4716-b2fb-6327d3cf9b22.jpg)
+[![git-sim checkout branch2](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/checkout.svg)](https://initialcommit.com/tools/git-sim?demo=checkout)
 
 ### git cherry-pick
 Usage: `git-sim cherry-pick <commit>|<A..B> [-n]`
@@ -255,7 +265,7 @@ Usage: `git-sim cherry-pick <commit>|<A..B> [-n]`
 - `-n`/`--no-commit` applies the changes to the index and working tree without creating a commit
 - Supports editing the cherry-picked commit message with: `$ git-sim cherry-pick <commit> -e "Edited commit message"`
 
-![git-sim-cherry-pick_01-05-23_22-23-08](https://user-images.githubusercontent.com/49353917/210942811-fa5155b1-4c6f-4afc-bea2-d39b4cd594aa.jpg)
+[![git-sim cherry-pick branch2](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/cherry-pick.svg)](https://initialcommit.com/tools/git-sim?demo=cherry-pick)
 
 ### git clean
 Usage: `git-sim clean [-f] [-n] [-d] [-x]`
@@ -265,7 +275,7 @@ Usage: `git-sim clean [-f] [-n] [-d] [-x]`
 - Without `-f` or `-n` the simulation notes that real git would refuse to run
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
-![git-sim-clean_04-09-23_22-05-54](https://user-images.githubusercontent.com/49353917/230830043-779e7230-f439-461a-a408-b19b263e86e4.jpg)
+[![git-sim clean -fd](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/clean.svg)](https://initialcommit.com/tools/git-sim?demo=clean)
 
 ### git clone
 Usage: `git-sim clone <url>`
@@ -273,7 +283,7 @@ Usage: `git-sim clone <url>`
 - Clone the remote repo from `<url>` (web URL or filesystem path) to a new folder in the current directory
 - Output will report if clone operation is successful and show log of local clone
 
-![git-sim-clone_04-09-23_21-51-53](https://user-images.githubusercontent.com/49353917/230828521-80c8d2d1-2a31-46bb-aeed-746f0441c86e.jpg)
+[![git-sim clone <url>](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/clone.svg)](https://initialcommit.com/tools/git-sim?demo=clone)
 
 ### git commit
 Usage: `git-sim commit -m "Commit message"`
@@ -286,7 +296,7 @@ Usage: `git-sim commit -m "Commit message"`
 - `--amend --no-edit` keeps the current commit message
 - `-a` stages every modified tracked file first (untracked files are not included)
 
-![git-sim-commit_01-05-23_22-10-21](https://user-images.githubusercontent.com/49353917/210941149-d83677a1-3ab7-4880-bc0f-871b1f150087.jpg)
+[![git-sim commit -m "Release notes ready"](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/commit.svg)](https://initialcommit.com/tools/git-sim?demo=commit)
 
 ### git config
 Usage: `git-sim config [--list] <section.option> <value>`
@@ -294,21 +304,21 @@ Usage: `git-sim config [--list] <section.option> <value>`
 - Simulated output describes the specified configuration change
 - Use `--list` or `-l` to display all configuration
 
-![git-sim-config_04-16-24_08-34-34](https://github.com/initialcommit-com/git-sim/assets/49353917/c123e7a7-1fff-4f5c-b4a2-1e34ea2a4d80)
+[![git-sim config user.name Demo](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/config.svg)](https://initialcommit.com/tools/git-sim?demo=config)
 
 ### git fetch
 Usage: `git-sim fetch <remote> <branch>`
 
 - Fetches the specified `<branch>` from the specified `<remote>` to the local repo
 
-![git-sim-fetch_04-09-23_21-47-59](https://user-images.githubusercontent.com/49353917/230828090-acae8979-4097-43a8-96ea-525890e0e0a8.jpg)
+[![git-sim fetch origin branch1](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/fetch.svg)](https://initialcommit.com/tools/git-sim?demo=fetch)
 
 ### git init
 Usage: `git-sim init`
 
 - Simulated output describes the initialized `.git/` directory and it's contents
 
-![git-sim-init_04-16-24_08-34-47](https://github.com/initialcommit-com/git-sim/assets/49353917/2abb1a4a-3022-4353-a828-2d337baa8383)
+[![git-sim init](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/init.svg)](https://initialcommit.com/tools/git-sim?demo=init)
 
 ### git log
 Usage: `git-sim log [-n <number>] [--all]`
@@ -317,7 +327,7 @@ Usage: `git-sim log [-n <number>] [--all]`
 - Use `-n <number>` to set number of commits to display from each branch head
 - Set `--all` to display all local branches in the log output
 
-![git-sim-log_01-05-23_22-02-39](https://user-images.githubusercontent.com/49353917/210940300-aadd14c6-72ab-4529-a1be-b494ed5dd4c9.jpg)
+[![git-sim log --all](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/log.svg)](https://initialcommit.com/tools/git-sim?demo=log)
 
 ### git merge
 Usage: `git-sim merge <branch> [-m "Commit message"] [--no-ff]`
@@ -329,7 +339,7 @@ Usage: `git-sim merge <branch> [-m "Commit message"] [--no-ff]`
 - To force a merge commit when a fast-forward is possible, use `--no-ff`
 - If merge fails due to merge conflicts, the conflicting files are displayed
 
-![git-sim-merge_01-05-23_09-44-46](https://user-images.githubusercontent.com/49353917/210942030-c7229488-571a-4943-a1f4-c6e4a0c8ccf3.jpg)
+[![git-sim merge branch1](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/merge-branch1.svg)](https://initialcommit.com/tools/git-sim?demo=merge-branch1)
 
 ### git mv
 Usage: `git-sim mv <file> <new file>`
@@ -339,7 +349,7 @@ Usage: `git-sim mv <file> <new file>`
 - Simulated output will show the name/path of the file being updated 
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
-![git-sim-mv_04-09-23_22-05-13](https://user-images.githubusercontent.com/49353917/230829978-0a64dbe2-d974-4cef-9c6e-ed26e987342f.jpg)
+[![git-sim mv notes.txt release-notes.txt](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/mv.svg)](https://initialcommit.com/tools/git-sim?demo=mv)
 
 ### git pull
 Usage: `git-sim pull [<remote> <branch>]`
@@ -348,7 +358,7 @@ Usage: `git-sim pull [<remote> <branch>]`
 - If `<remote>` and `<branch>` are not specified, the active branch is pulled from the default remote
 - If merge conflicts occur, they are displayed in a table
 
-![git-sim-pull_04-09-23_21-50-15](https://user-images.githubusercontent.com/49353917/230828298-455c0a9d-cf94-499e-9e35-623e7b218772.jpg)
+[![git-sim pull origin branch1](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/pull.svg)](https://initialcommit.com/tools/git-sim?demo=pull)
 
 ### git push
 Usage: `git-sim push [<remote> <branch>] [--force|--force-with-lease]`
@@ -359,7 +369,7 @@ Usage: `git-sim push [<remote> <branch>] [--force|--force-with-lease]`
 - If `<remote>` and `<branch>` are not specified, the active branch is pushed to the default remote
 - If the push fails due to remote changes that don't exist in the local repo, a message is included telling the user to pull first, along with color coding which commits need to be pulled
 
-![git-sim-push_04-21-23_13-41-57](https://user-images.githubusercontent.com/49353917/233731005-51fd7887-ae14-4ceb-a5d5-e5aed79e9fd8.jpg)
+[![git-sim push origin main](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/push.svg)](https://initialcommit.com/tools/git-sim?demo=push)
 
 ### git rebase
 Usage: `git-sim rebase <new-base> [--onto <commit>] [-i [--todo <file>]]`
@@ -368,7 +378,7 @@ Usage: `git-sim rebase <new-base> [--onto <commit>] [-i [--todo <file>]]`
 - `--onto <commit>` replays the commits after `<new-base>` on top of `<commit>` instead
 - `-i` replays each commit individually; `--todo <file>` takes a rebase todo list (`pick`, `reword`, `edit`, `squash`, `fixup`, `drop` + sha) so squashes fold into the previous copy and drops are shown in gold
 
-![git-sim-rebase_01-05-23_09-53-34](https://user-images.githubusercontent.com/49353917/210942598-4ff8d1e6-464d-48f3-afb9-f46f7ec4828c.jpg)
+[![git-sim rebase branch1](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/rebase-branch1.svg)](https://initialcommit.com/tools/git-sim?demo=rebase-branch1)
 
 ### git reflog
 Usage: `git-sim reflog [-n <number>]`
@@ -376,13 +386,15 @@ Usage: `git-sim reflog [-n <number>]`
 - Draws the last `<number>` positions of HEAD (default 5) as purple `HEAD@{k}` labels
 - Commits that no branch or tag reaches any more are drawn in gold, with the `git reset --hard HEAD@{k}` command that brings them back
 
+[![git-sim reflog](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/reflog.svg)](https://initialcommit.com/tools/git-sim?demo=reflog)
+
 ### git remote
 Usage: `git-sim remote [add|rename|remove|get-url|set-url] [<remote>] [<url>]`
 
 - Simulated output will show remotes being added, renamed, removed, modified as indicated
 - Running `git-sim remote` with no options will list all existing remotes and their details  
 
-![git-sim-remote_04-16-24_08-40-37](https://github.com/initialcommit-com/git-sim/assets/49353917/ebaff04c-d5b6-4691-97b3-60bb502ba444)
+[![git-sim remote](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/remote.svg)](https://initialcommit.com/tools/git-sim?demo=remote)
 
 ### git reset
 Usage: `git-sim reset <reset-to> [--mixed|--soft|--hard]` | `git-sim reset [<commit>] <path>...`
@@ -392,7 +404,7 @@ Usage: `git-sim reset <reset-to> [--mixed|--soft|--hard]` | `git-sim reset [<com
 - As with a normal git reset command, default reset mode is `--mixed`, but can be specified using `--soft`, `--hard`, or `--mixed`
 - Simulated output will show branch/HEAD resets and resulting state of the working directory, staging area, and whether any file changes would be deleted by running the actual command
 
-![git-sim-reset_01-05-23_22-15-49](https://user-images.githubusercontent.com/49353917/210941835-80f032d2-4f06-4032-8dd0-98c8a2569049.jpg)
+[![git-sim reset --hard HEAD~2](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/reset-hard.svg)](https://initialcommit.com/tools/git-sim?demo=reset-hard)
 
 ### git restore
 Usage: `git-sim restore [--staged] [--source <commit>] <file 1> <file 2> ... <file n>`
@@ -402,7 +414,7 @@ Usage: `git-sim restore [--staged] [--source <commit>] <file 1> <file 2> ... <fi
 - Simulated output will show files being moved back to the working directory or discarded changes
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
-![git-sim-restore_01-05-23_22-09-14](https://user-images.githubusercontent.com/49353917/210941009-e6bf7271-ce9b-4e41-9a0b-24cc4b8d3b15.jpg)
+[![git-sim restore --staged notes.txt](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/restore-staged.svg)](https://initialcommit.com/tools/git-sim?demo=restore-staged)
 
 ### git revert
 Usage: `git-sim revert <to-revert> [-m <parent-number>] [-n]`
@@ -413,7 +425,7 @@ Usage: `git-sim revert <to-revert> [-m <parent-number>] [-n]`
 - Simulated output will show the new commit which reverts the changes from `<to-revert>`
 - Simulated output will include the next 4 most recent commits on the active branch
 
-![git-sim-revert_01-05-23_22-16-59](https://user-images.githubusercontent.com/49353917/210941979-6db8b55c-2881-41d8-9e2e-6263b1dece13.jpg)
+[![git-sim revert HEAD](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/revert.svg)](https://initialcommit.com/tools/git-sim?demo=revert)
 
 ### git rm
 Usage: `git-sim rm <file 1> <file 2> ... <file n>`
@@ -422,7 +434,7 @@ Usage: `git-sim rm <file 1> <file 2> ... <file n>`
 - Simulated output will show files being removed from Git tracking
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
-![git-sim-rm_04-09-23_22-01-29](https://user-images.githubusercontent.com/49353917/230829899-f5d688ea-bc8e-46f9-a54a-55d251c8915d.jpg)
+[![git-sim rm main.2](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/rm.svg)](https://initialcommit.com/tools/git-sim?demo=rm)
 
 ### git stash
 Usage: `git-sim stash [push|pop|apply] <file>` | `git-sim stash list|show|drop|clear [<stash-index>]`
@@ -433,7 +445,7 @@ Usage: `git-sim stash [push|pop|apply] <file>` | `git-sim stash list|show|drop|c
 - Simulated output will show files being moved in/out of the Git stash
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
-![git-sim-stash_01-05-23_22-11-18](https://user-images.githubusercontent.com/49353917/210941254-69c80b63-5c06-411a-a36a-1454b2906ee8.jpg)
+[![git-sim stash](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/stash.svg)](https://initialcommit.com/tools/git-sim?demo=stash)
 
 ### git status
 Usage: `git-sim status`
@@ -441,7 +453,7 @@ Usage: `git-sim status`
 - Simulated output will show the state of the working directory, staging area, and untracked files
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
-![git-sim-status_01-05-23_22-06-28](https://user-images.githubusercontent.com/49353917/210940685-735665e2-fa12-4043-979c-54c295b13800.jpg)
+[![git-sim status](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/status.svg)](https://initialcommit.com/tools/git-sim?demo=status)
 
 ### git submodule
 Usage: `git-sim submodule [status|add <url> [<path>]|init|update [--init]|deinit [--force] <path>]`
@@ -455,7 +467,7 @@ Usage: `git-sim switch [-c] <branch>`
 - Switches the checked-out branch to `<branch>`, i.e. moves `HEAD` to the specified `<branch>`
 - The `-c` flag creates a new branch with the specified name `<branch>` and switches to it, assuming it doesn't already exist
 
-![git-sim-switch_04-09-23_21-42-43](https://user-images.githubusercontent.com/49353917/230827783-a8740ace-b66f-4cac-b94e-5d101d27e0b5.jpg)
+[![git-sim switch -c feature](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/switch-c.svg)](https://initialcommit.com/tools/git-sim?demo=switch-c)
 
 ### git tag
 Usage: `git-sim tag <new tag name>`
@@ -463,7 +475,7 @@ Usage: `git-sim tag <new tag name>`
 - Specify `<new tag name>` as the name of the new tag to simulate creation of
 - Simulated output will show the newly create tag ref along with most recent 5 commits on the active branch
 
-![git-sim-tag_01-05-23_22-14-18](https://user-images.githubusercontent.com/49353917/210941647-79376ff7-2941-42b3-964a-b1d3a404a4fe.jpg)
+[![git-sim tag v2.0](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/tag.svg)](https://initialcommit.com/tools/git-sim?demo=tag)
 
 ### git worktree
 Usage: `git-sim worktree [list|add [-b <new-branch>] <path> [<branch>]|remove [--force] <path>|prune]`
@@ -472,33 +484,18 @@ Usage: `git-sim worktree [list|add [-b <new-branch>] <path> [<branch>]|remove [-
 - `remove` is refused (as in git) when the worktree has uncommitted changes unless `--force` is given, in which case the row is struck through and the deleted change count shown
 - `prune` strikes through worktree records whose directory no longer exists
 
-## Video animation examples
-```console
-$ git-sim --animate reset HEAD^
-```
+[![git-sim worktree add ../hotfix branch2](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/worktree.svg)](https://initialcommit.com/tools/git-sim?demo=worktree)
 
-https://user-images.githubusercontent.com/49353917/210943230-f38d879b-bb0d-4d42-a196-f24efb9e351a.mp4
+## Animated examples
+Every simulation is animated: the default output is an interactive page whose **Before / After** slider (or play button) walks the command through, step by step for `rebase -i` and cherry-pick ranges. Click any of these to try it; `--animate` renders the same thing as an `.mp4` or `.webm` (see [Installation](#installation) for the `extras` tier that adds it).
 
-```console
-$ git checkout main
-$ git-sim --animate merge dev
-```
-
-https://user-images.githubusercontent.com/49353917/210943418-22c2cd11-be96-41bc-b621-7018eebc6bc0.mp4
-
-```console
-$ git checkout dev
-$ git-sim --animate rebase main
-```
-
-https://user-images.githubusercontent.com/49353917/210943815-4b8be2da-18da-4c42-927a-61cf9a22834e.mp4
-
-```console
-$ git checkout main
-$ git-sim --animate cherry-pick dev
-```
-
-https://user-images.githubusercontent.com/49353917/210944001-77bd0130-306b-40a8-ba0b-22e50172802b.mp4
+<table><tr>
+<td width="50%"><a href="https://initialcommit.com/tools/git-sim?demo=reset-hard"><img alt="git-sim reset --hard HEAD~2" src="https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/reset-hard.svg"></a><br/><code>$ git-sim reset --hard HEAD~2</code></td>
+<td width="50%"><a href="https://initialcommit.com/tools/git-sim?demo=merge-branch1"><img alt="git-sim merge branch1" src="https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/merge-branch1.svg"></a><br/><code>$ git-sim merge branch1</code></td>
+</tr><tr>
+<td width="50%"><a href="https://initialcommit.com/tools/git-sim?demo=rebase-branch1"><img alt="git-sim rebase branch1" src="https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/rebase-branch1.svg"></a><br/><code>$ git-sim rebase branch1</code></td>
+<td width="50%"><a href="https://initialcommit.com/tools/git-sim?demo=cherry-pick"><img alt="git-sim cherry-pick branch2" src="https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/cherry-pick.svg"></a><br/><code>$ git-sim cherry-pick branch2</code></td>
+</tr></table>
 
 ## Basic command examples
 Simulate the output of the git log command:
