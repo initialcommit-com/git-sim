@@ -310,13 +310,14 @@ app.command()(git_sim.commands.reflog)
 app.command()(git_sim.commands.submodule)
 
 # Agent integration and the pre-flight check (not git subcommands).
-from git_sim.install import install, uninstall  # noqa: E402
+from git_sim.install import aliases, install, uninstall  # noqa: E402
 from git_sim.live import live  # noqa: E402
 from git_sim.paths import media_dir  # noqa: E402
 from git_sim.preflight_cli import preflight  # noqa: E402
 
 app.command()(install)
 app.command()(uninstall)
+app.command()(aliases)
 app.command()(media_dir)
 app.command()(live)
 # git's own options (--hard, -f, ...) must pass through to the command being checked

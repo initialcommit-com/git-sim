@@ -19,6 +19,12 @@ FILES = [
     "LICENSE.txt",
     "media/icon.png",
     "media/live.svg",
+    "walkthrough/install.md",
+    "walkthrough/simulate.md",
+    "walkthrough/preflight.md",
+    "walkthrough/live.md",
+    "walkthrough/agents.md",
+    "walkthrough/learn.md",
 ]
 CONTENT_TYPES = {
     ".json": "application/json",

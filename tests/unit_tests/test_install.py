@@ -1,6 +1,7 @@
 """git-sim install / uninstall: config written per agent, idempotently."""
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -173,7 +174,18 @@ def test_project_scope_paths(fake_env):
     assert paths[("gemini", "mcp")] == project / ".gemini" / "settings.json"
     assert paths[("vscode", "mcp")] == project / ".vscode" / "mcp.json"
     assert paths[("vscode", "hook")] == project / ".github" / "hooks" / "git-sim.json"
-    assert all(str(p).startswith(str(project)) for p in paths.values())
+    # Agents with no project-level file stay at user scope and say so in a note.
+    user_only = {
+        a.agent
+        for a in installer.plan(list(inst.AGENT_SPECS))
+        if "user scope" in a.note
+    }
+    assert user_only == {"windsurf", "cline", "claude-desktop"}
+    assert all(
+        str(p).startswith(str(project))
+        for (agent, kind), p in paths.items()
+        if agent not in user_only
+    )
 
 
 def test_programs_fall_back_to_the_interpreter_when_scripts_are_missing(
@@ -253,6 +265,75 @@ def test_detect_agents_from_config_dirs(fake_env, monkeypatch):
     (home / ".claude").mkdir()
     (home / ".gemini").mkdir()
     assert inst.detect_agents(home) == ["claude", "gemini"]
+    # agents that live inside another application's folders
+    inst._cline_dir(home).parent.mkdir(parents=True)
+    inst._app_dir(home, "Claude").mkdir(parents=True)
+    (home / ".codeium" / "windsurf").mkdir(parents=True)
+    assert inst.detect_agents(home) == [
+        "claude",
+        "gemini",
+        "vscode",  # the VS Code user dir exists once an extension's storage does
+        "windsurf",
+        "cline",
+        "claude-desktop",
+    ]
+
+
+def test_mcp_only_agents_get_the_server_in_their_own_files(fake_env):
+    home, project = fake_env
+    installer = inst.Installer(home=home, project=project)
+    agents = ["windsurf", "cline", "roo", "amazonq", "claude-desktop"]
+
+    def run_all(installer, agents, **kwargs):
+        return {(a.agent, a.kind): a.apply() for a in installer.plan(agents, **kwargs)}
+
+    results = run_all(installer, agents)
+    assert results == {(a, "mcp"): "added" for a in agents}, "MCP only, no hooks"
+    windsurf = json.loads((home / ".codeium/windsurf/mcp_config.json").read_text())
+    assert windsurf["mcpServers"]["git-sim"] == {
+        "command": "C:/tools/git-sim-mcp.exe",
+        "args": [],
+    }
+    cline = json.loads((inst._cline_dir(home) / "cline_mcp_settings.json").read_text())
+    assert cline["mcpServers"]["git-sim"]["disabled"] is False
+    roo = json.loads((inst._roo_dir(home) / "mcp_settings.json").read_text())
+    assert roo["mcpServers"]["git-sim"]["alwaysAllow"] == []
+    q = json.loads((home / ".aws/amazonq/mcp.json").read_text())
+    assert q["mcpServers"]["git-sim"]["timeout"] == 60000
+    desktop = json.loads(
+        (inst._app_dir(home, "Claude") / "claude_desktop_config.json").read_text()
+    )
+    assert desktop["mcpServers"]["git-sim"]["command"] == "C:/tools/git-sim-mcp.exe"
+    # idempotent, then gone
+    assert run_all(installer, agents) == {(a, "mcp"): "unchanged" for a in agents}
+    assert run_all(installer, agents, remove=True) == {
+        (a, "mcp"): "removed" for a in agents
+    }
+    # project scope: Roo and Amazon Q have project files, the others stay at user scope with a note
+    proj = inst.Installer(home=home, project=project, scope="project")
+    actions = proj.plan(agents)
+    by_agent = {a.agent: a for a in actions}
+    assert by_agent["roo"].path == project / ".roo" / "mcp.json"
+    assert by_agent["amazonq"].path == project / ".amazonq" / "mcp.json"
+    assert (
+        "user scope" in by_agent["windsurf"].note
+        and "user scope" in by_agent["cline"].note
+    )
+
+
+def test_git_aliases_are_added_kept_and_removed(tmp_path, monkeypatch):
+    config = tmp_path / "gitconfig"
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(config))
+    # an alias of the user's own is never overwritten or removed
+    subprocess.run(
+        ["git", "config", "--global", "alias.live", "!echo mine"], check=True
+    )
+    assert inst.set_git_aliases() == {"preflight": "added", "live": "kept"}
+    assert inst.set_git_aliases() == {"preflight": "unchanged", "live": "kept"}
+    text = config.read_text()
+    assert "preflight = !git-sim preflight" in text and "live = !echo mine" in text
+    assert inst.set_git_aliases(remove=True) == {"preflight": "removed", "live": "kept"}
+    assert "git-sim" not in config.read_text() and "!echo mine" in config.read_text()
 
 
 def test_cli_dry_run_writes_nothing(fake_env, monkeypatch):

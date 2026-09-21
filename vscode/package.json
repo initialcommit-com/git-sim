@@ -61,6 +61,7 @@
       { "command": "git-sim.simulateSelection", "title": "Simulate the selected command", "category": "git-sim" },
       { "command": "git-sim.preflightSelection", "title": "Pre-flight the selected command", "category": "git-sim" },
       { "command": "git-sim.installAgents", "title": "Wire git-sim into AI coding agents", "category": "git-sim" },
+      { "command": "git-sim.installGitSim", "title": "Install git-sim (opens a terminal)", "category": "git-sim" },
       { "command": "git-sim.openLearn", "title": "Learn Git with git-sim (initialcommit.com)", "category": "git-sim" }
     ],
     "menus": {
@@ -88,6 +89,57 @@
     },
     "keybindings": [
       { "command": "git-sim.simulate", "key": "ctrl+alt+g", "mac": "cmd+alt+g" }
+    ],
+    "walkthroughs": [
+      {
+        "id": "git-sim.getStarted",
+        "title": "See what Git is doing with git-sim",
+        "description": "Simulate a command before you run it, pre-flight a risky one, and follow your repository live, including what an AI agent does in it.",
+        "steps": [
+          {
+            "id": "install",
+            "title": "Install git-sim",
+            "description": "The extension drives the git-sim command line, which needs Python 3.10 or newer and Git.\n[Install git-sim](command:git-sim.installGitSim)\nThe status bar shows a beaker with \"git-sim\" once it is found.",
+            "media": { "markdown": "walkthrough/install.md" },
+            "completionEvents": ["onContext:git-sim.available"]
+          },
+          {
+            "id": "simulate",
+            "title": "Simulate a command",
+            "description": "Press Ctrl+Alt+G (Cmd+Alt+G on a Mac), finish the command as you would in a terminal, and watch it play out on a graph of your repository.\n[Simulate a Git command](command:git-sim.simulate)",
+            "media": { "markdown": "walkthrough/simulate.md" },
+            "completionEvents": ["onCommand:git-sim.simulate", "onCommand:git-sim.simulateSelection", "onCommand:git-sim.simulateRecent"]
+          },
+          {
+            "id": "preflight",
+            "title": "Pre-flight a risky one",
+            "description": "Before a reset, a rebase or a force push, get the facts: what becomes unreachable, what would be lost, how to undo it.\n[Pre-flight a Git command](command:git-sim.preflight)",
+            "media": { "markdown": "walkthrough/preflight.md" },
+            "completionEvents": ["onCommand:git-sim.preflight", "onCommand:git-sim.preflightSelection"]
+          },
+          {
+            "id": "live",
+            "title": "Follow your repository live",
+            "description": "A graph that plays every commit, branch, reset or rebase as it happens, whoever made it. In a tab, or in the git-sim view you can drag next to your chat or terminal.\n[Open the live graph](command:git-sim.live)\n[Show it in the sidebar](command:git-sim.liveSidebar)",
+            "media": { "markdown": "walkthrough/live.md" },
+            "completionEvents": ["onCommand:git-sim.live", "onView:git-sim.liveView"]
+          },
+          {
+            "id": "agents",
+            "title": "Put a human in the loop with your AI agents",
+            "description": "One command wires the pre-flight hook and the MCP server into Claude Code, Copilot, Cursor, Codex, Gemini and more, so a destructive Git command stops for your approval with the facts in front of you.\n[Wire git-sim into AI coding agents](command:git-sim.installAgents)",
+            "media": { "markdown": "walkthrough/agents.md" },
+            "completionEvents": ["onCommand:git-sim.installAgents"]
+          },
+          {
+            "id": "learn",
+            "title": "Learn Git on the same graphs",
+            "description": "Sixteen guided levels at initialcommit.com, played on git-sim graphs.\n[Open the lessons](command:git-sim.openLearn)",
+            "media": { "markdown": "walkthrough/learn.md" },
+            "completionEvents": ["onCommand:git-sim.openLearn"]
+          }
+        ]
+      }
     ],
     "configuration": {
       "title": "git-sim",

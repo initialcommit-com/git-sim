@@ -90,7 +90,22 @@ async function checkAvailable() {
     statusItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
   }
   statusItem.show();
+  // The walkthrough's first step completes on this context key.
+  vscode.commands.executeCommand('setContext', 'git-sim.available', !!available);
 }
+
+// Open a terminal with the install command typed, for the walkthrough and
+// the "not found" message: pipx when it is there, pip otherwise.
+function commandInstallGitSim() {
+  const terminal = vscode.window.createTerminal({ name: 'git-sim' });
+  terminal.show();
+  terminal.sendText('pipx install git-sim || pip install git-sim', false);
+  vscode.window.showInformationMessage('Press Enter in the terminal to install git-sim. The status bar will show "git-sim" once it is found.');
+  // look again once the user has had a chance to run it
+  const timer = setInterval(() => { checkAvailable().then(() => { if (available) { clearInterval(timer); startInbox(currentContext); } }); }, 5000);
+  setTimeout(() => clearInterval(timer), 5 * 60 * 1000);
+}
+let currentContext = null;
 
 async function explainMissing(err) {
   const notFound = err && err.code === 'ENOENT';
@@ -706,6 +721,7 @@ function commandInstallAgents() {
 }
 
 function activate(context) {
+  currentContext = context;
   output = vscode.window.createOutputChannel('git-sim');
   statusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
   statusItem.command = 'git-sim.simulate';
@@ -721,6 +737,7 @@ function activate(context) {
   reg('git-sim.simulateSelection', () => commandSimulate(context, selectedText()));
   reg('git-sim.preflightSelection', () => commandPreflight(context, selectedText()));
   reg('git-sim.installAgents', commandInstallAgents);
+  reg('git-sim.installGitSim', commandInstallGitSim);
   reg('git-sim.openLearn', () => vscode.env.openExternal(vscode.Uri.parse(LEARN_URL)));
   reg('git-sim.live', async () => { const repo = await pickRepo(); if (repo) await openLivePanel(context, repo); });
   reg('git-sim.liveSidebar', () => vscode.commands.executeCommand('git-sim.liveView.focus'));

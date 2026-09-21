@@ -1,8 +1,11 @@
 """``git-sim install``: wire the pre-flight hook and MCP server into AI coding agents.
 
 Detects which agents are present (Claude Code, Codex CLI, Cursor, GitHub
-Copilot CLI, Gemini CLI, VS Code) and writes the hook and MCP entries into
-each one's own configuration, in its own format, at user or project scope.
+Copilot CLI, Gemini CLI, VS Code; and, for the MCP server alone, Windsurf,
+Cline, Roo Code, Amazon Q Developer CLI and Claude Desktop) and writes the
+hook and MCP entries into each one's own configuration, in its own format, at
+user or project scope. ``git-sim aliases`` adds ``git preflight`` and ``git
+live`` to git's own config.
 Every write is idempotent: an existing git-sim entry is updated in place,
 and ``git-sim uninstall`` removes exactly what was added.
 
@@ -162,16 +165,13 @@ class AgentSpec:
     home_dirs: List[str]  # existence of any of these marks the agent as present
     binaries: List[str] = field(default_factory=list)
     supports_hook: bool = True
+    # Extra places whose existence marks the agent as present, for agents that
+    # live inside another application's folders (a VS Code extension, a desktop app).
+    detect_dirs: Optional[Callable[[Path], List[Path]]] = None
 
-
-AGENT_SPECS: Dict[str, AgentSpec] = {
-    "claude": AgentSpec("claude", "Claude Code", ["~/.claude"], ["claude"]),
-    "codex": AgentSpec("codex", "Codex CLI", ["~/.codex"], ["codex"]),
-    "cursor": AgentSpec("cursor", "Cursor", ["~/.cursor"], ["cursor", "cursor-agent"]),
-    "copilot": AgentSpec("copilot", "GitHub Copilot CLI", ["~/.copilot"], ["copilot"]),
-    "gemini": AgentSpec("gemini", "Gemini CLI", ["~/.gemini"], ["gemini"]),
-    "vscode": AgentSpec("vscode", "VS Code (Copilot)", [], ["code"]),
-}
+    @property
+    def method(self) -> str:
+        return self.key.replace("-", "_")
 
 
 def _vscode_user_dir(home: Path) -> Path:
@@ -186,13 +186,92 @@ def _vscode_user_dir(home: Path) -> Path:
     return home / ".config" / "Code" / "User"
 
 
+def _app_dir(home: Path, name: str) -> Path:
+    """Where a desktop application keeps its user configuration: %APPDATA% on
+    Windows, ~/Library/Application Support on macOS, ~/.config elsewhere."""
+    if sys.platform == "win32":
+        return Path(os.environ.get("APPDATA", home / "AppData" / "Roaming")) / name
+    if sys.platform == "darwin":
+        return home / "Library" / "Application Support" / name
+    return home / ".config" / name
+
+
+# VS Code extensions keep their settings under the editor's globalStorage.
+CLINE_STORAGE = ["globalStorage", "saoudrizwan.claude-dev", "settings"]
+ROO_STORAGE = ["globalStorage", "rooveterinaryinc.roo-cline", "settings"]
+
+
+def _cline_dir(home: Path) -> Path:
+    return _vscode_user_dir(home).joinpath(*CLINE_STORAGE)
+
+
+def _roo_dir(home: Path) -> Path:
+    return _vscode_user_dir(home).joinpath(*ROO_STORAGE)
+
+
+AGENT_SPECS: Dict[str, AgentSpec] = {
+    "claude": AgentSpec("claude", "Claude Code", ["~/.claude"], ["claude"]),
+    "codex": AgentSpec("codex", "Codex CLI", ["~/.codex"], ["codex"]),
+    "cursor": AgentSpec("cursor", "Cursor", ["~/.cursor"], ["cursor", "cursor-agent"]),
+    "copilot": AgentSpec("copilot", "GitHub Copilot CLI", ["~/.copilot"], ["copilot"]),
+    "gemini": AgentSpec("gemini", "Gemini CLI", ["~/.gemini"], ["gemini"]),
+    "vscode": AgentSpec(
+        "vscode",
+        "VS Code (Copilot)",
+        [],
+        ["code"],
+        detect_dirs=lambda home: [_vscode_user_dir(home)],
+    ),
+    # MCP only: these agents have no pre-tool hook, so they get the server,
+    # which lets them call git_preflight and git_simulate themselves.
+    "windsurf": AgentSpec(
+        "windsurf",
+        "Windsurf",
+        ["~/.codeium/windsurf"],
+        ["windsurf"],
+        supports_hook=False,
+    ),
+    "cline": AgentSpec(
+        "cline",
+        "Cline (VS Code)",
+        [],
+        [],
+        supports_hook=False,
+        detect_dirs=lambda home: [_cline_dir(home).parent],
+    ),
+    "roo": AgentSpec(
+        "roo",
+        "Roo Code (VS Code)",
+        ["~/.roo"],
+        [],
+        supports_hook=False,
+        detect_dirs=lambda home: [_roo_dir(home).parent],
+    ),
+    "amazonq": AgentSpec(
+        "amazonq",
+        "Amazon Q Developer CLI",
+        ["~/.aws/amazonq"],
+        ["q"],
+        supports_hook=False,
+    ),
+    "claude-desktop": AgentSpec(
+        "claude-desktop",
+        "Claude Desktop",
+        [],
+        [],
+        supports_hook=False,
+        detect_dirs=lambda home: [_app_dir(home, "Claude")],
+    ),
+}
+
+
 def detect_agents(home: Path) -> List[str]:
     """Agents that look installed on this machine (config dir or binary on PATH)."""
     present = []
     for spec in AGENT_SPECS.values():
         dirs = [home / d[2:] for d in spec.home_dirs if d.startswith("~/")]
-        if spec.key == "vscode":
-            dirs.append(_vscode_user_dir(home))
+        if spec.detect_dirs is not None:
+            dirs.extend(spec.detect_dirs(home))
         if any(d.exists() for d in dirs) or any(shutil.which(b) for b in spec.binaries):
             present.append(spec.key)
     return present
@@ -507,6 +586,65 @@ class Installer:
         }
         return self._simple_mcp("vscode", path, "servers", entry, remove)
 
+    # ---- MCP-only agents ------------------------------------------------------
+    def windsurf_mcp(self, remove: bool = False) -> Action:
+        # Windsurf keeps one MCP file per user; a project has no equivalent.
+        path = self.home / ".codeium" / "windsurf" / "mcp_config.json"
+        entry = {"command": self.mcp_argv[0], "args": self.mcp_argv[1:]}
+        action = self._simple_mcp("windsurf", path, "mcpServers", entry, remove)
+        if self.scope == "project":
+            action.note = (
+                "Windsurf has no project-level MCP file; written at user scope"
+            )
+        return action
+
+    def cline_mcp(self, remove: bool = False) -> Action:
+        path = _cline_dir(self.home) / "cline_mcp_settings.json"
+        entry = {
+            "command": self.mcp_argv[0],
+            "args": self.mcp_argv[1:],
+            "disabled": False,
+            "autoApprove": [],
+        }
+        action = self._simple_mcp("cline", path, "mcpServers", entry, remove)
+        if self.scope == "project":
+            action.note = "Cline has no project-level MCP file; written at user scope"
+        return action
+
+    def roo_mcp(self, remove: bool = False) -> Action:
+        if self.scope == "project":
+            path = self.project / ".roo" / "mcp.json"
+        else:
+            path = _roo_dir(self.home) / "mcp_settings.json"
+        entry = {
+            "command": self.mcp_argv[0],
+            "args": self.mcp_argv[1:],
+            "disabled": False,
+            "alwaysAllow": [],
+        }
+        return self._simple_mcp("roo", path, "mcpServers", entry, remove)
+
+    def amazonq_mcp(self, remove: bool = False) -> Action:
+        if self.scope == "project":
+            path = self.project / ".amazonq" / "mcp.json"
+        else:
+            path = self.home / ".aws" / "amazonq" / "mcp.json"
+        entry = {
+            "command": self.mcp_argv[0],
+            "args": self.mcp_argv[1:],
+            "timeout": 60000,
+        }
+        return self._simple_mcp("amazonq", path, "mcpServers", entry, remove)
+
+    def claude_desktop_mcp(self, remove: bool = False) -> Action:
+        path = _app_dir(self.home, "Claude") / "claude_desktop_config.json"
+        entry = {"command": self.mcp_argv[0], "args": self.mcp_argv[1:]}
+        action = self._simple_mcp("claude-desktop", path, "mcpServers", entry, remove)
+        action.note = "restart Claude Desktop to load the server"
+        if self.scope == "project":
+            action.note = "Claude Desktop has no project scope; written at user scope"
+        return action
+
     # ---- shared -----------------------------------------------------------
     def _simple_mcp(
         self, agent: str, path: Path, key: str, entry: dict, remove: bool
@@ -542,10 +680,95 @@ class Installer:
         for agent in agents:
             spec = AGENT_SPECS[agent]
             if hook and spec.supports_hook:
-                actions.append(getattr(self, f"{agent}_hook")(remove))
+                actions.append(getattr(self, f"{spec.method}_hook")(remove))
             if mcp:
-                actions.append(getattr(self, f"{agent}_mcp")(remove))
+                actions.append(getattr(self, f"{spec.method}_mcp")(remove))
         return actions
+
+
+# --------------------------------------------------------------------------
+# Git aliases: git-sim where people already type git
+# --------------------------------------------------------------------------
+
+# Git runs any git-<name> program on the PATH as `git <name>`, so `git sim
+# rebase main` already works. These make the other two verbs reachable the
+# same way.
+GIT_ALIASES = {
+    "preflight": "!git-sim preflight",
+    "live": "!git-sim live",
+}
+
+
+def _git_config(
+    args: List[str], scope_args: List[str]
+) -> "subprocess.CompletedProcess":
+    import subprocess
+
+    return subprocess.run(
+        ["git", "config", *scope_args, *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+
+
+def set_git_aliases(
+    remove: bool = False, scope_args: Optional[List[str]] = None
+) -> Dict[str, str]:
+    """Add (or remove) the aliases in git's global config. Returns a status per
+    alias: added, updated, unchanged, removed, absent, or kept when the alias
+    exists but is not ours."""
+    scope_args = ["--global"] if scope_args is None else scope_args
+    statuses = {}
+    for name, target in GIT_ALIASES.items():
+        current = _git_config(["--get", f"alias.{name}"], scope_args).stdout.strip()
+        if remove:
+            if not current:
+                statuses[name] = "absent"
+            elif "git-sim" not in current:
+                statuses[name] = "kept"  # somebody else's alias: not ours to remove
+            else:
+                _git_config(["--unset", f"alias.{name}"], scope_args)
+                statuses[name] = "removed"
+            continue
+        if current == target:
+            statuses[name] = "unchanged"
+        elif current and "git-sim" not in current:
+            statuses[name] = "kept"  # an existing alias of the user's own stays
+        else:
+            result = _git_config([f"alias.{name}", target], scope_args)
+            statuses[name] = (
+                ("updated" if current else "added")
+                if result.returncode == 0
+                else f"FAILED: {result.stderr.strip()}"
+            )
+    return statuses
+
+
+def aliases(
+    remove: bool = typer.Option(
+        False, "--remove", help="Remove the aliases git-sim added."
+    ),
+    local: bool = typer.Option(
+        False, "--local", help="This repository's config instead of your global one."
+    ),
+):
+    """Make git-sim reachable as git subcommands: `git preflight` and `git live`
+    (`git sim <command>` already works, since git runs any git-<name> program)."""
+    if shutil.which("git") is None:
+        typer.echo("git-sim error: git is not on the PATH", err=True)
+        raise typer.Exit(code=1)
+    statuses = set_git_aliases(remove, ["--local"] if local else ["--global"])
+    for name, status in statuses.items():
+        line = f"  git {name:<10} {status}"
+        if status == "kept":
+            line += "  (an alias of yours already has this name; left alone)"
+        typer.echo(line)
+    if not remove:
+        typer.echo(
+            "  git sim        works already: git runs git-sim for `git sim <command>`"
+        )
 
 
 # --------------------------------------------------------------------------
@@ -593,7 +816,7 @@ def install(
         None,
         "--agent",
         "-a",
-        help="Agent(s) to configure: claude, codex, cursor, copilot, gemini, vscode. Repeatable. Default: detect.",
+        help="Agent(s) to configure: claude, codex, cursor, copilot, gemini, vscode, windsurf, cline, roo, amazonq, claude-desktop. Repeatable. Default: detect.",
     ),
     all_agents: bool = typer.Option(
         False, "--all", help="Configure every supported agent."

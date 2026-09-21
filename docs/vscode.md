@@ -67,6 +67,22 @@ code --install-extension vscode/git-sim-0.2.0.vsix
 With Node available, `npx @vscode/vsce package` in `vscode/` produces the same
 file. To try changes live, open `vscode/` in VS Code and press F5.
 
+## Publishing
+
+Two registries, both free, same `.vsix`:
+
+- **Visual Studio Marketplace** (VS Code): a publisher named `initialcommit`
+  at marketplace.visualstudio.com/manage, then upload the `.vsix` there, or
+  `vsce login initialcommit` and `vsce publish` with a Personal Access Token
+  that has the Marketplace "Manage" scope. Verifying the initialcommit.com
+  domain with a DNS TXT record adds the publisher check mark.
+- **Open VSX** (Cursor, Windsurf, VSCodium and other forks, which cannot use
+  Microsoft's marketplace): an account at open-vsx.org, the publisher
+  agreement, then upload the `.vsix` or `npx ovsx publish -p <token>`.
+
+The page each registry shows is `vscode/README.md`; images in it must be
+reachable on the repository's default branch.
+
 ## How it works
 
 - Simulations: `git-sim --img-format html --output-only-path <command>` in the

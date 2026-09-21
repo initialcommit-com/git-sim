@@ -151,6 +151,15 @@ its own format:
 | GitHub Copilot CLI | `~/.copilot/hooks/git-sim.json` → `hooks.preToolUse` | `~/.copilot/mcp-config.json` |
 | Gemini CLI | `~/.gemini/settings.json` → `hooks.BeforeTool` (matcher `run_shell_command`) | same file → `mcpServers` |
 | VS Code (Copilot) | shares Copilot CLI's `~/.copilot/hooks/git-sim.json` (VS Code's agent hooks read it) | user `mcp.json` → `servers` |
+| Windsurf | no hook API | `~/.codeium/windsurf/mcp_config.json` |
+| Cline (VS Code) | no hook API | VS Code `globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json` |
+| Roo Code (VS Code) | no hook API | VS Code `globalStorage/rooveterinaryinc.roo-cline/settings/mcp_settings.json` (project: `.roo/mcp.json`) |
+| Amazon Q Developer CLI | no hook API | `~/.aws/amazonq/mcp.json` (project: `.amazonq/mcp.json`) |
+| Claude Desktop | no hook API | `claude_desktop_config.json` in the app's config folder |
+
+Agents without a hook API get the MCP server alone: they can call `git_preflight` and `git_simulate` themselves, and their system prompts can ask them to. Keep a [live graph](live.md) open beside any of them to see what they do as they do it.
+
+Where people type `git` themselves, `git sim <command>` already works (git runs any `git-<name>` program), and `git-sim aliases` adds `git preflight` and `git live` to your global git config; see [shell.md](shell.md).
 
 Under VS Code the hook behaves a little differently: it renders the
 interactive page instead of an image, does not open a viewer window, and leaves

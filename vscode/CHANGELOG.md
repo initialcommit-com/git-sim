@@ -2,6 +2,9 @@
 
 ## 0.3.0
 
+- A **Get Started** walkthrough (Help: Get Started, or on first install):
+  install git-sim, simulate, pre-flight, live graph, agents, lessons.
+- **git-sim: Install git-sim** opens a terminal with the install command.
 - Save a live session as one page (**Save session** in the strip): every
   change and the strip in a single HTML file that opens anywhere.
 - Record the replay as a video (**Record video**), MP4 where the browser
