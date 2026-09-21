@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# gh sim: git-sim as a GitHub CLI extension.
+#
+#   gh sim <git-sim arguments>       the same as running git-sim
+#   gh sim pr <number> [merge|rebase] what merging (or rebasing) a pull request
+#                                    into its base would do, on this repository
+#
+# `gh sim pr` never touches your checkout: it fetches the pull request's head
+# and base into a temporary worktree, runs git-sim there, and removes it.
+#
+# Install:  gh extension install initialcommit-com/gh-sim
+# Needs:    git-sim on the PATH (pipx install git-sim) and gh logged in.
+set -euo pipefail
+
+if ! command -v git-sim >/dev/null 2>&1; then
+  echo "gh sim: git-sim is not installed. Run: pipx install git-sim" >&2
+  exit 1
+fi
+
+if [ "${1:-}" != "pr" ]; then
+  exec git-sim "$@"
+fi
+
+shift
+number="${1:-}"
+mode="${2:-merge}"
+if [ -z "$number" ]; then
+  echo "usage: gh sim pr <number> [merge|rebase]" >&2
+  exit 2
+fi
+case "$mode" in merge|rebase) ;; *) echo "gh sim pr: the mode is merge or rebase, not '$mode'" >&2; exit 2;; esac
+
+read -r head base < <(gh pr view "$number" --json headRefName,baseRefName --jq '[.headRefName, .baseRefName] | @tsv')
+if [ -z "$head" ] || [ -z "$base" ]; then
+  echo "gh sim pr: could not read pull request #$number" >&2
+  exit 1
+fi
+
+remote="$(git config --get "branch.$base.remote" 2>/dev/null || echo origin)"
+echo "gh sim: fetching #$number ($head -> $base) from $remote"
+git fetch -q "$remote" "refs/pull/$number/head:refs/gh-sim/pr-$number" "$base"
+
+worktree="$(mktemp -d "${TMPDIR:-/tmp}/gh-sim.XXXXXX")"
+cleanup() {
+  git worktree remove --force "$worktree" >/dev/null 2>&1 || true
+  git branch -D "gh-sim/pr-$number" >/dev/null 2>&1 || true
+  git update-ref -d "refs/gh-sim/pr-$number" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+# The base as the remote has it, checked out detached in the worktree, with
+# the pull request's head as a local branch git-sim can name.
+git worktree add -q --detach "$worktree" "$remote/$base"
+git branch -q -f "gh-sim/pr-$number" "refs/gh-sim/pr-$number"
+
+cd "$worktree"
+if [ "$mode" = "rebase" ]; then
+  # What the pull request's commits look like replayed onto the base.
+  git switch -q -C "gh-sim/pr-$number" "refs/gh-sim/pr-$number"
+  git-sim rebase "$base"
+else
+  git-sim merge "gh-sim/pr-$number"
+fi

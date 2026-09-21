@@ -1050,10 +1050,13 @@ def export_viewer_assets(directory):
     """Write the viewer's stylesheet, script and header markup (as a Thymeleaf
     fragment) for the hosted viewer on initialcommit.com. Returns the paths
     written."""
+    from git_sim.render.embed import build_embed_js
     from git_sim.render.live_html import LIVE_CSS, LIVE_JS, strip_markup
 
     os.makedirs(directory, exist_ok=True)
     files = {
+        # One script for blogs and docs: the viewer around a graph on any page
+        "git-sim-embed.js": build_embed_js(),
         "git-sim-viewer.css": VIEWER_CSS,
         "git-sim-viewer.js": VIEWER_JS,
         "git-sim-viewer-header.html": THYMELEAF_HEADER_TEMPLATE.format(

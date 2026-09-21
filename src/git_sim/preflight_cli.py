@@ -21,10 +21,11 @@ import typer
 
 from git_sim.preflight import PreflightReport, analyze
 
-OWN_OPTIONS = {"--json", "--text"}
+OWN_OPTIONS = {"--json", "--text", "--markdown"}
 OWN_VALUE_OPTIONS = {"--repo", "-C"}
 
 RISK_LABELS = {"safe": "SAFE", "caution": "CAUTION", "destructive": "DESTRUCTIVE"}
+RISK_BADGES = {"safe": "🟢 Safe", "caution": "🟠 Caution", "destructive": "🔴 Destructive"}
 
 
 def words_after_preflight(argv: List[str]) -> List[str]:
@@ -78,6 +79,41 @@ def render_text(report: PreflightReport) -> str:
     return "\n".join(lines)
 
 
+def render_markdown(report: PreflightReport) -> str:
+    """The report as Markdown, for a pull request comment or a chat message."""
+    d = report.to_dict()
+    lines = [
+        f"### {RISK_BADGES.get(d['risk'], d['risk'])} · `git {d['command']}`".rstrip()
+    ]
+    if d.get("error"):
+        lines += ["", f"**Error:** {d['error']}"]
+        return "\n".join(lines)
+    if d.get("summary"):
+        lines += ["", d["summary"]]
+    for title, key in (
+        ("What happens", "facts"),
+        ("What you would lose", "would_lose"),
+        ("How to undo it", "recovery"),
+        ("Warnings", "warnings"),
+    ):
+        items = d.get(key) or []
+        if items:
+            lines += ["", f"**{title}**", ""]
+            lines += [f"- {item}" for item in items]
+    if d.get("text_graph"):
+        lines += [
+            "",
+            "<details><summary>Commit graph</summary>",
+            "",
+            "```",
+            d["text_graph"].rstrip(),
+            "```",
+            "",
+            "</details>",
+        ]
+    return "\n".join(lines)
+
+
 def preflight(
     command: Optional[List[str]] = typer.Argument(
         None,
@@ -85,6 +121,11 @@ def preflight(
     ),
     as_json: bool = typer.Option(
         False, "--json", help="Print the report as JSON (for tools and editors)"
+    ),
+    as_markdown: bool = typer.Option(
+        False,
+        "--markdown",
+        help="Print the report as Markdown (for a pull request comment)",
     ),
     repo: str = typer.Option(
         ".", "--repo", "-C", help="Repository to check (default: the current directory)"
@@ -105,6 +146,9 @@ def preflight(
     report = analyze(text, os.path.abspath(os.path.expanduser(repo)))
     if as_json:
         typer.echo(json.dumps(report.to_dict(), indent=2))
+    elif as_markdown:
+        sys.stdout.buffer.write((render_markdown(report) + "\n").encode("utf-8"))
+        sys.stdout.flush()
     else:
         typer.echo(render_text(report))
     if report.error:

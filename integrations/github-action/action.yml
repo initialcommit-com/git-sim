@@ -1,0 +1,114 @@
+name: git-sim pull request check
+description: >
+  Comment on a pull request with what merging it would do: git-sim's
+  pre-flight report (risk, facts, a text commit graph) and, as a workflow
+  artifact, the interactive before / after graph of the merge.
+author: Initial Commit
+branding:
+  icon: git-merge
+  color: orange
+
+inputs:
+  mode:
+    description: "merge (default) or rebase: which operation to check"
+    required: false
+    default: merge
+  comment:
+    description: "Post the report as a pull request comment (needs pull-requests: write)"
+    required: false
+    default: "true"
+  artifact:
+    description: "Upload the interactive graph as a workflow artifact"
+    required: false
+    default: "true"
+  python-version:
+    description: "Python version to install git-sim with"
+    required: false
+    default: "3.12"
+  token:
+    description: "Token for the comment (defaults to the workflow's GITHUB_TOKEN)"
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install git-sim
+      shell: bash
+      run: python -m pip install --quiet git-sim
+
+    - name: Fetch the pull request and its base
+      shell: bash
+      env:
+        BASE: ${{ github.event.pull_request.base.ref }}
+        NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        set -euo pipefail
+        git fetch -q origin "refs/pull/$NUMBER/head:refs/heads/pr-$NUMBER" "$BASE:refs/heads/$BASE" || true
+        git fetch -q origin "$BASE"
+        git checkout -q -B "$BASE" "origin/$BASE"
+
+    - name: Pre-flight and simulate
+      id: sim
+      shell: bash
+      env:
+        MODE: ${{ inputs.mode }}
+        NUMBER: ${{ github.event.pull_request.number }}
+        BASE: ${{ github.event.pull_request.base.ref }}
+        git_sim_auto_open: "false"
+      run: |
+        set -euo pipefail
+        mkdir -p git-sim-out
+        if [ "$MODE" = "rebase" ]; then
+          git checkout -q "pr-$NUMBER"
+          CMD=(rebase "$BASE")
+        else
+          CMD=(merge "pr-$NUMBER")
+        fi
+        git-sim preflight --markdown "${CMD[@]}" > git-sim-out/report.md || true
+        PAGE=$(git-sim -d --media-dir git-sim-out --output-only-path "${CMD[@]}" 2>/dev/null | tail -n 1 || true)
+        if [ -n "$PAGE" ] && [ -f "$PAGE" ]; then
+          cp "$PAGE" git-sim-out/simulation.html
+          echo "page=git-sim-out/simulation.html" >> "$GITHUB_OUTPUT"
+        fi
+        echo "report=git-sim-out/report.md" >> "$GITHUB_OUTPUT"
+
+    - name: Upload the interactive graph
+      if: inputs.artifact == 'true' && steps.sim.outputs.page != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: git-sim-pr-${{ github.event.pull_request.number }}
+        path: ${{ steps.sim.outputs.page }}
+
+    - name: Comment on the pull request
+      if: inputs.comment == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        NUMBER: ${{ github.event.pull_request.number }}
+        REPORT: ${{ steps.sim.outputs.report }}
+        HAS_PAGE: ${{ steps.sim.outputs.page }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        set -euo pipefail
+        {
+          echo "<!-- git-sim-pr-check -->"
+          cat "$REPORT"
+          if [ -n "$HAS_PAGE" ]; then
+            echo
+            echo "The interactive before / after graph is attached to [this run]($RUN_URL) as the artifact \`git-sim-pr-$NUMBER\`."
+          fi
+          echo
+          echo "<sub>Computed from the repository by [git-sim](https://initialcommit.com/tools/git-sim); nothing was merged or changed.</sub>"
+        } > git-sim-out/comment.md
+        # one comment per pull request, updated on later runs
+        existing=$(gh api "repos/${GITHUB_REPOSITORY}/issues/$NUMBER/comments" --jq '.[] | select(.body | startswith("<!-- git-sim-pr-check -->")) | .id' | head -n 1 || true)
+        if [ -n "$existing" ]; then
+          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/$existing" -F body=@git-sim-out/comment.md > /dev/null
+        else
+          gh pr comment "$NUMBER" --body-file git-sim-out/comment.md
+        fi

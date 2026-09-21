@@ -146,6 +146,23 @@ def _render_image(scene, command_name: str) -> None:
             summary=_share_summary(scene),
             viewer_url=settings.viewer_url,
         )
+    elif fmt == "svg":
+        # The graph alone, with the before / after data the viewer plays: what
+        # a blog or documentation page embeds with git-sim-embed.js.
+        from git_sim.render.html import FONT_STACK
+
+        svg = scene.render_svg(
+            width,
+            height,
+            background=theme.bg,
+            font_stack=FONT_STACK,
+            extra_mobjects=getattr(scene, "removed_mobjects", ()),
+        )
+        data = svg.encode("utf-8")
+        os.makedirs(os.path.dirname(os.path.abspath(image_file_path)), exist_ok=True)
+        with open(image_file_path, "wb") as f:
+            f.write(data)
+        scene.rendered_svg = svg
     else:
         data = scene.render_image(
             image_file_path,
@@ -156,11 +173,16 @@ def _render_image(scene, command_name: str) -> None:
             fmt=fmt,
         )
 
-    _announce("page" if fmt == "html" else "image", image_file_path)
+    _announce(
+        "page" if fmt == "html" else "graph" if fmt == "svg" else "image",
+        image_file_path,
+    )
     if settings.stdout and not settings.quiet:
         sys.stdout.buffer.write(data)
     if fmt == "html":
         _open_page(scene, image_file_path, theme)
+    elif fmt == "svg":
+        pass  # a file for a page to embed; nothing to open
     else:
         _auto_open(image_file_path, open_file)
 

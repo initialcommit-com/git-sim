@@ -46,6 +46,7 @@ Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work 
 - Animation only: Speed up or slow down animation speed as desired
 - NEW: [MCP server and Claude Code hook](docs/mcp.md) so AI coding agents (Claude Code, Cursor, etc.) run deterministic pre-flight checks — facts, a text commit graph and a simulation image — before executing destructive git commands in your repo. Included in the default install.
 - NEW: `git-sim preflight <command>` runs that same check from the terminal, and the [VS Code extension](docs/vscode.md) puts simulations and pre-flight checks in an editor tab.
+- NEW: git-sim plugs in wherever Git is used: `git sim` in the terminal, a [VS Code extension](docs/vscode.md), [Vim, Neovim and Emacs](docs/integrations.md), [Jupyter](docs/integrations.md#jupyter), a [`gh` extension and a GitHub Action](docs/integrations.md) for pull requests, an [embeddable viewer](docs/embed.md) for blogs and docs (`--img-format svg` writes the graph it shows), and [AI agents](docs/mcp.md). See [docs/integrations.md](docs/integrations.md).
 - NEW: `git-sim live` follows your repository as it changes: every commit, branch, checkout, reset, rebase, stash or staged file plays as a before / after animation the moment it happens, in your browser or in a VS Code tab or sidebar view, with the session's changes kept for stepping back and replaying (see [Live mode](#live-mode)).
 
 ## Quickstart
@@ -173,7 +174,7 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 `-d`: Disable the automatic opening of the image/video file after generation. Useful to avoid errors in console mode with no GUI.  
 `--light-mode`: Use a light mode color scheme instead of default dark mode.  
 `--reverse, -r` / `--no-reverse`: By default the newest commit is on the left and arrows point right toward parents, so history reads left to right. `--no-reverse` puts the newest commit on the right with arrows pointing left, the original layout.  
-`--img-format`: Output format, i.e. `html` (default: the interactive page), `jpg` or `png`. Set `git_sim_img_format=jpg` in your environment to make an image the default.  
+`--img-format`: Output format, i.e. `html` (default: the interactive page), `jpg`, `png`, or `svg` (the graph alone, for [embedding in a page](docs/embed.md)). Set `git_sim_img_format=jpg` in your environment to make an image the default.  
 `--open-in`: Where the interactive page opens: `hosted` (default) shows it in the git-sim viewer at initialcommit.com, `local` opens the saved `.html` file. The page is saved locally either way, and the hosted page says where. Set `git_sim_open_in=local` to make local the default.  
 `--stdout`: Write raw image data to stdout while suppressing all other program output. Writes a `png` unless `--img-format jpg` is given.  
 `--output-only-path`: Only output the path to the generated media file to stdout. Useful for other programs to ingest.  

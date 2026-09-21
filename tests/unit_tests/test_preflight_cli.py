@@ -73,6 +73,24 @@ def test_render_text_lists_each_section_and_the_graph():
     assert "Warnings:" not in text
 
 
+def test_render_markdown_makes_a_comment():
+    from git_sim.preflight_cli import render_markdown
+
+    report = PreflightReport("merge feature", "merge")
+    report.risk = Risk.SAFE
+    report.summary = "Fast-forwards main to feature (2 commits)."
+    report.facts = ["main moves from 1111111 to 2222222"]
+    report.text_graph = "* 2222222 (feature) two\n* 1111111 (HEAD -> main) one"
+    md = render_markdown(report)
+    assert md.startswith("### 🟢 Safe · `git merge feature`")
+    assert "**What happens**\n\n- main moves" in md
+    assert "<details><summary>Commit graph</summary>" in md and "```" in md
+    assert "What you would lose" not in md
+    assert words_after_preflight(
+        ["git-sim", "preflight", "--markdown", "merge", "x"]
+    ) == ["merge", "x"]
+
+
 def test_render_text_shows_an_error_only():
     report = PreflightReport("frobnicate", "frobnicate")
     report.error = "Not a git repository: /nowhere"

@@ -78,9 +78,16 @@ completion for its commands and options to bash, zsh, fish or PowerShell.
 ## In an editor
 
 The [VS Code extension](vscode.md) puts all three verbs in the editor, with a
-live view for the sidebar. For editors without an extension, `git-sim live`
-in a terminal beside the editor does most of the work: it opens in the
-browser and follows whatever the editor's Git integration does.
+live view for the sidebar; [Vim](../integrations/vim), [Neovim](../integrations/nvim)
+and [Emacs](../integrations/emacs) have plugins with the same commands. For
+editors without a plugin system, nano among them, the terminal does the work:
+`git-sim live` in a pane beside the editor (tmux, a second tab) opens the
+graph in the browser and follows whatever you do in the editor's own Git
+commands. In nano 5 or newer, the execute prompt (`^T`, "Execute Command")
+runs a shell command and inserts its output, so
+`git-sim preflight reset --hard HEAD~1` there drops the report into the
+buffer you are writing in, which is handy for notes and pull request
+descriptions.
 
 ## Beside an AI agent
 

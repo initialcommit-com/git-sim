@@ -461,6 +461,8 @@ def test_viewer_assets_export_matches_the_page(tmp_path):
         "git-sim-live.css",
         "git-sim-live.js",
         "git-sim-live-strip.html",
+        # the embeddable viewer (see test_embed.py)
+        "git-sim-embed.js",
     }
     css = (tmp_path / "git-sim-viewer.css").read_text(encoding="utf-8")
     js = (tmp_path / "git-sim-viewer.js").read_text(encoding="utf-8")

@@ -29,6 +29,7 @@ class ImgFormat(str, Enum):
     JPG = "jpg"
     PNG = "png"
     HTML = "html"  # self-contained interactive page (see git_sim.render.html)
+    SVG = "svg"  # the graph alone, for embedding with git-sim-embed.js
 
 
 class OpenIn(str, Enum):
