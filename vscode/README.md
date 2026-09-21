@@ -1,38 +1,56 @@
 # git-sim for VS Code
 
-See what a Git command will do to your repository before you run it.
+**See what Git is doing to your repository**: before a command, as it
+happens, and when an AI agent runs it for you. On an interactive before / after
+graph of your real repository, inside the editor. Nothing is ever changed.
 
-- **Simulate** any Git command and watch it play out on an interactive
-  before / after graph of your real repository, in an editor tab. Hover a commit
-  for its details, drag the slider, press play.
-- **Pre-flight** a command first: the risk level, exactly which commits would
-  become unreachable and which files would be lost, how to undo it, and a text
-  commit graph. Computed from the repository by code, never guessed.
-- **Live graph**: follow the repository as it changes. Each commit, branch,
-  checkout, reset, rebase, stash or staged file plays as a before / after
-  animation the moment it happens, whoever made it (you in a terminal, the
-  Source Control view, an AI agent). The changes stay in a strip so you can
-  step back through them or replay the session. In an editor tab, or in the
-  git-sim sidebar view (drag it next to your chat or terminal).
-- Works from the Command Palette, the Source Control view's toolbar, the
-  editor's context menu (select a command in a script or a README), the
-  terminal's context menu, and `Ctrl+Alt+G`.
+## Two steps
 
-Nothing in the repository is ever modified. The simulation is drawn by
-[git-sim](https://github.com/initialcommit-com/git-sim), which reads the
-repository and works out what the command would do.
+1. Install git-sim (Python 3.10 or newer, and Git):
 
-## Requirements
+   ```
+   pipx install git-sim       # or: uv tool install git-sim, or pip install git-sim
+   ```
 
-git-sim on your PATH (Python 3.10 or newer, and Git):
+2. Install this extension, open a repository, and press `Ctrl+Alt+G`
+   (`Cmd+Alt+G` on a Mac).
 
-```
-pipx install git-sim       # or: uv tool install git-sim, or pip install git-sim
-```
+The status bar says whether git-sim was found. If it lives somewhere unusual,
+point the `git-sim.executable` setting at it.
 
-The live graph needs a git-sim that has the `live` command (`pipx upgrade git-sim`).
+## Three questions
 
-If it lives somewhere else, set `git-sim.executable` to its path.
+**What would this do? Simulate.** `Ctrl+Alt+G`, finish the command as you
+would in a terminal (`rebase main`, `reset --hard HEAD~2`, `stash`), and the
+command plays out on a graph of your repository in an editor tab. A rebase
+replays one commit at a time; a reset shows what falls out of reach; a merge
+shows whether it fast-forwards. Drag the slider or press play, hover a commit
+for its details, share the graph as a link or an image.
+
+**Is this safe? Pre-flight.** The risk level, exactly which commits would become
+unreachable, which uncommitted changes would be lost and whether they can be
+recovered, how to undo the command, and a text commit graph. Computed from the
+repository by code, never guessed, with a Simulate button on the report.
+
+**What just happened? Live graph.** A graph that follows the repository. Every
+commit, branch, checkout, reset, rebase, stash or staged file plays as a
+before / after animation the moment it happens, whoever made it: you in the
+terminal, the Source Control view, an AI agent. The changes stay in a strip so
+you can step back through them, replay the session, save it as one page, or
+record it as a video. In an editor tab, or in the git-sim sidebar view that you
+can drag next to your AI chat or your terminal.
+
+## Where
+
+The Command Palette, the Source Control view's toolbar (beaker and pulse
+buttons), the editor's context menu (select a command in a script or a README),
+the terminal's context menu, the git-sim view in the Activity Bar, and
+`Ctrl+Alt+G`. With Copilot in agent mode, the same pre-flight check runs before
+the agent executes a Git command (see below).
+
+Simulations and sessions are drawn by
+[git-sim](https://github.com/initialcommit-com/git-sim), free and open source,
+and saved in your user cache folder, never inside the repository.
 
 ## Commands
 

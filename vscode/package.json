@@ -6,6 +6,8 @@
   "publisher": "initialcommit",
   "license": "GPL-2.0-only",
   "icon": "media/icon.png",
+  "pricing": "Free",
+  "galleryBanner": { "color": "#0d1117", "theme": "dark" },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -20,6 +22,9 @@
     "pre-flight",
     "safety",
     "visualization",
+    "live",
+    "ai agents",
+    "copilot",
     "learn git"
   ],
   "repository": {
