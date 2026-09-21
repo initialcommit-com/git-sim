@@ -149,8 +149,8 @@ def test_remote_listing_grows_its_box_for_many_remotes(repo):
         if getattr(mob, "text", "").startswith(("[remote", "url =", "fetch ="))
     ]
     assert sum(t.text.startswith("[remote") for t in lines) == 8
-    # Every config line, including the last, sits inside the box.
-    assert scene.project_root.get_bottom()[1] < min(t.get_bottom()[1] for t in lines)
+    # Every config line, including the last, sits inside the file card.
+    assert scene.file_card.get_bottom()[1] < min(t.get_bottom()[1] for t in lines)
 
 
 def test_shim_rejects_none_targets_like_manim():
