@@ -104,6 +104,8 @@ class Branch(GitSimBaseCommand):
         self.center_label(branchText, branchRec)
 
         fullbranch = m.VGroup(branchRec, branchText)
+        # The new label is what the command adds: the viewer fades it in.
+        self.tag(fullbranch, role="ref", name=self.name, kind="branch", phase="after")
 
         if settings.animate:
             self.play(m.Create(fullbranch), run_time=1 / settings.speed)

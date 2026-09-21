@@ -40,6 +40,21 @@ class Pull(GitSimBaseCommand):
 
         # Save remotes and create the local clone
         orig_remotes = self.repo.remotes
+        # What the repository had before, so the drawing can play what the
+        # pull brings in: new commits fade in, HEAD and the branch slide.
+        known = set(self.repo.git.rev_list("--all").split())
+        moved = {}
+        try:
+            head_sha = self.repo.head.commit.hexsha
+            moved["HEAD"] = head_sha
+            if not self.repo.head.is_detached:
+                moved[self.repo.active_branch.name] = head_sha
+            remote = self.remote or "origin"
+            branch = self.branch or self.repo.active_branch.name
+            tracking = f"{remote}/{branch}"
+            moved[tracking] = self.repo.commit(tracking).hexsha
+        except Exception:
+            pass
         self.repo = git.Repo.clone_from(git_root, new_dir, no_hardlinks=True)
 
         # Reset the remotes in the local clone to the original remotes
@@ -53,6 +68,7 @@ class Pull(GitSimBaseCommand):
             self.repo.git.pull(self.remote, self.branch)
             head_commit = self.get_commit()
             self.parse_commits(head_commit)
+            self.tag_changes_since(known, moved)
             self.recenter_frame()
             self.scale_frame()
 

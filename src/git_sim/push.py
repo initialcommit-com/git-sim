@@ -77,6 +77,8 @@ class Push(GitSimBaseCommand):
             expected = user_repo.commit(f"{remote_name}/{branch_name}").hexsha
         except Exception:
             pass
+        # Everything drawn already existed locally; only the remote's label moves.
+        known = set(user_repo.git.rev_list("--all").split())
 
         # Create local clone of local repo
         self.repo = git.Repo.clone_from(git_root, new_dir, no_hardlinks=True)
@@ -141,6 +143,10 @@ class Push(GitSimBaseCommand):
             self.parse_commits(head_commit, make_branches_remote=remote_name)
         else:
             self.parse_commits(head_commit)
+            if push_result == 0:
+                self.tag_changes_since(
+                    known, {f"{remote_name}/{branch_name}": expected}
+                )
 
         if push_result == 0 and (self.force or self.force_with_lease):
             self.show_overwritten(remote_name, branch_name, head_commit, remote_only)

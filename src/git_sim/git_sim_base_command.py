@@ -400,6 +400,57 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     step=self.move_step or None,
                 )
 
+    def tag_changes_since(self, known_shas, moved_refs=None):
+        """The networked commands (fetch, pull, push) run the real command in
+        a throwaway clone and draw the result, so the drawing is all "after".
+        Given the commits that existed before (``known_shas``) and the refs
+        that moved (``moved_refs``: label name -> the sha it pointed at
+        before), mark what the command changed so the page can play it: new
+        commits and their arrows fade in, moved labels slide from where they
+        were, and a label whose old commit is not drawn simply appears."""
+        known = set(known_shas)
+
+        def family(mobs):
+            for mob in mobs:
+                yield mob
+                yield from family(getattr(mob, "submobjects", None) or [])
+
+        for mob in family(self.mobjects):
+            meta = getattr(mob, "meta", None)
+            if not meta:
+                continue
+            role = meta.get("role")
+            if role in ("commit", "commit-label"):
+                sha = meta.get("sha", "")
+                if sha and sha not in known and meta.get("kind") != "elided":
+                    mob.meta["phase"] = "after"
+            elif role == "edge" and meta.get("src") and meta["src"] not in known:
+                mob.meta["phase"] = "after"
+        for name, old_sha in (moved_refs or {}).items():
+            ref = self.drawnRefs.get(name)
+            if ref is None:
+                continue
+            try:
+                new_sha = self.repo.commit(name).hexsha
+            except Exception:
+                continue
+            if not old_sha:
+                self.tag(ref, phase="after")
+                continue
+            if old_sha == new_sha:
+                continue
+            old_commit, new_commit = self.drawnCommits.get(
+                old_sha
+            ), self.drawnCommits.get(new_sha)
+            if old_commit is None or new_commit is None:
+                self.tag(ref, phase="after")
+                continue
+            # The label keeps its offset from its commit; it travelled from the
+            # same offset on the old commit.
+            delta = old_commit.get_center() - new_commit.get_center()
+            if numpy.linalg.norm(delta) > 1e-6:
+                self.tag(ref, moved_by=(float(delta[0]), float(delta[1])))
+
     # ------------------------------------------------------------------ styling
     def commit_circle(self, kind="commit", fill=None):
         """A commit disc styled by the theme: solid fill, a rim ring and a soft

@@ -42,6 +42,13 @@ class Fetch(GitSimBaseCommand):
         new_dir = os.path.join(tempfile.gettempdir(), "git_sim", repo_name)
 
         orig_remotes = self.repo.remotes
+        # What the repository had before, so the drawing can play what arrives.
+        known = set(self.repo.git.rev_list("--all").split())
+        tracking = f"{self.remote}/{self.branch}"
+        try:
+            moved = {tracking: self.repo.commit(tracking).hexsha}
+        except Exception:
+            moved = {tracking: None}
         self.repo = git.Repo.clone_from(git_root, new_dir, no_hardlinks=True)
         for r1 in orig_remotes:
             for r2 in self.repo.remotes:
@@ -75,6 +82,7 @@ class Fetch(GitSimBaseCommand):
         else:
             commit = self.get_commit(self.branch)
         self.parse_commits(commit)
+        self.tag_changes_since(known, moved)
 
         self.recenter_frame()
         self.scale_frame()
