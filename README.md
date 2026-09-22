@@ -28,28 +28,28 @@ Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work 
 
 ## Use cases
 - Visualize Git commands to understand their effects on your repo before actually running them
-- Prevent unexpected working directory and repository states by simulating before running
+- Help visual learners understand how Git commands work, and let AI coding agents show their work before they run a destructive command
 - Share visualizations (interactive HTML page, jpg/png/svg image or mp4/webm video) of your Git commands with your team, or the world; a live session can be saved as one page or recorded as a video
+- Prevent unexpected working directory and repository states by simulating before running
 - Save visualizations as a part of your team documentation to document workflow and prevent recurring issues
 - Create interactive Git graphs (html), static diagrams (jpg/png) or animated videos (mp4/webm) to speed up content creation
-- Help visual learners understand how Git commands work, and let AI coding agents show their work before they run a destructive command
 - Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
 
 ## Features
+- NEW in 0.4: the default output is a self-contained interactive HTML page, opened in the git-sim viewer at initialcommit.com (the graph rides inside the link's `#fragment`, so nothing about your repository reaches the server; `--open-in local` opens the saved file instead): hover a commit for its full message, author, date and ancestry, click to copy its sha, zoom, and drag a **Before / After** slider (or press play) to watch the command happen, step by step for `rebase -i` and cherry-pick ranges. One file, with PNG / SVG download and sharing built in. `--img-format jpg` (or `png`) gives the classic image, and `git_sim_img_format=jpg` in your environment makes that the default again
+- NEW: [MCP server and Claude Code hook](docs/mcp.md) so AI coding agents (Claude Code, Cursor, etc.) run deterministic pre-flight checks — facts, a text commit graph and a simulation image — before executing destructive git commands in your repo. Included in the default install.
+- NEW: `git-sim preflight <command>` runs that same check from the terminal, and the [VS Code extension](docs/vscode.md) puts simulations and pre-flight checks in an editor tab.
+- NEW: `git-sim live` follows your repository as it changes: every commit, branch, checkout, reset, rebase, stash or staged file plays as a before / after animation the moment it happens, in your browser or in a VS Code tab or sidebar view, with the session's changes kept for stepping back and replaying (see [Live mode](#live-mode)).
+- NEW: git-sim plugs in wherever Git is used: `git sim` in the terminal, a [VS Code extension](docs/vscode.md), [Vim, Neovim and Emacs](docs/integrations.md), [Jupyter](docs/integrations.md#jupyter), a [`gh` extension and a GitHub Action](docs/integrations.md) for pull requests, an [embeddable viewer](docs/embed.md) for blogs and docs (`--img-format svg` writes the graph it shows), and [AI agents](docs/mcp.md). See [docs/integrations.md](docs/integrations.md).
 - Run a one-liner git-sim command in the terminal to generate a custom Git command visualization from your repo: an interactive `.html` page by default, or a `.jpg` / `.png` image with `--img-format`
 - Supported commands: `add`, `branch`, `checkout`, `cherry-pick`, `clean`, `clone`, `commit`, `config`, `fetch`, `init`, `log`, `merge`, `mv`, `pull`, `push`, `rebase`, `reflog`, `remote`, `reset`, `restore`, `revert`, `rm`, `stash`, `status`, `submodule`, `switch`, `tag`, `worktree`
 - Generate an animated video (.mp4) instead of a static image using the `--animate` flag (note: significant performance slowdown, it is recommended to use `--low-quality` to speed up testing and remove when ready to generate presentation-quality video)
 - Color commits by parameter, such as author with the `--color-by=author` option
 - Choose between dark mode (default) and light mode
 - Specify output formats of either html, jpg, png, mp4, or webm
-- NEW in 0.4: the default output is a self-contained interactive HTML page, opened in the git-sim viewer at initialcommit.com (the graph rides inside the link's `#fragment`, so nothing about your repository reaches the server; `--open-in local` opens the saved file instead): hover a commit for its full message, author, date and ancestry, click to copy its sha, zoom, and drag a **Before / After** slider (or press play) to watch the command happen, step by step for `rebase -i` and cherry-pick ranges. One file, with PNG / SVG download and sharing built in. `--img-format jpg` (or `png`) gives the classic image, and `git_sim_img_format=jpg` in your environment makes that the default again
 - Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
 - Animation only: Add custom branded intro/outro sequences if desired
 - Animation only: Speed up or slow down animation speed as desired
-- NEW: [MCP server and Claude Code hook](docs/mcp.md) so AI coding agents (Claude Code, Cursor, etc.) run deterministic pre-flight checks — facts, a text commit graph and a simulation image — before executing destructive git commands in your repo. Included in the default install.
-- NEW: `git-sim preflight <command>` runs that same check from the terminal, and the [VS Code extension](docs/vscode.md) puts simulations and pre-flight checks in an editor tab.
-- NEW: git-sim plugs in wherever Git is used: `git sim` in the terminal, a [VS Code extension](docs/vscode.md), [Vim, Neovim and Emacs](docs/integrations.md), [Jupyter](docs/integrations.md#jupyter), a [`gh` extension and a GitHub Action](docs/integrations.md) for pull requests, an [embeddable viewer](docs/embed.md) for blogs and docs (`--img-format svg` writes the graph it shows), and [AI agents](docs/mcp.md). See [docs/integrations.md](docs/integrations.md).
-- NEW: `git-sim live` follows your repository as it changes: every commit, branch, checkout, reset, rebase, stash or staged file plays as a before / after animation the moment it happens, in your browser or in a VS Code tab or sidebar view, with the session's changes kept for stepping back and replaying (see [Live mode](#live-mode)).
 
 ## Quickstart
 Note: If you prefer to install git-sim with Docker, skip steps (1) and (2) here and jump to the [Docker installation](#docker-installation) section below, then come back here to step (3).
@@ -166,6 +166,9 @@ $ git-sim [global options] <subcommand> [subcommand options]
 
 The `[global options]` apply to the overarching `git-sim` simulation itself, including:
 
+`--img-format`: Output format, i.e. `html` (default: the interactive page), `jpg`, `png`, or `svg` (the graph alone, for [embedding in a page](docs/embed.md)). Set `git_sim_img_format=jpg` in your environment to make an image the default.  
+`--open-in`: Where the interactive page opens: `hosted` (default) shows it in the git-sim viewer at initialcommit.com, `local` opens the saved `.html` file. The page is saved locally either way, and the hosted page says where. Set `git_sim_open_in=local` to make local the default.  
+`--reverse, -r` / `--no-reverse`: By default the newest commit is on the left and arrows point right toward parents, so history reads left to right. `--no-reverse` puts the newest commit on the right with arrows pointing left, the original layout.  
 `-n <number>`: Number of commits to display from each branch head.  
 `--all`: Display all local branches in the log output.  
 `--animate`: Instead of outputting a static image, animate the Git command behavior in a .mp4 video.  
@@ -175,9 +178,6 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 `--media-dir`: The path at which to store the simulated output media files.  
 `-d`: Disable the automatic opening of the image/video file after generation. Useful to avoid errors in console mode with no GUI.  
 `--light-mode`: Use a light mode color scheme instead of default dark mode.  
-`--reverse, -r` / `--no-reverse`: By default the newest commit is on the left and arrows point right toward parents, so history reads left to right. `--no-reverse` puts the newest commit on the right with arrows pointing left, the original layout.  
-`--img-format`: Output format, i.e. `html` (default: the interactive page), `jpg`, `png`, or `svg` (the graph alone, for [embedding in a page](docs/embed.md)). Set `git_sim_img_format=jpg` in your environment to make an image the default.  
-`--open-in`: Where the interactive page opens: `hosted` (default) shows it in the git-sim viewer at initialcommit.com, `local` opens the saved `.html` file. The page is saved locally either way, and the hosted page says where. Set `git_sim_open_in=local` to make local the default.  
 `--stdout`: Write raw image data to stdout while suppressing all other program output. Writes a `png` unless `--img-format jpg` is given.  
 `--output-only-path`: Only output the path to the generated media file to stdout. Useful for other programs to ingest.  
 `--quiet, -q`: Suppress all output except errors.  
@@ -578,12 +578,6 @@ $ git-sim cherry-pick 0ae641
 ```
 
 ## Command examples with extra options/flags
-Use light mode (soft off-white background, dark text) instead of the default dark theme:
-
-```console
-$ git-sim --light-mode status
-```
-
 The default output is a self-contained interactive HTML page, saved under `git-sim_media/` in your user cache area (see `git-sim media-dir`) and opened in the git-sim viewer at initialcommit.com. Drag the Before / After slider (or press play) to watch the command happen, hover commits for details, ctrl + wheel to zoom. The graph travels compressed in the link's `#fragment`, which browsers never send to a server, and the link git-sim opens carries nothing else about you or your repository (the command rides in the fragment too), so the server learns nothing about your code. The hosted page notes that git-sim opened it and the name of the local copy. The Share button builds a link meant for posting: that one also puts the command and a short text graph (`git log --oneline`, up to 12 lines) in the query string so the link gets a preview card. `#before`, `#after` or `#step=N` in a link pins the state, and `git_sim_viewer_url` points links at your own copy of the viewer:
 
 ```console
@@ -600,6 +594,12 @@ Write a plain image instead (the page's Share menu can also save a PNG or SVG of
 
 ```console
 $ git-sim --img-format jpg status
+```
+
+Use light mode (soft off-white background, dark text) instead of the default dark theme:
+
+```console
+$ git-sim --light-mode status
 ```
 
 Animate the simulated output as a .mp4 video file:
