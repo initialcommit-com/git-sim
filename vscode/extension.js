@@ -211,10 +211,11 @@ function rememberRecent(context, command) {
   context.globalState.update(RECENT_KEY, recent.slice(0, RECENT_MAX));
 }
 
-function lightMode() {
+// git-sim draws light by default; a dark editor theme asks for the dark palette.
+function darkMode() {
   if (!config().get('followEditorTheme')) return false;
   const kind = vscode.window.activeColorTheme.kind;
-  return kind === vscode.ColorThemeKind.Light || kind === vscode.ColorThemeKind.HighContrastLight;
+  return kind === vscode.ColorThemeKind.Dark || kind === vscode.ColorThemeKind.HighContrast;
 }
 
 function timeoutMs() {
@@ -237,7 +238,7 @@ function gitSimError(result) {
 // ---------------------------------------------------------------------------
 async function simulate(context, command, repo) {
   const args = [...(config().get('extraArgs') || []), '--img-format', 'html', '--output-only-path'];
-  if (lightMode()) args.push('--light-mode');
+  if (darkMode()) args.push('--dark-mode');
   args.push(...words(command));
   let result;
   try {
@@ -451,7 +452,7 @@ class LiveSession {
   start() {
     const exe = executable();
     const args = [...(config().get('extraArgs') || []), '-d'];
-    if (lightMode()) args.push('--light-mode');
+    if (darkMode()) args.push('--dark-mode');
     args.push('live', '--json', this.zones ? '--zones' : '--no-zones',
       '--interval', String(Math.max(0.2, Number(config().get('liveInterval')) || 1)), '-C', this.repo);
     const env = Object.assign({}, process.env, { git_sim_auto_open: 'false' });
@@ -553,10 +554,10 @@ function liveZones(where) {
 
 // The live page, from git-sim itself, with the webview's content-security policy.
 async function livePageHtml(repo) {
-  const key = `${repo}|${lightMode() ? 1 : 0}`;
+  const key = `${repo}|${darkMode() ? 1 : 0}`;
   if (livePages.has(key)) return livePages.get(key);
   const args = [];
-  if (lightMode()) args.push('--light-mode');
+  if (darkMode()) args.push('--dark-mode');
   args.push('live', '--print-page', '-C', repo);
   const r = await runGitSim(args, repo, timeoutMs());
   if (r.code !== 0 || !/<html/i.test(r.stdout)) throw new Error(gitSimError(r) || 'git-sim did not print the live page (live mode needs a git-sim that has the "live" command; update it with pipx upgrade git-sim)');

@@ -45,7 +45,7 @@ Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work 
 - Supported commands: `add`, `branch`, `checkout`, `cherry-pick`, `clean`, `clone`, `commit`, `config`, `fetch`, `init`, `log`, `merge`, `mv`, `pull`, `push`, `rebase`, `reflog`, `remote`, `reset`, `restore`, `revert`, `rm`, `stash`, `status`, `submodule`, `switch`, `tag`, `worktree`
 - Generate an animated video (.mp4) instead of a static image using the `--animate` flag (note: significant performance slowdown, it is recommended to use `--low-quality` to speed up testing and remove when ready to generate presentation-quality video)
 - Color commits by parameter, such as author with the `--color-by=author` option
-- Choose between dark mode (default) and light mode
+- Choose between light mode (default) and dark mode
 - Specify output formats of either html, jpg, png, mp4, or webm
 - Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
 - Animation only: Add custom branded intro/outro sequences if desired
@@ -127,7 +127,7 @@ $ export git_sim_speed=2
 Boolean flags can be set like:
 
 ```console
-$ export git_sim_light_mode=true
+$ export git_sim_dark_mode=true
 ```
 
 In general:
@@ -177,7 +177,7 @@ The `[global options]` apply to the overarching `git-sim` simulation itself, inc
 `--hide-merged-branches`: Hide commits from merged branches, i.e. only display mainline commits.  
 `--media-dir`: The path at which to store the simulated output media files.  
 `-d`: Disable the automatic opening of the image/video file after generation. Useful to avoid errors in console mode with no GUI.  
-`--light-mode`: Use a light mode color scheme instead of default dark mode.  
+`--dark-mode`: Use the dark color scheme instead of the default light one (`--light-mode` is still accepted and does nothing).  
 `--stdout`: Write raw image data to stdout while suppressing all other program output. Writes a `png` unless `--img-format jpg` is given.  
 `--output-only-path`: Only output the path to the generated media file to stdout. Useful for other programs to ingest.  
 `--quiet, -q`: Suppress all output except errors.  
@@ -596,10 +596,10 @@ Write a plain image instead (the page's Share menu can also save a PNG or SVG of
 $ git-sim --img-format jpg status
 ```
 
-Use light mode (soft off-white background, dark text) instead of the default dark theme:
+Use the dark theme (near-black background, light text) instead of the default light one:
 
 ```console
-$ git-sim --light-mode status
+$ git-sim --dark-mode status
 ```
 
 Animate the simulated output as a .mp4 video file:

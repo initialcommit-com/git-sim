@@ -330,7 +330,7 @@ def render_snapshot(label: str, zones: bool = True) -> str:
     from git_sim.render.html import FONT_STACK
     from git_sim.theme import theme_for
 
-    theme = theme_for(settings.light_mode)
+    theme = theme_for(settings.light)
     scene = LiveScene(label=label, zones=zones)
     try:
         scene.render()
@@ -340,6 +340,7 @@ def render_snapshot(label: str, zones: bool = True) -> str:
             background=theme.bg,
             font_stack=FONT_STACK,
             extra_mobjects=scene.removed_mobjects,
+            theme_name=theme.name,
         )
     finally:
         try:
@@ -427,7 +428,7 @@ class LiveSession:
         from git_sim.theme import theme_for
 
         return build_live_html(
-            theme=theme_for(settings.light_mode),
+            theme=theme_for(settings.light),
             repo=self.name,
             viewer_url=settings.viewer_url,
             session=self.session_data(),
@@ -501,7 +502,7 @@ class LiveSession:
                 build_html(
                     shown,
                     title=label,
-                    theme=theme_for(settings.light_mode),
+                    theme=theme_for(settings.light),
                     viewer_url=settings.viewer_url,
                 )
             )
@@ -688,7 +689,7 @@ class LiveHandler(http.server.BaseHTTPRequestHandler):
             if self.headers.get("Origin") and not self._allowed_origin():
                 return self._send(b"forbidden", "text/plain", 403)
             page = build_live_html(
-                theme=theme_for(settings.light_mode),
+                theme=theme_for(settings.light),
                 repo=session.name,
                 viewer_url=settings.viewer_url,
                 key=session.key,
@@ -921,7 +922,7 @@ def live(
     commit, branch, checkout, reset, rebase or staged file as it happens, in
     the browser (default) or for an editor (--json). Changes are kept so the
     page can step back through the session and replay it. Global options
-    (--all, -n, --light-mode, --media-dir) apply to every drawing.
+    (--all, -n, --dark-mode, --media-dir) apply to every drawing.
     """
     from git_sim.theme import theme_for
 
@@ -930,7 +931,7 @@ def live(
 
         root = _repo_root(os.path.abspath(repo))
         page = build_live_html(
-            theme=theme_for(settings.light_mode),
+            theme=theme_for(settings.light),
             repo=os.path.basename(root) if root else "",
             viewer_url=settings.viewer_url,
         )

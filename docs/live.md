@@ -42,7 +42,7 @@ Options: `--no-zones`, `--interval <seconds>` (default 1), `--port <n>`,
 `--json` (one JSON line per change, for editors), `--once` (draw the current
 state and exit), `--sessions`, `--replay [--session <path>]`, `-C <repo>`. The global `--open-in local` opens the page
 served by git-sim itself instead of the hosted one, and `-d` opens nothing
-and just prints the addresses. Global options (`--all`, `-n`, `--light-mode`,
+and just prints the addresses. Global options (`--all`, `-n`, `--dark-mode`,
 `--media-dir`) apply to every drawing; live mode shows up to three branch
 labels per commit unless `--max-branches-per-commit` says otherwise.
 

@@ -18,7 +18,7 @@ the risk level, the commits that would become unreachable, the files that would
 be lost, how to undo it and a text commit graph, with a button to simulate it.
 Select a command in a file or a terminal and the context menu offers both.
 
-Settings live under `git-sim` (executable, extra options, light-mode graphs when
+Settings live under `git-sim` (executable, extra options, dark graphs when
 the editor theme is light, open in the browser instead of a tab, timeout).
 
 ## The live graph

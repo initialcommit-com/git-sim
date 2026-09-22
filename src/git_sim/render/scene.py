@@ -340,6 +340,7 @@ class Scene:
         background=BLACK,
         font_stack=None,
         extra_mobjects=(),
+        theme_name=None,
     ) -> str:
         """The current scene state as an SVG document string. ``extra_mobjects``
         are drawn too (e.g. labels a simulation removed, kept for the
@@ -352,7 +353,7 @@ class Scene:
         everything = list(self.mobjects) + list(extra_mobjects)
         for mobject in everything:
             mobject.draw(painter)
-        return painter.document(background, painter.content_view_box(everything))
+        return painter.document(background, painter.content_view_box(everything), theme_name=theme_name)
 
     def render_html(
         self,
@@ -378,6 +379,7 @@ class Scene:
             background=theme.bg if theme else BLACK,
             font_stack=FONT_STACK,
             extra_mobjects=extra_mobjects,
+            theme_name=theme.name if theme else None,
         )
         page = build_html(
             svg,

@@ -134,7 +134,7 @@ def _render_image(scene, command_name: str) -> None:
     else:
         width, height = DEFAULT_PIXEL_WIDTH, DEFAULT_PIXEL_HEIGHT
 
-    theme = theme_for(settings.light_mode)
+    theme = theme_for(settings.light)
     if fmt == "html":
         data = scene.render_html(
             image_file_path,
@@ -162,6 +162,7 @@ def _render_image(scene, command_name: str) -> None:
             background=None if settings.transparent_bg else theme.bg,
             font_stack=font_stack,
             extra_mobjects=getattr(scene, "removed_mobjects", ()),
+            theme_name=theme.name,
         )
         data = svg.encode("utf-8")
         os.makedirs(os.path.dirname(os.path.abspath(image_file_path)), exist_ok=True)

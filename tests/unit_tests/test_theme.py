@@ -105,7 +105,7 @@ def repo(tmp_path, monkeypatch):
 def test_scene_takes_its_colors_from_the_theme(repo, light):
     from git_sim.status import Status
 
-    settings.light_mode = light
+    settings.dark_mode = not light
     theme = theme_for(light)
     scene = Status()
     scene.construct()
@@ -214,11 +214,12 @@ def test_lane_hues_color_commits_but_never_labels(repo):
     scene = Log(ctx=ctx, n=5, all=True)
     scene.construct()
     fills = {c.fill_color for c in scene.drawnCommits.values()}
-    assert DARK.lane_color(1) in fills, "the side lane is drawn in the second hue"
+    theme = theme_for(settings.light)  # whichever palette is the default draws the scene
+    assert theme.lane_color(1) in fills, "the side lane is drawn in the second hue"
     side_box, _ = scene.drawnRefs["side"]
     main_box, _ = scene.drawnRefs["main"]
-    assert side_box.fill_color == main_box.fill_color == DARK.branch
-    assert scene.drawnRefs["HEAD"][0].fill_color == DARK.head
+    assert side_box.fill_color == main_box.fill_color == theme.branch
+    assert scene.drawnRefs["HEAD"][0].fill_color == theme.head
 
 
 def test_commit_messages_wrap_at_word_boundaries():

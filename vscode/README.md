@@ -73,7 +73,7 @@ and saved in your user cache folder, never inside the repository.
 | --- | --- | --- |
 | `git-sim.executable` | `git-sim` | The executable to run |
 | `git-sim.extraArgs` | `[]` | Extra global options for every simulation, e.g. `["--all"]` |
-| `git-sim.followEditorTheme` | `true` | Light-mode graphs when your editor theme is light |
+| `git-sim.followEditorTheme` | `true` | Dark graphs when your editor theme is dark (git-sim draws light by default) |
 | `git-sim.openInBrowser` | `false` | Open simulations in the browser instead of a tab |
 | `git-sim.openHookSimulations` | `true` | Open the pages the agent hook renders in a tab |
 | `git-sim.timeoutSeconds` | `90` | How long to wait for git-sim |

@@ -263,7 +263,7 @@ class SvgPainter:
         hi += padding_px
         return (float(lo[0]), float(lo[1]), float(hi[0] - lo[0]), float(hi[1] - lo[1]))
 
-    def document(self, background=None, view_box=None):
+    def document(self, background=None, view_box=None, theme_name=None):
         if view_box is None:
             view_box = (0.0, 0.0, float(self.pixel_width), float(self.pixel_height))
         x, y, w, h = view_box
@@ -286,6 +286,8 @@ class SvgPainter:
         return (
             f'<svg id="scene" xmlns="http://www.w3.org/2000/svg" viewBox="{vb}" '
             f'width="{_fmt(w)}" height="{_fmt(h)}" font-family=\'{self.font_stack}\' '
-            f"{camera}>"
+            f"{camera}"
+            + (f' data-theme="{theme_name}"' if theme_name else "")  # which palette drew it, for a viewer that recolours
+            + ">"
             f"{self._defs()}{bg}{''.join(self.parts)}</svg>"
         )

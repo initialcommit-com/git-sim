@@ -1,5 +1,5 @@
 import pathlib
-from typing import List, Union
+from typing import List, Optional, Union
 
 from pydantic_settings import BaseSettings
 
@@ -17,7 +17,11 @@ class Settings(BaseSettings):
     # The interactive page is the default output; jpg/png give a plain image.
     img_format: ImgFormat = ImgFormat.HTML
     INFO_STRING: str = "Simulating:"
-    light_mode: bool = False
+    # Light is the default palette; --dark-mode / git_sim_dark_mode picks the dark
+    # one. --light-mode is kept for scripts written when dark was the default:
+    # explicitly false it means dark, otherwise it changes nothing (see .light).
+    dark_mode: bool = False
+    light_mode: Optional[bool] = None
     transparent_bg: bool = False
     logo: pathlib.Path = pathlib.Path(__file__).parent.resolve() / "logo.png"
     low_quality: bool = False
@@ -54,6 +58,11 @@ class Settings(BaseSettings):
     # Where the interactive page opens: the hosted viewer above (the page is
     # still saved locally) or the saved file. git_sim_open_in=local switches.
     open_in: OpenIn = OpenIn.HOSTED
+
+    @property
+    def light(self) -> bool:
+        """Whether drawings use the light palette (the default)."""
+        return not self.dark_mode and self.light_mode is not False
 
     class Config:
         env_prefix = "git_sim_"

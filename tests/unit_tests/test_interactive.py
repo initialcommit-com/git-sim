@@ -10,7 +10,8 @@ import numpy as np
 import pytest
 
 from git_sim.settings import Settings, settings
-from git_sim.theme import DARK
+from git_sim.theme import DARK, theme_for
+from git_sim.settings import settings
 
 
 def run_git(cwd, *args):
@@ -156,12 +157,13 @@ def test_gold_marks_remember_their_before_color(repo):
     run_git(repo, "add", "wip.txt")
     run_git(repo, "commit", "-q", "-m", "wip work")
     run_git(repo, "checkout", "-q", "main")
+    theme = theme_for(settings.light)  # the scene draws in the default palette
     scene = Branch(name="wip", force_delete=True)
     scene.construct()
-    svg = scene.render_svg(background=DARK.bg)
+    svg = scene.render_svg(background=theme.bg)
     gold = [e for e in attrs(svg, "data-before-fill=") if e.startswith("<circle")]
-    assert gold and f'fill="{DARK.gold}"' in gold[0]
-    assert 'data-before-fill="' + DARK.lane_color(1) + '"' in gold[0]
+    assert gold and f'fill="{theme.gold}"' in gold[0]
+    assert 'data-before-fill="' + theme.lane_color(1) + '"' in gold[0]
 
 
 def test_multi_action_commands_are_stepped(repo, tmp_path):

@@ -94,15 +94,20 @@ def test_media_dir_is_honoured(shapes, gitsim, tmp_path):
     assert str(tmp_path / "out") in str(run.path)
 
 
-def test_light_mode_changes_the_background(shapes, gitsim):
-    dark = gitsim.run(shapes.get("history").path, "log").ok()
-    light = gitsim.run(shapes.get("history").path, "log", globals_=["--light-mode"]).ok()
+def test_dark_mode_changes_the_background(shapes, gitsim):
+    light = gitsim.run(shapes.get("history").path, "log").ok()
+    dark = gitsim.run(shapes.get("history").path, "log", globals_=["--dark-mode"]).ok()
     d, l = background_fill(dark.path), background_fill(light.path)
     assert d and l and d != l
-    assert d.startswith("#0") and not l.startswith("#0")
+    assert d.startswith("#0") and not l.startswith("#0"), "light is the default, --dark-mode is dark"
+    assert 'data-theme="light"' in light.path.read_text(encoding="utf-8")
+    assert 'data-theme="dark"' in dark.path.read_text(encoding="utf-8")
 
 
-def test_no_light_mode_is_dark(shapes, gitsim):
+def test_old_light_mode_flags_still_work(shapes, gitsim):
+    """--light-mode is the default now and does nothing; --no-light-mode means dark."""
+    same = gitsim.run(shapes.get("history").path, "log", globals_=["--light-mode"]).ok()
+    assert not background_fill(same.path).startswith("#0")
     run = gitsim.run(shapes.get("history").path, "log", globals_=["--no-light-mode"]).ok()
     assert background_fill(run.path).startswith("#0")
 
@@ -216,14 +221,14 @@ def test_version(gitsim, shapes):
 def test_environment_variable_sets_an_option(shapes, gitsim):
     """git_sim_<option> in the environment is the same as the flag."""
     env = gitsim.env()
-    env["git_sim_light_mode"] = "true"
+    env["git_sim_dark_mode"] = "true"
     proc = subprocess.run(
         [sys.executable, "-m", "git_sim", "-d", "--output-only-path", "--img-format", "svg", "--media-dir", str(gitsim.media), "log"],
         cwd=str(shapes.get("history").path), capture_output=True, text=True, env=env, encoding="utf-8",
     )
     assert proc.returncode == 0, proc.stderr
     path = proc.stdout.strip().splitlines()[-1]
-    assert not background_fill(path).startswith("#0"), "light background from the environment variable"
+    assert background_fill(path).startswith("#0"), "dark background from the environment variable"
 
 
 def test_media_dir_command(shapes, gitsim):

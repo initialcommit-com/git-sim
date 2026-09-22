@@ -72,7 +72,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.init_repo()
 
         self.font = settings.font
-        self.theme = theme_for(settings.light_mode)
+        self.theme = theme_for(settings.light)
         # Interactive output: elements are tagged before/after (and with a
         # step for multi-action commands); labels a simulation removes are
         # kept here so the page can show them in the "before" view.

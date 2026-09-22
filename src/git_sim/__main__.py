@@ -8,6 +8,7 @@ import time
 from pathlib import Path
 
 import typer
+from typing import Optional
 
 from fontTools.ttLib import TTFont
 
@@ -68,9 +69,16 @@ def main(
         "--open-in",
         help="Where the interactive page opens: hosted (default) shows it in the git-sim viewer at initialcommit.com, with the graph carried in the link's #fragment so it never reaches the server; local opens the saved .html file. Set git_sim_open_in=local to make local the default. The page is saved locally either way.",
     ),
-    light_mode: bool = typer.Option(
-        settings.light_mode,
-        help="Enable light-mode with white background",
+    dark_mode: bool = typer.Option(
+        settings.dark_mode,
+        "--dark-mode/--no-dark-mode",
+        help="Draw with the dark colour scheme (the default is light). Set git_sim_dark_mode=true to make it the default.",
+    ),
+    light_mode: Optional[bool] = typer.Option(
+        None,
+        "--light-mode/--no-light-mode",
+        hidden=True,  # light is the default now; kept so older scripts still run
+        help="Deprecated: light is the default. --no-light-mode is the same as --dark-mode.",
     ),
     transparent_bg: bool = typer.Option(
         settings.transparent_bg,
@@ -204,6 +212,7 @@ def main(
     settings.img_format = ImgFormat.HTML if interactive else img_format
     settings.open_in = open_in
     settings.light_mode = light_mode
+    settings.dark_mode = dark_mode or light_mode is False
     settings.transparent_bg = transparent_bg
     settings.logo = logo
     settings.low_quality = low_quality
@@ -271,7 +280,7 @@ def main(
         if settings.low_quality:
             config.quality = "low_quality"
 
-        config.background_color = theme_for(settings.light_mode).bg
+        config.background_color = theme_for(settings.light).bg
 
         t = datetime.datetime.fromtimestamp(time.time()).strftime("%m-%d-%y_%H-%M-%S")
         config.output_file = "git-sim-" + ctx.invoked_subcommand + "_" + t + ".mp4"
