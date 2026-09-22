@@ -1,0 +1,19 @@
+{
+ "commits": {},
+ "edges": {
+  "after": 0,
+  "before": 0,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [
+  "[remote \"upstream\"]",
+  "url = http<path>",
+  "fetch = +refs/heads/*:refs/remotes/upstream/*",
+  "added"
+ ],
+ "refs": {},
+ "steps": 0,
+ "title": "git remote add upstream http<path>"
+}

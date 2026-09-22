@@ -1,0 +1,118 @@
+{
+ "commits": {
+  "Add currency to totals": {
+   "kind": "commit",
+   "parents": [
+    "Document the /orders endpoint"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Add pagination to the orders list": {
+   "kind": "commit",
+   "parents": [
+    "Pin the test dependencies"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Document the /orders endpoint": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge commit": {
+   "kind": "merge",
+   "parents": [
+    "Merge feature/pagination into main",
+    "Merge main into feature/pagination"
+   ],
+   "phase": "after",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge feature/pagination into main": {
+   "kind": "merge",
+   "parents": [
+    "Add pagination to the orders list",
+    "Polish pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge main into feature/pagination": {
+   "kind": "merge",
+   "parents": [
+    "Add pagination to the orders list",
+    "Polish pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Pin the test dependencies": {
+   "kind": "commit",
+   "parents": [
+    "Add currency to totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Polish pagination": {
+   "kind": "commit",
+   "parents": [
+    "Test pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Test pagination": {
+   "kind": "commit",
+   "parents": [
+    "Add currency to totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 16,
+  "before": 18,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": true,
+   "phase": "before"
+  },
+  "feature/pagination": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": true,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git merge feature/pagination"
+}

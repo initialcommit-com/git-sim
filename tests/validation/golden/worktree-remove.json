@@ -1,0 +1,110 @@
+{
+ "commits": {
+  "Add created_at to orders": {
+   "kind": "commit",
+   "parents": [
+    "Add currency to totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Add currency to totals": {
+   "kind": "commit",
+   "parents": [
+    "Raise the default log level"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Initial commit": {
+   "kind": "commit",
+   "parents": [],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Pin the test dependencies": {
+   "kind": "commit",
+   "parents": [
+    "Initial commit"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Raise the default log level": {
+   "kind": "commit",
+   "parents": [
+    "Pin the test dependencies"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 8,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [
+  {
+   "column": "Branch",
+   "moved": false,
+   "name": "feature/pagination",
+   "phase": "before"
+  },
+  {
+   "column": "Branch",
+   "moved": false,
+   "name": "main",
+   "phase": "before"
+  },
+  {
+   "column": "State",
+   "moved": false,
+   "name": "REMOVED",
+   "phase": "before"
+  },
+  {
+   "column": "State",
+   "moved": false,
+   "name": "clean",
+   "phase": "before"
+  },
+  {
+   "column": "Worktree",
+   "moved": false,
+   "name": "worktree  (main)",
+   "phase": "before"
+  },
+  {
+   "column": "Worktree",
+   "moved": false,
+   "name": "worktree-feature-pagination",
+   "phase": "before"
+  }
+ ],
+ "notes": [
+  "Worktree 'worktree-feature-pagination' removed; branch feature/pagination is kept and can be checked out again."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git worktree remove <path>"
+}

@@ -1,0 +1,22 @@
+{
+ "commits": {
+  "First": {
+   "kind": "commit",
+   "parents": [],
+   "phase": "after",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 0,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [],
+ "refs": {},
+ "steps": 0,
+ "title": "git commit -m \"First\""
+}

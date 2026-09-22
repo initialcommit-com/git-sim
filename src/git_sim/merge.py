@@ -78,6 +78,10 @@ class Merge(GitSimBaseCommand):
             if self.no_ff:
                 self.center_frame_on_commit(branch_commit)
                 commitId = self.setup_and_draw_parent(branch_commit, self.message)
+                self.tag(
+                    self.drawnCommits["abcdef"],
+                    parents=f"{head_commit.hexsha} {branch_commit.hexsha}",
+                )
 
                 # If pre-merge HEAD is on screen, drawn an arrow to it as 2nd parent
                 if head_commit.hexsha in self.drawnCommits:
@@ -142,6 +146,11 @@ class Merge(GitSimBaseCommand):
                     shift=2 * m.DOWN,
                     draw_arrow=False,
                     color=m.GRAY,
+                )
+                # A merge has two parents; the tooltip should say so.
+                self.tag(
+                    self.drawnCommits["abcdef"],
+                    parents=f"{head_commit.hexsha} {branch_commit.hexsha}",
                 )
                 self.draw_arrow_between_commits("abcdef", branch_commit.hexsha)
                 self.draw_arrow_between_commits("abcdef", head_commit.hexsha)

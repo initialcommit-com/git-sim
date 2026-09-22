@@ -1,0 +1,17 @@
+{
+ "commits": {},
+ "edges": {
+  "after": 0,
+  "before": 0,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [
+  "url = git@example.com:x/y.git",
+  "becomes git@example.com:x/y.git"
+ ],
+ "refs": {},
+ "steps": 0,
+ "title": "git remote set-url origin git@example.com:x/y.git"
+}

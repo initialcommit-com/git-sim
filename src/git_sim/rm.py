@@ -26,7 +26,7 @@ class Rm(GitSimBaseCommand):
                 self.repo.git.ls_files("--error-unmatch", file)
             except:
                 print(f"git-sim error: No tracked file with name: '{file}'")
-                sys.exit()
+                sys.exit(1)
 
         self.cmd += f"{type(self).__name__.lower()} {' '.join(self.files)}"
 

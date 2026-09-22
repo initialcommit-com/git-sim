@@ -29,7 +29,7 @@ class Stash(GitSimBaseCommand):
         self.stash_index = self.parse_stash_format(stash_index)
         if self.stash_index is None:
             print("git-sim error: specify stash index as either integer or stash@{i}")
-            sys.exit()
+            sys.exit(1)
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)
@@ -57,7 +57,7 @@ class Stash(GitSimBaseCommand):
                     print(
                         f"git-sim error: No modified or staged file with name: '{file}'"
                     )
-                    sys.exit()
+                    sys.exit(1)
 
             if not self.files:
                 self.files = [x.a_path for x in self.repo.index.diff(None)] + [
@@ -153,7 +153,7 @@ class Stash(GitSimBaseCommand):
             out = self.repo.git.stash("show", "--name-only", f"stash@{{{index}}}")
         except Exception:
             print(f"git-sim error: No stash entry with index {index} exists in stash")
-            sys.exit()
+            sys.exit(1)
         return [line for line in out.split("\n") if line]
 
     def populate_zones(

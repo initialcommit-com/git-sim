@@ -1,0 +1,1402 @@
+{
+ "commits": {
+  "Dummy commit #371 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #371 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #371 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #371 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #371 on main": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #372 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #371 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #372 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #371 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #372 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #371 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #372 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #371 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #372 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #371 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #373 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #372 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #373 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #372 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #373 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #372 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #373 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #372 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #373 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #372 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #374 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #373 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #374 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #373 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #374 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #373 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #374 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #373 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #374 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #373 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #375 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #374 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #375 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #374 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #375 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #374 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #375 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #374 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #375 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #374 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #376 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #375 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #376 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #375 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #376 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #375 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #376 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #375 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #376 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #375 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #377 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #376 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #377 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #376 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #377 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #376 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #377 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #376 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #377 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #376 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #378 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #377 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #378 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #377 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #378 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #377 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #378 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #377 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #378 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #377 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #379 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #378 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #379 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #378 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #379 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #378 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #379 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #378 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #379 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #378 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #380 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #379 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #380 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #379 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #380 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #379 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #380 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #379 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #380 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #379 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #381 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #380 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #381 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #380 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #381 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #380 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #381 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #380 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #381 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #380 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #382 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #381 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #382 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #381 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #382 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #381 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #382 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #381 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #382 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #381 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #383 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #382 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #383 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #382 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #383 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #382 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #383 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #382 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #383 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #382 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #384 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #383 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #384 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #383 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #384 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #383 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #384 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #383 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #384 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #383 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #385 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #384 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #385 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #384 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #385 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #384 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #385 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #384 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #385 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #384 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #386 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #385 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #386 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #385 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #386 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #385 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #386 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #385 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #386 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #385 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #387 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #386 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #387 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #386 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #387 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #386 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #387 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #386 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #387 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #386 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #388 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #387 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #388 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #387 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #388 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #387 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #388 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #387 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #388 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #387 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #389 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #388 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #389 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #388 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #389 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #388 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #389 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #388 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #389 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #388 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #390 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #389 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #390 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #389 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #390 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #389 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #390 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #389 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #390 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #389 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #391 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #390 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #391 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #390 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #391 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #390 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #391 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #390 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #391 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #390 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #392 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #391 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #392 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #391 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #392 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #391 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #392 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #391 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #392 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #391 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #393 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #392 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #393 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #392 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #393 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #392 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #393 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #392 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #393 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #392 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #394 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #393 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #394 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #393 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #394 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #393 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #394 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #393 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #394 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #393 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #395 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #394 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #395 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #394 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #395 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #394 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #395 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #394 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #395 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #394 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #396 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #395 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #396 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #395 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #396 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #395 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #396 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #395 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #396 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #395 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #397 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #396 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #397 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #396 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #397 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #396 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #397 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #396 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #397 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #396 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #398 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #397 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #398 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #397 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #398 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #397 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #398 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #397 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #398 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #397 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #399 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #398 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #399 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #398 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #399 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #398 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #399 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #398 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #399 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #398 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #400 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #399 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #400 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #399 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #400 on branch3": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #399 on branch3"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #400 on branch4": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #399 on branch4"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #400 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #399 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 290,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "branch1": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "branch2": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "branch3": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "branch4": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git log --all -n 30"
+}

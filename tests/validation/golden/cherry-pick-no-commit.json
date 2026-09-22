@@ -1,0 +1,176 @@
+{
+ "commits": {
+  "Dummy commit #10 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #9 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #10 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #9 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #10 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #9 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #6 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #7 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #7 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #6 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #7 on main": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #8 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #7 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #8 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #7 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #8 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #7 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #9 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #8 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #9 on branch2": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #8 on branch2"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #9 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #8 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge branch1 into main": {
+   "kind": "merge",
+   "parents": [
+    "Dummy commit #10 on branch1",
+    "Dummy commit #10 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 24,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [
+  {
+   "column": "Changes staged from branch2",
+   "moved": false,
+   "name": "branch2.10",
+   "phase": "before"
+  }
+ ],
+ "notes": [
+  "-n applies the changes to the index and working tree without committing."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "branch1": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "branch2": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git cherry-pick -n branch2"
+}

@@ -1,0 +1,56 @@
+{
+ "commits": {
+  "Bump flask": {
+   "kind": "commit",
+   "parents": [
+    "Initial commit"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Initial commit": {
+   "kind": "commit",
+   "parents": [],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Retry failed database connections": {
+   "kind": "commit",
+   "parents": [
+    "Update the README quickstart"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Update the README quickstart": {
+   "kind": "commit",
+   "parents": [
+    "Bump flask"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 6,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git status"
+}

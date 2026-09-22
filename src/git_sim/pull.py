@@ -21,6 +21,9 @@ class Pull(GitSimBaseCommand):
         self.branch = branch
         settings.max_branches_per_commit = 2
 
+        if not self.repo.remotes:
+            print("git-sim error: this repository has no remotes")
+            sys.exit(1)
         if self.remote and self.remote not in self.repo.remotes:
             print("git-sim error: no remote with name '" + self.remote + "'")
             sys.exit(1)
@@ -65,7 +68,10 @@ class Pull(GitSimBaseCommand):
 
         # Pull the remote into the local clone
         try:
-            self.repo.git.pull(self.remote, self.branch)
+            # git-sim shows a pull as a merge, and newer Gits refuse to guess
+            # how to reconcile divergent branches without being told.
+            args = [a for a in (self.remote, self.branch) if a]
+            self.repo.git.pull("--no-rebase", *args)
             head_commit = self.get_commit()
             self.parse_commits(head_commit)
             self.tag_changes_since(known, moved)
@@ -96,7 +102,8 @@ class Pull(GitSimBaseCommand):
                 )
             else:
                 print(
-                    f"git-sim error: git pull failed for unhandled reason: {e.stdout}"
+                    "git-sim error: git pull failed: "
+                    + (e.stderr or e.stdout or str(e)).strip()
                 )
                 self.repo.git.clear_cache()
                 shutil.rmtree(new_dir, onerror=self.del_rw)

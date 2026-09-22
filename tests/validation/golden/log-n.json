@@ -1,0 +1,69 @@
+{
+ "commits": {
+  "Finish pagination": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge branch 'feature/pagination'": {
+   "kind": "merge",
+   "parents": [
+    "Finish pagination",
+    "Merge branch 'fix/order-totals'"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge branch 'fix/order-totals'": {
+   "kind": "merge",
+   "parents": [
+    "?",
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 4,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "feature/pagination": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "v1.1.0": {
+   "count": 2,
+   "kind": "tag",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git log --all -n 2"
+}

@@ -1,0 +1,85 @@
+{
+ "commits": {
+  "Add created_at to orders": {
+   "kind": "commit",
+   "parents": [
+    "Log the request path"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Fix flaky test on Windows": {
+   "kind": "commit",
+   "parents": [
+    "Handle missing config values"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Handle missing config values": {
+   "kind": "commit",
+   "parents": [
+    "Add created_at to orders"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Log the request path": {
+   "kind": "commit",
+   "parents": [
+    "Raise the default log level"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Raise the default log level": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 8,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": true,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": true,
+   "phase": "before"
+  },
+  "v1.0.0": {
+   "count": 2,
+   "kind": "tag",
+   "moved": false,
+   "phase": "before"
+  },
+  "v1.1.0": {
+   "count": 2,
+   "kind": "tag",
+   "moved": true,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git checkout v1.0.0"
+}

@@ -1,0 +1,67 @@
+{
+ "commits": {
+  "Dummy commit #5 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #6 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #5 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #7 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #6 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #8 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #7 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #9 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #8 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 8,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "after"
+  }
+ },
+ "steps": 0,
+ "title": "git checkout HEAD~2"
+}

@@ -1,0 +1,33 @@
+{
+ "commits": {},
+ "edges": {
+  "after": 0,
+  "before": 0,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [
+  ".git/",
+  "the repository: Git's own hidden folder, created by git init",
+  "HEAD",
+  "main",
+  "where you are: this branch has no commits yet",
+  "config",
+  "this repository's own settings: your name, its remotes, and",
+  "more",
+  "objects/",
+  "the object database: every file, folder and commit is stored",
+  "here. Empty for now",
+  "refs/",
+  "heads/ holds the branches and tags/ the tags, one tiny file",
+  "per label",
+  "hooks/, info/",
+  "scripts Git can run on events, and local ignore rules",
+  "Initialized empty Git repository in .../plain/.git/",
+  "Nothing is tracked yet: git add stages files, then git commit makes the first commit."
+ ],
+ "refs": {},
+ "steps": 0,
+ "title": "git init"
+}

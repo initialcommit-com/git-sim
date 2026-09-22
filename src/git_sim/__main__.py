@@ -243,20 +243,17 @@ def main(
         settings.font = font
 
     try:
-        if sys.platform == "linux" or sys.platform == "darwin":
-            repo_name = git.repo.Repo(
-                search_parent_directories=True
-            ).working_tree_dir.split("/")[-1]
-        elif sys.platform == "win32":
-            repo_name = git.repo.Repo(
-                search_parent_directories=True
-            ).working_tree_dir.split("\\")[-1]
+        found = git.repo.Repo(search_parent_directories=True)
+        # A bare repository has no working tree; its own directory names it.
+        where = found.working_tree_dir or found.git_dir
+        repo_name = os.path.basename(os.path.normpath(where)) if where else ""
     except git.InvalidGitRepositoryError as e:
         repo_name = ""
 
     settings.media_dir = os.path.join(settings.media_dir, repo_name)
 
-    if settings.transparent_bg:
+    # JPEG has no transparency; the other formats keep the one they were given.
+    if settings.transparent_bg and settings.img_format == ImgFormat.JPG:
         settings.img_format = ImgFormat.PNG
 
     # A pipe wants picture bytes, not a web page.

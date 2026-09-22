@@ -1,0 +1,148 @@
+{
+ "commits": {
+  "Export orders as CSV": {
+   "kind": "commit",
+   "parents": [
+    "Update the README quickstart"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Fix off-by-one in pagination": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge branches 'feature/health-check', 'fix/order-totals', 'feature/pagination'": {
+   "kind": "merge",
+   "parents": [
+    "Export orders as CSV",
+    "Polish health check",
+    "Polish order totals",
+    "Polish pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Polish health check": {
+   "kind": "commit",
+   "parents": [
+    "Test health check"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Polish order totals": {
+   "kind": "commit",
+   "parents": [
+    "Test order totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Polish pagination": {
+   "kind": "commit",
+   "parents": [
+    "Test pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Raise the default log level": {
+   "kind": "commit",
+   "parents": [
+    "Fix off-by-one in pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Test health check": {
+   "kind": "commit",
+   "parents": [
+    "Raise the default log level"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Test order totals": {
+   "kind": "commit",
+   "parents": [
+    "Raise the default log level"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Test pagination": {
+   "kind": "commit",
+   "parents": [
+    "Raise the default log level"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Update the README quickstart": {
+   "kind": "commit",
+   "parents": [
+    "Raise the default log level"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 26,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "feature/health-check": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "feature/pagination": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "fix/order-totals": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git log --all"
+}

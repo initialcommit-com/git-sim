@@ -1,0 +1,17 @@
+{
+ "commits": {},
+ "edges": {
+  "after": 0,
+  "before": 0,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [
+  "Reinitialized existing Git repository in .../history/.git/",
+  "Nothing changed. The repository, its history and its settings are all still here."
+ ],
+ "refs": {},
+ "steps": 0,
+ "title": "git init"
+}

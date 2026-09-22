@@ -473,6 +473,20 @@ def stash(
 ):
     from git_sim.stash import Stash
 
+    # `stash push a.txt`: the last word lands in stash_index, since a trailing
+    # positional wins over the variadic one. Anything that is not an index is
+    # a file when the subcommand takes files.
+    import re
+
+    if (
+        command
+        in (StashSubCommand.PUSH, StashSubCommand.POP, StashSubCommand.APPLY, None)
+        and stash_index is not None
+        and not re.fullmatch(r"\d+|stash@\{\d+\}", stash_index)
+    ):
+        files = (files or []) + [stash_index]
+        stash_index = "0"
+
     scene = Stash(files=files, command=command, stash_index=stash_index)
     handle_animations(scene=scene)
 
@@ -568,7 +582,7 @@ def reflog(
 
 def submodule(
     command: SubmoduleSubCommand = typer.Argument(
-        default=SubmoduleSubCommand.STATUS,
+        default=SubmoduleSubCommand.STATUS.value,  # the value: click validates the default against its choices
         help="Submodule subcommand (add, update, init, status, deinit)",
     ),
     url_or_path: str = typer.Argument(

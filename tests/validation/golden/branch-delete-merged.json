@@ -1,0 +1,359 @@
+{
+ "commits": {
+  "Add currency to totals": {
+   "kind": "commit",
+   "parents": [
+    "Validate order totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Add pagination to the orders list": {
+   "kind": "commit",
+   "parents": [
+    "Raise the default log level"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Bump flask": {
+   "kind": "commit",
+   "parents": [
+    "Retry failed database connections"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Continue health check": {
+   "kind": "commit",
+   "parents": [
+    "Start health check"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Continue order totals": {
+   "kind": "commit",
+   "parents": [
+    "Start order totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Continue pagination": {
+   "kind": "commit",
+   "parents": [
+    "Start pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Finish health check": {
+   "kind": "commit",
+   "parents": [
+    "Polish health check"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Finish order totals": {
+   "kind": "commit",
+   "parents": [
+    "Polish order totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Finish pagination": {
+   "kind": "commit",
+   "parents": [
+    "Polish pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Fix flaky test on Windows": {
+   "kind": "commit",
+   "parents": [
+    "Add pagination to the orders list"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Handle missing config values": {
+   "kind": "commit",
+   "parents": [
+    "Add currency to totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Initial commit": {
+   "kind": "commit",
+   "parents": [],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge branch 'feature/health-check'": {
+   "kind": "merge",
+   "parents": [
+    "Finish health check",
+    "Return 404 for unknown orders"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge branch 'feature/pagination'": {
+   "kind": "merge",
+   "parents": [
+    "Finish pagination",
+    "Merge branch 'fix/order-totals'"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge branch 'fix/order-totals'": {
+   "kind": "merge",
+   "parents": [
+    "Finish order totals",
+    "Merge branch 'feature/health-check'"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Pin the test dependencies": {
+   "kind": "commit",
+   "parents": [
+    "Refactor Order into a dataclass"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Polish health check": {
+   "kind": "commit",
+   "parents": [
+    "Test health check"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Polish order totals": {
+   "kind": "commit",
+   "parents": [
+    "Test order totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Polish pagination": {
+   "kind": "commit",
+   "parents": [
+    "Test pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Raise the default log level": {
+   "kind": "commit",
+   "parents": [
+    "Bump flask"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Refactor Order into a dataclass": {
+   "kind": "commit",
+   "parents": [
+    "Initial commit"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Retry failed database connections": {
+   "kind": "commit",
+   "parents": [
+    "Pin the test dependencies"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Return 404 for unknown orders": {
+   "kind": "commit",
+   "parents": [
+    "Handle missing config values"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Start health check": {
+   "kind": "commit",
+   "parents": [
+    "Raise the default log level"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Start order totals": {
+   "kind": "commit",
+   "parents": [
+    "Start health check"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Start pagination": {
+   "kind": "commit",
+   "parents": [
+    "Start order totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Test health check": {
+   "kind": "commit",
+   "parents": [
+    "Wire up health check"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Test order totals": {
+   "kind": "commit",
+   "parents": [
+    "Wire up order totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Test pagination": {
+   "kind": "commit",
+   "parents": [
+    "Wire up pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Validate order totals": {
+   "kind": "commit",
+   "parents": [
+    "Fix flaky test on Windows"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Wire up health check": {
+   "kind": "commit",
+   "parents": [
+    "Continue health check"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Wire up order totals": {
+   "kind": "commit",
+   "parents": [
+    "Continue order totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Wire up pagination": {
+   "kind": "commit",
+   "parents": [
+    "Continue pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 70,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [
+  "Deleted branch 'feature/pagination' (was beea52).",
+  "All of its commits stay reachable from other branches."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "feature/health-check": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "feature/pagination": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "removed"
+  },
+  "fix/order-totals": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "v1.0.0": {
+   "count": 2,
+   "kind": "tag",
+   "moved": false,
+   "phase": "before"
+  },
+  "v1.1.0": {
+   "count": 2,
+   "kind": "tag",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git branch -d feature/pagination"
+}

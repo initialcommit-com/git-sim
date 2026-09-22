@@ -1,0 +1,129 @@
+{
+ "commits": {
+  "Dummy commit #10 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #9 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #7 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #8 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #7 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #9 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #8 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge branch1 into main": {
+   "kind": "merge",
+   "parents": [
+    "?",
+    "Dummy commit #10 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 8,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [
+  {
+   "column": "Modified files",
+   "moved": false,
+   "name": "main.10",
+   "phase": "before"
+  },
+  {
+   "column": "Modified files",
+   "moved": false,
+   "name": "main.3",
+   "phase": "before"
+  },
+  {
+   "column": "Modified files",
+   "moved": false,
+   "name": "main.4",
+   "phase": "before"
+  },
+  {
+   "column": "Modified files",
+   "moved": false,
+   "name": "main.5",
+   "phase": "before"
+  },
+  {
+   "column": "Modified files",
+   "moved": false,
+   "name": "main.6",
+   "phase": "before"
+  },
+  {
+   "column": "Modified files",
+   "moved": false,
+   "name": "main.7",
+   "phase": "before"
+  },
+  {
+   "column": "Modified files",
+   "moved": false,
+   "name": "main.8",
+   "phase": "before"
+  },
+  {
+   "column": "Modified files",
+   "moved": false,
+   "name": "main.9",
+   "phase": "before"
+  }
+ ],
+ "notes": [],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": true,
+   "phase": "before"
+  },
+  "branch1": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": true,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git reset HEAD~1"
+}

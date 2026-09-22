@@ -1,0 +1,76 @@
+{
+ "commits": {
+  "Add a health check": {
+   "kind": "commit",
+   "parents": [
+    "Export orders as CSV"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Add currency to totals": {
+   "kind": "commit",
+   "parents": [
+    "Retry failed database connections"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Export orders as CSV": {
+   "kind": "commit",
+   "parents": [
+    "Refactor Order into a dataclass"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Refactor Order into a dataclass": {
+   "kind": "commit",
+   "parents": [
+    "Add currency to totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Retry failed database connections": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 8,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [
+  "--force-with-lease rejected: origin/main moved since your last fetch.",
+  "You expected 7da67e; fetch, review the new commits, then retry."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git push --force-with-lease or..."
+}

@@ -1,0 +1,92 @@
+{
+ "commits": {
+  "Add currency to totals": {
+   "kind": "commit",
+   "parents": [
+    "Handle missing config values"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Add lib as a submodule": {
+   "kind": "commit",
+   "parents": [
+    "Add currency to totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Bump flask": {
+   "kind": "commit",
+   "parents": [
+    "Initial commit"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Handle missing config values": {
+   "kind": "commit",
+   "parents": [
+    "Bump flask"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Initial commit": {
+   "kind": "commit",
+   "parents": [],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 8,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [
+  {
+   "column": "Pinned commit",
+   "moved": false,
+   "name": "f310f8",
+   "phase": "before"
+  },
+  {
+   "column": "State",
+   "moved": false,
+   "name": "DEINITIALIZED (working tree emptied)",
+   "phase": "before"
+  },
+  {
+   "column": "Submodule",
+   "moved": false,
+   "name": "lib",
+   "phase": "before"
+  }
+ ],
+ "notes": [
+  "'lib' unregistered from .git/config; .gitmodules and the pin stay."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git submodule deinit --force lib"
+}

@@ -1,0 +1,119 @@
+{
+ "commits": {
+  "Dummy commit #10 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #9 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #10 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #9 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #7 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #7 on main": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #8 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #7 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #8 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #7 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #9 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #8 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #9 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #8 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge branch1 into main": {
+   "kind": "merge",
+   "parents": [
+    "Dummy commit #10 on branch1",
+    "Dummy commit #10 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 16,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [
+  "Deleted branch 'branch1' (was 468a78).",
+  "All of its commits stay reachable from other branches."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "branch1": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "removed"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git branch -D branch1"
+}

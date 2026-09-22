@@ -151,11 +151,16 @@ def _render_image(scene, command_name: str) -> None:
         # a blog or documentation page embeds with git-sim-embed.js.
         from git_sim.render.html import FONT_STACK
 
+        # --font puts the user's family first, with the viewer's stack as the
+        # fallback; --transparent-bg leaves the background out altogether.
+        font_stack = FONT_STACK
+        if settings.font and settings.font.lower() not in ("monospace", ""):
+            font_stack = f'"{settings.font}",{FONT_STACK}'
         svg = scene.render_svg(
             width,
             height,
-            background=theme.bg,
-            font_stack=FONT_STACK,
+            background=None if settings.transparent_bg else theme.bg,
+            font_stack=font_stack,
             extra_mobjects=getattr(scene, "removed_mobjects", ()),
         )
         data = svg.encode("utf-8")

@@ -1,0 +1,107 @@
+{
+ "commits": {
+  "Finish pagination": {
+   "kind": "commit",
+   "parents": [
+    "Polish pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge branch 'feature/pagination'": {
+   "kind": "merge",
+   "parents": [
+    "?",
+    "Finish pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Polish pagination": {
+   "kind": "commit",
+   "parents": [
+    "Test pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Test pagination": {
+   "kind": "commit",
+   "parents": [
+    "Wire up pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Wire up pagination": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 8,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [
+  {
+   "column": "Pinned commit",
+   "moved": false,
+   "name": "remote HEAD",
+   "phase": "before"
+  },
+  {
+   "column": "State",
+   "moved": false,
+   "name": "cloned, staged in .gitmodules",
+   "phase": "before"
+  },
+  {
+   "column": "Submodule",
+   "moved": false,
+   "name": "vendor/lib  (new)",
+   "phase": "before"
+  }
+ ],
+ "notes": [
+  "Adds http<path> at vendor/lib: a pinned commit, not the files, is recorded."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "feature/pagination": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "v1.1.0": {
+   "count": 2,
+   "kind": "tag",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git submodule add http<path>"
+}

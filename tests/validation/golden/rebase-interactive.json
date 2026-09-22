@@ -1,0 +1,119 @@
+{
+ "commits": {
+  "Add a health check": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Bump flask": {
+   "kind": "commit",
+   "parents": [
+    "Cover pagination in the tests"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Cover pagination in the tests": {
+   "kind": "commit",
+   "parents": [
+    "Retry failed database connections"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Finish pagination": {
+   "kind": "commit",
+   "parents": [
+    "Polish pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Finish pagination (99472c)": {
+   "kind": "commit",
+   "parents": [
+    "Polish pagination"
+   ],
+   "phase": "after",
+   "recolored": false,
+   "step": 3
+  },
+  "Handle missing config values": {
+   "kind": "commit",
+   "parents": [
+    "Add a health check"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Polish pagination": {
+   "kind": "commit",
+   "parents": [
+    "Retry failed database connections"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Polish pagination (99361b)": {
+   "kind": "commit",
+   "parents": [
+    "Bump flask"
+   ],
+   "phase": "after",
+   "recolored": false,
+   "step": 1
+  },
+  "Retry failed database connections": {
+   "kind": "commit",
+   "parents": [
+    "Handle missing config values"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 4,
+  "before": 12,
+  "origin": 32,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [
+  "2 commit(s) replayed.",
+  "No --todo file given, so every commit is picked; pass --todo <file> to simulate squash/reword/drop.",
+  "The original commits stay in the reflog: git reflog / git reset --hard 059ee7 undoes the rebase."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": true,
+   "phase": "before"
+  },
+  "feature/pagination": {
+   "count": 2,
+   "kind": "branch",
+   "moved": true,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 5,
+ "title": "git rebase -i main"
+}

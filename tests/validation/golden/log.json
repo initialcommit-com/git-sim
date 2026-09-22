@@ -1,0 +1,181 @@
+{
+ "commits": {
+  "Finish health check": {
+   "kind": "commit",
+   "parents": [
+    "Polish health check"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Finish order totals": {
+   "kind": "commit",
+   "parents": [
+    "Polish order totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Finish pagination": {
+   "kind": "commit",
+   "parents": [
+    "Polish pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Handle missing config values": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge branch 'feature/health-check'": {
+   "kind": "merge",
+   "parents": [
+    "Finish health check",
+    "Return 404 for unknown orders"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge branch 'feature/pagination'": {
+   "kind": "merge",
+   "parents": [
+    "Finish pagination",
+    "Merge branch 'fix/order-totals'"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge branch 'fix/order-totals'": {
+   "kind": "merge",
+   "parents": [
+    "Finish order totals",
+    "Merge branch 'feature/health-check'"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Polish health check": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Polish order totals": {
+   "kind": "commit",
+   "parents": [
+    "Test order totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Polish pagination": {
+   "kind": "commit",
+   "parents": [
+    "Test pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Return 404 for unknown orders": {
+   "kind": "commit",
+   "parents": [
+    "Handle missing config values"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Test order totals": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Test pagination": {
+   "kind": "commit",
+   "parents": [
+    "Wire up pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Wire up pagination": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 26,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "feature/health-check": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "feature/pagination": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "fix/order-totals": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "v1.1.0": {
+   "count": 2,
+   "kind": "tag",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git log"
+}

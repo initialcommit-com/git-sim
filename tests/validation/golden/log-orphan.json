@@ -1,0 +1,84 @@
+{
+ "commits": {
+  "Handle missing config values": {
+   "kind": "commit",
+   "parents": [
+    "Pin the test dependencies"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Initial commit": {
+   "kind": "commit",
+   "parents": [],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Pin the test dependencies": {
+   "kind": "commit",
+   "parents": [
+    "Refactor Order into a dataclass"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Refactor Order into a dataclass": {
+   "kind": "commit",
+   "parents": [
+    "Update the README quickstart"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Start the gh-pages site": {
+   "kind": "commit",
+   "parents": [],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Update the README quickstart": {
+   "kind": "commit",
+   "parents": [
+    "Initial commit"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 8,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "gh-pages": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git log --all"
+}

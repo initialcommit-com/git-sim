@@ -1,0 +1,107 @@
+{
+ "commits": {
+  "Add a health check": {
+   "kind": "commit",
+   "parents": [
+    "Cover pagination in the tests"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Bump flask": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Cover pagination in the tests": {
+   "kind": "commit",
+   "parents": [
+    "Retry failed database connections"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Document the /orders endpoint": {
+   "kind": "commit",
+   "parents": [
+    "Bump flask"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Retry failed database connections": {
+   "kind": "commit",
+   "parents": [
+    "Document the /orders endpoint"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 8,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [
+  "Last 5 positions of HEAD (purple); HEAD@{0} is where HEAD is now.",
+  "Most recent move: HEAD@{0} checkout: moving from aa651f65ca56f97a56dcfe6f9c71339b77e484",
+  "Every recent HEAD position is still reachable from a branch or tag."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "HEAD@{0}": {
+   "count": 2,
+   "kind": "reflog",
+   "moved": false,
+   "phase": "before"
+  },
+  "HEAD@{1}": {
+   "count": 2,
+   "kind": "reflog",
+   "moved": false,
+   "phase": "before"
+  },
+  "HEAD@{2}": {
+   "count": 2,
+   "kind": "reflog",
+   "moved": false,
+   "phase": "before"
+  },
+  "HEAD@{3}": {
+   "count": 2,
+   "kind": "reflog",
+   "moved": false,
+   "phase": "before"
+  },
+  "HEAD@{4}": {
+   "count": 2,
+   "kind": "reflog",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git reflog"
+}

@@ -136,7 +136,7 @@ class Push(GitSimBaseCommand):
                 settings.color_by = ColorByOptions.NOTLOCAL2
             else:
                 print(f"git-sim error: git push failed: {e.stderr}")
-                return
+                sys.exit(1)
 
         head_commit = self.get_commit()
         if push_result in (1, 2):

@@ -1,0 +1,19 @@
+{
+ "commits": {},
+ "edges": {
+  "after": 0,
+  "before": 0,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [
+  "[remote \"upstream\"]",
+  "fetch = +refs/heads/*:refs/remotes/upstream/*",
+  "upstream",
+  "renamed to upstream"
+ ],
+ "refs": {},
+ "steps": 0,
+ "title": "git remote rename origin upstream"
+}

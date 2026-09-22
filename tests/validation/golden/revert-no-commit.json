@@ -1,0 +1,80 @@
+{
+ "commits": {
+  "Dummy commit #10 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #9 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #8 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #9 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #8 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge branch1 into main": {
+   "kind": "merge",
+   "parents": [
+    "?",
+    "Dummy commit #10 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 6,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [
+  {
+   "column": "Changes staged (revert of 468a78)",
+   "moved": false,
+   "name": "branch1.10",
+   "phase": "before"
+  }
+ ],
+ "notes": [
+  "-n applies the reverse changes to the index and working tree without committing."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "branch1": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git revert -n HEAD~1"
+}

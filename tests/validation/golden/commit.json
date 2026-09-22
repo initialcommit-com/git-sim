@@ -1,0 +1,98 @@
+{
+ "commits": {
+  "Cover pagination in the tests": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Handle missing config values": {
+   "kind": "commit",
+   "parents": [
+    "Log the request path"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Log the request path": {
+   "kind": "commit",
+   "parents": [
+    "Cover pagination in the tests"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Pin the test dependencies": {
+   "kind": "commit",
+   "parents": [
+    "Handle missing config values"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Ship it": {
+   "kind": "commit",
+   "parents": [
+    "Pin the test dependencies"
+   ],
+   "phase": "after",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 4,
+  "before": 6,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [
+  {
+   "column": "New commit",
+   "moved": true,
+   "name": "models.py",
+   "phase": "after"
+  },
+  {
+   "column": "Staged files",
+   "moved": false,
+   "name": "models.py",
+   "phase": "before"
+  },
+  {
+   "column": "Working directory",
+   "moved": false,
+   "name": "README.md",
+   "phase": "before"
+  },
+  {
+   "column": "Working directory",
+   "moved": false,
+   "name": "app.py",
+   "phase": "before"
+  }
+ ],
+ "notes": [],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": true,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": true,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git commit -m \"Ship it\""
+}

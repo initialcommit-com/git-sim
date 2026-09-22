@@ -1,0 +1,87 @@
+{
+ "commits": {
+  "Dummy commit #1 on main": {
+   "kind": "commit",
+   "parents": [],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #2 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #1 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #3 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #2 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #4 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #3 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #5 on branch1": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #4 on branch1"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge commit": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #3 on main",
+    "Dummy commit #5 on branch1"
+   ],
+   "phase": "after",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 2,
+  "before": 8,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": true,
+   "phase": "before"
+  },
+  "branch1": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": true,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git merge branch1 --no-ff"
+}

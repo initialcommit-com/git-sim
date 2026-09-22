@@ -26,7 +26,7 @@ class Add(GitSimBaseCommand):
                 z for z in self.repo.untracked_files
             ]:
                 print(f"git-sim error: No modified file with name: '{file}'")
-                sys.exit()
+                sys.exit(1)
 
         self.cmd += f"{type(self).__name__.lower()} {' '.join(self.files)}"
 

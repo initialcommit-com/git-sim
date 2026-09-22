@@ -45,14 +45,14 @@ class Restore(GitSimBaseCommand):
             for file in self.files:
                 if file not in [x.a_path for x in self.repo.index.diff(None)]:
                     print(f"git-sim error: No modified file with name: '{file}'")
-                    sys.exit()
+                    sys.exit(1)
         else:
             for file in self.files:
                 if file not in [y.a_path for y in self.repo.index.diff("HEAD")]:
                     print(
                         f"git-sim error: No modified or staged file with name: '{file}'"
                     )
-                    sys.exit()
+                    sys.exit(1)
 
         flags = (" --staged" if self.staged else "") + (
             f" --source {self.source}" if self.source else ""

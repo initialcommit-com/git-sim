@@ -20,6 +20,9 @@ class Fetch(GitSimBaseCommand):
         self.branch = branch
         settings.max_branches_per_commit = 2
 
+        if not self.repo.remotes:
+            print("git-sim error: this repository has no remotes")
+            sys.exit(1)
         if self.remote and self.remote not in self.repo.remotes:
             print("git-sim error: no remote with name '" + self.remote + "'")
             sys.exit(1)

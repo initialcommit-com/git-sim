@@ -1,3 +1,5 @@
+import sys
+
 import typer
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
@@ -37,6 +39,12 @@ class Log(GitSimBaseCommand):
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(f"{settings.INFO_STRING} {self.cmd}")
+        if not self.repo.head.is_valid():
+            # git says "your current branch does not have any commits yet"
+            print(
+                "git-sim error: this repository has no commits yet, so there is no log to show"
+            )
+            sys.exit(1)
         self.show_intro()
         self.parse_commits()
         self.parse_all()

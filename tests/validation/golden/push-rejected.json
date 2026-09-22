@@ -1,0 +1,73 @@
+{
+ "commits": {
+  "Add currency to totals": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Export orders as CSV": {
+   "kind": "commit",
+   "parents": [
+    "Refactor Order into a dataclass"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Refactor Order into a dataclass": {
+   "kind": "commit",
+   "parents": [
+    "Add currency to totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Update the changelog (1)": {
+   "kind": "commit",
+   "parents": [
+    "Export orders as CSV"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 0
+  },
+  "Update the changelog (2)": {
+   "kind": "commit",
+   "parents": [
+    "Update the changelog (1)"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 8,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "origin/main": {
+   "count": 2,
+   "kind": "remote",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 0,
+ "title": "git push origin main"
+}
