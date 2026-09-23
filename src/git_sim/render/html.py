@@ -321,10 +321,12 @@ window.GitSimViewer = (function(){
       const el = document.getElementById('git-sim-meta');
       if (el) { try { const j = JSON.parse(el.textContent); j.title = options.title; el.textContent = JSON.stringify(j); } catch (e) {} }
     }
-    // The graph says which theme drew it; the page says which it shows.
+    // The graph says which theme drew it (its own data-theme, since git-sim
+    // draws light by default; older graphs carry none and were drawn dark);
+    // the page says which it shows.
     const info = meta();
     const shown = document.getElementById('scene');
-    shown.dataset.theme = options.svgTheme || info.svg_theme || info.theme || 'dark';
+    shown.dataset.theme = shown.dataset.theme || options.svgTheme || info.svg_theme || info.theme || 'dark';
     const want = siteTheme() || info.theme;
     if (want && shown.dataset.theme !== want) retheme(shown, shown.dataset.theme, want);
     if (want) document.documentElement.dataset.theme = want;
