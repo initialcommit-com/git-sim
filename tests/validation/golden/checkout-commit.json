@@ -62,6 +62,6 @@
    "phase": "after"
   }
  },
- "steps": 0,
+ "steps": 1,
  "title": "git checkout HEAD~2"
 }

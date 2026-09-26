@@ -16,7 +16,7 @@
    ],
    "phase": "before",
    "recolored": true,
-   "step": 0
+   "step": 2
   },
   "Dummy commit #10 on main": {
    "kind": "commit",
@@ -34,7 +34,7 @@
    ],
    "phase": "before",
    "recolored": true,
-   "step": 0
+   "step": 2
   },
   "Dummy commit #7 on branch1": {
    "kind": "commit",
@@ -52,7 +52,7 @@
    ],
    "phase": "before",
    "recolored": true,
-   "step": 0
+   "step": 2
   },
   "Dummy commit #7 on main": {
    "kind": "commit",
@@ -79,7 +79,7 @@
    ],
    "phase": "before",
    "recolored": true,
-   "step": 0
+   "step": 2
   },
   "Dummy commit #8 on main": {
    "kind": "commit",
@@ -106,7 +106,7 @@
    ],
    "phase": "before",
    "recolored": true,
-   "step": 0
+   "step": 2
   },
   "Dummy commit #9 on main": {
    "kind": "commit",
@@ -166,6 +166,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 2,
  "title": "git branch -D branch2"
 }

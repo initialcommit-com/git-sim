@@ -16,7 +16,7 @@
    ],
    "phase": "after",
    "recolored": false,
-   "step": 0
+   "step": 1
   },
   "Handle missing config values": {
    "kind": "commit",
@@ -107,6 +107,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 2,
  "title": "git commit -a -m \"Everything\""
 }

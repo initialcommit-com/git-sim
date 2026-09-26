@@ -53,7 +53,7 @@
    ],
    "phase": "after",
    "recolored": false,
-   "step": 0
+   "step": 1
   },
   "Polish pagination": {
    "kind": "commit",
@@ -102,6 +102,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 2,
  "title": "git merge main"
 }

@@ -44,7 +44,7 @@
    ],
    "phase": "after",
    "recolored": false,
-   "step": 0
+   "step": 1
   }
  },
  "edges": {
@@ -82,6 +82,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 2,
  "title": "git revert HEAD~1"
 }

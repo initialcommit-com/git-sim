@@ -35,7 +35,7 @@ def test_embed_script_carries_the_viewer_and_mounts_by_class():
     assert "window.GitSimEmbed" in js and ".git-sim[data-src]" in js
     # the viewer's stylesheet, header and script travel inside, as JSON strings
     assert "#bar{position:sticky" in js and 'id=\\"toBefore\\"' in js
-    assert "window.GitSimViewer = (function(){" in js
+    assert "function makeViewer(root){" in js and "window.GitSimViewer = Object.assign(makeViewer(document)" in js
     assert "__CSS__" not in js and "__VIEWER__" not in js and "__HEADER__" not in js
     # a saved page is fetched into the frame's document; an svg is fetched by the host and posted in
     assert "iframe.srcdoc = html" in js and "gitSimEmbedGraph" in js

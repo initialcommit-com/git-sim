@@ -351,6 +351,7 @@ class Scene:
             self.camera.frame, pixel_width, pixel_height, font_stack=font_stack
         )
         everything = list(self.mobjects) + list(extra_mobjects)
+        default_steps(everything)
         for mobject in everything:
             mobject.draw(painter)
         return painter.document(background, painter.content_view_box(everything), theme_name=theme_name)
@@ -397,6 +398,40 @@ class Scene:
         # Kept so the caller can build a hosted-viewer link without redrawing.
         self.rendered_svg = svg
         return payload
+
+
+def default_steps(mobjects):
+    """Give a simulation that did not sequence its own animation one step per
+    kind of change, so the page plays one thing at a time: new things arrive
+    (step 1), removed things fade (2), then labels move and commits recolor
+    (3), with empty steps skipped. Notes appear with the last step. A
+    simulation that set any step itself (rebase, fetch, ...) is left alone."""
+
+    def family(mobs):
+        for mob in mobs:
+            yield mob
+            yield from family(getattr(mob, "submobjects", None) or [])
+
+    tagged = [mob for mob in family(mobjects) if getattr(mob, "meta", None)]
+    if any(mob.meta.get("step") for mob in tagged):
+        return
+    arrive, fade, move, notes = [], [], [], []
+    for mob in tagged:
+        meta = mob.meta
+        if meta.get("phase") == "after":
+            (notes if meta.get("role") == "note" else arrive).append(mob)
+        elif meta.get("phase") == "removed":
+            fade.append(mob)
+        elif meta.get("moved_by") or meta.get("before_fill"):
+            move.append(mob)
+    step = 0
+    for group in (arrive, fade, move):
+        if group:
+            step += 1
+            for mob in group:
+                mob.meta["step"] = step
+    for mob in notes:
+        mob.meta["step"] = step or 1
 
 
 class MovingCameraScene(Scene):

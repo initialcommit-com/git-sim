@@ -84,6 +84,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 1,
  "title": "git reflog -n 2"
 }

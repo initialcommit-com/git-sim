@@ -88,6 +88,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 1,
  "title": "git mv config.yaml settings.yaml"
 }

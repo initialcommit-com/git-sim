@@ -63,7 +63,6 @@ READ_ONLY_COMMANDS = {
     "branch",  # reads unless creating/deleting; refined in analyzer
     "tag",  # reads unless creating/deleting; refined in analyzer
     "stash",  # refined in analyzer
-    "fetch",  # updates remote-tracking refs only, never loses work
     "version",
     "help",
     "grep",
@@ -82,6 +81,7 @@ NON_DESTRUCTIVE_COMMANDS = {
     "cherry-pick": "creates new commit(s); existing history is untouched",
     "revert": "creates a new commit undoing another; existing history is untouched",
     "pull": "fetches and merges; local commits stay reachable",
+    "fetch": "downloads new commits and moves remote-tracking refs (origin/*); local branches and files are untouched",
     "notes": "edits notes; commits are untouched",
     "bisect": "moves HEAD between existing commits; nothing is discarded",
 }
@@ -306,6 +306,36 @@ def _attach_worktrees(repo: git.Repo, report: PreflightReport) -> None:
         )
 
 
+def _read_only_summary(subcommand: str, args: List[str], report: PreflightReport) -> str:
+    """The summary for a command in READ_ONLY_COMMANDS. Several of those read
+    by default but write with certain arguments (tag NAME, config KEY VALUE,
+    remote add ...); say so rather than claim nothing changes."""
+    words = [a for a in args if not a.startswith("-")]
+    flags = [a for a in args if a.startswith("-")]
+    if subcommand == "tag":
+        if "-d" in flags or "--delete" in flags:
+            report.escalate(Risk.CAUTION)
+            name = words[0] if words else "the tag"
+            return f"deletes {name}; the commit it points at stays, but the name is gone (recreate it with git tag {name} <sha>)."
+        if words and not ({"-l", "--list"} & set(flags)):
+            target = words[1] if len(words) > 1 else "HEAD"
+            return f"creates tag '{words[0]}' pointing at {target}; nothing is discarded."
+    elif subcommand == "config":
+        if "--unset" in flags or "--unset-all" in flags:
+            return f"removes the setting '{words[0] if words else ''}' from the config file; no history or files change."
+        if len(words) >= 2 and not ({"--get", "--get-all", "--get-regexp"} & set(flags)):
+            where = "the global config" if "--global" in flags else ".git/config"
+            return f"writes '{words[0]}' to {where}; no history or files change."
+    elif subcommand == "remote":
+        action = words[0] if words else ""
+        if action in ("add", "remove", "rm", "rename", "set-url", "set-head", "set-branches", "prune"):
+            if action in ("remove", "rm", "prune"):
+                report.escalate(Risk.CAUTION)
+                return f"'remote {action}' edits .git/config and drops remote-tracking refs for that remote; commits stay in the object database."
+            return f"'remote {action}' edits .git/config; no history or files change."
+    return f"'{subcommand}' only reads; nothing in the repository changes."
+
+
 def analyze(
     command: str, repo_path: str = ".", render_text: bool = True
 ) -> PreflightReport:
@@ -338,7 +368,7 @@ def analyze(
             if render_text and report.error is None:
                 report.text_graph = render_text_graph(repo, report)
         elif subcommand in READ_ONLY_COMMANDS:
-            report.summary = f"'{subcommand}' does not modify the repository."
+            report.summary = _read_only_summary(subcommand, args, report)
         elif subcommand in NON_DESTRUCTIVE_COMMANDS:
             report.summary = f"'{subcommand}' {NON_DESTRUCTIVE_COMMANDS[subcommand]}."
         else:

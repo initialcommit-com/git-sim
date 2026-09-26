@@ -106,6 +106,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 1,
  "title": "git rm utils.py config.yaml"
 }

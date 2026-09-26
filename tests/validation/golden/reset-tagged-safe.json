@@ -48,7 +48,7 @@
   }
  },
  "edges": {
-  "after": 0,
+  "after": 12,
   "before": 8,
   "origin": 0,
   "removed": 0
@@ -56,36 +56,72 @@
  "files": [
   {
    "column": "Discarded changes",
+   "moved": true,
+   "name": "models.py",
+   "phase": "after"
+  },
+  {
+   "column": "Discarded changes",
+   "moved": true,
+   "name": "routes.py",
+   "phase": "after"
+  },
+  {
+   "column": "Discarded changes",
+   "moved": true,
+   "name": "src/health_check.py",
+   "phase": "after"
+  },
+  {
+   "column": "Discarded changes",
+   "moved": true,
+   "name": "src/order_totals.py",
+   "phase": "after"
+  },
+  {
+   "column": "Discarded changes",
+   "moved": true,
+   "name": "tests/test_orders.py",
+   "phase": "after"
+  },
+  {
+   "column": "Discarded changes",
+   "moved": true,
+   "name": "utils.py",
+   "phase": "after"
+  },
+  {
+   "column": "Undone commits",
    "moved": false,
    "name": "models.py",
    "phase": "before"
   },
   {
-   "column": "Discarded changes",
+   "column": "Undone commits",
    "moved": false,
    "name": "routes.py",
    "phase": "before"
   },
   {
-   "column": "Discarded changes",
+   "column": "Undone commits",
    "moved": false,
    "name": "src/health_check.py",
    "phase": "before"
   },
   {
-   "column": "Discarded changes",
+   "column": "Undone commits",
    "moved": false,
    "name": "src/order_totals.py",
    "phase": "before"
   },
   {
-   "column": "Discarded changes",
+   "column": "Undone commits",
    "moved": false,
    "name": "tests/test_orders.py",
    "phase": "before"
   },
   {
-   "column": "Discarded changes",
+   "column": "Undone commits",
    "moved": false,
    "name": "utils.py",
    "phase": "before"
@@ -118,6 +154,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 2,
  "title": "git reset --hard HEAD~1"
 }

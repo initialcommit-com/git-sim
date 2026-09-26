@@ -170,6 +170,6 @@
    "phase": "after"
   }
  },
- "steps": 0,
+ "steps": 2,
  "title": "git branch -m branch2 topic"
 }

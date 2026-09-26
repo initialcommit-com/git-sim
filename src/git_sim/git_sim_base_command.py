@@ -415,6 +415,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 yield mob
                 yield from family(getattr(mob, "submobjects", None) or [])
 
+        # Two steps, so the page plays one thing at a time: first the new
+        # commits arrive (with their labels and arrows), then the refs move.
+        ARRIVE, MOVE = 1, 2
+        arrived = False
         for mob in family(self.mobjects):
             meta = getattr(mob, "meta", None)
             if not meta:
@@ -424,8 +428,12 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 sha = meta.get("sha", "")
                 if sha and sha not in known and meta.get("kind") != "elided":
                     mob.meta["phase"] = "after"
+                    mob.meta["step"] = ARRIVE
+                    arrived = True
             elif role == "edge" and meta.get("src") and meta["src"] not in known:
                 mob.meta["phase"] = "after"
+                mob.meta["step"] = ARRIVE
+        move_step = MOVE if arrived else ARRIVE
         for name, old_sha in (moved_refs or {}).items():
             ref = self.drawnRefs.get(name)
             if ref is None:
@@ -435,7 +443,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             except Exception:
                 continue
             if not old_sha:
-                self.tag(ref, phase="after")
+                self.tag(ref, phase="after", step=move_step)
                 continue
             if old_sha == new_sha:
                 continue
@@ -443,13 +451,20 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 old_sha
             ), self.drawnCommits.get(new_sha)
             if old_commit is None or new_commit is None:
-                self.tag(ref, phase="after")
+                self.tag(ref, phase="after", step=move_step)
                 continue
-            # The label keeps its offset from its commit; it travelled from the
-            # same offset on the old commit.
+            # The label travelled from the old commit. Other labels may sit on
+            # that commit in the "before" state (main and HEAD, when origin/main
+            # still matched them), so it starts on top of that stack instead of
+            # at the same offset, where it would cover them.
             delta = old_commit.get_center() - new_commit.get_center()
+            stack = [r for r in self.drawnRefsByCommit.get(old_sha, []) if r is not ref]
+            if stack:
+                top = max(float(r.get_top()[1]) for r in stack)
+                start_y = top + m.DEFAULT_MOBJECT_TO_MOBJECT_BUFFER + ref.height / 2
+                delta[1] = start_y - float(ref.get_center()[1])
             if numpy.linalg.norm(delta) > 1e-6:
-                self.tag(ref, moved_by=(float(delta[0]), float(delta[1])))
+                self.tag(ref, moved_by=(float(delta[0]), float(delta[1])), step=move_step)
 
     # ------------------------------------------------------------------ styling
     def commit_circle(self, kind="commit", fill=None):
@@ -733,6 +748,16 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
     def get_nonparent_branch_names(self):
         branches = [b for b in self.repo.heads if not b.name.startswith("remotes/")]
+        if getattr(self, "all", False):
+            # Like git log --all: remote-tracking branches are starting points
+            # too, so origin/main shows even where no local branch reaches it
+            # (the state right after a fetch).
+            seen = {b.name for b in branches}
+            for remote in self.repo.remotes:
+                for ref in remote.refs:
+                    if "HEAD" not in ref.name and ref.name not in seen:
+                        branches.append(ref)
+                        seen.add(ref.name)
         exclude = []
         for b1 in branches:
             for b2 in branches:
@@ -1700,6 +1725,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
             width=1,
         )
         refRec.next_to(self.prevRef, m.UP)
+        # A layout spacer only: it keeps label stacks level. It is invisible
+        # in the raster (background on background) and left out of the SVG,
+        # where a viewer that recolours the graph would otherwise show its
+        # outline in the old background colour.
+        self.tag(refRec, role="spacer")
         self.add(refRec)
         self.toFadeOut.add(refRec)
         self.prevRef = refRec
@@ -2070,8 +2100,14 @@ class GitSimBaseCommand(m.MovingCameraScene):
             )
             top = 0
             for element in self.toFadeOut:
-                if element.get_top()[1] > top:
-                    top = element.get_top()[1]
+                element_top = element.get_top()[1]
+                # A label that slides in from somewhere higher (its "before"
+                # position, recorded as moved_by) must clear the title too.
+                moved_by = (getattr(element, "meta", None) or {}).get("moved_by")
+                if moved_by and moved_by[1] > 0:
+                    element_top += moved_by[1]
+                if element_top > top:
+                    top = element_top
             titleText.move_to(
                 (
                     self.camera.frame.get_x(),

@@ -166,12 +166,17 @@ def reset_to(target):
 
 
 def amended(m, repo):
-    """The amended commit replaces HEAD: a commit with HEAD's parents but a
-    different id, with HEAD and the branch re-labelled onto it."""
+    """The amended commit replaces HEAD in place: a new commit with HEAD's
+    parents arrives (phase after) where the old one, drawn as removed, was.
+    The labels sit on that slot before and after, so they neither move nor
+    appear."""
     head = o.rev_parse(repo, "HEAD")
-    replacements = [s for s, c in m["commits"].items() if s != head and set(c["parents"]) == set(o.parents(repo, "HEAD"))]
+    replacements = {s: c for s, c in m["commits"].items() if s != head and set(c["parents"]) == set(o.parents(repo, "HEAD"))}
     assert replacements, "no commit with HEAD's parents replaces HEAD"
-    relabelled("HEAD")(m, repo)
+    assert all(c["phase"] == "after" for c in replacements.values()), "the replacement should be simulated (phase after)"
+    assert head in m["commits"] and m["commits"][head]["phase"] == "removed", "the old HEAD commit should be drawn as removed"
+    assert "HEAD" in m["refs"], f"no HEAD label ({sorted(m['refs'])})"
+    assert not m["refs"]["HEAD"]["moved"], "HEAD stays on the same slot"
 
 
 def arrives(name, zone):

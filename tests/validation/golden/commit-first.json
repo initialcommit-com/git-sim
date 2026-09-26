@@ -5,7 +5,7 @@
    "parents": [],
    "phase": "after",
    "recolored": false,
-   "step": 0
+   "step": 1
   }
  },
  "edges": {
@@ -17,6 +17,6 @@
  "files": [],
  "notes": [],
  "refs": {},
- "steps": 0,
+ "steps": 1,
  "title": "git commit -m \"First\""
 }

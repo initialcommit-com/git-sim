@@ -75,6 +75,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 1,
  "title": "git revert -n HEAD~1"
 }

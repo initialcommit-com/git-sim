@@ -25,7 +25,7 @@
    ],
    "phase": "after",
    "recolored": false,
-   "step": 0
+   "step": 1
   },
   "Dummy commit #10 on main": {
    "kind": "commit",
@@ -171,6 +171,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 2,
  "title": "git cherry-pick branch2"
 }

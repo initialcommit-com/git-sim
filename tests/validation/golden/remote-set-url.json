@@ -12,6 +12,6 @@
   "becomes git@example.com:x/y.git"
  ],
  "refs": {},
- "steps": 0,
+ "steps": 1,
  "title": "git remote set-url origin git@example.com:x/y.git"
 }

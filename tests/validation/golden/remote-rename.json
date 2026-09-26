@@ -14,6 +14,6 @@
   "renamed to upstream"
  ],
  "refs": {},
- "steps": 0,
+ "steps": 1,
  "title": "git remote rename origin upstream"
 }

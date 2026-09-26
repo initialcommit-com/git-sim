@@ -354,6 +354,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 1,
  "title": "git branch -d feature/pagination"
 }

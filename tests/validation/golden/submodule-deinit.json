@@ -87,6 +87,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 1,
  "title": "git submodule deinit lib"
 }

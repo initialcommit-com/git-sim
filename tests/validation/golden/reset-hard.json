@@ -48,7 +48,7 @@
   }
  },
  "edges": {
-  "after": 0,
+  "after": 18,
   "before": 8,
   "origin": 0,
   "removed": 0
@@ -56,54 +56,108 @@
  "files": [
   {
    "column": "Discarded changes",
+   "moved": true,
+   "name": "branch1.10",
+   "phase": "after"
+  },
+  {
+   "column": "Discarded changes",
+   "moved": true,
+   "name": "main.10",
+   "phase": "after"
+  },
+  {
+   "column": "Discarded changes",
+   "moved": true,
+   "name": "main.3",
+   "phase": "after"
+  },
+  {
+   "column": "Discarded changes",
+   "moved": true,
+   "name": "main.4",
+   "phase": "after"
+  },
+  {
+   "column": "Discarded changes",
+   "moved": true,
+   "name": "main.5",
+   "phase": "after"
+  },
+  {
+   "column": "Discarded changes",
+   "moved": true,
+   "name": "main.6",
+   "phase": "after"
+  },
+  {
+   "column": "Discarded changes",
+   "moved": true,
+   "name": "main.7",
+   "phase": "after"
+  },
+  {
+   "column": "Discarded changes",
+   "moved": true,
+   "name": "main.8",
+   "phase": "after"
+  },
+  {
+   "column": "Discarded changes",
+   "moved": true,
+   "name": "main.9",
+   "phase": "after"
+  },
+  {
+   "column": "Undone commits",
    "moved": false,
    "name": "branch1.10",
    "phase": "before"
   },
   {
-   "column": "Discarded changes",
+   "column": "Undone commits",
    "moved": false,
    "name": "main.10",
    "phase": "before"
   },
   {
-   "column": "Discarded changes",
+   "column": "Undone commits",
    "moved": false,
    "name": "main.3",
    "phase": "before"
   },
   {
-   "column": "Discarded changes",
+   "column": "Undone commits",
    "moved": false,
    "name": "main.4",
    "phase": "before"
   },
   {
-   "column": "Discarded changes",
+   "column": "Undone commits",
    "moved": false,
    "name": "main.5",
    "phase": "before"
   },
   {
-   "column": "Discarded changes",
+   "column": "Undone commits",
    "moved": false,
    "name": "main.6",
    "phase": "before"
   },
   {
-   "column": "Discarded changes",
+   "column": "Undone commits",
    "moved": false,
    "name": "main.7",
    "phase": "before"
   },
   {
-   "column": "Discarded changes",
+   "column": "Undone commits",
    "moved": false,
    "name": "main.8",
    "phase": "before"
   },
   {
-   "column": "Discarded changes",
+   "column": "Undone commits",
    "moved": false,
    "name": "main.9",
    "phase": "before"
@@ -130,6 +184,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 2,
  "title": "git reset --hard HEAD~2"
 }

@@ -82,6 +82,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 1,
  "title": "git restore --source HEAD~1 RE..."
 }

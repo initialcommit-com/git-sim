@@ -95,6 +95,8 @@ class SvgPainter:
         return attrs
 
     def _emit(self, tag, attrs, mobject, content=None):
+        if (getattr(mobject, "meta", None) or {}).get("role") == "spacer":
+            return  # layout only; nothing to draw
         attrs = list(attrs) + self._meta_attrs(mobject)
         if content is None:
             self.parts.append(f"<{tag} {' '.join(attrs)}/>")

@@ -109,6 +109,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 1,
  "title": "git add scratch.txt notes-2.txt"
 }

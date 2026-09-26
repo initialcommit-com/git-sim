@@ -28,6 +28,6 @@
   "Nothing is tracked yet: git add stages files, then git commit makes the first commit."
  ],
  "refs": {},
- "steps": 0,
+ "steps": 1,
  "title": "git init"
 }

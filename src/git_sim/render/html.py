@@ -152,8 +152,33 @@ html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-f
 VIEWER_JS = r"""
 // git-sim interactive viewer. One copy lives in the git-sim package
 // (git_sim/render/html.py) and is exported to initialcommit.com; edit it there.
-window.GitSimViewer = (function(){
-  const $ = (s, root) => Array.from((root || document).querySelectorAll(s));
+//
+// makeViewer(root) builds one viewer whose #id lookups are scoped to root, so a
+// page can host several graphs, each in its own frame with its own header,
+// stage and git-sim-meta. window.GitSimViewer is the document-wide instance
+// (the hosted viewer, the lessons); GitSimViewer.instance(frame) makes another.
+function makeViewer(root){
+  const $ = (s, scope) => Array.from((scope || document).querySelectorAll(s));
+  const byId = id => root.querySelector('#' + id);
+  // Keyboard shortcuts belong to the document-wide viewer. Among embedded
+  // viewers (a page with several graphs) they go to the one the pointer or the
+  // focus is in, and otherwise to the one showing most in the viewport, so the
+  // reader's keys always drive the graph they are looking at.
+  const embeds = (window.__gitSimEmbeds = window.__gitSimEmbeds || []);
+  if (root !== document && !embeds.includes(root)) embeds.push(root);
+  const shown = el => {
+    const r = el.getBoundingClientRect();
+    return Math.max(0, Math.min(r.right, innerWidth) - Math.max(r.left, 0)) * Math.max(0, Math.min(r.bottom, innerHeight) - Math.max(r.top, 0));
+  };
+  const mine = () => {
+    if (root === document) return true;
+    const live = embeds.filter(r => r.isConnected);
+    const engaged = live.find(r => r.matches(':hover') || r.contains(document.activeElement));
+    if (engaged) return engaged === root;
+    let best = null, most = 0;
+    live.forEach(r => { const a = shown(r); if (a > most) { best = r; most = a; } });
+    return best === root;
+  };
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const b64url = bytes => { let s = ''; bytes.forEach(b => { s += String.fromCharCode(b); }); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
   const unb64url = text => Uint8Array.from(atob(text.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
@@ -172,7 +197,7 @@ window.GitSimViewer = (function(){
     const out = {}; new URLSearchParams(raw).forEach((v, k) => { out[k] = v; }); return out;
   }
   function meta(){
-    try { return JSON.parse(document.getElementById('git-sim-meta').textContent); } catch (e) { return {}; }
+    try { return JSON.parse(byId('git-sim-meta').textContent); } catch (e) { return {}; }
   }
 
   // ---- themes ---------------------------------------------------------------
@@ -231,7 +256,7 @@ window.GitSimViewer = (function(){
     svg.dataset.theme = to;
   }
   function setTheme(to){
-    const svg = document.getElementById('scene');
+    const svg = byId('scene');
     const info = meta();
     const from = (svg && svg.dataset.theme) || info.svg_theme || info.theme || 'dark';
     retheme(svg, from, to);
@@ -249,8 +274,8 @@ window.GitSimViewer = (function(){
   // git-sim opened this page here on the user's behalf (#p= carries the path
   // of the copy it saved): say so, and say how to open that file instead.
   function openedNote(localPath){
-    const stage = document.getElementById('stage');
-    if (!stage || document.getElementById('openedNote')) return;
+    const stage = byId('stage');
+    if (!stage || byId('openedNote')) return;
     const note = document.createElement('div');
     note.id = 'openedNote';
     note.setAttribute('role', 'note');
@@ -274,7 +299,7 @@ window.GitSimViewer = (function(){
     const params = hashParams();
     const demo = !params.d && options.demo ? options.demo : null;
     document.documentElement.dataset.mode = params.d ? 'shared' : demo ? 'demo' : 'empty';
-    const note = document.getElementById('viewerNote');
+    const note = byId('viewerNote');
     // When the graph cannot be shown, fall back to the text graph the link
     // carried for its preview card (the only other thing we have).
     const fail = message => {
@@ -315,17 +340,17 @@ window.GitSimViewer = (function(){
     $('script', svgEl).forEach(el => el.remove());
     svgEl.querySelectorAll('*').forEach(el => { Array.from(el.attributes).forEach(a => { if (/^on/i.test(a.name) || (a.name === 'href' && !a.value.startsWith('data:image/'))) el.removeAttribute(a.name); }); });
     svgEl.id = 'scene';
-    const stage = document.getElementById('stage');
+    const stage = byId('stage');
     stage.innerHTML = ''; stage.appendChild(document.importNode(svgEl, true));
     if (options.title) {  // this graph's command stands in for the page's
-      const el = document.getElementById('git-sim-meta');
+      const el = byId('git-sim-meta');
       if (el) { try { const j = JSON.parse(el.textContent); j.title = options.title; el.textContent = JSON.stringify(j); } catch (e) {} }
     }
     // The graph says which theme drew it (its own data-theme, since git-sim
     // draws light by default; older graphs carry none and were drawn dark);
     // the page says which it shows.
     const info = meta();
-    const shown = document.getElementById('scene');
+    const shown = byId('scene');
     shown.dataset.theme = shown.dataset.theme || options.svgTheme || info.svg_theme || info.theme || 'dark';
     const want = siteTheme() || info.theme;
     if (want && shown.dataset.theme !== want) retheme(shown, shown.dataset.theme, want);
@@ -343,15 +368,15 @@ window.GitSimViewer = (function(){
   // message there when git would refuse the command instead of drawing it).
   function unmount(){
     if (dispose) { try { dispose(); } catch (e) {} dispose = null; }
-    const stage = document.getElementById('stage');
+    const stage = byId('stage');
     if (stage) stage.innerHTML = '';
   }
 
   function init(){
-  const svg = document.getElementById('scene');
+  const svg = byId('scene');
   if (!svg) return;
-  const stage = document.getElementById('stage');
-  const tip = document.getElementById('tip');
+  const stage = byId('stage');
+  const tip = byId('tip');
   const info = meta();
   // Every listener on something that outlives the graph (the document, the
   // window, the bar's controls) is recorded so mount() can remove it.
@@ -411,37 +436,45 @@ window.GitSimViewer = (function(){
   // A commit hidden by the scrubber takes its hit area with it.
   const syncHits = () => hits.forEach((hit, sha) => { const c = commitOf.get(sha); hit.style.pointerEvents = c && parseFloat(c.style.opacity || '1') < .5 ? 'none' : ''; });
 
-  const scrub = document.getElementById('scrub');
-  const stepLabel = document.getElementById('stepLabel');
+  const scrub = byId('scrub');
+  const stepLabel = byId('stepLabel');
   const showSteps = !!document.documentElement.dataset.live;
   stepLabel.hidden = !showSteps;
   if (!showSteps) stepLabel.textContent = '';
-  const btnBefore = document.getElementById('toBefore'), btnAfter = document.getElementById('toAfter');
-  const play = document.getElementById('play');
+  const btnBefore = byId('toBefore'), btnAfter = byId('toAfter');
+  const play = byId('play');
   const RES = 1000;
   scrub.max = String(maxStep * RES);
   let progress = 0;  // the page opens on "before" and plays forward from there
 
-  // "Copied from" links (rebase, cherry-pick) matter most while their commit
-  // appears; afterwards they settle to a faint trace so the finished graph
-  // stays readable. Hovering a commit brings its links back (see highlight).
-  const SETTLED = 0.28;
+  // "Copied from" links (rebase, cherry-pick) matter while their commit
+  // appears; afterwards they fade out completely, so the finished graph and
+  // every whole step of it show nothing half-transparent. Hovering a commit
+  // brings its links back (see highlight).
+  // A trail belonging to the last step fades in that step's final stretch,
+  // since progress never goes past it; any other trail fades during the step
+  // after its own and is gone by the end of it.
+  const trailFade = el => {
+    const s = stepOf(el);
+    return s >= maxStep ? [s - 0.15, 0.15] : [s + 0.35, 0.65];
+  };
   const isOrigin = el => el.dataset.role === 'edge' && el.dataset.kind === 'origin';
   const isLane = el => el.dataset.role === 'edge' && el.dataset.kind !== 'origin';
   // An arrow draws itself tail to tip: its line grows and the head rides the
   // growing end. The exporter emits the head polygon right after its line
   // with the same tags, which is how the two are paired here.
   const heads = new Map();  // head polygon -> the line or path it belongs to
-  after.filter(el => isLane(el) && (el.tagName === 'line' || el.tagName === 'path')).forEach(el => {
+  const isCurve = el => el.tagName === 'path' || el.tagName === 'polyline';  // a curved arrow's body
+  after.filter(el => isLane(el) && (el.tagName === 'line' || isCurve(el))).forEach(el => {
     let len = 0;
-    try { len = el.tagName === 'path' ? el.getTotalLength() : Math.hypot(el.x2.baseVal.value - el.x1.baseVal.value, el.y2.baseVal.value - el.y1.baseVal.value); } catch (e) {}
+    try { len = isCurve(el) ? el.getTotalLength() : Math.hypot(el.x2.baseVal.value - el.x1.baseVal.value, el.y2.baseVal.value - el.y1.baseVal.value); } catch (e) {}
     if (len > 0) el.dataset.len = len;
     const head = el.nextElementSibling;
     if (len > 0 && head && head.tagName === 'polygon' && isLane(head) && head.dataset.step === el.dataset.step) heads.set(head, el);
   });
   // Where a line's drawn end is when a fraction t of it has been drawn.
   const pointAt = (line, t) => {
-    if (line.tagName === 'path') { const p = line.getPointAtLength(parseFloat(line.dataset.len) * t); return [p.x, p.y]; }
+    if (isCurve(line)) { const p = line.getPointAtLength(parseFloat(line.dataset.len) * t); return [p.x, p.y]; }
     const x1 = line.x1.baseVal.value, y1 = line.y1.baseVal.value;
     return [x1 + (line.x2.baseVal.value - x1) * t, y1 + (line.y2.baseVal.value - y1) * t];
   };
@@ -473,7 +506,7 @@ window.GitSimViewer = (function(){
     if (t >= 1) { head.removeAttribute('transform'); return; }
     const [ex, ey] = pointAt(line, 1), [px, py] = pointAt(line, t);
     let turn = '';
-    if (line.tagName === 'path') {
+    if (isCurve(line)) {
       const [qx, qy] = pointAt(line, Math.max(t - 0.02, 0)), [rx, ry] = pointAt(line, 0.98);
       const deg = (Math.atan2(py - qy, px - qx) - Math.atan2(ey - ry, ex - rx)) * 180 / Math.PI;
       turn = ` rotate(${deg} ${ex} ${ey})`;
@@ -491,7 +524,8 @@ window.GitSimViewer = (function(){
         // The dotted trail lights up dot by dot as the copy passes; the head last.
         const t = el.dataset.t !== undefined ? parseFloat(el.dataset.t) : 1;
         o = a > 0 && a >= t - 1e-6 ? 1 : 0;
-        o *= 1 - (1 - SETTLED) * clamp(progress - stepOf(el) - 0.35, 0, 1) / 0.65;
+        const [from, span] = trailFade(el);
+        o *= 1 - clamp((progress - from) / span, 0, 1);
       } else if (heads.has(el)) {
         placeHead(el, heads.get(el), a);  // the head rides the growing line
         o = a > 0 ? 1 : 0;
@@ -578,7 +612,7 @@ window.GitSimViewer = (function(){
   // the bar's buttons, the slider and the shortcuts do nothing; playOnce and
   // setState, which the page itself calls, still work.
   let locked = false;
-  const controls = document.getElementById('controls');
+  const controls = byId('controls');
   function setLocked(v){
     locked = !!v;
     if (locked) stopPlay();
@@ -617,6 +651,7 @@ window.GitSimViewer = (function(){
   if (animatable && !pinned) startPlay();
 
   on(document, 'keydown', e => {
+    if (!mine()) return;
     // Typing in a field on the host page is never a shortcut here.
     const t = e.target;
     if (t && t !== scrub && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
@@ -626,8 +661,10 @@ window.GitSimViewer = (function(){
     if (e.key === 'a' || e.key === 'A') { playing ? stopPlay() : startPlay(); return; }
     if (e.key === 'ArrowLeft') manual(() => setProgress(Math.ceil(progress - 0.001) - 1))();
     else if (e.key === 'ArrowRight') manual(() => setProgress(Math.floor(progress + 0.001) + 1))();
-    // Embedded in a page with its own controls (a lesson), the space bar belongs to the page.
-    else if (e.key === ' ' && document.documentElement.dataset.mode !== 'demo') { e.preventDefault(); manual(() => setProgress(progress >= maxStep - 0.001 ? 0 : maxStep))(); }
+    // The page-wide viewer shown as one exhibit among a page's content (the tools
+    // page, a lesson) leaves the space bar to the page; a graph embedded in an
+    // article takes it, since the reader's eye is on the graph they are over.
+    else if (e.key === ' ' && (root !== document || document.documentElement.dataset.mode !== 'demo')) { e.preventDefault(); manual(() => setProgress(progress >= maxStep - 0.001 ? 0 : maxStep))(); }
   });
 
   // ---- ancestry highlight + tooltip ---------------------------------------
@@ -755,15 +792,15 @@ window.GitSimViewer = (function(){
   on(window, 'git-sim:layout', fit);
 
   // ---- help menu --------------------------------------------------------------
-  const help = document.getElementById('help'), helpMenu = document.getElementById('helpMenu');
+  const help = byId('help'), helpMenu = byId('helpMenu');
   const showHelp = on => { helpMenu.hidden = !on; help.classList.toggle('on', on); };
   help.onclick = e => { e.stopPropagation(); showHelp(helpMenu.hidden); };
   on(document, 'click', e => { if (!helpMenu.hidden && !helpMenu.contains(e.target)) showHelp(false); });
-  on(document, 'keydown', e => { if (e.key === 'Escape') showHelp(false); if (e.key === '?') showHelp(helpMenu.hidden); });
+  on(document, 'keydown', e => { if (!mine()) return; if (e.key === 'Escape') showHelp(false); if (e.key === '?') showHelp(helpMenu.hidden); });
 
   // ---- share ---------------------------------------------------------------------
-  const shareBtn = document.getElementById('share'), shareMenu = document.getElementById('shareMenu');
-  const toast = document.getElementById('toast');
+  const shareBtn = byId('share'), shareMenu = byId('shareMenu');
+  const toast = byId('toast');
   let toastTimer = null;
   const say = msg => { toast.textContent = msg; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 1900); };
   const showShare = on => { shareMenu.hidden = !on; shareBtn.classList.toggle('on', on); if (on) showHelp(false); };
@@ -852,7 +889,7 @@ window.GitSimViewer = (function(){
     }).catch(() => { if (w) w.close(); say('could not share'); });
   });
   if (!navigator.share) $('[data-action="native"]', shareMenu).forEach(el => el.remove());
-  const localNote = document.getElementById('localNote');
+  const localNote = byId('localNote');
   if (localNote && location.protocol === 'file:' && !(info.viewer_url && canPack)) localNote.style.display = 'block';
 
   // What mount() calls before putting the next graph on the stage.
@@ -870,8 +907,9 @@ window.GitSimViewer = (function(){
   function steps(){ return control ? control.steps() : 0; }
   function animatable(){ return !!(control && control.animatable()); }
 
-  return {init, boot, mount, load, unmount, deflate, inflate, setTheme, retheme, playOnce, setState, setLocked, setProgress, steps, animatable};
-})();
+  return {init, boot, mount, load, unmount, deflate, inflate, setTheme, retheme, playOnce, setState, setLocked, setProgress, steps, animatable, root};
+}
+window.GitSimViewer = Object.assign(makeViewer(document), {instance: makeViewer});
 """
 VIEWER_JS = VIEWER_JS.replace("__PALETTES__", _palettes_json())
 

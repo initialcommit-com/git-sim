@@ -12,6 +12,6 @@
   "name = Ada"
  ],
  "refs": {},
- "steps": 0,
+ "steps": 1,
  "title": "git config user.name Ada"
 }

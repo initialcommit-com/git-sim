@@ -94,6 +94,16 @@ class Merge(GitSimBaseCommand):
                         stroke_width=self.arrow_stroke_width,
                         tip_shape=self.arrow_tip_shape,
                     )
+                    # Part of the simulated merge commit: it draws itself when
+                    # the commit arrives, like the arrow to the first parent.
+                    self.tag(
+                        arrow,
+                        role="edge",
+                        kind="parent",
+                        src="abcdef",
+                        dst=head_commit.hexsha,
+                        phase="after",
+                    )
                     self.draw_arrow(True, arrow)
 
                 reset_head_to = "abcdef"

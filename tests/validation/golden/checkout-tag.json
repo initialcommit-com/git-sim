@@ -80,6 +80,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 1,
  "title": "git checkout v1.0.0"
 }

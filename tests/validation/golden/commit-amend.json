@@ -9,6 +9,16 @@
    "recolored": false,
    "step": 0
   },
+  "Merge branch 'feature/pagination'": {
+   "kind": "commit",
+   "parents": [
+    "?",
+    "Finish pagination"
+   ],
+   "phase": "removed",
+   "recolored": false,
+   "step": 1
+  },
   "Polish pagination": {
    "kind": "commit",
    "parents": [
@@ -24,9 +34,9 @@
     "?",
     "Finish pagination"
    ],
-   "phase": "before",
+   "phase": "after",
    "recolored": false,
-   "step": 0
+   "step": 1
   },
   "Test pagination": {
    "kind": "commit",
@@ -60,7 +70,7 @@
    "count": 2,
    "kind": "head",
    "moved": false,
-   "phase": "after"
+   "phase": "before"
   },
   "feature/pagination": {
    "count": 2,
@@ -72,9 +82,9 @@
    "count": 2,
    "kind": "branch",
    "moved": false,
-   "phase": "after"
+   "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 1,
  "title": "git commit --amend -m \"Reworded\""
 }

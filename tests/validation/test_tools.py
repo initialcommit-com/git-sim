@@ -55,7 +55,7 @@ def test_preflight_safe_command(shapes, gitsim):
     code, out, err = run_cli(gitsim, shapes.get("classic").path, "preflight", "status")
     assert code == 0
     text = (out + err).lower()
-    assert "safe" in text and "does not modify" in text
+    assert "safe" in text and "only reads" in text
 
 
 def test_preflight_repo_option(shapes, gitsim, tmp_path):

@@ -176,6 +176,6 @@
    "phase": "removed"
   }
  },
- "steps": 0,
+ "steps": 1,
  "title": "git tag -d v1.1.0"
 }

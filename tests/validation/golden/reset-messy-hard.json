@@ -45,7 +45,7 @@
   }
  },
  "edges": {
-  "after": 0,
+  "after": 6,
   "before": 8,
   "origin": 0,
   "removed": 0
@@ -53,18 +53,36 @@
  "files": [
   {
    "column": "Discarded changes",
+   "moved": true,
+   "name": "README.md",
+   "phase": "after"
+  },
+  {
+   "column": "Discarded changes",
+   "moved": true,
+   "name": "app.py",
+   "phase": "after"
+  },
+  {
+   "column": "Discarded changes",
+   "moved": true,
+   "name": "models.py",
+   "phase": "after"
+  },
+  {
+   "column": "Uncommitted changes",
    "moved": false,
    "name": "README.md",
    "phase": "before"
   },
   {
-   "column": "Discarded changes",
+   "column": "Uncommitted changes",
    "moved": false,
    "name": "app.py",
    "phase": "before"
   },
   {
-   "column": "Discarded changes",
+   "column": "Uncommitted changes",
    "moved": false,
    "name": "models.py",
    "phase": "before"
@@ -85,6 +103,6 @@
    "phase": "before"
   }
  },
- "steps": 0,
+ "steps": 1,
  "title": "git reset --hard HEAD"
 }

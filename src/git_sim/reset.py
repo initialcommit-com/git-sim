@@ -116,11 +116,16 @@ class Reset(GitSimBaseCommand):
         else:
             self.reset_head_branch(self.resetTo.hexsha)
             self.vsplit_frame()
-            # Discarded | Modified | Staged: a reset moves changes leftwards
-            # (soft keeps them staged, mixed puts them on the table, hard drops them).
-            self.setup_and_draw_zones(
-                first_column_name="Files restored in" if self.forward else "Discarded changes"
-            )
+            if self.forward:
+                self.setup_and_draw_zones(first_column_name="Files restored in")
+            else:
+                # The columns read as a pipeline, and a reset moves changes
+                # leftwards along it, each with an arrow from where it was:
+                # --soft takes the undone commits' changes back to the staging
+                # area, a mixed reset takes them (and anything staged) back to
+                # the working directory, and --hard drops everything, staged
+                # or not, in one "discarded" column.
+                self.setup_and_draw_zones(*self.zone_names())
         self.show_command_as_title()
         self.fadeout()
         self.show_outro()
@@ -187,31 +192,62 @@ class Reset(GitSimBaseCommand):
                     self.zone_arrows.append((path, 2, 1))
             return
 
+        committed = []
         for commit in self.commitsSinceResetTo:
             if commit.hexsha == self.resetTo.hexsha:
                 break
             for filename in commit.stats.files:
-                if self.mode == ResetMode.SOFT:
-                    thirdColumnFileNames.add(filename)
-                elif self.mode in (ResetMode.MIXED, ResetMode.DEFAULT):
-                    secondColumnFileNames.add(filename)
-                elif self.mode == ResetMode.HARD:
-                    firstColumnFileNames.add(filename)
+                if filename not in committed:
+                    committed.append(filename)
+        modified = [
+            x.a_path for x in self.repo.index.diff(None) if "git-sim_media" not in x.a_path
+        ]
+        staged = [
+            y.a_path
+            for y in self.repo.index.diff("HEAD")
+            if "git-sim_media" not in y.a_path
+        ]
+        columns = {
+            1: firstColumnFileNames,
+            2: secondColumnFileNames,
+            3: thirdColumnFileNames,
+        }
 
-        for x in self.repo.index.diff(None):
-            if "git-sim_media" not in x.a_path:
-                if self.mode == ResetMode.SOFT:
-                    secondColumnFileNames.add(x.a_path)
-                elif self.mode in (ResetMode.MIXED, ResetMode.DEFAULT):
-                    secondColumnFileNames.add(x.a_path)
-                elif self.mode == ResetMode.HARD:
-                    firstColumnFileNames.add(x.a_path)
+        if self.forward:
+            # Restoring: the files come back from the commits being re-applied.
+            for filename in committed:
+                firstColumnFileNames.add(filename)
+            for f in modified:
+                secondColumnFileNames.add(f)
+            for f in staged:
+                thirdColumnFileNames.add(f)
+            return
 
-        for y in self.repo.index.diff("HEAD"):
-            if "git-sim_media" not in y.a_path:
-                if self.mode == ResetMode.SOFT:
-                    thirdColumnFileNames.add(y.a_path)
-                elif self.mode in (ResetMode.MIXED, ResetMode.DEFAULT):
-                    secondColumnFileNames.add(y.a_path)
-                elif self.mode == ResetMode.HARD:
-                    firstColumnFileNames.add(y.a_path)
+        # (source column, destination column) per kind of change, in the
+        # columns zone_names() lays out for this mode. A file that moves is
+        # listed at both ends with an arrow between them; a file that stays
+        # is listed once. A file with two sources keeps the nearer one.
+        if self.mode == ResetMode.SOFT:
+            plan = {"committed": (3, 2), "staged": (2, 2), "modified": (1, 1)}
+        elif self.mode == ResetMode.HARD:
+            plan = {"committed": (3, 1), "staged": (2, 1), "modified": (2, 1)}
+        else:
+            plan = {"committed": (3, 1), "staged": (2, 1), "modified": (1, 1)}
+        arrows = {}
+        for kind, files in (("modified", modified), ("staged", staged), ("committed", committed)):
+            src, dst = plan[kind]
+            for f in files:
+                columns[src].add(f)
+                if src == dst:
+                    continue
+                columns[dst].add(f)
+                if f not in arrows:
+                    arrows[f] = (src, dst)
+        for f, (src, dst) in arrows.items():
+            self.zone_arrows.append((f, src, dst))
+
+    def zone_names(self):
+        """Column titles for a reset that moves the branch (see construct)."""
+        if self.mode == ResetMode.HARD:
+            return ("Discarded changes", "Uncommitted changes", "Undone commits")
+        return ("Modified files", "Staged files", "Undone commits")
