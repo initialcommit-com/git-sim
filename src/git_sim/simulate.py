@@ -41,6 +41,10 @@ RENDERABLE_COMMANDS = {
     "worktree",
     "reflog",
     "submodule",
+    "show",
+    "diff",
+    "blame",
+    "bisect",
 }
 
 RENDER_TIMEOUT_SECONDS = 180

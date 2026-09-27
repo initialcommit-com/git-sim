@@ -8,6 +8,7 @@ from typing import List
 
 from git_sim.settings import settings
 from git_sim.enums import (
+    BisectSubCommand,
     ResetMode,
     StashSubCommand,
     RemoteSubCommand,
@@ -408,16 +409,10 @@ def restore(
         "--staged",
         help="Restore staged file to working directory",
     ),
-    source: str = typer.Option(
-        None,
-        "--source",
-        "-s",
-        help="Restore the files' content from this commit instead of the index",
-    ),
 ):
     from git_sim.restore import Restore
 
-    scene = Restore(files=files, staged=staged, source=source)
+    scene = Restore(files=files, staged=staged)
     handle_animations(scene=scene)
 
 
@@ -577,6 +572,69 @@ def reflog(
     from git_sim.reflog import Reflog
 
     scene = Reflog(n=n)
+    handle_animations(scene=scene)
+
+
+def show(
+    revision: str = typer.Argument(
+        "HEAD",
+        help="The commit, branch or tag to show, or REV:PATH for one file as it was in REV",
+    ),
+):
+    from git_sim.show import Show
+
+    scene = Show(revision=revision)
+    handle_animations(scene=scene)
+
+
+def diff(
+    args: List[str] = typer.Argument(
+        default=None,
+        help="Up to two commits (or A..B, A...B) to compare, and/or paths to limit the diff to",
+    ),
+    staged: bool = typer.Option(
+        False,
+        "--staged",
+        "--cached",
+        help="Compare the staging area with HEAD (or the given commit)",
+    ),
+):
+    from git_sim.diff import Diff
+
+    scene = Diff(args=args, staged=staged)
+    handle_animations(scene=scene)
+
+
+def blame(
+    file: str = typer.Argument(
+        ...,
+        help="The tracked file to blame",
+    ),
+    lines: str = typer.Option(
+        None,
+        "-L",
+        help="Only these lines, as START,END or START,+COUNT",
+    ),
+):
+    from git_sim.blame import Blame
+
+    scene = Blame(file=file, lines=lines)
+    handle_animations(scene=scene)
+
+
+def bisect(
+    command: BisectSubCommand = typer.Argument(
+        ...,
+        help="Bisect subcommand (start, bad, good, new, old, skip, reset)",
+    ),
+    revs: List[str] = typer.Argument(
+        default=None,
+        help="start: the bad commit, then good ones; bad/good/skip: the commit to mark (default HEAD); reset: where to return",
+    ),
+):
+    from git_sim.bisect import Bisect
+
+    scene = Bisect(command=command, revs=revs)
     handle_animations(scene=scene)
 
 

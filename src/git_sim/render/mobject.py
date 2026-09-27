@@ -204,6 +204,11 @@ class Mobject:
         for mob in self.get_family():
             if len(mob.points):
                 mob.points = func(mob.points)
+            # geometry kept outside ``points`` (a lane arrow's curve anchors)
+            # moves with the rest
+            follow = getattr(mob, "_follow_points_function", None)
+            if follow is not None:
+                follow(func)
         return self
 
     def shift(self, *vectors):

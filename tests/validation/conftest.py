@@ -51,6 +51,8 @@ SHAPES: Dict[str, tuple] = {
     "history": (dict(scenario="history", seed=1), []),
     "rebase-ready": (dict(scenario="rebase-ready", seed=2), []),
     "messy": (dict(scenario="messy-worktree", seed=3), []),
+    # the last commit's changes back in the working directory, nothing staged
+    "unstaged": (dict(scenario="history", seed=1), ["reset -q HEAD~1"]),
     "conflict": (dict(scenario="merge-conflict", seed=4), []),
     "ahead": (dict(scenario="ahead-of-remote", seed=5), []),
     "behind": (dict(scenario="behind-remote", seed=6), []),
@@ -68,6 +70,10 @@ SHAPES: Dict[str, tuple] = {
     # main is checked out, so it moves with reset rather than branch -f
     "ff": (dict(commits=5, branches=2, diverge_at=3, constant_sha=True), ["reset -q --hard main~2"]),
     "large": (dict(scenario="large"), []),
+    # one straight line of ten commits, and the same mid-way through a bisect
+    # (bad = the tip, good = 7 back, and the first commit git offered marked good)
+    "linear": (dict(commits=10, branches=0, constant_sha=True), []),
+    "bisecting": (dict(commits=10, branches=0, constant_sha=True), ["bisect start HEAD HEAD~7", "bisect good"]),
 }
 
 

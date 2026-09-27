@@ -61,5 +61,5 @@
   }
  },
  "steps": 2,
- "title": "git commit -m \"On a detached H..."
+ "title": "git commit -m \"On a detached HEAD\""
 }

@@ -66,6 +66,8 @@ class GrowArrow(m.Animation):
 
 
 class GitSimBaseCommand(m.MovingCameraScene):
+    TITLE_MIN_SCALE = 0.6  # how small a long title may be set before the frame widens for it
+
     def __init__(self):
         super().__init__()
         self.cmd = "git "
@@ -387,10 +389,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
             ref = self.drawnRefs.get(name)
             if ref is None or not hasattr(ref, "meta"):
                 continue
-            delta = old - ref.get_center()
+            delta = (old - ref.get_center())[:2]
             prior = ref.meta.get("moved_by")
             if prior is not None:
-                delta = delta + numpy.asarray(prior)
+                # moved_by is stored as (x, y): add it in the plane
+                delta = delta + numpy.asarray(prior, dtype=float)[:2]
             if numpy.linalg.norm(delta) > 1e-6:
                 # Only the position is "after": the label itself exists in
                 # both views, so its phase is left alone.
@@ -1674,7 +1677,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
         nondark_commits = []
         return nondark_commits
 
-    def draw_ref(self, commit, top, i=0, text="HEAD", color=None):
+    def draw_ref(self, commit, top, i=0, text="HEAD", color=None, kind=None, phase=None):
         # No ref has been drawn yet (e.g. switching to a commit that carries
         # no labels): stack above the commit's own id instead of failing.
         if top is None and commit != "dark":
@@ -1692,7 +1695,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.theme.branch: "branch",
             self.theme.remote: "remote",
         }
-        kind = kinds.get(color, "head")
+        # A caller can name the kind (shown in the page's tooltip) and the
+        # phase outright: bisect's good/bad marks and diff's two sides are
+        # neither branches nor tags, and some of them exist before the command.
+        kind = kind or kinds.get(color, "head")
         # Reflog labels describe existing state; every other draw_ref call
         # places a label the simulated command creates or moves.
         self.tag(
@@ -1700,7 +1706,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             role="ref",
             name=text,
             kind=kind,
-            phase="before" if kind == "reflog" else "after",
+            phase=phase or ("before" if kind == "reflog" else "after"),
         )
 
         if settings.animate:
@@ -2056,6 +2062,52 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     )
                 commit_id.set_color(color)
 
+    def widen_window_for(self, shas, tip="HEAD", cap=12):
+        """Grow self.n so commits on ``tip``'s first-parent line are drawn in
+        place rather than on a lane of their own (which would read as a
+        branch). Stops at ``cap`` commits; anything further back, or off that
+        line, is left to ensure_drawn."""
+        needed = self.n
+        for sha in shas:
+            try:
+                if not self.repo.is_ancestor(sha, tip):
+                    continue
+                depth = int(self.repo.git.rev_list("--count", "--first-parent", f"{sha}..{tip}"))
+                on_line = sha in self.repo.git.rev_list("--first-parent", f"-n{depth + 1}", tip).split()
+            except GitCommandError:
+                continue
+            if on_line:
+                needed = max(needed, depth + 1)
+        self.n = min(max(self.n, needed), max(cap, self.n))
+        return self.n
+
+    def paint_commits(self, shas, color):
+        """Color drawn commits as they already are, not as a change the
+        command makes (mark_commits is for that): the page shows them in
+        this color before and after."""
+        for sha in shas:
+            circle = self.drawnCommits.get(sha)
+            if circle is not None:
+                circle.set_color(color)
+                apply_shadow(circle, self.theme.shadow(color))
+            commit_id = self.drawnCommitIds.get(sha)
+            if commit_id is not None:
+                commit_id.set_color(color)
+
+    def ensure_drawn(self, commit, max_lanes=6):
+        """Draw ``commit`` if the graph doesn't show it yet, on a lane of its
+        own below the others (as the reflog draws commits no branch reaches).
+        Returns whether it is drawn; past ``max_lanes`` extra lanes it gives up
+        so a long list of commits can't sprawl the picture."""
+        if commit.hexsha in self.drawnCommits:
+            return True
+        lanes = getattr(self, "_extra_lanes", 0)
+        if lanes >= max_lanes:
+            return False
+        self._extra_lanes = lanes + 1
+        self.parse_commits(commit, shift=4 * self._extra_lanes * m.DOWN)
+        return commit.hexsha in self.drawnCommits
+
     def remove_ref(self, name):
         """Take a drawn ref label off the scene (branch -d, tag -d, ...)."""
         ref = self.drawnRefs.pop(name, None)
@@ -2066,6 +2118,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
         else:
             self.remove(ref)
         self.toFadeOut.remove(ref)
+        # It no longer holds a place in its commit's label stack: a label
+        # moved onto that commit afterwards sits where it would without it.
+        for sha, refs in self.drawnRefsByCommit.items():
+            self.drawnRefsByCommit[sha] = [r for r in refs if r is not ref]
         # Keep it for the interactive page, visible only in the "before" view.
         self.tag(ref, phase="removed")
         self.removed_mobjects.append(ref)
@@ -2092,12 +2148,19 @@ class GitSimBaseCommand(m.MovingCameraScene):
             # Scenes build the command with stray spaces; measured and fitted
             # text (textLength in the SVG) would stretch to cover them.
             self.cmd = " ".join(self.cmd.split())
+            # The whole command, never cut short: a title wider than the
+            # picture is set smaller first (down to TITLE_MIN_SCALE), and only
+            # past that does the frame widen for it (scale_frame below), so a
+            # long command doesn't shrink the graph more than it must.
             titleText = m.Text(
-                self.trim_cmd(self.cmd, getattr(self, "title_length", 30)),
+                self.cmd,
                 font=self.font,
                 font_size=36,
                 color=self.fontColor,
             )
+            room = self.camera.frame.get_width() * 0.86
+            if titleText.width > room:
+                titleText.scale(max(room / titleText.width, self.TITLE_MIN_SCALE))
             top = 0
             for element in self.toFadeOut:
                 element_top = element.get_top()[1]
@@ -2137,7 +2200,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         drawn content (title included) and grow the frame if it still does
         not fit. Scenes that already fit are left exactly as they were."""
         frame = self.camera.frame
-        if titleText.get_top()[1] <= frame.get_top()[1]:
+        # a little headroom: a title whose top only just touches the edge
+        # loses the tops of its letters in the raster
+        if titleText.get_top()[1] + 0.15 <= frame.get_top()[1]:
             return
         target = [frame.get_center()[0], self.toFadeOut.get_center()[1], 0]
         needed = self.toFadeOut.get_height() + 2 * margin

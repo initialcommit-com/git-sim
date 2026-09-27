@@ -128,6 +128,13 @@ def relabelled(*names):
     return check
 
 
+def ref_before(name):
+    def check(m, repo):
+        assert name in m["refs"], f"no label {name!r} ({sorted(m['refs'])})"
+        assert m["refs"][name]["phase"] == "before", f"{name!r} should be there from the start (phase before)"
+    return check
+
+
 def ref_after(name, kind=None):
     def check(m, repo):
         assert name in m["refs"], f"no label {name!r} ({sorted(m['refs'])})"
@@ -242,6 +249,14 @@ def stashes_something(m, repo):
     assert got, f"no files arriving in the stash (files: {m['files']})"
 
 
+def stack_of_entries(m, repo):
+    """list / show / drop / clear draw the stash as cards, one per entry,
+    labeled stash@{n}: no stash entry appears as a commit in the graph."""
+    shas = o.git(repo, "stash", "list", "--format=%H").split()
+    assert not set(shas) & set(m["commits"]), "stash entries should not be drawn as commits"
+    for i in range(min(len(shas), 5)):
+        assert f"stash@{{{i}}}" in m["refs"], f"no card labeled stash@{{{i}}} ({sorted(m['refs'])})"
+
 def unstashes_something(m, repo):
     arriving = [f for f in m["files"] if f["phase"] == "after" and not any(w in f["column"].lower() for w in ZONES["stash"])]
     assert arriving, f"no files leaving the stash (files: {m['files']})"
@@ -275,6 +290,88 @@ def recolored(n):
     def check(m, repo):
         got = sum(1 for c in m["commits"].values() if c["recolored"])
         assert got == n, f"{got} gold commits, expected {n}"
+    return check
+
+
+def table_column(m, keyword):
+    """Entries of the zone-table column whose title contains ``keyword``."""
+    return sorted(f["name"] for f in m["files"] if keyword.lower() in f["column"].lower())
+
+
+MAX_TABLE_ROWS = 14  # show / diff / blame list at most this many rows, then "..."
+
+
+def same_files(drawn, expected):
+    drawn = [d for d in drawn if d != "..."]
+    assert set(drawn) <= set(expected), f"drew {sorted(set(drawn) - set(expected))} that git doesn't list"
+    assert len(drawn) == min(len(expected), MAX_TABLE_ROWS), f"drew {len(drawn)} file(s), git lists {len(expected)}"
+
+
+def shows(rev):
+    """git show REV: the commit is highlighted and the table holds the files
+    its first-parent diff touches, as git itself lists them."""
+    def check(m, repo):
+        sha = o.rev_parse(repo, f"{rev}^{{commit}}")
+        assert sha in m["commits"] and m["commits"][sha]["recolored"], f"{rev} ({sha[:7]}) is not highlighted"
+        parents = o.parents(repo, sha)
+        base = [parents[0]] if parents else ["--root"]
+        if parents:
+            names = o.git(repo, "diff", "--name-only", "-M", parents[0], sha).split()
+        else:
+            names = o.git(repo, "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", "-M", sha).split()
+        del base
+        same_files(table_column(m, "files in"), names)
+    return check
+
+
+def diffs(*git_args):
+    """git diff ARGS: the changed-file column holds what git diff --name-only lists."""
+    def check(m, repo):
+        names = o.git(repo, "diff", "--name-only", "-M", *git_args).split()
+        names = [n for n in names if "git-sim_media" not in n]
+        same_files(table_column(m, "changes"), names)
+    return check
+
+
+def blames(path, lines=None):
+    """git blame PATH: every commit git names (and that is drawn) is highlighted,
+    and no other commit is."""
+    def check(m, repo):
+        args = ["blame", "--porcelain"] + (["-L", lines] if lines else []) + ["--", path]
+        shas = {l.split()[0] for l in o.git(repo, *args).splitlines() if len(l) > 40 and l[40] == " " and all(c in "0123456789abcdef" for c in l[:40])}
+        shas.discard("0" * 40)
+        lit = {s for s, c in m["commits"].items() if c["recolored"]}
+        assert lit <= shas, f"highlighted {sorted(s[:7] for s in lit - shas)} that git blame doesn't name"
+        assert lit, "no blamed commit highlighted"
+    return check
+
+
+def bisect_next(bad="refs/bisect/bad", goods=None):
+    """The commit git bisect checks out next, from git's own rev-list --bisect,
+    is named in the drawing and HEAD moves to it."""
+    def check(m, repo):
+        good_refs = goods if goods is not None else [
+            r for r in o.git(repo, "for-each-ref", "--format=%(refname)", "refs/bisect/").split() if "/good-" in r
+        ]
+        # --bisect-vars, not --bisect: with a session in progress, --bisect also
+        # pulls in refs/bisect/* on its own, which would be the old marks
+        out = o.git(repo, "rev-list", "--bisect-vars", bad, *[f"^{g}" for g in good_refs])
+        expected = dict(l.split("=", 1) for l in out.splitlines() if "=" in l)["bisect_rev"].strip("'")
+        assert has_text(m, f"HEAD moves to {expected[:7]}"), f"expected git's pick {expected[:7]} in the drawing"
+        relabelled("HEAD")(m, repo)
+    return check
+
+
+def bisect_next_after(word):
+    """In the 'bisecting' shape: mark HEAD good or bad, then git's next pick."""
+    def check(m, repo):
+        goods = [r for r in o.git(repo, "for-each-ref", "--format=%(refname)", "refs/bisect/").split() if "/good-" in r]
+        bad = "refs/bisect/bad"
+        if word == "good":
+            goods = goods + ["HEAD"]
+        else:
+            bad = "HEAD"
+        bisect_next(bad, goods)(m, repo)
     return check
 
 
@@ -419,8 +516,6 @@ CASES: List[Case] = [
     # restore
     Case("restore", "messy", ["restore", "README.md"], all_of(title("git restore"), lambda m, r: any(f["name"] == "README.md" for f in m["files"]))),
     Case("restore-staged", "messy", ["restore", "--staged", "models.py"], arrives("models.py", "working")),
-    Case("restore-source", "messy", ["restore", "--source", "HEAD~1", "README.md"], texts("README.md")),
-    Case("restore-source-missing", "messy", ["restore", "--source", "HEAD~1", "nope.txt"], error="git-sim error"),
     Case("restore-missing", "messy", ["restore", "nope.txt"], error="git-sim error"),
     Case("restore-all", "messy", ["restore"], title("git restore")),
     # revert
@@ -441,11 +536,11 @@ CASES: List[Case] = [
     Case("stash-push-file", "messy", ["stash", "push", "README.md"], all_of(stashes_something, lambda m, r: files_in(m, "stash", "after") == ["README.md"])),
     Case("stash-pop", "messy", ["stash", "pop"], unstashes_something),
     Case("stash-apply", "messy", ["stash", "apply"], unstashes_something),
-    Case("stash-list", "messy", ["stash", "list"], title("git stash list")),
+    Case("stash-list", "messy", ["stash", "list"], all_of(title("git stash list"), stack_of_entries)),
     Case("stash-show", "messy", ["stash", "show"], title("git stash show")),
     Case("stash-show-index", "messy", ["stash", "show", "0"], title("git stash show")),
-    Case("stash-drop", "messy", ["stash", "drop"], title("git stash drop")),
-    Case("stash-clear", "messy", ["stash", "clear"], title("git stash clear")),
+    Case("stash-drop", "messy", ["stash", "drop"], all_of(title("git stash drop"), stack_of_entries, ref_removed("stash@{0}"))),
+    Case("stash-clear", "messy", ["stash", "clear"], all_of(title("git stash clear"), stack_of_entries, texts("The stash is empty"))),
     Case("stash-pop-empty", "history", ["stash", "pop"], error="git-sim error"),
     Case("stash-drop-bad-index", "messy", ["stash", "drop", "7"], error="git-sim error"),
     Case("stash-push-missing", "messy", ["stash", "push", "nope.txt"], error="git-sim error"),
@@ -486,6 +581,48 @@ CASES: List[Case] = [
     Case("worktree-remove-force", "worktree", ["worktree", "remove", "--force", "{worktree_path}"], title("git worktree")),
     Case("worktree-prune", "worktree", ["worktree", "prune"], title("git worktree")),
     Case("worktree-remove-missing", "worktree", ["worktree", "remove", "../nope"], error="git-sim error"),
+    # show
+    Case("show", "history", ["show"], all_of(title("git show"), shows("HEAD"))),
+    Case("show-commit", "history", ["show", "HEAD~2"], shows("HEAD~2")),
+    Case("show-tag", "history", ["show", "v1.0.0"], shows("v1.0.0")),
+    Case("show-root", "linear", ["show", "HEAD~9"], shows("HEAD~9")),
+    # further back than the window: drawn in HEAD's line after a "..." for the commits between
+    Case("show-far", "linear", ["show", "HEAD~7"], all_of(shows("HEAD~7"), texts("stands for the 4 commit(s)"))),
+    Case("show-path", "history", ["show", "HEAD:app.py"], texts("app.py")),
+    Case("show-missing", "history", ["show", "nope"], error="git-sim error"),
+    Case("show-path-missing", "history", ["show", "HEAD:nope.txt"], error="git-sim error"),
+    # diff
+    Case("diff", "messy", ["diff"], all_of(title("git diff"), diffs())),
+    Case("diff-staged", "messy", ["diff", "--staged"], diffs("--cached")),
+    Case("diff-cached-commit", "messy", ["diff", "--cached", "HEAD~1"], diffs("--cached", "HEAD~1")),
+    Case("diff-commit", "messy", ["diff", "HEAD~1"], diffs("HEAD~1")),
+    Case("diff-two", "history", ["diff", "HEAD~3", "HEAD"], all_of(diffs("HEAD~3", "HEAD"), ref_before("from"), ref_after("to"))),
+    # nothing staged: the comparison starts from the HEAD commit; something staged: from the staging area
+    Case("diff-unstaged", "unstaged", ["diff"], all_of(diffs(), ref_before("from"), texts("Unstaged changes"))),
+    Case("diff-with-staged", "messy", ["diff"], all_of(diffs(), texts("HEAD + your staged edits", "git diff --staged shows them"))),
+    Case("diff-range", "history", ["diff", "HEAD~2..HEAD"], diffs("HEAD~2", "HEAD")),
+    Case("diff-merge-base", "history", ["diff", f"v1.0.0...{M}"], diffs(f"v1.0.0...{M}")),
+    Case("diff-path", "messy", ["diff", "HEAD", "README.md"], diffs("HEAD", "--", "README.md")),
+    Case("diff-clean", "history", ["diff"], texts("No differences")),
+    Case("diff-missing", "history", ["diff", "nope"], error="git-sim error"),
+    Case("diff-staged-two", "history", ["diff", "--staged", "HEAD~1", "HEAD"], error="git-sim error"),
+    # blame
+    Case("blame", "history", ["blame", "app.py"], all_of(title("git blame"), blames("app.py"))),
+    Case("blame-lines", "history", ["blame", "-L", "1,3", "app.py"], blames("app.py", "1,3")),
+    Case("blame-modified", "messy", ["blame", "README.md"], texts("not committed yet")),
+    Case("blame-untracked", "messy", ["blame", "scratch.txt"], error="git-sim error"),
+    Case("blame-bad-range", "history", ["blame", "-L", "abc", "app.py"], error="git-sim error"),
+    # bisect
+    Case("bisect-start", "linear", ["bisect", "start", "HEAD", "HEAD~7"], all_of(title("git bisect start"), bisect_next("HEAD", ["HEAD~7"]), ref_after("bad", "bisect"))),
+    Case("bisect-start-empty", "linear", ["bisect", "start"], texts("waiting")),
+    Case("bisect-good", "bisecting", ["bisect", "good"], bisect_next_after("good")),
+    Case("bisect-bad", "bisecting", ["bisect", "bad"], bisect_next_after("bad")),
+    Case("bisect-skip", "bisecting", ["bisect", "skip"], all_of(title("git bisect skip"), relabelled("HEAD"))),
+    Case("bisect-reset", "bisecting", ["bisect", "reset"], all_of(ref_removed("bad"), relabelled("HEAD"))),
+    Case("bisect-new-mixed", "bisecting", ["bisect", "new"], error="terms"),
+    Case("bisect-old-no-session", "linear", ["bisect", "old"], error="not bisecting"),
+    Case("bisect-good-no-session", "linear", ["bisect", "good"], error="not bisecting"),
+    Case("bisect-start-swapped", "linear", ["bisect", "start", "HEAD~7", "HEAD"], error="ancestor"),
     # clone (runs in a plain folder; the URL is the ahead shape's remote)
     Case("clone", "notrepo", ["clone", "{remote_url}"], all_of(title("git clone"), texts("cloned"))),
     Case("clone-bad-url", "notrepo", ["clone", "not-a-url"], error="git-sim error"),

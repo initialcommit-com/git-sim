@@ -2028,56 +2028,6 @@ def case_reset_paths():
     )
 
 
-def case_restore_source():
-    from git_sim.restore import Restore
-
-    repo = fresh()
-    r = git.Repo(repo)
-    src = r.commit("HEAD~3").hexsha
-    run_case(
-        "restore --source HEAD~3 main.1",
-        repo,
-        lambda: Restore(files=["main.1"], staged=False, source="HEAD~3"),
-        [
-            (
-                "columns",
-                lambda c: c.cols
-                == ("Working directory", "----", f"Restored from {src[:6]}"),
-            ),
-            (
-                "file flows leftwards from the source into the working directory",
-                lambda c: c.zone_files["first"] == {"main.1"}
-                and c.zone_files["third"] == {"main.1"}
-                and c.zone_arrows["third"] == {"main.1"},
-            ),
-            ("HEAD unchanged", lambda c: c.refs().get("HEAD") == r.head.commit.hexsha),
-            ("title", lambda c: c.scene.cmd == "git restore --source HEAD~3 main.1"),
-        ],
-    )
-    run_case(
-        "restore --staged --source HEAD~3 main.1",
-        fresh(),
-        lambda: Restore(files=["main.1"], staged=True, source="HEAD~3"),
-        [
-            (
-                "note mentions the index",
-                lambda c: has_text(c, "index and working tree"),
-            ),
-            (
-                "title",
-                lambda c: c.scene.cmd == "git restore --staged --source HEAD~3 main.1",
-            ),
-        ],
-    )
-    run_case(
-        "restore --source HEAD~3 nope.txt (refuses)",
-        fresh(),
-        lambda: Restore(files=["nope.txt"], staged=False, source="HEAD~3"),
-        [],
-        expect_exit=True,
-    )
-
-
 def case_worktree():
     from git_sim.enums import WorktreeSubCommand
     from git_sim.worktree import Worktree
@@ -2509,7 +2459,6 @@ for fn in (
     case_revert_flags,
     case_commit_flags,
     case_reset_paths,
-    case_restore_source,
     case_worktree,
     case_reflog,
     case_submodule,

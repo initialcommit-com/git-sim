@@ -1,0 +1,137 @@
+{
+ "commits": {
+  "Dummy commit #10 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #9 on main"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 2
+  },
+  "Dummy commit #2 on main": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #3 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #2 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #4 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #3 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #5 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #4 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #6 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #5 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #7 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #6 on main"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 2
+  },
+  "Dummy commit #8 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #7 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #9 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #8 on main"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 2
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 16,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [
+  "Purple commits are still suspected.",
+  "Bisecting: 2 commit(s) still to test, some skipped; git checks out 3ba4cb2 next.",
+  "HEAD moves to 3ba4cb2 (Dummy commit #9 on main): test it, then mark it good or bad."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": true,
+   "phase": "before"
+  },
+  "bad": {
+   "count": 2,
+   "kind": "bisect",
+   "moved": false,
+   "phase": "before"
+  },
+  "good-04443bf": {
+   "count": 2,
+   "kind": "bisect",
+   "moved": false,
+   "phase": "before"
+  },
+  "good-7da5060": {
+   "count": 2,
+   "kind": "bisect",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "skip-db89eed": {
+   "count": 2,
+   "kind": "bisect",
+   "moved": true,
+   "phase": "after"
+  }
+ },
+ "steps": 2,
+ "title": "git bisect skip"
+}

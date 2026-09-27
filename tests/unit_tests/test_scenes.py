@@ -297,26 +297,41 @@ def test_stash_push_moves_left_and_pop_moves_right(repo):
     assert set(pop.zone_arrows) == {("file1.txt", 1, 2), ("file2.txt", 1, 2)}
 
 
-def test_stash_drop_and_clear_strike_entries(repo):
+def test_stash_drop_and_clear_draw_the_stack(repo):
     from git_sim.enums import StashSubCommand
     from git_sim.stash import Stash
+
+    def labels(scene, phase):
+        mobs = list(scene.toFadeOut.submobjects) + list(scene.removed_mobjects)
+        return sorted(
+            mob.meta["name"]
+            for mob in mobs
+            if (getattr(mob, "meta", None) or {}).get("role") == "ref" and mob.meta.get("phase") == phase
+        )
 
     (repo / "file1.txt").write_text("changed\n")
     run_git(repo, "stash")
     (repo / "file2.txt").write_text("changed\n")
     run_git(repo, "stash")
+    shas = run_git(repo, "stash", "list", "--format=%H").split()
     scene = Stash(files=[], command=StashSubCommand.DROP, stash_index="1")
     scene.construct()
-    # dropped entries land in the left column (a removal moves right to left), struck through
-    dropped = [(t.text, t.strikethrough) for t in scene.firstColumnFiles]
-    assert len(dropped) == 1 and dropped[0][0].startswith("stash@{1}") and dropped[0][1]
-    assert len(scene.thirdColumnFiles) == 2  # every entry is still listed on the right
+    # entries are cards in a stack, not commits in the graph; the dropped one
+    # fades out and, being the last, leaves nothing to renumber
+    assert not any(sha in scene.drawnCommits for sha in shas)
+    assert labels(scene, "removed") == ["stash@{1}"]
+    assert labels(scene, "before") == ["stash@{0}"]
     assert scene.cmd == "git stash drop stash@{1}"
+    first = Stash(files=[], command=StashSubCommand.DROP, stash_index="0")
+    first.construct()
+    # the entry after the dropped one moves up: its stash@{1} label gives way to stash@{0}
+    assert labels(first, "removed") == ["stash@{0}", "stash@{1}"]
+    assert labels(first, "after") == ["stash@{0}"]
     with pytest.raises(SystemExit):
         Stash(files=[], command=StashSubCommand.SHOW, stash_index="7")
     clear = Stash(files=[], command=StashSubCommand.CLEAR, stash_index="0")
     clear.construct()
-    assert len(clear.firstColumnFiles) == 2
+    assert labels(clear, "before") == [] and labels(clear, "removed") == ["stash@{0}", "stash@{1}"]
 
 
 def test_rebase_interactive_todo_squash_and_drop(repo, tmp_path):
@@ -455,17 +470,6 @@ def test_reset_path_unstages_without_moving_head(repo):
             hard=False,
             paths=["nope.txt"],
         )
-
-
-def test_restore_source_checks_the_file_exists_there(repo):
-    from git_sim.restore import Restore
-
-    with pytest.raises(SystemExit):
-        Restore(files=["file5.txt"], staged=False, source="HEAD~1")  # added in commit 5
-    scene = Restore(files=["file1.txt"], staged=True, source="HEAD~1")
-    scene.construct()
-    assert scene.cmd == "git restore --staged --source HEAD~1 file1.txt"
-    assert any(t.startswith("Restored from ") for t in scene_texts(scene))
 
 
 def test_clean_flags_follow_git_dry_run(repo):

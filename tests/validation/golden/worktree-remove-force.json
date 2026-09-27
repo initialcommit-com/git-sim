@@ -106,5 +106,5 @@
   }
  },
  "steps": 1,
- "title": "git worktree remove --force C:..."
+ "title": "git worktree remove --force <path>"
 }

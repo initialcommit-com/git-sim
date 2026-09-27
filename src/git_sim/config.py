@@ -74,7 +74,6 @@ class Config(Cards, GitSimBaseCommand):
         super().__init__()
         self.l = l
         self.settings = settings or []  # newer typer passes None for an omitted list
-        self.title_length = 56  # the value being set is the point; keep it in the title
 
         for i, setting in enumerate(self.settings):
             if " " in setting:

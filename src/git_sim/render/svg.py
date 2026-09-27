@@ -87,8 +87,8 @@ class SvgPainter:
             if key == "moved_by":
                 dx, dy = float(value[0]) * self.scale, -float(value[1]) * self.scale
                 attrs.append(f'data-dx="{_fmt(dx)}" data-dy="{_fmt(dy)}"')
-            elif value is None:
-                continue
+            elif value is None or key == "with_recolor":
+                continue  # with_recolor only steers default_steps
             else:
                 name = key.replace("_", "-")
                 attrs.append(f'data-{name}="{html.escape(str(value), quote=True)}"')

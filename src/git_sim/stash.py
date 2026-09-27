@@ -85,68 +85,227 @@ class Stash(GitSimBaseCommand):
             print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
+        if self.command in LIST_COMMANDS:
+            self.construct_entries()
+            self.show_command_as_title()
+            self.fadeout()
+            self.show_outro()
+            return
         self.parse_commits()
         self.recenter_frame()
         self.scale_frame()
         self.vsplit_frame()
-        if self.command in LIST_COMMANDS:
-            # Dropping is a removal, so dropped entries land on the left with
-            # the arrows pointing that way; list and show only look.
-            dropping = self.command in (StashSubCommand.DROP, StashSubCommand.CLEAR)
-            self.setup_and_draw_zones(
-                first_column_name="Dropped entries" if dropping else "----",
-                second_column_name=f"Files in stash@{{{self.stash_index}}}",
-                third_column_name="Stash entries",
-            )
-            if self.command == StashSubCommand.CLEAR:
-                self.add_notes(
-                    [
-                        (
-                            f"All {len(self.entries)} stash entries are deleted; only 'git fsck --lost-found' can find them afterwards.",
-                            self.theme.gold,
-                        )
-                    ]
-                )
-            elif self.command == StashSubCommand.DROP:
-                self.add_notes(
-                    [
-                        f"stash@{{{self.stash_index}}} is deleted; later entries move up one index.",
-                        "Recover soon after with: git stash apply <sha from 'git fsck --lost-found'>",
-                    ]
-                )
-        else:
-            # The stash sits before the working directory: pushing moves
-            # changes left, out of the way; pop and apply bring them back right.
-            self.setup_and_draw_zones(
-                first_column_name="Stashed changes",
-                second_column_name="Working directory",
-                third_column_name="Staging area",
-            )
+        # The stash sits before the working directory: pushing moves
+        # changes left, out of the way; pop and apply bring them back right.
+        self.setup_and_draw_zones(
+            first_column_name="Stashed changes",
+            second_column_name="Working directory",
+            third_column_name="Staging area",
+        )
         self.show_command_as_title()
         self.fadeout()
         self.show_outro()
 
-    def entry_label(self, index):
-        entry = self.entries[index]
-        # "stash@{0}: WIP on main: abc123 message" -> "stash@{0} WIP on main: message"
-        ref, _, rest = entry.partition(": ")
-        rest = re.sub(r":\s*[0-9a-f]{7,}\s", ": ", rest, count=1)
-        return f"{ref} {rest}"
+    # -- list / show / drop / clear: the stash as a stack of entries ----------------
+    MAX_DRAWN = 5  # entries drawn; the rest are counted in a row of their own
+    ROW = 1.35  # distance between the entries' cards
+    PAD = 0.38  # inside a card
 
-    def zone_label(self, column, name):
-        # list/show/drop/clear: the outer columns hold stash entries, not paths
-        if self.command in LIST_COMMANDS and column != 2:
-            return self.trim_cmd(name, 30)
-        return self.trim_path(name)
+    def construct_entries(self):
+        """The stash as a stack of cards, newest (stash@{0}) on top. Each card
+        names the entry, what it holds (its message, file and line counts) and
+        the commit it was made on, as a small chip rather than the history
+        around it: an entry is set-aside work, not a commit on any branch.
+
+        drop fades the dropped card out, then the cards below it slide up a
+        place and take the next number down; clear fades them all out; show
+        lists the entry's files underneath, as git stash show prints them."""
+        from git_sim.diffstat import file_changes, totals
+
+        head = self.repo.head.commit.hexsha if self.head_exists() else None
+        entries = []
+        for i, line in enumerate(self.repo.git.stash("list", "--format=%H%x09%gs").splitlines()):
+            sha, _, subject = line.partition("\t")
+            commit = self.repo.commit(sha)
+            changes = file_changes(self.repo.git.diff, f"{sha}^1", sha)
+            entries.append(dict(index=i, sha=sha, subject=subject, commit=commit, changes=changes, totals=totals(changes)))
+        n = len(entries)
+        target = self.stash_index if self.command in (StashSubCommand.SHOW, StashSubCommand.DROP) else None
+        # enough rows to hold the target, and for drop the one that moves up into its place
+        rows = min(n, max(self.MAX_DRAWN, (target + (2 if self.command == StashSubCommand.DROP else 1)) if target is not None else 0))
+        hidden = n - rows
+
+        drop = self.command == StashSubCommand.DROP
+        clear = self.command == StashSubCommand.CLEAR
+        built = [self.entry_row(entries[k], head) for k in range(rows)]
+        width = max([r["width"] for r in built] + [8.0]) + 2 * self.PAD
+        before_bottom = -(rows - 1) * self.ROW - 0.55 - (0.8 if hidden else 0)
+
+        caption = m.Text("newest first", font=self.font, font_size=16, color=self.mutedColor)
+        caption.move_to((-width / 2 + caption.width / 2, 0.55 + 0.3, 0))
+        self.show_mobs([caption])
+
+        # each card's place after the command: a dropped card leaves a gap the rest close up
+        for k, row in enumerate(built):
+            gone = clear or (drop and k == target)
+            final_k = k - 1 if (drop and k > target) else k
+            highlight = self.theme.purple if (target is not None and k == target and not drop) else None
+            self.place_row(row, width, -final_k * self.ROW, highlight)
+            if gone:
+                # visible before, fading out on the first step; kept out of the still image
+                for mob in row["all"]:
+                    self.tag(mob, phase="removed", step=1)
+                self.removed_mobjects.extend(row["all"])
+                continue
+            if final_k != k:
+                # slides up a place on step 2 and takes the next number down
+                for mob in row["all"]:
+                    if mob is not row["pill"]:
+                        self.tag(mob, moved_by=(0.0, -self.ROW * (k - final_k)), step=2)
+                old_pill = row["pill"]
+                old_pill.shift((0, -self.ROW * (k - final_k), 0))
+                self.tag(old_pill, phase="removed", step=2)
+                self.removed_mobjects.append(old_pill)
+                new_pill = self.entry_pill(final_k)
+                new_pill.move_to(old_pill.get_center() + (0, self.ROW * (k - final_k), 0))
+                self.tag(new_pill, phase="after", step=2)
+                row["all"] = [x for x in row["all"] if x is not old_pill] + [new_pill]
+            self.show_mobs(row["all"])
+
+        if hidden:
+            more = m.Text(f"... and {hidden} more entr{'y' if hidden == 1 else 'ies'}", font=self.font, font_size=18, color=self.mutedColor)
+            y = -(rows - 1) * self.ROW - 0.8 + (self.ROW if drop else 0)
+            more.move_to((-width / 2 + self.PAD + more.width / 2, y, 0))
+            if drop:  # it follows the cards up
+                self.tag(more, moved_by=(0.0, -self.ROW), step=2)
+            self.show_mobs([more])
+        if clear:
+            empty = m.Text("The stash is empty.", font=self.font, font_size=20, color=self.mutedColor)
+            empty.move_to((0, 0, 0))
+            self.tag(empty, phase="after", step=2)
+            self.show_mobs([empty])
+        if drop or clear:
+            # the page's "before" view still holds every card: keep the frame around them
+            spacer = m.Rectangle(width=width, height=0.55 - before_bottom, color=self.theme.bg, fill_color=self.theme.bg, fill_opacity=0.0, stroke_width=0)
+            spacer.move_to((0, (0.55 + before_bottom) / 2, 0))
+            self.tag(spacer, role="spacer")
+            self.add(spacer)
+            self.toFadeOut.add(spacer)
+        self.recenter_frame()
+        self.scale_frame()
+
+        notes = []
+        if self.command == StashSubCommand.LIST:
+            notes.append(
+                "1 stash entry: changes set aside, with the commit they were made on."
+                if n == 1
+                else f"{n} stash entries: changes set aside, each with the commit it was made on."
+            )
+        elif self.command == StashSubCommand.SHOW:
+            from git_sim.panels import diffstat_card
+
+            entry = entries[target]
+            diffstat_card(
+                self,
+                f"Files in stash@{{{target}}}",
+                entry["changes"][:14],
+                more=max(0, len(entry["changes"]) - 14),
+                subtitle=self.entry_title(entry["subject"]),
+                appear=True,
+            )
+            notes.append("git stash show lists what the entry changes, compared with the commit it was made on.")
+        elif drop:
+            notes.append((f"stash@{{{target}}} is dropped.", self.theme.gold))
+            if target < n - 1:
+                notes.append("The entries below it move up one number.")
+            notes.append(f"Recover it soon after with: git stash apply {entries[target]['sha'][:7]}")
+        else:
+            notes.append((f"All {n} stash entr{'y is' if n == 1 else 'ies are'} dropped.", self.theme.gold))
+            notes.append("Only 'git fsck --unreachable' can find them afterwards.")
+        self.add_notes(notes)
+
+    def show_mobs(self, mobs):
+        self.toFadeOut.add(*mobs)
+        if settings.animate:
+            self.play(*[m.FadeIn(x) for x in mobs], run_time=1 / settings.speed)
+        else:
+            self.add(*mobs)
+
+    def entry_pill(self, number):
+        box, text = self.ref_pill(f"stash@{{{number}}}", self.theme.purple)
+        self.center_label(text, box)
+        pill = m.VGroup(box, text)
+        self.tag(pill, role="ref", name=f"stash@{{{number}}}", kind="stash", phase="before")
+        return pill
+
+    @staticmethod
+    def entry_title(subject):
+        """git's reflog subject for the entry, without the base commit it
+        repeats: "WIP on main: abc1234 msg" -> "WIP on main"; "On main: note"
+        (git stash push -m note) -> "note"."""
+        wip = re.match(r"WIP on (.+?): [0-9a-f]{7,} ", subject)
+        if wip:
+            return f"WIP on {wip.group(1)}"
+        named = re.match(r"On .+?: (.*)$", subject)
+        return named.group(1) if named else subject
+
+    def entry_row(self, entry, head):
+        """One card's parts, unplaced: its label, title, the commit it was
+        made on (a dot, its short sha and message) and its counts."""
+        pill = self.entry_pill(entry["index"])
+        title = m.Text(self.trim_cmd(self.entry_title(entry["subject"]), 44), font=self.font, font_size=20, color=self.fontColor, weight=m.BOLD)
+        base = entry["commit"].parents[0] if entry["commit"].parents else None
+        dot = m.Circle(radius=0.09, color=self.theme.commit, fill_color=self.theme.commit, fill_opacity=1.0, stroke_width=0)
+        made_on = "made on " + (
+            f"{base.hexsha[:7]} {self.trim_cmd(base.summary, 36)}" + (" (HEAD)" if base.hexsha == head else "")
+            if base is not None else "no commit"
+        )
+        base_text = m.Text(made_on, font=self.font, font_size=16, color=self.mutedColor)
+        files = len(entry["changes"])
+        added, deleted = entry["totals"]
+        counts = [
+            m.Text(f"{files} file{'' if files == 1 else 's'}", font=self.font, font_size=17, color=self.mutedColor),
+            m.Text(f"+{added}", font=self.font, font_size=17, color=self.theme.branch, weight=m.BOLD),
+            m.Text(f"-{deleted}", font=self.font, font_size=17, color=self.theme.accent, weight=m.BOLD),
+        ]
+        counts_w = sum(c.width for c in counts) + 0.25 * (len(counts) - 1)
+        middle = max(title.width, 0.3 + base_text.width)
+        width = pill.width + 0.4 + middle + 0.6 + counts_w
+        for mob in (title, dot, base_text, *counts):
+            self.tag(mob, phase="before")
+        return dict(pill=pill, title=title, dot=dot, base=base_text, counts=counts, width=width,
+                    all=[pill, title, dot, base_text, *counts])
+
+    def place_row(self, row, width, y, highlight=None):
+        """Lay one card out across ``width``, centered on height ``y``; a
+        ``highlight`` color outlines it (the entry git stash show reads)."""
+        left, right = -width / 2 + self.PAD, width / 2 - self.PAD
+        card = m.RoundedRectangle(
+            corner_radius=0.16,
+            width=width,
+            height=1.05,
+            color=highlight or self.ruleColor,
+            stroke_width=3 if highlight else 2,
+            fill_color=self.theme.panel,
+            fill_opacity=self.theme.panel_opacity * 1.6,
+        )
+        card.move_to((0, y, 0))
+        self.tag(card, role="panel", phase="before")
+        row["card"] = card
+        row["all"].insert(0, card)
+        row["pill"].move_to((left + row["pill"].width / 2, y, 0))
+        x = left + row["pill"].width + 0.4
+        row["title"].move_to((x + row["title"].width / 2, y + 0.2, 0))
+        row["dot"].move_to((x + 0.09, y - 0.22, 0))
+        row["base"].move_to((x + 0.3 + row["base"].width / 2, y - 0.22, 0))
+        cx = right
+        for c in reversed(row["counts"]):
+            c.move_to((cx - c.width / 2, y, 0))
+            cx -= c.width + 0.25
 
     def zone_struck(self, column, name):
-        # The left column holds what this command consumes: the stashed
-        # files a pop takes back, or the entries drop and clear delete.
-        return column == 1 and self.command in (
-            StashSubCommand.POP,
-            StashSubCommand.DROP,
-            StashSubCommand.CLEAR,
-        )
+        # The left column holds what a pop consumes: the stashed files it takes back.
+        return column == 1 and self.command == StashSubCommand.POP
 
     def stashed_files(self, index):
         try:
@@ -165,23 +324,6 @@ class Stash(GitSimBaseCommand):
         secondColumnArrowMap={},
         thirdColumnArrowMap={},
     ):
-        if self.command in LIST_COMMANDS:
-            labels = [self.entry_label(i) for i in range(len(self.entries))]
-            # Sets lose order; entries are kept in index order via a dict-backed set.
-            for label in labels:
-                thirdColumnFileNames.add(label)
-            for f in self.stashed_files(self.stash_index):
-                secondColumnFileNames.add(f)
-            dropped = []
-            if self.command == StashSubCommand.DROP:
-                dropped = [labels[self.stash_index]]
-            elif self.command == StashSubCommand.CLEAR:
-                dropped = labels
-            for label in dropped:
-                firstColumnFileNames.add(label)
-                self.zone_arrows.append((label, 3, 1))
-            return
-
         if self.command in [StashSubCommand.POP, StashSubCommand.APPLY]:
             # stashed files come forward, into the working directory
             for s in self.stashed_files(self.stash_index):

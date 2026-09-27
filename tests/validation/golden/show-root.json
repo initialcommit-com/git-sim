@@ -1,0 +1,81 @@
+{
+ "commits": {
+  "Dummy commit #1 on main": {
+   "kind": "commit",
+   "parents": [],
+   "phase": "before",
+   "recolored": true,
+   "step": 1
+  },
+  "Dummy commit #10 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #9 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #8 on main": {
+   "kind": "commit",
+   "parents": [
+    "Older commits between these two are not shown."
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #9 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #8 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Older commits between these two are not shown.": {
+   "kind": "elided",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 8,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [
+  {
+   "column": "Files in fe289f5",
+   "moved": false,
+   "name": "main.1",
+   "phase": "after"
+  }
+ ],
+ "notes": [
+  "commit fe289f5 by Git Dummy on 2023-01-01",
+  "... stands for the 6 commit(s) between HEAD~2 and fe289f5."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 1,
+ "title": "git show HEAD~9"
+}

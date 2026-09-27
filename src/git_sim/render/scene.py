@@ -404,8 +404,10 @@ def default_steps(mobjects):
     """Give a simulation that did not sequence its own animation one step per
     kind of change, so the page plays one thing at a time: new things arrive
     (step 1), removed things fade (2), then labels move and commits recolor
-    (3), with empty steps skipped. Notes appear with the last step. A
-    simulation that set any step itself (rebase, fetch, ...) is left alone."""
+    (3), with empty steps skipped. Notes appear with the last step, and so
+    does anything new tagged ``with_recolor`` (git show's card appears as the
+    shown commit turns blue). A simulation that set any step itself (rebase,
+    fetch, ...) is left alone."""
 
     def family(mobs):
         for mob in mobs:
@@ -419,7 +421,8 @@ def default_steps(mobjects):
     for mob in tagged:
         meta = mob.meta
         if meta.get("phase") == "after":
-            (notes if meta.get("role") == "note" else arrive).append(mob)
+            last = meta.get("role") == "note" or meta.get("with_recolor")
+            (notes if last else arrive).append(mob)
         elif meta.get("phase") == "removed":
             fade.append(mob)
         elif meta.get("moved_by") or meta.get("before_fill"):

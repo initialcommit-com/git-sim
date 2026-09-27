@@ -1,0 +1,92 @@
+{
+ "commits": {
+  "Dummy commit #10 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #9 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #2 on main": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #3 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #2 on main"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 1
+  },
+  "Dummy commit #8 on main": {
+   "kind": "commit",
+   "parents": [
+    "Older commits between these two are not shown."
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #9 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #8 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Older commits between these two are not shown.": {
+   "kind": "elided",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 10,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [
+  {
+   "column": "Files in 7da5060",
+   "moved": false,
+   "name": "main.3",
+   "phase": "after"
+  }
+ ],
+ "notes": [
+  "commit 7da5060 by Git Dummy on 2023-01-01",
+  "... stands for the 4 commit(s) between HEAD~2 and 7da5060."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 1,
+ "title": "git show HEAD~7"
+}

@@ -336,6 +336,22 @@ class LaneArrow(Arrow):
         self.anchor_end = to_point(end).astype(float).copy()
         self.lane_pitch = float(lane_pitch or self.LANE_PITCH)
 
+    def _follow_points_function(self, func):
+        """Move the curve's anchors with the arrow: a group that shifts the
+        graph (to make room for a file table, say) must carry the curve too,
+        not just the chord. set_length only trims the chord, so it doesn't."""
+        if getattr(self, "_resizing", False) or not hasattr(self, "anchor_end"):
+            return
+        moved = func(np.vstack([self.anchor_start, self.anchor_end]))
+        self.anchor_start, self.anchor_end = moved[0].copy(), moved[1].copy()
+
+    def set_length(self, length):
+        self._resizing = True
+        try:
+            return super().set_length(length)
+        finally:
+            self._resizing = False
+
     def lanes_crossed(self):
         dy = abs(self.anchor_end[1] - self.anchor_start[1])
         return max(1, int(round(dy / self.lane_pitch)))

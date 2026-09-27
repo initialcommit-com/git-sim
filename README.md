@@ -42,7 +42,7 @@ Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work 
 - NEW: `git-sim live` follows your repository as it changes: every commit, branch, checkout, reset, rebase, stash or staged file plays as a before / after animation the moment it happens, in your browser or in a VS Code tab or sidebar view, with the session's changes kept for stepping back and replaying (see [Live mode](#live-mode)).
 - NEW: git-sim plugs in wherever Git is used: `git sim` in the terminal, a [VS Code extension](docs/vscode.md), [Vim, Neovim and Emacs](docs/integrations.md), [Jupyter](docs/integrations.md#jupyter), a [`gh` extension and a GitHub Action](docs/integrations.md) for pull requests, an [embeddable viewer](docs/embed.md) for blogs and docs (`--img-format svg` writes the graph it shows), and [AI agents](docs/mcp.md). See [docs/integrations.md](docs/integrations.md).
 - Run a one-liner git-sim command in the terminal to generate a custom Git command visualization from your repo: an interactive `.html` page by default, or a `.jpg` / `.png` image with `--img-format`
-- Supported commands: `add`, `branch`, `checkout`, `cherry-pick`, `clean`, `clone`, `commit`, `config`, `fetch`, `init`, `log`, `merge`, `mv`, `pull`, `push`, `rebase`, `reflog`, `remote`, `reset`, `restore`, `revert`, `rm`, `stash`, `status`, `submodule`, `switch`, `tag`, `worktree`
+- Supported commands: `add`, `branch`, `checkout`, `cherry-pick`, `clean`, `clone`, `commit`, `config`, `fetch`, `init`, `log`, `merge`, `mv`, `pull`, `push`, `rebase`, `reflog`, `remote`, `reset`, `restore`, `revert`, `rm`, `stash`, `status`, `submodule`, `switch`, `tag`, `worktree`, plus the read-and-investigate commands `show`, `diff`, `blame` and `bisect`
 - Generate an animated video (.mp4) instead of a static image using the `--animate` flag (note: significant performance slowdown, it is recommended to use `--low-quality` to speed up testing and remove when ready to generate presentation-quality video)
 - Color commits by parameter, such as author with the `--color-by=author` option
 - Choose between light mode (default) and dark mode
@@ -157,7 +157,7 @@ $ git-sim <subcommand> -h
 * Animated output only: [Manim (Community version)](https://www.manim.community/), installed via `pip install "git-sim[extras]"`
 
 ## Commands
-Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "add", "branch", "checkout", "cherry-pick", "clean", "clone", "commit", "config", "fetch", "init", "log", "merge", "mv", "pull", "push", "rebase", "reflog", "remote", "reset", "restore", "revert", "rm", "stash", "status", "submodule", "switch", "tag", "worktree" along with corresponding options.
+Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "add", "bisect", "blame", "branch", "checkout", "cherry-pick", "clean", "clone", "commit", "config", "diff", "fetch", "init", "log", "merge", "mv", "pull", "push", "rebase", "reflog", "remote", "reset", "restore", "revert", "rm", "show", "stash", "status", "submodule", "switch", "tag", "worktree" along with corresponding options.
 
 
 ```console
@@ -238,6 +238,21 @@ Usage: `git-sim add <file 1> <file 2> ... <file n>`
 
 [![git-sim add scratch.txt README.md](docs/img/add.svg)](https://initialcommit.com/tools/git-sim?demo=add)
 
+### git bisect
+Usage: `git-sim bisect start [<bad> [<good>...]]` | `git-sim bisect good|bad|old|new|skip [<commit>]` | `git-sim bisect reset [<commit>]`
+
+- `start <bad> <good>` draws the `bad` and `good-<sha>` marks, turns the commits still suspected purple, and moves `HEAD` to the commit git checks out to test next
+- The next commit comes from git itself (`git rev-list --bisect`, and git's own rule when commits were skipped), so the drawing matches what `git bisect` does
+- `good`, `bad` and `skip` continue the session in progress (read from `refs/bisect/*`), marking `HEAD` or the given commit; once one suspect is left it is drawn in gold as the first bad commit
+- `reset` removes the marks and returns `HEAD` to where the session started
+
+### git blame
+Usage: `git-sim blame <file> [-L <start>,<end>]`
+
+- A code view of the file: each line has a colored gutter for the commit that last changed it, with that commit's short hash at the start of each run of lines
+- Each of those commits is painted the same color in the graph; lines edited but not committed yet are grey
+- `-L` limits it to a range of lines, as in git (`10,20` or `10,+5`)
+
 ### git branch
 Usage: `git-sim branch <new branch name>` | `git-sim branch -d|-D <branch>` | `git-sim branch -m <branch> <new name>`
 
@@ -305,6 +320,14 @@ Usage: `git-sim config [--list] <section.option> <value>`
 - Use `--list` or `-l` to display all configuration
 
 [![git-sim config user.name "Ada Lovelace"](docs/img/config.svg)](https://initialcommit.com/tools/git-sim?demo=config)
+
+### git diff
+Usage: `git-sim diff [--staged] [<commit> [<commit>]] [<path>...]` | `git-sim diff <A>..<B>` | `git-sim diff <A>...<B>`
+
+- Shows what the diff goes from and to: HEAD to the working directory ("Unstaged changes"; with something staged it starts from the staging area, which is what `git diff` really compares with), HEAD to the staging area (`--staged`, alias `--cached`: "Staged changes"), a commit to the working directory, or one commit to another
+- Commits are labeled `from` / `to` in the graph; `A...B` goes from their merge base, as git does
+- Plays in order: the "from" side alone (purple, as a chip under the graph and on its commit), then an arrow to the "to" side (teal), then the card
+- The card lists each changed file like `git diff --stat`: its status (M, A, D, R), path, lines added and removed, and a five-block bar; arguments that aren't revisions are paths to limit it to
 
 ### git fetch
 Usage: `git-sim fetch <remote> <branch>`
@@ -407,10 +430,9 @@ Usage: `git-sim reset <reset-to> [--mixed|--soft|--hard]` | `git-sim reset [<com
 [![git-sim reset --hard HEAD~2](docs/img/reset-hard.svg)](https://initialcommit.com/tools/git-sim?demo=reset-hard)
 
 ### git restore
-Usage: `git-sim restore [--staged] [--source <commit>] <file 1> <file 2> ... <file n>`
+Usage: `git-sim restore [--staged] <file 1> <file 2> ... <file n>`
 
 - Specify one or more `<file>` as a *modified* working directory file, or staged file
-- `--source <commit>` restores the files' content from that commit (HEAD does not move); git-sim checks each file exists there
 - Simulated output will show files being moved back to the working directory or discarded changes
 - Note that simulated output will also show the most recent 5 commits on the active branch
 
@@ -436,12 +458,19 @@ Usage: `git-sim rm <file 1> <file 2> ... <file n>`
 
 [![git-sim rm utils.py](docs/img/rm.svg)](https://initialcommit.com/tools/git-sim?demo=rm)
 
+### git show
+Usage: `git-sim show [<commit>|<tag>|<commit>:<path>]`
+
+- Highlights the commit shown (default `HEAD`) and, in a card under the graph, lists the files it changed like `git show --stat`; an annotated tag's tagger and message are noted
+- For a merge commit the files are compared with its first parent (git prints a combined diff)
+- `<commit>:<path>` shows the start of one file (or a directory listing) as it was in that commit
+
 ### git stash
 Usage: `git-sim stash [push|pop|apply] <file>` | `git-sim stash list|show|drop|clear [<stash-index>]`
 
 - Specify one or more `<file>` as a *modified* working directory file, or staged file
 - If no `<file>` is specified, all available files will be included
-- `list`, `show` and `drop` take a stash index (`1` or `stash@{1}`); `drop` and `clear` show the deleted entries struck through
+- `list`, `show`, `drop` and `clear` draw the stash as a stack of entries, newest (`stash@{0}`) on top: each card has the entry's message, its file and line counts, and the commit it was made on (short sha and message, not the history around it); `drop` fades the dropped entry out and slides the ones below it up a number, `clear` fades them all out, and `show` highlights the entry and lists its files like `git stash show --stat`
 - Simulated output will show files being moved in/out of the Git stash
 - Note that simulated output will also show the most recent 5 commits on the active branch
 

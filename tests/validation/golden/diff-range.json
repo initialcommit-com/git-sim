@@ -1,0 +1,141 @@
+{
+ "commits": {
+  "Finish pagination": {
+   "kind": "commit",
+   "parents": [
+    "Polish pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge branch 'feature/pagination'": {
+   "kind": "merge",
+   "parents": [
+    "?",
+    "Finish pagination"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 1
+  },
+  "Polish pagination": {
+   "kind": "commit",
+   "parents": [
+    "Test pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Test pagination": {
+   "kind": "commit",
+   "parents": [
+    "Wire up pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Wire up pagination": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 8,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [
+  {
+   "column": "Changes from HEAD~2 to HEAD",
+   "moved": false,
+   "name": "models.py",
+   "phase": "after"
+  },
+  {
+   "column": "Changes from HEAD~2 to HEAD",
+   "moved": false,
+   "name": "routes.py",
+   "phase": "after"
+  },
+  {
+   "column": "Changes from HEAD~2 to HEAD",
+   "moved": false,
+   "name": "src/health_check.py",
+   "phase": "after"
+  },
+  {
+   "column": "Changes from HEAD~2 to HEAD",
+   "moved": false,
+   "name": "src/order_totals.py",
+   "phase": "after"
+  },
+  {
+   "column": "Changes from HEAD~2 to HEAD",
+   "moved": false,
+   "name": "src/pagination.py",
+   "phase": "after"
+  },
+  {
+   "column": "Changes from HEAD~2 to HEAD",
+   "moved": false,
+   "name": "tests/test_orders.py",
+   "phase": "after"
+  },
+  {
+   "column": "Changes from HEAD~2 to HEAD",
+   "moved": false,
+   "name": "utils.py",
+   "phase": "after"
+  }
+ ],
+ "notes": [],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "feature/pagination": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "from": {
+   "count": 2,
+   "kind": "diff side",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "to": {
+   "count": 2,
+   "kind": "diff side",
+   "moved": false,
+   "phase": "after"
+  },
+  "v1.1.0": {
+   "count": 2,
+   "kind": "tag",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 2,
+ "title": "git diff HEAD~2..HEAD"
+}

@@ -314,6 +314,10 @@ app.command()(git_sim.commands.tag)
 app.command()(git_sim.commands.worktree)
 app.command()(git_sim.commands.reflog)
 app.command()(git_sim.commands.submodule)
+app.command()(git_sim.commands.show)
+app.command()(git_sim.commands.diff)
+app.command()(git_sim.commands.blame)
+app.command()(git_sim.commands.bisect)
 
 # Agent integration and the pre-flight check (not git subcommands).
 from git_sim.install import aliases, install, uninstall  # noqa: E402

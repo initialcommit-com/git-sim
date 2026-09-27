@@ -64,6 +64,16 @@ class SubmoduleSubCommand(Enum):
     DEINIT = "deinit"
 
 
+class BisectSubCommand(Enum):
+    START = "start"
+    BAD = "bad"
+    GOOD = "good"
+    NEW = "new"  # git's alternative terms: new = bad, old = good
+    OLD = "old"
+    SKIP = "skip"
+    RESET = "reset"
+
+
 class RemoteSubCommand(Enum):
     ADD = "add"
     RENAME = "rename"

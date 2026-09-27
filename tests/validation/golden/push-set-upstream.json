@@ -75,5 +75,5 @@
   }
  },
  "steps": 1,
- "title": "git push --set-upstream origin..."
+ "title": "git push --set-upstream origin main"
 }

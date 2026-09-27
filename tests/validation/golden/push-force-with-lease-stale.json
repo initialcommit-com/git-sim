@@ -72,5 +72,5 @@
   }
  },
  "steps": 1,
- "title": "git push --force-with-lease or..."
+ "title": "git push --force-with-lease origin main"
 }

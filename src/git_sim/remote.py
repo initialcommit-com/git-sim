@@ -28,7 +28,6 @@ class Remote(Cards, GitSimBaseCommand):
         self.command = command
         self.remote = remote
         self.url_or_path = url_or_path
-        self.title_length = 56
 
         self.cmd += f"{type(self).__name__.lower()}"
         if self.command in (

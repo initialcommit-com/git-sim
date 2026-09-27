@@ -103,5 +103,5 @@
   }
  },
  "steps": 1,
- "title": "git submodule add http<path>"
+ "title": "git submodule add http<path> vendor/lib"
 }

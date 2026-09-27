@@ -181,5 +181,5 @@
   }
  },
  "steps": 5,
- "title": "git cherry-pick branch2~2..bra..."
+ "title": "git cherry-pick branch2~2..branch2"
 }

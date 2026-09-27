@@ -118,5 +118,5 @@
   }
  },
  "steps": 1,
- "title": "git worktree add -b topic ../t..."
+ "title": "git worktree add -b topic ../topic-wt"
 }

@@ -172,5 +172,5 @@
   }
  },
  "steps": 2,
- "title": "git cherry-pick branch2 -e \"Pi..."
+ "title": "git cherry-pick branch2 -e \"Picked with a new message\""
 }
