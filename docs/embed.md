@@ -6,7 +6,7 @@ details, zoom, sharing. Two lines:
 
 ```html
 <div class="git-sim" data-src="/img/rebase-main.svg" data-title="git rebase main">
-  <a href="https://initialcommit.com/tools/git-sim">git rebase main, simulated with git-sim</a>
+  <a href="https://initialcommit.com/tools/git-sim">git rebase main, created with git-sim</a>
 </div>
 <script src="https://initialcommit.com/js/tools/git-sim-embed.js" defer></script>
 ```

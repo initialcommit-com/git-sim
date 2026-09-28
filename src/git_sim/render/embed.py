@@ -25,7 +25,7 @@ or ``light``; default follows the host page's ``prefers-color-scheme``),
 ``data-controls`` (``full`` or ``compact``, which drops the brand and share
 links), ``data-height`` (a fixed height instead of fitting the graph).
 
-Under the frame goes a one-line credit, "<command>, simulated with git-sim",
+Under the frame goes a one-line credit, "<command>, created with git-sim",
 linking to git-sim's page at initialcommit.com. It is part of the host page,
 not the frame, so readers (and search engines) see where the graph comes
 from. The snippet in docs/embed.md writes the link inside the ``.git-sim``
@@ -93,7 +93,7 @@ EMBED_JS = r"""
     if (!link) {
       link = document.createElement('a');
       link.href = HOME;
-      link.textContent = (el.dataset.title ? el.dataset.title + ', simulated' : 'Simulated') + ' with git-sim';
+      link.textContent = (el.dataset.title ? el.dataset.title + ', created' : 'Created') + ' with git-sim';
     }
     const line = document.createElement('p');
     line.className = 'git-sim-credit';

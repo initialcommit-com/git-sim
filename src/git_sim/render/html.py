@@ -810,11 +810,11 @@ function makeViewer(root){
   // The command: from the page's meta, else from the link's fragment (git-sim
   // opening the hosted viewer keeps it out of the query string).
   const title = (info.title && info.title !== 'git-sim' ? info.title : '') || params.t || document.title;
-  if (params.t && (!info.title || info.title === 'git-sim')) document.title = params.t + ' — simulated with git-sim';
+  if (params.t && (!info.title || info.title === 'git-sim')) document.title = params.t + ' — created with git-sim';
   // The state a copied link pins. While the loop is playing nothing is pinned,
   // so whoever opens the link sees it play from "before" too.
   const stateHash = () => playing ? '' : progress <= 0.001 ? 'before' : progress >= maxStep - 0.001 ? 'after' : 'step=' + Math.round(progress);
-  const shareText = () => `${title} — simulated with git-sim`;
+  const shareText = () => `${title} — created with git-sim`;
   const fileName = () => (title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'git-sim');
   const canPack = typeof CompressionStream !== 'undefined';
   // A link to the hosted viewer: command + short text graph in the query
