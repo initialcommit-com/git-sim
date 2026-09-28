@@ -95,6 +95,72 @@ def test_merge_conflict_detected(repo):
     assert any("file1.txt" in w for w in report.warnings)
 
 
+def conflict_on_main(repo):
+    """main and feature both change file1.txt, and main has merged-in work stopped on it."""
+    (repo / "file1.txt").write_text("main version\n")
+    run_git(repo, "commit", "-am", "main edit")
+    run_git(repo, "checkout", "feature")
+    (repo / "file1.txt").write_text("feature version\n")
+    run_git(repo, "commit", "-am", "feature edit")
+    run_git(repo, "checkout", "main")
+    subprocess.run(["git", "merge", "feature"], cwd=repo, capture_output=True)
+
+
+def test_merge_squash_never_suggests_resetting_a_commit_away(repo):
+    report = analyze("git merge --squash feature", str(repo))
+    assert "nothing is committed" in report.summary
+    assert not any("HEAD~1" in r for r in report.recovery)
+    assert any("reset --merge" in r for r in report.recovery)
+
+
+def test_merge_abort_reports_the_conflict_work_it_discards(repo):
+    conflict_on_main(repo)
+    report = analyze("git merge --abort", str(repo))
+    assert "Calls off the merge" in report.summary
+    assert report.risk == Risk.CAUTION
+    assert any("file1.txt" in loss for loss in report.would_lose)
+
+
+def test_merge_continue_refuses_while_files_are_unmerged(repo):
+    conflict_on_main(repo)
+    report = analyze("git merge --continue", str(repo))
+    assert "refuses" in report.summary and "unmerged" in report.summary
+
+
+def test_abort_with_nothing_in_progress_changes_nothing(repo):
+    for op in ("merge", "rebase", "cherry-pick"):
+        report = analyze(f"git {op} --abort", str(repo))
+        assert report.risk == Risk.SAFE
+        assert f"No {op} in progress" in report.summary
+
+
+def test_cherry_pick_skip_names_the_dropped_commit(repo):
+    (repo / "file1.txt").write_text("main version\n")
+    run_git(repo, "commit", "-am", "main edit")
+    run_git(repo, "checkout", "feature")
+    (repo / "file1.txt").write_text("feature version\n")
+    run_git(repo, "commit", "-am", "feature edit")
+    run_git(repo, "checkout", "main")
+    subprocess.run(["git", "cherry-pick", "feature"], cwd=repo, capture_output=True)
+    report = analyze("git cherry-pick --skip", str(repo))
+    assert "feature edit" in report.summary
+    assert report.risk == Risk.CAUTION
+
+
+def test_pull_rebase_says_it_replays_local_commits(repo, tmp_path):
+    remote = tmp_path / "remote.git"
+    run_git(tmp_path, "init", "--bare", str(remote))
+    run_git(repo, "remote", "add", "origin", str(remote))
+    run_git(repo, "push", "-u", "origin", "main")
+    (repo / "local.txt").write_text("local\n")
+    run_git(repo, "add", ".")
+    run_git(repo, "commit", "-m", "local work")
+    report = analyze("git pull --rebase", str(repo))
+    assert "replays your 1 local commit(s)" in report.summary
+    assert "merges" not in report.summary
+    assert "merges" in analyze("git pull", str(repo)).summary
+
+
 def test_force_push_reports_remote_only_commits(repo, tmp_path):
     remote = tmp_path / "remote.git"
     run_git(tmp_path, "init", "--bare", str(remote))

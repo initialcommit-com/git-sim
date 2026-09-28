@@ -361,9 +361,16 @@ def analyze(
 
     args = tokens[1:]
     analyzer = _ANALYZERS.get(subcommand)
+    resume = next((a[2:] for a in args if a in RESUME_FLAGS), None)
     try:
         _attach_worktrees(repo, report)
-        if analyzer:
+        if resume and subcommand in IN_PROGRESS_STATE:
+            # --continue / --abort / --skip / --quit act on an operation that
+            # stopped, not on the arguments the other analyzers expect.
+            _analyze_in_progress(repo, subcommand, resume, report)
+        elif subcommand == "pull":
+            _analyze_pull(repo, args, report)
+        elif analyzer:
             analyzer(repo, args, report)
             if render_text and report.error is None:
                 report.text_graph = render_text_graph(repo, report)
@@ -388,6 +395,132 @@ def analyze(
 # ---------------------------------------------------------------------------
 # Analyzers
 # ---------------------------------------------------------------------------
+
+RESUME_FLAGS = ("--continue", "--abort", "--skip", "--quit")
+# What git keeps in .git while each operation is stopped.
+IN_PROGRESS_STATE = {
+    "merge": ("MERGE_HEAD",),
+    "rebase": ("rebase-merge", "rebase-apply"),
+    "cherry-pick": ("CHERRY_PICK_HEAD", "sequencer"),
+    "revert": ("REVERT_HEAD", "sequencer"),
+}
+
+
+def _git_path(repo: git.Repo, name: str) -> str:
+    return os.path.join(repo.git_dir, name)
+
+
+def _analyze_in_progress(repo: git.Repo, op: str, action: str, report: PreflightReport) -> None:
+    """--continue, --abort, --skip and --quit for a merge, rebase, cherry-pick
+    or revert that stopped. What they do depends on the stopped operation's
+    state (the commit it was applying, where the branch was, the files still
+    unmerged and the resolution work in the working tree), not on arguments."""
+    state = [n for n in IN_PROGRESS_STATE[op] if os.path.exists(_git_path(repo, n))]
+    if not state:
+        report.summary = f"No {op} in progress, so git refuses --{action}; nothing changes."
+        return
+
+    unmerged = [p for p in repo.git.diff("--name-only", "--diff-filter=U").splitlines() if p]
+    edited = [p for p in repo.git.diff("--name-only").splitlines() if p and p not in unmerged]
+    rebase_dir = next((_git_path(repo, n) for n in ("rebase-merge", "rebase-apply") if os.path.isdir(_git_path(repo, n))), None)
+
+    def read(path):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                return fh.read().strip()
+        except OSError:
+            return ""
+
+    # the commit being applied, and where the branch was before it all started
+    marker = {"merge": "MERGE_HEAD", "cherry-pick": "CHERRY_PICK_HEAD", "revert": "REVERT_HEAD", "rebase": "REBASE_HEAD"}[op]
+    applying = read(_git_path(repo, marker)).split()
+    applying = repo.commit(applying[0]) if applying else None
+    orig = read(os.path.join(rebase_dir, "orig-head")) if rebase_dir else read(_git_path(repo, "ORIG_HEAD"))
+    head = repo.head.commit
+    branch = read(os.path.join(rebase_dir, "head-name")).replace("refs/heads/", "") if rebase_dir else (
+        repo.active_branch.name if not repo.head.is_detached else "HEAD")
+    what = f"{_describe_commit(applying)}" if applying else None
+    files = unmerged + edited
+
+    if action == "abort":
+        if op == "rebase":
+            back = orig[:7] if orig else "where it started"
+            report.summary = f"Calls off the rebase: {branch} and HEAD go back to {back}, and the staging area and working directory are reset to match."
+            made = repo.git.rev_list(head.hexsha, f"^{orig}").split() if orig else []
+            if made:
+                report.facts.append(f"{len(made)} new commit(s) the rebase already created stop being on any branch (the reflog keeps them).")
+                for sha in made:
+                    report.marks[sha] = "DROPPED (in reflog)"
+                report.recovery.append(f"The new commits stay in the reflog for a while: git reflog, then git reset --hard <sha>")
+        else:
+            report.summary = f"Calls off the {op}: HEAD stays on {_short_sha(head)}, and the staging area and working directory are reset to it. Nothing is committed."
+        if what:
+            report.facts.append(f"It was applying {what}, which stays where it is.")
+        for f in files:
+            report.would_lose.append(f"your edits to {f} since the {op} stopped (not recoverable)")
+            report.panel_rows.append(("unmerged" if f in unmerged else "modified", f, "RESET (edits not recoverable)"))
+        report.escalate(Risk.CAUTION if files or op == "rebase" else Risk.SAFE)
+        if files:
+            report.recovery.append(f"Run the same {op} again to get the conflict back; the edits themselves can't be recovered.")
+        return
+
+    if action == "continue":
+        if unmerged:
+            report.summary = f"git refuses: {len(unmerged)} file(s) are still unmerged. Resolve them and git add them first."
+            report.facts.extend(f"  unmerged: {f}" for f in unmerged[:10])
+            return
+        if op == "merge":
+            report.summary = f"Creates the merge commit with your resolution; {branch} moves to it."
+        elif op == "rebase":
+            report.summary = f"Creates the commit with your resolution{' for ' + what if what else ''}, then replays the rest of the rebase; {branch} moves to the result at the end."
+        else:
+            report.summary = f"Creates the commit with your resolution{' for ' + what if what else ''}; {branch} moves to it."
+        report.recovery.append("Undo the new commit afterwards with: git reset --hard ORIG_HEAD")
+        return
+
+    if action == "skip":
+        if op == "merge":
+            report.summary = "git merge has no --skip; use --continue or --abort."
+            return
+        report.summary = f"Drops {what or 'the commit being applied'} from the {op} and carries on with the rest; any resolution work on it is discarded."
+        report.escalate(Risk.CAUTION)
+        for f in files:
+            report.would_lose.append(f"your edits to {f} for the skipped commit (not recoverable)")
+            report.panel_rows.append(("unmerged" if f in unmerged else "modified", f, "RESET (edits not recoverable)"))
+        if applying is not None:
+            report.facts.append(f"The skipped commit itself is untouched: {_short_sha(applying)} is still on its branch.")
+        return
+
+    # --quit
+    report.summary = f"Forgets the {op} but leaves HEAD, the staging area and your files exactly as they are."
+
+
+def _analyze_pull(repo: git.Repo, args: List[str], report: PreflightReport) -> None:
+    """pull is a fetch followed by a merge, or by a rebase with --rebase (or
+    pull.rebase set). Local commits stay reachable either way, but a rebase
+    replays them as new commits with new hashes."""
+    rebase = any(a in ("--rebase", "-r") or a.startswith("--rebase=") for a in args)
+    if not rebase and "--no-rebase" not in args:
+        try:
+            rebase = str(repo.config_reader().get_value("pull", "rebase", "false")).lower() not in ("false", "0", "no", "")
+        except Exception:
+            rebase = False
+    tracking = _tracking_ref(repo)
+    local = list(repo.iter_commits(f"{tracking.name}..HEAD")) if tracking else []
+    if rebase:
+        report.summary = (
+            f"Fetches, then replays your {len(local)} local commit(s) on top of what was fetched: "
+            "they get new hashes, and no merge commit is made."
+            if local else "Fetches, then moves your branch to what was fetched (nothing local to replay)."
+        )
+        report.facts.extend(f"  {_describe_commit(c)}" for c in local[:20])
+        for c in local:
+            report.marks[c.hexsha] = "REPLAYED (new hash)"
+        if local:
+            report.escalate(Risk.CAUTION)
+            report.recovery.append(f"The original commits stay in the reflog: git reset --hard {_short_sha(repo.head.commit)}")
+    else:
+        report.summary = "Fetches, then merges what was fetched into your branch; local commits stay where they are."
 
 
 def _analyze_reset(repo: git.Repo, args: List[str], report: PreflightReport) -> None:
@@ -575,9 +708,16 @@ def _analyze_merge(repo: git.Repo, args: List[str], report: PreflightReport) -> 
         report.summary = f"Already up to date; merging {positional[0]} changes nothing."
         return
 
-    ff = base is not None and base.hexsha == head.hexsha and "--no-ff" not in args
-    kind = "fast-forward" if ff else "merge commit"
-    report.summary = f"Brings in {len(incoming)} commit(s) from {positional[0]} ({kind})."
+    squash = "--squash" in args
+    ff = not squash and base is not None and base.hexsha == head.hexsha and "--no-ff" not in args
+    if squash:
+        report.summary = (
+            f"Stages the combined changes of {len(incoming)} commit(s) from {positional[0]} "
+            f"as one change; nothing is committed, and {positional[0]} is not recorded as merged."
+        )
+    else:
+        kind = "fast-forward" if ff else "merge commit"
+        report.summary = f"Brings in {len(incoming)} commit(s) from {positional[0]} ({kind})."
     report.facts.extend(f"  {_describe_commit(c)}" for c in incoming[:20])
     report.graph_tips.append(other.hexsha)
     for c in incoming:
@@ -597,7 +737,21 @@ def _analyze_merge(repo: git.Repo, args: List[str], report: PreflightReport) -> 
                 f"Merge WILL conflict in {len(conflicted)} file(s): "
                 + ", ".join(conflicted[:10])
             )
-    report.recovery.append("A merge commit can be undone with: git reset --hard HEAD~1")
+    if squash:
+        # No commit is made, so HEAD~1 would throw away a real commit: the
+        # squash is undone by resetting the index and the files it changed.
+        report.recovery.append(
+            "Nothing is committed. To drop the staged changes: git reset --merge "
+            "(changes you made before the squash are kept)"
+        )
+    elif ff:
+        report.recovery.append(
+            f"A fast-forward only moves the branch: git reset --hard ORIG_HEAD puts it back on {_short_sha(head)}"
+        )
+    else:
+        report.recovery.append(
+            f"Undo the merge commit with: git reset --hard ORIG_HEAD (back to {_short_sha(head)})"
+        )
 
 
 def _analyze_push(repo: git.Repo, args: List[str], report: PreflightReport) -> None:
