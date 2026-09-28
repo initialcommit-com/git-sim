@@ -154,6 +154,17 @@ class Show(GitSimBaseCommand):
         self.draw_own_refs()
         # not on HEAD's line (another branch): drawn where it really is, on a lane of its own
         self.ensure_drawn(self.commit)
+        # a merge commit: its other parents on a lane of their own, linked to it,
+        # so the picture shows what came together (git show diffs a merge
+        # against those parents)
+        for parent in self.commit.parents[1:]:
+            if self.ensure_drawn(parent) and self.commit.hexsha in self.drawnCommits:
+                self.draw_arrow_between_commits(self.commit.hexsha, parent.hexsha, kind="parent")
+                # the link is history, there before git show runs, not something it adds
+                link = self.arrows[-1]
+                self.tag(link, phase="before")
+                for dot in getattr(link, "dots", []):
+                    self.tag(dot, phase="before")
         self.mark_commits([self.commit.hexsha], self.theme.head)
         self.build_notes()
         if self.skipped:

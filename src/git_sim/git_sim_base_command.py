@@ -1355,6 +1355,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.tag(text, phase="after", with_recolor=True)
             self.removed_mobjects.append(twin)
         self._zone_twins = []
+        # a row the command adds (worktree add's new worktree) isn't there before it
+        for text in getattr(self, "_zone_new", []):
+            self.tag(text, phase="after")
+        self._zone_new = []
 
         self.firstColumnFiles = firstColumnFiles
         self.secondColumnFiles = secondColumnFiles
@@ -1961,6 +1965,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             values = row[:3]
             struck = row[3] if len(row) > 3 else False
             bold = row[4] if len(row) > 4 else False
+            new = row[5] if len(row) > 5 else False  # arrives with the command
             for value, (title, group, lookup) in zip(values, columns):
                 if value is None:
                     continue
@@ -1974,7 +1979,11 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 ).shift(m.DOWN * 0.5 * (i + 1))
                 group.add(text)
                 lookup[after] = text
-                if struck or before != after:
+                if new:
+                    if not hasattr(self, "_zone_new"):
+                        self._zone_new = []
+                    self._zone_new.append(text)
+                elif struck or before != after:
                     self.zone_twin(text, self.trim_cmd(str(before), 30),
                                    name=str(before) if before != after else None)
 

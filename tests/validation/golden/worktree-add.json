@@ -61,13 +61,13 @@
    "column": "Branch",
    "moved": false,
    "name": "main",
-   "phase": "before"
+   "phase": "after"
   },
   {
    "column": "State",
    "moved": false,
    "name": "checked out, clean",
-   "phase": "before"
+   "phase": "after"
   },
   {
    "column": "State",
@@ -79,7 +79,7 @@
    "column": "Worktree",
    "moved": false,
    "name": "hotfix  (new)",
-   "phase": "before"
+   "phase": "after"
   },
   {
    "column": "Worktree",

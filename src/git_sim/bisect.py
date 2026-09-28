@@ -255,7 +255,9 @@ class Bisect(GitSimBaseCommand):
                 f"Bisecting: {len(testable)} commit(s) still to test, some skipped; git checks out {self.next[:7]} next."
             )
         else:
-            left = int(vars_.get("bisect_nr", left))
+            # git bisect's own message counts the revisions on the good side of its
+            # pick (rev-list's bisect_good), not bisect_nr, which is the larger half
+            left = int(vars_.get("bisect_good", left))
             steps = int(vars_.get("bisect_steps", max(0, math.ceil(math.log2(left + 1)))))
             self.notes.append(
                 f"Bisecting: {left} revision(s) left to test after this (roughly {steps} step{'s' if steps != 1 else ''})."

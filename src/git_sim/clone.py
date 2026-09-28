@@ -62,6 +62,8 @@ class Clone(GitSimBaseCommand):
 
         head_commit = self.get_commit()
         self.parse_commits(head_commit)
+        # nothing was here before the clone: its commits and branches all arrive with it
+        self.tag_changes_since(set())
         self.recenter_frame()
         self.scale_frame()
         self.add_details(repo_name)

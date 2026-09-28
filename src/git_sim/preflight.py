@@ -532,7 +532,8 @@ def _analyze_reset(repo: git.Repo, args: List[str], report: PreflightReport) -> 
     positional = _positionals(args)
     target = positional[0] if positional else "HEAD"
 
-    target_commit = repo.commit(target)
+    # git's own rev-parse: GitPython misreads reflog forms like HEAD@{1}
+    target_commit = repo.commit(repo.git.rev_parse("--verify", target + "^{commit}"))
     head_commit = repo.head.commit
     abandoned = list(repo.iter_commits(f"{target_commit.hexsha}..HEAD"))
 

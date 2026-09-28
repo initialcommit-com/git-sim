@@ -132,6 +132,11 @@ class Worktree(GitSimBaseCommand):
         self.show_intro()
         self.parse_commits()
         self.parse_all()
+        if self.command == WorktreeSubCommand.ADD and self.new_branch and self.head_exists():
+            # -b: the new branch starts at HEAD, created by the command
+            head = self.repo.head.commit
+            self.draw_ref(head, self.stack_top(head.hexsha), text=self.new_branch,
+                          color=self.theme.branch, kind="branch", phase="after")
         self.build_rows()
         self.recenter_frame()
         self.scale_frame()
@@ -189,6 +194,7 @@ class Worktree(GitSimBaseCommand):
                     "checked out, clean",
                     False,
                     True,
+                    True,  # new: the row arrives with the command
                 )
             )
             self.notes.append(

@@ -67,13 +67,13 @@
    "column": "Branch",
    "moved": false,
    "name": "topic  (new branch)",
-   "phase": "before"
+   "phase": "after"
   },
   {
    "column": "State",
    "moved": false,
    "name": "checked out, clean",
-   "phase": "before"
+   "phase": "after"
   },
   {
    "column": "State",
@@ -85,7 +85,7 @@
    "column": "Worktree",
    "moved": false,
    "name": "topic-wt  (new)",
-   "phase": "before"
+   "phase": "after"
   },
   {
    "column": "Worktree",
@@ -115,6 +115,12 @@
    "kind": "branch",
    "moved": false,
    "phase": "before"
+  },
+  "topic": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "after"
   }
  },
  "steps": 1,

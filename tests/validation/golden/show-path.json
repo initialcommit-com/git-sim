@@ -1,5 +1,14 @@
 {
  "commits": {
+  "Finish order totals": {
+   "kind": "commit",
+   "parents": [
+    "Polish order totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
   "Finish pagination": {
    "kind": "commit",
    "parents": [
@@ -12,12 +21,31 @@
   "Merge branch 'feature/pagination'": {
    "kind": "merge",
    "parents": [
-    "?",
-    "Finish pagination"
+    "Finish pagination",
+    "Merge branch 'fix/order-totals'"
    ],
    "phase": "before",
    "recolored": true,
    "step": 1
+  },
+  "Merge branch 'fix/order-totals'": {
+   "kind": "merge",
+   "parents": [
+    "?",
+    "Finish order totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Polish order totals": {
+   "kind": "commit",
+   "parents": [
+    "Test order totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
   },
   "Polish pagination": {
    "kind": "commit",
@@ -28,10 +56,28 @@
    "recolored": false,
    "step": 0
   },
+  "Test order totals": {
+   "kind": "commit",
+   "parents": [
+    "Wire up order totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
   "Test pagination": {
    "kind": "commit",
    "parents": [
     "Wire up pagination"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Wire up order totals": {
+   "kind": "commit",
+   "parents": [
+    "?"
    ],
    "phase": "before",
    "recolored": false,
@@ -49,7 +95,7 @@
  },
  "edges": {
   "after": 0,
-  "before": 8,
+  "before": 26,
   "origin": 0,
   "removed": 0
  },
@@ -66,6 +112,12 @@
    "phase": "before"
   },
   "feature/pagination": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "fix/order-totals": {
    "count": 2,
    "kind": "branch",
    "moved": false,
