@@ -19,6 +19,8 @@ class Push(GitSimBaseCommand):
         set_upstream: bool = False,
         force: bool = False,
         force_with_lease: bool = False,
+        delete: bool = False,
+        tags: bool = False,
     ):
         super().__init__()
         self.remote = remote
@@ -26,7 +28,19 @@ class Push(GitSimBaseCommand):
         self.set_upstream = set_upstream
         self.force = force
         self.force_with_lease = force_with_lease
+        self.delete = delete
+        self.tags = tags
         settings.max_branches_per_commit = 2
+
+        if delete and (tags or force or force_with_lease or set_upstream):
+            print("git-sim error: --delete takes a remote and a branch, and no other push options")
+            sys.exit(1)
+        if delete and not (remote and branch):
+            print("git-sim error: name the remote and the branch to delete: git push <remote> --delete <branch>")
+            sys.exit(1)
+        if tags and (force or force_with_lease):
+            print("git-sim error: git-sim simulates --tags without --force")
+            sys.exit(1)
 
         if self.force and self.force_with_lease:
             print("git-sim error: use either --force or --force-with-lease, not both")
@@ -39,6 +53,10 @@ class Push(GitSimBaseCommand):
             sys.exit(1)
 
         parts = [type(self).__name__.lower()]
+        if self.delete:
+            parts.append("--delete")
+        if self.tags:
+            parts.append("--tags")
         if self.set_upstream:
             parts.append("--set-upstream")
         if self.force:
@@ -53,6 +71,10 @@ class Push(GitSimBaseCommand):
             print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
+        if self.delete:
+            return self.construct_delete()
+        if self.tags:
+            return self.construct_tags()
 
         # Configure paths to make local clone to run networked commands in
         git_root = self.repo.git.rev_parse("--show-toplevel")
@@ -177,6 +199,130 @@ class Push(GitSimBaseCommand):
         # Delete the local clones
         shutil.rmtree(new_dir, onerror=self.del_rw)
         shutil.rmtree(new_dir2, onerror=self.del_rw)
+
+    # -- --delete and --tags: only refs change, so no clones are needed; the
+    # remote is only asked what it has (ls-remote), never written to ----------
+    def remote_refs(self, remote_name, kind):
+        """name -> sha of the remote's branches ("heads") or tags ("tags")."""
+        try:
+            out = self.repo.git.ls_remote(f"--{kind}", remote_name)
+        except git.GitCommandError as e:
+            print(f"git-sim error: could not read {remote_name}: {e.stderr.strip()}")
+            sys.exit(1)
+        refs = {}
+        for line in out.splitlines():
+            sha, _, ref = line.partition("\t")
+            if ref.endswith("^{}"):
+                continue  # the peeled line of an annotated tag
+            refs[ref.split("/", 2)[-1]] = sha
+        return refs
+
+    def construct_delete(self):
+        """git push <remote> --delete <branch>: the branch is deleted on the
+        remote and the matching remote-tracking label goes with it. Commits
+        only that branch reached on the remote are left unreachable there."""
+        remote_name, branch_name = self.remote, self.branch
+        heads = self.remote_refs(remote_name, "heads")
+        if branch_name not in heads:
+            print(f"git-sim error: unable to delete '{branch_name}': it does not exist on {remote_name}")
+            sys.exit(1)
+        tracking = f"{remote_name}/{branch_name}"
+        sha = heads[branch_name]
+        try:
+            commit = self.repo.commit(sha)
+        except Exception:
+            commit = None
+        self.parse_commits()
+        orphaned = []
+        if commit is not None:
+            self.ensure_drawn(commit)
+            if tracking not in self.drawnRefs and sha in self.drawnCommits:
+                self.draw_ref(commit, self.stack_top(sha), text=tracking, color=self.theme.remote, kind="remote", phase="before")
+            # what the remote still reaches from its other branches; a branch
+            # that moved on since the last fetch is judged by its fetched label
+            others = []
+            for name, s in heads.items():
+                if name == branch_name:
+                    continue
+                if self.has_commit(s):
+                    others.append(s)
+                elif self.has_commit(f"{remote_name}/{name}"):
+                    others.append(self.repo.commit(f"{remote_name}/{name}").hexsha)
+            try:
+                orphaned = self.repo.git.rev_list(sha, *[f"^{s}" for s in others]).split()
+            except git.GitCommandError:
+                orphaned = []
+            drawn = [s for s in orphaned if s in self.drawnCommits]
+            if drawn:
+                self.mark_commits(drawn)
+        if tracking in self.drawnRefs:
+            self.remove_ref(tracking)
+        notes = [(f"Deletes {branch_name} on {remote_name}, and your {tracking} label with it.", self.theme.gold)]
+        if orphaned:
+            notes.append(
+                f"{len(orphaned)} commit(s) only it reached (gold) are left unreachable on {remote_name}."
+            )
+        if branch_name in self.repo.heads:
+            notes.append(f"Your local branch {branch_name} is kept.")
+        self.recenter_frame()  # notes center on the frame
+        self.add_notes(notes)
+        self.finish()
+
+    def has_commit(self, sha):
+        try:
+            self.repo.commit(sha)
+            return True
+        except Exception:
+            return False
+
+    def construct_tags(self):
+        """git push --tags: every local tag the remote doesn't have is sent;
+        no branch moves. Each new one gets a pill saying it reached the remote."""
+        remote_name = self.remote or self.repo.remotes[0].name
+        remote_tags = self.remote_refs(remote_name, "tags")
+        local = {t.name: t for t in self.repo.tags}
+        new = sorted(name for name in local if name not in remote_tags)
+        clash = sorted(
+            name for name in local
+            if name in remote_tags and remote_tags[name] not in (local[name].commit.hexsha, local[name].object.hexsha)
+        )
+        self.parse_commits()
+        drawn_new = []
+        for name in new:
+            commit = local[name].commit
+            if not self.ensure_drawn(commit):
+                continue
+            if name not in self.drawnRefs:
+                self.draw_ref(commit, self.stack_top(commit.hexsha), text=name, color=self.theme.tag, kind="tag", phase="before")
+            self.draw_ref(
+                commit,
+                self.stack_top(commit.hexsha),
+                text=f"on {remote_name}",
+                color=self.theme.remote,
+                kind="pushed tag",
+                phase="after",
+            )
+            drawn_new.append(name)
+        if new:
+            listed = ", ".join(new[:5]) + (f" and {len(new) - 5} more" if len(new) > 5 else "")
+            notes = [f"Pushes {len(new)} tag(s) {remote_name} doesn't have: {listed}."]
+        else:
+            notes = [f"{remote_name} already has every tag: nothing to push."]
+        notes.append("Branches are not pushed; --tags sends tags only.")
+        if clash:
+            notes.append(
+                (f"Rejected: {', '.join(clash)} already exist{'s' if len(clash) == 1 else ''} on {remote_name} at another commit.", self.theme.gold)
+            )
+        self.recenter_frame()  # notes center on the frame
+        self.add_notes(notes)
+        self.finish()
+
+    def finish(self):
+        self.recenter_frame()
+        self.scale_frame()
+        self.show_command_as_title()
+        self.fadeout()
+        self.show_outro()
 
     def show_overwritten(self, remote_name, branch_name, head_commit, remote_only):
         flag = "--force" if self.force else "--force-with-lease"

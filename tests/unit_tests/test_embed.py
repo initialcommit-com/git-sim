@@ -39,6 +39,11 @@ def test_embed_script_carries_the_viewer_and_mounts_by_class():
     assert "__CSS__" not in js and "__VIEWER__" not in js and "__HEADER__" not in js
     # a saved page is fetched into the frame's document; an svg is fetched by the host and posted in
     assert "iframe.srcdoc = html" in js and "gitSimEmbedGraph" in js
+    # a credit under the frame, in the host page: the snippet's own link kept, else one
+    # made; left out on initialcommit.com itself
+    assert "git-sim-credit" in js and "https://initialcommit.com/tools/git-sim" in js
+    assert "a[href*=\"initialcommit.com\"]" in js and "initialcommit\\.com$" in js
+    assert js.count("el.replaceChildren(iframe)") == 1  # only inside place(), never bare
 
 
 def test_cli_writes_a_plain_svg_for_embedding(repo, tmp_path):

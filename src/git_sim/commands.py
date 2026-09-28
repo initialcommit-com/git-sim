@@ -26,6 +26,31 @@ def handle_animations(scene) -> None:
         return _handle_animations(scene, command_name)
 
 
+def _resume(operation: str, cont: bool, abort: bool, skip: bool, *others) -> bool:
+    """--continue / --abort / --skip: run instead of the command, which then
+    takes no other arguments. Returns whether one was given (and handled)."""
+    actions = [a for a, on in (("continue", cont), ("abort", abort), ("skip", skip)) if on]
+    if not actions:
+        return False
+    if len(actions) > 1 or any(others):
+        print(f"git-sim error: git {operation} --{actions[0]} takes no other arguments or options")
+        raise typer.Exit(1)
+    from git_sim.resume import Resume
+
+    scene = Resume(operation=operation, action=actions[0])
+    with settings.font_context:
+        from git_sim.animations import handle_animations as _handle_animations
+
+        _handle_animations(scene, operation.replace("-", "_"))
+    return True
+
+
+def _need(value, what: str):
+    if not value:
+        print(f"git-sim error: {what}")
+        raise typer.Exit(1)
+
+
 def add(
     files: List[str] = typer.Argument(
         default=None,
@@ -80,7 +105,7 @@ def checkout(
 
 def cherry_pick(
     commit: str = typer.Argument(
-        ...,
+        None,
         help="The ref (branch/tag), commit ID, or range A..B to simulate cherry-picking onto the active branch",
     ),
     edit: str = typer.Option(
@@ -95,7 +120,19 @@ def cherry_pick(
         "-n",
         help="Apply the changes to the index and working tree without committing",
     ),
+    cont: bool = typer.Option(
+        False, "--continue", help="After resolving a conflict: carry on with the cherry-pick in progress"
+    ),
+    abort: bool = typer.Option(
+        False, "--abort", help="Call off the cherry-pick in progress and go back to where it started"
+    ),
+    skip: bool = typer.Option(
+        False, "--skip", help="Drop the commit that stopped the cherry-pick, and carry on"
+    ),
 ):
+    if _resume("cherry-pick", cont, abort, skip, commit, edit, no_commit):
+        return
+    _need(commit, "name the commit to cherry-pick")
     from git_sim.cherrypick import CherryPick
 
     scene = CherryPick(commit=commit, edit=edit, no_commit=no_commit)
@@ -190,10 +227,16 @@ def fetch(
         default=None,
         help="The name of the branch to fetch",
     ),
+    prune: bool = typer.Option(
+        False,
+        "--prune",
+        "-p",
+        help="Remove remote-tracking branches whose branch is gone from the remote",
+    ),
 ):
     from git_sim.fetch import Fetch
 
-    scene = Fetch(remote=remote, branch=branch)
+    scene = Fetch(remote=remote, branch=branch, prune=prune)
     handle_animations(scene=scene)
 
 
@@ -225,7 +268,7 @@ def log(
 
 def merge(
     branch: str = typer.Argument(
-        ...,
+        None,
         help="The name of the branch to merge into the active checked-out branch",
     ),
     no_ff: bool = typer.Option(
@@ -239,10 +282,24 @@ def merge(
         "-m",
         help="The commit message of the new merge commit",
     ),
+    squash: bool = typer.Option(
+        False,
+        "--squash",
+        help="Stage the branch's changes as one set, without committing or recording a merge",
+    ),
+    cont: bool = typer.Option(
+        False, "--continue", help="After resolving a conflict: carry on with the merge in progress"
+    ),
+    abort: bool = typer.Option(
+        False, "--abort", help="Call off the merge in progress and go back to where it started"
+    ),
 ):
+    if _resume("merge", cont, abort, False, branch, no_ff, squash):
+        return
+    _need(branch, "name the branch to merge")
     from git_sim.merge import Merge
 
-    scene = Merge(branch=branch, no_ff=no_ff, message=message)
+    scene = Merge(branch=branch, no_ff=no_ff, message=message, squash=squash)
     handle_animations(scene=scene)
 
 
@@ -271,10 +328,16 @@ def pull(
         default=None,
         help="The name of the branch to pull",
     ),
+    rebase: bool = typer.Option(
+        False,
+        "--rebase",
+        "-r",
+        help="Replay your local commits on top of the fetched branch instead of merging",
+    ),
 ):
     from git_sim.pull import Pull
 
-    scene = Pull(remote=remote, branch=branch)
+    scene = Pull(remote=remote, branch=branch, rebase=rebase)
     handle_animations(scene=scene)
 
 
@@ -304,6 +367,17 @@ def push(
         "--force-with-lease",
         help="Overwrite the remote branch only if it still matches your last fetch",
     ),
+    delete: bool = typer.Option(
+        False,
+        "--delete",
+        "-d",
+        help="Delete the branch on the remote",
+    ),
+    tags: bool = typer.Option(
+        False,
+        "--tags",
+        help="Push every tag the remote doesn't have (and no branches)",
+    ),
 ):
     from git_sim.push import Push
 
@@ -313,13 +387,15 @@ def push(
         set_upstream=set_upstream,
         force=force,
         force_with_lease=force_with_lease,
+        delete=delete,
+        tags=tags,
     )
     handle_animations(scene=scene)
 
 
 def rebase(
     branch: str = typer.Argument(
-        ...,
+        None,
         help="The upstream to rebase the checked-out branch onto",
     ),
     onto: str = typer.Option(
@@ -338,7 +414,19 @@ def rebase(
         "--todo",
         help="With -i: path to a git rebase todo file (pick/reword/squash/fixup/drop <sha>)",
     ),
+    cont: bool = typer.Option(
+        False, "--continue", help="After resolving a conflict: carry on with the rebase in progress"
+    ),
+    abort: bool = typer.Option(
+        False, "--abort", help="Call off the rebase in progress and go back to where it started"
+    ),
+    skip: bool = typer.Option(
+        False, "--skip", help="Drop the commit that stopped the rebase, and carry on"
+    ),
 ):
+    if _resume("rebase", cont, abort, skip, branch, onto, interactive, todo):
+        return
+    _need(branch, "name the upstream to rebase onto")
     from git_sim.rebase import Rebase
 
     scene = Rebase(branch=branch, onto=onto, interactive=interactive, todo=todo)
@@ -444,11 +532,16 @@ def rm(
     files: List[str] = typer.Argument(
         default=None,
         help="The names of one or more files to remove from Git's index",
-    )
+    ),
+    cached: bool = typer.Option(
+        False,
+        "--cached",
+        help="Stop tracking the files but keep them on disk",
+    ),
 ):
     from git_sim.rm import Rm
 
-    scene = Rm(files=files)
+    scene = Rm(files=files, cached=cached)
     handle_animations(scene=scene)
 
 
@@ -464,6 +557,18 @@ def stash(
     stash_index: str = typer.Argument(
         default="0",
         help="Stash index",
+    ),
+    include_untracked: bool = typer.Option(
+        False,
+        "--include-untracked",
+        "-u",
+        help="push: stash untracked files too",
+    ),
+    message: str = typer.Option(
+        None,
+        "--message",
+        "-m",
+        help="push: the message the entry is saved with",
     ),
 ):
     from git_sim.stash import Stash
@@ -482,7 +587,13 @@ def stash(
         files = (files or []) + [stash_index]
         stash_index = "0"
 
-    scene = Stash(files=files, command=command, stash_index=stash_index)
+    scene = Stash(
+        files=files,
+        command=command,
+        stash_index=stash_index,
+        include_untracked=include_untracked,
+        message=message,
+    )
     handle_animations(scene=scene)
 
 

@@ -1,43 +1,43 @@
 {
  "commits": {
-  "Finish pagination": {
+  "Bump flask": {
    "kind": "commit",
    "parents": [
-    "Polish pagination"
+    "Retry failed database connections"
    ],
    "phase": "before",
    "recolored": false,
    "step": 0
   },
-  "Merge branch 'feature/pagination'": {
+  "Change README.md on feature/conflict": {
+   "kind": "commit",
+   "parents": [
+    "Return 404 for unknown orders"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Change README.md on main": {
+   "kind": "commit",
+   "parents": [
+    "Return 404 for unknown orders"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Merge branch 'feature/conflict'": {
    "kind": "merge",
    "parents": [
-    "?",
-    "Finish pagination"
+    "Change README.md on feature/conflict",
+    "Change README.md on main"
    ],
-   "phase": "before",
+   "phase": "after",
    "recolored": false,
-   "step": 0
+   "step": 1
   },
-  "Polish pagination": {
-   "kind": "commit",
-   "parents": [
-    "Test pagination"
-   ],
-   "phase": "before",
-   "recolored": false,
-   "step": 0
-  },
-  "Test pagination": {
-   "kind": "commit",
-   "parents": [
-    "Wire up pagination"
-   ],
-   "phase": "before",
-   "recolored": false,
-   "step": 0
-  },
-  "Wire up pagination": {
+  "Retry failed database connections": {
    "kind": "commit",
    "parents": [
     "?"
@@ -45,26 +45,35 @@
    "phase": "before",
    "recolored": false,
    "step": 0
+  },
+  "Return 404 for unknown orders": {
+   "kind": "commit",
+   "parents": [
+    "Bump flask"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
   }
  },
  "edges": {
-  "after": 0,
+  "after": 4,
   "before": 8,
   "origin": 0,
   "removed": 0
  },
  "files": [],
  "notes": [
-  "No local changes to save: git stash does nothing."
+  "Commits the merge with your resolutions: a merge commit with two parents, and main moves to it."
  ],
  "refs": {
   "HEAD": {
    "count": 2,
    "kind": "head",
-   "moved": false,
+   "moved": true,
    "phase": "before"
   },
-  "feature/pagination": {
+  "feature/conflict": {
    "count": 2,
    "kind": "branch",
    "moved": false,
@@ -73,16 +82,10 @@
   "main": {
    "count": 2,
    "kind": "branch",
-   "moved": false,
-   "phase": "before"
-  },
-  "v1.1.0": {
-   "count": 2,
-   "kind": "tag",
-   "moved": false,
+   "moved": true,
    "phase": "before"
   }
  },
- "steps": 1,
- "title": "git stash"
+ "steps": 2,
+ "title": "git merge --continue"
 }

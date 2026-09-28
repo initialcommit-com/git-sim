@@ -491,28 +491,41 @@ def _analyze_clean(repo: git.Repo, args: List[str], report: PreflightReport) -> 
 
 
 def _analyze_rebase(repo: git.Repo, args: List[str], report: PreflightReport) -> None:
-    positional = _positionals(args)
+    # --onto takes a value: `--onto main HEAD~2` replays HEAD~2..HEAD onto main,
+    # so main is the new base, not the upstream.
+    onto, rest, i = None, [], 0
+    while i < len(args):
+        if args[i] == "--onto" and i + 1 < len(args):
+            onto = args[i + 1]
+            i += 2
+            continue
+        if args[i].startswith("--onto="):
+            onto = args[i].split("=", 1)[1]
+        else:
+            rest.append(args[i])
+        i += 1
+    positional = _positionals(rest)
     if not positional:
         report.escalate(Risk.CAUTION)
         report.summary = "Rebase with no upstream argument; cannot compute replay set."
         return
     upstream = repo.commit(positional[0])
+    new_base = repo.commit(onto) if onto else upstream
     head = repo.head.commit
-    bases = repo.merge_base(upstream, head)
-    base = bases[0] if bases else None
-    replayed = list(repo.iter_commits(f"{base.hexsha}..HEAD")) if base else []
+    # git replays the commits HEAD has that the upstream doesn't
+    replayed = list(repo.iter_commits(f"{upstream.hexsha}..HEAD", no_merges=True))
 
     branch = repo.active_branch.name if not repo.head.is_detached else "HEAD"
     report.escalate(Risk.CAUTION)
     report.summary = (
         f"Replays {len(replayed)} commit(s) from {branch} onto "
-        f"{positional[0]} — every replayed commit gets a NEW hash."
+        f"{onto or positional[0]} — every replayed commit gets a NEW hash."
     )
     report.facts.extend(f"  {_describe_commit(c)}" for c in replayed)
-    report.graph_tips.append(upstream.hexsha)
+    report.graph_tips.append(new_base.hexsha)
     for c in replayed:
         report.marks[c.hexsha] = "REPLAYED (new hash)"
-    report.marks.setdefault(upstream.hexsha, "NEW BASE")
+    report.marks.setdefault(new_base.hexsha, "NEW BASE")
     if replayed:
         report.recovery.append(
             f"Original commits stay in the reflog: git reset --hard {_short_sha(head)}"
@@ -588,6 +601,15 @@ def _analyze_merge(repo: git.Repo, args: List[str], report: PreflightReport) -> 
 
 
 def _analyze_push(repo: git.Repo, args: List[str], report: PreflightReport) -> None:
+    positional = _positionals(args)
+    deleting = any(a in ("--delete", "-d") for a in args) or any(p.startswith(":") for p in positional[1:])
+    if deleting:
+        _analyze_push_delete(repo, positional, report)
+        return
+    if "--tags" in args:
+        report.summary = "Pushes every local tag the remote doesn't have; no branch moves."
+        report.facts.append(f"{len(repo.tags)} local tag(s); tags the remote already has at another commit are rejected.")
+        return
     force = any(a in args for a in ("--force", "-f"))
     lease = any(a.startswith("--force-with-lease") for a in args)
     positional = _positionals(args)
@@ -824,6 +846,43 @@ def _analyze_stash(repo: git.Repo, args: List[str], report: PreflightReport) -> 
         report.summary = "Applies and removes the top stash; kept if conflicts occur."
     else:
         report.summary = "Stashes current changes; recoverable via git stash pop."
+        if any(a in ("-u", "--include-untracked") for a in args):
+            report.facts.append("Untracked files are stashed too, and removed from the working directory.")
+
+
+def _analyze_push_delete(repo: git.Repo, positional: List[str], report: PreflightReport) -> None:
+    """git push <remote> --delete <branch> (or <remote> :<branch>): removes
+    the branch on the remote. Judged from the last fetched view of it."""
+    if len(positional) < 2:
+        report.summary = "push --delete with no branch named."
+        return
+    remote_name, branch = positional[0], positional[1].lstrip(":")
+    tracking_name = f"{remote_name}/{branch}"
+    report.escalate(Risk.DESTRUCTIVE)
+    report.summary = f"DELETES the branch {branch} on {remote_name} (for everyone who uses it)."
+    try:
+        tip = repo.commit(tracking_name)
+    except Exception:
+        report.facts.append(f"No {tracking_name} fetched here; git fetch shows what the remote branch holds.")
+        return
+    report.graph_tips.append(tip.hexsha)
+    others = [
+        r.commit.hexsha
+        for r in repo.remotes[remote_name].refs
+        if r.name != tracking_name and not r.name.endswith("/HEAD")
+    ] if remote_name in repo.remotes else []
+    try:
+        only = repo.git.rev_list(tip.hexsha, *[f"^{s}" for s in others]).split()
+    except git.GitCommandError:
+        only = []
+    for sha in only:
+        report.marks[sha] = "UNREACHABLE ON REMOTE"
+    if only:
+        report.would_lose.extend(f"remote commit {_describe_commit(repo.commit(s))}" for s in only[:10])
+        report.facts.append(f"{len(only)} commit(s) are reached by no other branch on {remote_name}.")
+    if branch in repo.heads:
+        report.facts.append(f"Your local branch {branch} is not touched.")
+    report.recovery.append(f"Put it back with: git push {remote_name} {tip.hexsha[:7]}:refs/heads/{branch}")
 
 
 def _stash_rows(report: PreflightReport, entries: List[str], fate: str) -> None:

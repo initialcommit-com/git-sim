@@ -88,7 +88,11 @@
    "phase": "before"
   }
  ],
- "notes": [],
+ "notes": [
+  "Saved as stash@{0}: WIP on main: 871bfd5 Pin the test dependencies",
+  "The 1 existing entry moves down one number.",
+  "2 untracked file(s) stay in the working directory: git stash -u stashes them too."
+ ],
  "refs": {
   "HEAD": {
    "count": 2,

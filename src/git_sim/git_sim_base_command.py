@@ -1341,6 +1341,21 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         self.toFadeOut.add(firstColumnFiles, secondColumnFiles, thirdColumnFiles)
 
+        # Entries the command changes in place: the plain twin shows before,
+        # the entry as the command leaves it after (see zone_twin). An entry
+        # that a move brings in (clean's "Deleted files") doesn't exist
+        # before at all, so it gets no twin: it arrives with the move.
+        for text, twin, name in getattr(self, "_zone_twins", []):
+            meta = dict(getattr(text, "meta", None) or {})
+            if not meta or meta.get("moved_by") is not None:
+                continue
+            self.tag(twin, **{**meta, "phase": "removed", **({"name": name} if name else {})})
+            # with_recolor: the switch happens on the last step, together with
+            # the twin fading (a pop applies the files, then drops the entry)
+            self.tag(text, phase="after", with_recolor=True)
+            self.removed_mobjects.append(twin)
+        self._zone_twins = []
+
         self.firstColumnFiles = firstColumnFiles
         self.secondColumnFiles = secondColumnFiles
         self.thirdColumnFiles = thirdColumnFiles
@@ -1876,27 +1891,48 @@ class GitSimBaseCommand(m.MovingCameraScene):
         for col, names, title, group, lookup in columns:
             for i, f in enumerate(names):
                 label = self.zone_label(col, f)
-                if self.zone_struck(col, f):
-                    text = m.MarkupText(
-                        "<span strikethrough='true' strikethrough_color='"
-                        + self.fontColor
-                        + "'>"
-                        + label
-                        + "</span>",
-                        font=self.font,
-                        font_size=24,
-                        color=self.fontColor,
-                    )
-                else:
-                    text = m.Text(
-                        label, font=self.font, font_size=24, color=self.fontColor
-                    )
+                struck = self.zone_struck(col, f)
+                text = self.zone_text(label, struck)
                 row = rows.get((col, f), i)
                 text.move_to(
                     (title.get_center()[0], horizontal2.get_center()[1], 0)
                 ).shift(m.DOWN * 0.5 * (row + 1))
                 group.add(text)
                 lookup[f] = text
+                if struck:
+                    self.zone_twin(text, label)
+
+    def zone_text(self, label, struck=False, bold=False):
+        if struck:
+            return m.MarkupText(
+                "<span strikethrough='true' strikethrough_color='"
+                + self.fontColor
+                + "'>"
+                + label
+                + "</span>",
+                font=self.font,
+                font_size=24,
+                color=self.fontColor,
+                weight=m.BOLD if bold else m.NORMAL,
+            )
+        return m.Text(
+            label,
+            font=self.font,
+            font_size=24,
+            color=self.fontColor,
+            weight=m.BOLD if bold else m.NORMAL,
+        )
+
+    def zone_twin(self, text, before_label, bold=False, name=None):
+        """A table entry the command changes (struck through: dropped,
+        removed, consumed) reads as it was in the page's "before" view: a
+        plain twin in the same place shows until the command plays, then the
+        entry as the command leaves it. setup_and_draw_zones tags the pair."""
+        twin = self.zone_text(before_label, bold=bold)
+        twin.move_to(text.get_center())
+        if not hasattr(self, "_zone_twins"):
+            self._zone_twins = []
+        self._zone_twins.append((text, twin, name))
 
     def create_zone_text_from_rows(
         self,
@@ -1928,32 +1964,19 @@ class GitSimBaseCommand(m.MovingCameraScene):
             for value, (title, group, lookup) in zip(values, columns):
                 if value is None:
                     continue
-                label = self.trim_cmd(str(value), 30)
-                if struck:
-                    text = m.MarkupText(
-                        "<span strikethrough='true' strikethrough_color='"
-                        + self.fontColor
-                        + "'>"
-                        + label
-                        + "</span>",
-                        font=self.font,
-                        font_size=24,
-                        color=self.fontColor,
-                        weight=m.BOLD if bold else m.NORMAL,
-                    )
-                else:
-                    text = m.Text(
-                        label,
-                        font=self.font,
-                        font_size=24,
-                        color=self.fontColor,
-                        weight=m.BOLD if bold else m.NORMAL,
-                    )
+                # A cell can be (before, after) when the command changes it
+                # (a worktree's state goes from "clean" to "REMOVED").
+                before, after = value if isinstance(value, tuple) else (value, value)
+                label = self.trim_cmd(str(after), 30)
+                text = self.zone_text(label, struck, bold)
                 text.move_to(
                     (title.get_center()[0], horizontal2.get_center()[1], 0)
                 ).shift(m.DOWN * 0.5 * (i + 1))
                 group.add(text)
-                lookup[value] = text
+                lookup[after] = text
+                if struck or before != after:
+                    self.zone_twin(text, self.trim_cmd(str(before), 30),
+                                   name=str(before) if before != after else None)
 
     def color_by(self, offset=0):
         if settings.color_by == ColorByOptions.AUTHOR:

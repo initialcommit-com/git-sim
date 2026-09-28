@@ -5,12 +5,19 @@ the full interactive viewer: the Before / After slider and play button, hover
 details, zoom, sharing. Two lines:
 
 ```html
-<div class="git-sim" data-src="/img/rebase-main.svg" data-title="git rebase main"></div>
+<div class="git-sim" data-src="/img/rebase-main.svg" data-title="git rebase main">
+  <a href="https://initialcommit.com/tools/git-sim">git rebase main, simulated with git-sim</a>
+</div>
 <script src="https://initialcommit.com/js/tools/git-sim-embed.js" defer></script>
 ```
 
 The script replaces every `.git-sim` element with the viewer showing its graph.
 Include it once; it finds all of them.
+
+The link inside the element becomes a one-line credit under the graph, and
+it's what readers see if the script can't run. Leave it out and the script
+adds the same credit itself. git-sim is free and open source, and the credit
+is how other people find it.
 
 ## Making the graph
 
@@ -33,6 +40,10 @@ page (`.html`) works too and is framed as it is.
 | `data-theme` | `dark` or `light`. Default: your reader's colour-scheme preference. |
 | `data-controls` | `compact` drops the brand and partner links, keeping the slider and Share. |
 | `data-height` | A fixed height (`480px`). Default: the embed takes the height the graph needs. |
+
+The credit is a `<p class="git-sim-credit">` under the frame, set in small,
+muted text that takes its color from your page. Style it with that class if
+you want it to match your page more closely.
 
 ## How it works
 

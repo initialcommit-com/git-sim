@@ -120,7 +120,9 @@ class Config(Cards, GitSimBaseCommand):
                     if option == "__name__":
                         continue
                     try:
-                        pairs.append((option, self.clean(reader.get_value(section, option))))
+                        # get(), not get_value(): get_value turns "false" into
+                        # Python's False, and the card would show it that way
+                        pairs.append((option, self.clean(reader.get(section, option))))
                     except (ConfigError, ValueError, KeyError):
                         pairs.append((option, "?"))
                 out.append((section, pairs))

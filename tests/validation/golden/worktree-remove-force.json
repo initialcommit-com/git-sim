@@ -55,7 +55,13 @@
    "column": "Branch",
    "moved": false,
    "name": "feature/pagination",
-   "phase": "before"
+   "phase": "after"
+  },
+  {
+   "column": "Branch",
+   "moved": false,
+   "name": "feature/pagination",
+   "phase": "removed"
   },
   {
    "column": "Branch",
@@ -67,13 +73,19 @@
    "column": "State",
    "moved": false,
    "name": "REMOVED",
-   "phase": "before"
+   "phase": "after"
   },
   {
    "column": "State",
    "moved": false,
    "name": "clean",
    "phase": "before"
+  },
+  {
+   "column": "State",
+   "moved": false,
+   "name": "clean",
+   "phase": "removed"
   },
   {
    "column": "Worktree",
@@ -85,7 +97,13 @@
    "column": "Worktree",
    "moved": false,
    "name": "worktree-feature-pagination",
-   "phase": "before"
+   "phase": "after"
+  },
+  {
+   "column": "Worktree",
+   "moved": false,
+   "name": "worktree-feature-pagination",
+   "phase": "removed"
   }
  ],
  "notes": [

@@ -130,3 +130,4 @@ in a separate window. Commands that rate safe get a one-line verdict too.
 
 - [git-sim](https://initialcommit.com/tools/git-sim): the tool, its commands and options
 - [Learn Git](https://initialcommit.com/learn/git): sixteen guided levels played on git-sim graphs
+- [Visual Git command reference](https://initialcommit.com/learn/git/visual-command-reference): what each Git command does, one graph and page per command

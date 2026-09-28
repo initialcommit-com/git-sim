@@ -123,6 +123,21 @@ def test_force_push_reports_remote_only_commits(repo, tmp_path):
     assert "REJECTED" in plain.summary
 
 
+def test_push_delete_is_destructive_and_names_what_only_it_reached(repo, tmp_path):
+    remote = tmp_path / "remote.git"
+    run_git(tmp_path, "init", "--bare", str(remote))
+    run_git(repo, "remote", "add", "origin", str(remote))
+    run_git(repo, "push", "-u", "origin", "main", "feature")
+    for command in ("git push origin --delete feature", "git push origin :feature"):
+        report = analyze(command, str(repo))
+        assert report.risk == Risk.DESTRUCTIVE
+        assert "DELETES the branch feature on origin" in report.summary
+        assert any("feature commit" in loss for loss in report.would_lose)
+        assert any("git push origin" in r and "refs/heads/feature" in r for r in report.recovery)
+    tags = analyze("git push --tags", str(repo))
+    assert tags.risk == Risk.SAFE and "tag" in tags.summary
+
+
 def test_branch_force_delete_unmerged(repo):
     report = analyze("git branch -D feature", str(repo))
     assert report.risk == Risk.DESTRUCTIVE

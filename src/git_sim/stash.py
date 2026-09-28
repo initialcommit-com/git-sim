@@ -18,11 +18,23 @@ LIST_COMMANDS = (
 
 
 class Stash(GitSimBaseCommand):
-    def __init__(self, files: List[str], command: StashSubCommand, stash_index: int):
+    def __init__(
+        self,
+        files: List[str],
+        command: StashSubCommand,
+        stash_index: int,
+        include_untracked: bool = False,
+        message: str = None,
+    ):
         super().__init__()
         self.files = files or []  # newer typer passes None for an omitted list
         self.no_files = True if not self.files else False
         self.command = command
+        self.include_untracked = include_untracked
+        self.message = message
+        if (include_untracked or message is not None) and command not in (StashSubCommand.PUSH, None):
+            print("git-sim error: -u and -m apply to stash push only")
+            sys.exit(1)
         settings.hide_merged_branches = True
         self.n = self.n_default
 
@@ -50,19 +62,24 @@ class Stash(GitSimBaseCommand):
                 )
                 sys.exit(1)
         elif self.command in [StashSubCommand.PUSH, None]:
+            changed = [x.a_path for x in self.repo.index.diff(None)] + [
+                y.a_path for y in self.repo.index.diff("HEAD")
+            ]
+            # untracked files go into the stash only with -u
+            self.untracked = [f for f in self.repo.untracked_files if "git-sim_media" not in f]
+            stashable = changed + (self.untracked if self.include_untracked else [])
             for file in self.files:
-                if file not in [x.a_path for x in self.repo.index.diff(None)] + [
-                    y.a_path for y in self.repo.index.diff("HEAD")
-                ]:
-                    print(
-                        f"git-sim error: No modified or staged file with name: '{file}'"
-                    )
+                if file not in stashable:
+                    if file in self.untracked:
+                        print(f"git-sim error: '{file}' is untracked; git stash push -u stashes untracked files")
+                    else:
+                        print(
+                            f"git-sim error: No modified or staged file with name: '{file}'"
+                        )
                     sys.exit(1)
 
             if not self.files:
-                self.files = [x.a_path for x in self.repo.index.diff(None)] + [
-                    y.a_path for y in self.repo.index.diff("HEAD")
-                ]
+                self.files = stashable
         elif self.files:
             if (
                 not settings.stdout
@@ -78,7 +95,12 @@ class Stash(GitSimBaseCommand):
         elif self.command in (StashSubCommand.CLEAR, StashSubCommand.LIST):
             self.cmd += f"stash {self.command.value}"
         else:
-            self.cmd += f"{type(self).__name__.lower()} {self.command.value if self.command else ''} {' '.join(self.files) if not self.no_files else ''}"
+            flags = ""
+            if self.include_untracked:
+                flags += " -u"
+            if self.message is not None:
+                flags += f' -m "{self.message}"'
+            self.cmd += f"{type(self).__name__.lower()} {self.command.value if self.command else ''}{flags} {' '.join(self.files) if not self.no_files else ''}"
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
@@ -102,9 +124,33 @@ class Stash(GitSimBaseCommand):
             second_column_name="Working directory",
             third_column_name="Staging area",
         )
+        if self.command in (StashSubCommand.PUSH, None):
+            self.add_notes(self.push_notes())
         self.show_command_as_title()
         self.fadeout()
         self.show_outro()
+
+    def push_notes(self):
+        """The entry git would save, named as git stash list prints it, and
+        what a plain push leaves behind."""
+        if not self.files:
+            return ["No local changes to save: git stash does nothing."]
+        notes = []
+        try:
+            branch = self.repo.active_branch.name
+        except TypeError:
+            branch = "(no branch)"
+        if self.message is not None:
+            notes.append(f"Saved as stash@{{0}}: On {branch}: {self.message}")
+        elif self.head_exists():
+            head = self.repo.head.commit
+            notes.append(f"Saved as stash@{{0}}: WIP on {branch}: {head.hexsha[:7]} {self.trim_cmd(head.summary, 40)}")
+        if self.entries:
+            notes.append(f"The {len(self.entries)} existing entr{'y moves' if len(self.entries) == 1 else 'ies move'} down one number.")
+        left = [f for f in self.untracked if f not in self.files]
+        if left and not self.include_untracked:
+            notes.append(f"{len(left)} untracked file(s) stay in the working directory: git stash -u stashes them too.")
+        return notes
 
     # -- list / show / drop / clear: the stash as a stack of entries ----------------
     MAX_DRAWN = 5  # entries drawn; the rest are counted in a row of their own
@@ -344,6 +390,14 @@ class Stash(GitSimBaseCommand):
             if y.a_path in self.files:
                 firstColumnFileNames.add(y.a_path)
                 self.zone_arrows.append((y.a_path, 3, 1))
+
+        # with -u, untracked files leave the working directory for the stash too
+        if self.include_untracked:
+            for path in self.untracked:
+                if path in self.files:
+                    secondColumnFileNames.add(path)
+                    firstColumnFileNames.add(path)
+                    self.zone_arrows.append((path, 2, 1))
 
     def parse_stash_format(self, s):
         # Regular expression to match either a plain integer or stash@{integer}

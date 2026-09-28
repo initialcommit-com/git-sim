@@ -1,67 +1,77 @@
 {
  "commits": {
-  "Dummy commit #1 on main": {
+  "Bump flask": {
+   "kind": "commit",
+   "parents": [
+    "Retry failed database connections"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Change README.md on feature/conflict": {
+   "kind": "commit",
+   "parents": [
+    "Change README.md on main"
+   ],
+   "phase": "after",
+   "recolored": false,
+   "step": 1
+  },
+  "Change README.md on feature/conflict (fc3d7a3)": {
+   "kind": "commit",
+   "parents": [
+    "Return 404 for unknown orders"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Change README.md on main": {
+   "kind": "commit",
+   "parents": [
+    "Return 404 for unknown orders"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Initial commit": {
    "kind": "commit",
    "parents": [],
    "phase": "before",
    "recolored": false,
    "step": 0
   },
-  "Dummy commit #2 on main": {
+  "Retry failed database connections": {
    "kind": "commit",
    "parents": [
-    "Dummy commit #1 on main"
+    "Initial commit"
    ],
    "phase": "before",
    "recolored": false,
    "step": 0
   },
-  "Dummy commit #3 on main": {
+  "Return 404 for unknown orders": {
    "kind": "commit",
    "parents": [
-    "Dummy commit #2 on main"
+    "Bump flask"
    ],
    "phase": "before",
    "recolored": false,
    "step": 0
-  },
-  "Dummy commit #4 on branch1": {
-   "kind": "commit",
-   "parents": [
-    "Dummy commit #3 on main"
-   ],
-   "phase": "before",
-   "recolored": false,
-   "step": 0
-  },
-  "Dummy commit #5 on branch1": {
-   "kind": "commit",
-   "parents": [
-    "Dummy commit #4 on branch1"
-   ],
-   "phase": "before",
-   "recolored": false,
-   "step": 0
-  },
-  "Merge commit": {
-   "kind": "commit",
-   "parents": [
-    "Dummy commit #3 on main",
-    "Dummy commit #5 on branch1"
-   ],
-   "phase": "after",
-   "recolored": false,
-   "step": 1
   }
  },
  "edges": {
-  "after": 4,
-  "before": 8,
+  "after": 2,
+  "before": 10,
   "origin": 0,
   "removed": 0
  },
  "files": [],
- "notes": [],
+ "notes": [
+  "Commits the picked change with your resolution; main moves to the new commit."
+ ],
  "refs": {
   "HEAD": {
    "count": 2,
@@ -69,7 +79,7 @@
    "moved": true,
    "phase": "before"
   },
-  "branch1": {
+  "feature/conflict": {
    "count": 2,
    "kind": "branch",
    "moved": false,
@@ -83,5 +93,5 @@
   }
  },
  "steps": 2,
- "title": "git merge --no-ff branch1"
+ "title": "git cherry-pick --continue"
 }

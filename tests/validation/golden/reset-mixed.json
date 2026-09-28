@@ -55,60 +55,6 @@
  },
  "files": [
   {
-   "column": "Modified files",
-   "moved": true,
-   "name": "branch1.10",
-   "phase": "after"
-  },
-  {
-   "column": "Modified files",
-   "moved": true,
-   "name": "main.10",
-   "phase": "after"
-  },
-  {
-   "column": "Modified files",
-   "moved": true,
-   "name": "main.3",
-   "phase": "after"
-  },
-  {
-   "column": "Modified files",
-   "moved": true,
-   "name": "main.4",
-   "phase": "after"
-  },
-  {
-   "column": "Modified files",
-   "moved": true,
-   "name": "main.5",
-   "phase": "after"
-  },
-  {
-   "column": "Modified files",
-   "moved": true,
-   "name": "main.6",
-   "phase": "after"
-  },
-  {
-   "column": "Modified files",
-   "moved": true,
-   "name": "main.7",
-   "phase": "after"
-  },
-  {
-   "column": "Modified files",
-   "moved": true,
-   "name": "main.8",
-   "phase": "after"
-  },
-  {
-   "column": "Modified files",
-   "moved": true,
-   "name": "main.9",
-   "phase": "after"
-  },
-  {
    "column": "Undone commits",
    "moved": false,
    "name": "branch1.10",
@@ -161,6 +107,60 @@
    "moved": false,
    "name": "main.9",
    "phase": "before"
+  },
+  {
+   "column": "Working directory",
+   "moved": true,
+   "name": "branch1.10",
+   "phase": "after"
+  },
+  {
+   "column": "Working directory",
+   "moved": true,
+   "name": "main.10",
+   "phase": "after"
+  },
+  {
+   "column": "Working directory",
+   "moved": true,
+   "name": "main.3",
+   "phase": "after"
+  },
+  {
+   "column": "Working directory",
+   "moved": true,
+   "name": "main.4",
+   "phase": "after"
+  },
+  {
+   "column": "Working directory",
+   "moved": true,
+   "name": "main.5",
+   "phase": "after"
+  },
+  {
+   "column": "Working directory",
+   "moved": true,
+   "name": "main.6",
+   "phase": "after"
+  },
+  {
+   "column": "Working directory",
+   "moved": true,
+   "name": "main.7",
+   "phase": "after"
+  },
+  {
+   "column": "Working directory",
+   "moved": true,
+   "name": "main.8",
+   "phase": "after"
+  },
+  {
+   "column": "Working directory",
+   "moved": true,
+   "name": "main.9",
+   "phase": "after"
   }
  ],
  "notes": [],

@@ -77,6 +77,37 @@ def test_only_risky_subcommands_are_analyzed():
     ]
 
 
+def test_commands_are_located_where_they_run(tmp_path):
+    from git_sim.claude_hook import located_git_commands
+
+    here, other = str(tmp_path), str(tmp_path / "other")
+    line = f'git reset --hard && cd "{other}" && git clean -fd; cd sub; git -C .. stash drop'
+    assert located_git_commands(line, here) == [
+        ("git reset --hard", here),
+        ("git clean -fd", other),
+        ("git stash drop", other),
+    ]
+    ps = f"Set-Location -Path '{other}'; git reset --hard HEAD~1; Pop-Location"
+    assert located_git_commands(ps, here) == [("git reset --hard HEAD~1", other)]
+    assert located_git_commands("cd $REPO && git reset --hard", here) == [
+        ("git reset --hard", None)
+    ]
+
+
+def test_command_in_another_directory_is_judged_there(repo, tmp_path):
+    # A risky command aimed elsewhere must not be reported against the
+    # session's repository, and one aimed at it from elsewhere must be caught.
+    (repo / "file1.txt").write_text("modified\n")
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    assert run_hook(hook_input(f'cd "{scratch}" && git reset --hard HEAD~1', repo)) is None
+    output = run_hook(hook_input(f'cd "{repo}"; git reset --hard HEAD~1', scratch))
+    assert "file1.txt" in output["hookSpecificOutput"]["permissionDecisionReason"]
+    output = run_hook(hook_input(f'git -C "{repo}" reset --hard HEAD~1', scratch))
+    assert "file1.txt" in output["hookSpecificOutput"]["permissionDecisionReason"]
+    assert run_hook(hook_input("cd $SOMEWHERE && git reset --hard HEAD~1", repo)) is None
+
+
 def test_rm_of_modified_file_asks(repo):
     (repo / "file1.txt").write_text("modified\n")
     output = run_hook(hook_input("git rm -f file1.txt", repo))
@@ -135,11 +166,18 @@ def test_reason_includes_text_graph(repo):
     )
 
 
-def test_hook_renders_simulation_image(repo, monkeypatch):
-    monkeypatch.setenv("GIT_SIM_HOOK_RENDER", "1")
-    monkeypatch.setenv("GIT_SIM_HOOK_OPEN", "0")
+def test_hook_renders_simulation_image(repo, monkeypatch, tmp_path):
+    from git_sim.settings import settings
+
+    # Clear the user's git_sim_* settings first: the loop would otherwise
+    # also delete the GIT_SIM_HOOK_* switches below, and the hook would open
+    # the image in a viewer window.
     for var in [v for v in os.environ if v.lower().startswith("git_sim_")]:
         monkeypatch.delenv(var, raising=False)
+    monkeypatch.delenv("VSCODE_PID", raising=False)
+    monkeypatch.setenv("GIT_SIM_HOOK_RENDER", "1")
+    monkeypatch.setenv("GIT_SIM_HOOK_OPEN", "0")
+    monkeypatch.setattr(settings, "media_dir", tmp_path / "media")
     output = run_hook(hook_input("git reset --hard HEAD~1", repo))
     reason = output["hookSpecificOutput"]["permissionDecisionReason"]
     assert "Simulation image:" in reason

@@ -74,6 +74,19 @@ SHAPES: Dict[str, tuple] = {
     # (bad = the tip, good = 7 back, and the first commit git offered marked good)
     "linear": (dict(commits=10, branches=0, constant_sha=True), []),
     "bisecting": (dict(commits=10, branches=0, constant_sha=True), ["bisect start HEAD HEAD~7", "bisect good"]),
+    # remotes with something for fetch --prune, push --delete and push --tags:
+    # a tracking branch whose branch is gone, a branch to delete, a new tag
+    "stale-remote": (dict(scenario="ahead-of-remote", seed=5), ["update-ref refs/remotes/origin/gone HEAD~1"]),
+    "remote-branch": (dict(scenario="ahead-of-remote", seed=5), ["push -q origin HEAD~1:refs/heads/old-idea", "fetch -q origin"]),
+    "new-tag": (dict(scenario="ahead-of-remote", seed=5), ["tag v9.9"]),
+    # an operation stopped on a conflict, as found and with the conflict resolved
+    # ("!" marks a command expected to stop with a non-zero exit)
+    "merging": (dict(scenario="merge-conflict", seed=4), []),
+    "merging-resolved": (dict(scenario="merge-conflict", seed=4), ["checkout --theirs .", "add -A"]),
+    "rebasing": (dict(scenario="merge-conflict", seed=4), ["merge --abort", "checkout -q feature/conflict", "!rebase main"]),
+    "rebasing-resolved": (dict(scenario="merge-conflict", seed=4), ["merge --abort", "checkout -q feature/conflict", "!rebase main", "checkout --theirs .", "add -A"]),
+    "picking": (dict(scenario="merge-conflict", seed=4), ["merge --abort", "!cherry-pick feature/conflict"]),
+    "picking-resolved": (dict(scenario="merge-conflict", seed=4), ["merge --abort", "!cherry-pick feature/conflict", "checkout --theirs .", "add -A"]),
 }
 
 
@@ -132,7 +145,8 @@ class Shapes:
             result = build(git_dir=str(base), name=name.replace("-", "_"), **kwargs)
             path = pathlib.Path(result["path"])
             for cmd in post:
-                subprocess.run(["git", "-C", str(path), *cmd.split()], check=True, capture_output=True)
+                expect_stop = cmd.startswith("!")
+                subprocess.run(["git", "-C", str(path), *cmd.lstrip("!").split()], check=not expect_stop, capture_output=True)
         shape = Shape(name, path, result)
         self.built[name] = shape
         return shape

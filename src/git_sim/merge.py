@@ -13,11 +13,16 @@ from git_sim.settings import settings
 
 
 class Merge(GitSimBaseCommand):
-    def __init__(self, branch: str, no_ff: bool, message: str):
+    def __init__(self, branch: str, no_ff: bool, message: str, squash: bool = False):
         super().__init__()
         self.branch = branch
         self.no_ff = no_ff
         self.message = message
+        self.squash = squash
+        self.conflicted_files = []
+        if squash and no_ff:
+            print("git-sim error: You cannot combine --squash with --no-ff.")
+            sys.exit(1)
 
         try:
             git.repo.fun.rev_parse(self.repo, self.branch)
@@ -38,7 +43,8 @@ class Merge(GitSimBaseCommand):
         except TypeError:
             pass
 
-        self.cmd += f"{type(self).__name__.lower()} {self.branch} {'--no-ff' if self.no_ff else ''}"
+        flag = " --squash" if self.squash else (" --no-ff" if self.no_ff else "")
+        self.cmd += f"{type(self).__name__.lower()}{flag} {self.branch}"
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
@@ -59,6 +65,9 @@ class Merge(GitSimBaseCommand):
         self.show_intro()
         head_commit = self.get_commit()
         branch_commit = self.get_commit(self.branch)
+        if self.squash:
+            self.construct_squash(head_commit, branch_commit)
+            return
 
         if self.branch not in self.get_remote_tracking_branches():
             if self.branch in self.repo.git.branch("--contains", head_commit.hexsha):
@@ -182,7 +191,66 @@ class Merge(GitSimBaseCommand):
         except (FileNotFoundError, UnboundLocalError):
             pass
 
-    def check_merge_conflict(self, branch1, branch2):
+    def construct_squash(self, head_commit, branch_commit):
+        """git merge --squash: the branch's changes since it split off are
+        staged as one set, and nothing else happens. No commit is made, HEAD
+        doesn't move, and git doesn't record the branch as merged."""
+        merge_result, new_dir = self.check_merge_conflict(
+            self.repo.active_branch.name, self.branch, squash=True
+        )
+        self.parse_commits(head_commit)
+        if branch_commit.hexsha not in self.drawnCommits:
+            self.parse_commits(branch_commit, shift=4 * m.DOWN)
+        self.recenter_frame()
+        self.scale_frame()
+        self.vsplit_frame()
+        if merge_result:
+            self.setup_and_draw_zones(
+                first_column_name="----",
+                second_column_name="Conflicted files",
+                third_column_name="----",
+            )
+            self.add_notes(
+                [
+                    (f"{len(self.conflicted_files)} file(s) conflict: resolve them, git add them, then commit.", self.theme.gold),
+                    "Nothing is committed, and git merge --abort does not apply to a squash: use git reset --merge.",
+                ]
+            )
+        else:
+            base = self.repo.merge_base(head_commit, branch_commit)
+            base_sha = base[0].hexsha if base else None
+            self.squashed_files = (
+                self.repo.git.diff("--name-only", base_sha, branch_commit.hexsha).split()
+                if base_sha
+                else []
+            )
+            self.squashed_commits = int(
+                self.repo.git.rev_list("--count", f"{head_commit.hexsha}..{branch_commit.hexsha}")
+            )
+            self.setup_and_draw_zones(
+                first_column_name=f"Changes on {self.branch}",
+                second_column_name="Working directory",
+                third_column_name="Staging area",
+            )
+            n = self.squashed_commits
+            self.add_notes(
+                [
+                    f"The changes from {n} commit{'' if n == 1 else 's'} on {self.branch} are staged as one set. Nothing is committed.",
+                    "git commit then makes one ordinary commit with a single parent.",
+                    f"{self.branch} is not recorded as merged: git branch -d will call it unmerged (-D deletes it).",
+                ]
+            )
+        self.color_by()
+        self.show_command_as_title()
+        self.fadeout()
+        self.show_outro()
+        self.repo.git.clear_cache()
+        try:
+            shutil.rmtree(new_dir, onerror=self.del_rw)
+        except (FileNotFoundError, UnboundLocalError, TypeError):
+            pass
+
+    def check_merge_conflict(self, branch1, branch2, squash=False):
         git_root = self.repo.git.rev_parse("--show-toplevel")
         repo_name = os.path.basename(self.repo.working_dir)
         new_dir = os.path.join(tempfile.gettempdir(), "git_sim", repo_name)
@@ -194,7 +262,10 @@ class Merge(GitSimBaseCommand):
         self.repo.git.checkout(branch1)
 
         try:
-            self.repo.git.merge(branch2)
+            if squash:
+                self.repo.git.merge("--squash", branch2)
+            else:
+                self.repo.git.merge(branch2)
         except git.GitCommandError as e:
             if "CONFLICT" in e.stdout:
                 self.conflicted_files = []
@@ -216,5 +287,12 @@ class Merge(GitSimBaseCommand):
         secondColumnArrowMap={},
         thirdColumnArrowMap={},
     ):
+        if self.squash and not self.conflicted_files:
+            # the branch's changes arrive staged (and in the working directory)
+            for path in getattr(self, "squashed_files", []):
+                firstColumnFileNames.add(path)
+                thirdColumnFileNames.add(path)
+                self.zone_arrows.append((path, 1, 3))
+            return
         for filename in self.conflicted_files:
             secondColumnFileNames.add(filename)

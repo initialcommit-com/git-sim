@@ -55,19 +55,37 @@
    "column": "Pinned commit",
    "moved": false,
    "name": "f310f8",
-   "phase": "before"
+   "phase": "after"
+  },
+  {
+   "column": "Pinned commit",
+   "moved": false,
+   "name": "f310f8",
+   "phase": "removed"
   },
   {
    "column": "State",
    "moved": false,
    "name": "DEINITIALIZED (working tree emptied)",
-   "phase": "before"
+   "phase": "after"
+  },
+  {
+   "column": "State",
+   "moved": false,
+   "name": "DEINITIALIZED (working tree emptied)",
+   "phase": "removed"
   },
   {
    "column": "Submodule",
    "moved": false,
    "name": "lib",
-   "phase": "before"
+   "phase": "after"
+  },
+  {
+   "column": "Submodule",
+   "moved": false,
+   "name": "lib",
+   "phase": "removed"
   }
  ],
  "notes": [

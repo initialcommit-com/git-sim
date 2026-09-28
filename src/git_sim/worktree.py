@@ -163,15 +163,16 @@ class Worktree(GitSimBaseCommand):
                     )
                     bold = True
                 else:
-                    state = "REMOVED" + (
+                    # (before, after): the page shows its state until the removal plays
+                    state = (state, "REMOVED" + (
                         f" ({count} change(s) deleted)" if count else ""
-                    )
+                    ))
                     struck = True
                     self.notes.append(
                         f"Worktree '{wt['name']}' removed; branch {branch} is kept and can be checked out again."
                     )
             elif self.command == WorktreeSubCommand.PRUNE and wt["prunable"]:
-                state = "PRUNED (directory missing)"
+                state = (state, "PRUNED (directory missing)")
                 struck = True
             self.rows.append((name, branch, state, struck, bold))
         if self.command == WorktreeSubCommand.ADD:
@@ -209,7 +210,7 @@ class Worktree(GitSimBaseCommand):
         for row in self.rows:
             first.add(row[0])
             second.add(row[1])
-            third.add(row[2])
+            third.add(row[2][1] if isinstance(row[2], tuple) else row[2])
 
     def create_zone_text(
         self, f1, f2, f3, g1, g2, g3, d1, d2, d3, t1, t2, t3, horizontal2

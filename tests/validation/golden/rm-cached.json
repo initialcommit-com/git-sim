@@ -48,14 +48,34 @@
   }
  },
  "edges": {
-  "after": 0,
+  "after": 4,
   "before": 8,
   "origin": 0,
   "removed": 0
  },
- "files": [],
+ "files": [
+  {
+   "column": "Staging area",
+   "moved": true,
+   "name": "utils.py",
+   "phase": "after"
+  },
+  {
+   "column": "Untracked files",
+   "moved": true,
+   "name": "utils.py",
+   "phase": "after"
+  },
+  {
+   "column": "Working directory",
+   "moved": false,
+   "name": "utils.py",
+   "phase": "before"
+  }
+ ],
  "notes": [
-  "No local changes to save: git stash does nothing."
+  "The file stays on disk; only Git stops tracking it.",
+  "The next commit deletes it from the repository. Add it to .gitignore to keep it out."
  ],
  "refs": {
   "HEAD": {
@@ -84,5 +104,5 @@
   }
  },
  "steps": 1,
- "title": "git stash"
+ "title": "git rm --cached utils.py"
 }

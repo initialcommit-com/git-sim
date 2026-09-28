@@ -257,6 +257,40 @@ def stack_of_entries(m, repo):
     for i in range(min(len(shas), 5)):
         assert f"stash@{{{i}}}" in m["refs"], f"no card labeled stash@{{{i}}} ({sorted(m['refs'])})"
 
+def stashes_untracked(m, repo):
+    """stash -u: every untracked file goes into the stash too."""
+    untracked = [f for f in o.git(repo, "ls-files", "--others", "--exclude-standard").split() if "git-sim_media" not in f]
+    got = files_in(m, "stash", "after")
+    missing = [f for f in untracked if f not in got]
+    assert not missing, f"untracked files not stashed: {missing} (stash: {got})"
+
+
+def untracks(name):
+    """rm --cached: the file turns untracked and its deletion is staged."""
+    def check(m, repo):
+        assert files_in(m, "untracked", "after") == [name], f"{name} should turn untracked ({m['files']})"
+        assert name in files_in(m, "staging", "after"), f"{name}'s deletion should be staged"
+    return check
+
+
+def squashes(branch):
+    """merge --squash: the branch's changes since the merge base arrive staged, and no commit is made."""
+    def check(m, repo):
+        expected = [f for f in o.git(repo, "diff", "--name-only", f"HEAD...{branch}").split() if "git-sim_media" not in f]
+        same_files(files_in(m, "staging", "after"), expected)
+        assert not commits_by_phase(m, "after"), "merge --squash makes no commit"
+    return check
+
+
+def merge_committed(m, repo):
+    """merge --continue: one new commit whose parents are HEAD and MERGE_HEAD."""
+    merge_head = o.rev_parse(repo, "MERGE_HEAD")
+    new = commits_by_phase(m, "after")
+    assert len(new) == 1, f"one merge commit expected, drew {len(new)}"
+    (c,) = new.values()
+    assert set(c["parents"]) == {o.rev_parse(repo, "HEAD"), merge_head}, f"parents {c['parents']}"
+
+
 def unstashes_something(m, repo):
     arriving = [f for f in m["files"] if f["phase"] == "after" and not any(w in f["column"].lower() for w in ZONES["stash"])]
     assert arriving, f"no files leaving the stash (files: {m['files']})"
@@ -411,6 +445,10 @@ CASES: List[Case] = [
     Case("cherry-pick-edit", "classic", ["cherry-pick", "branch2", "-e", "Picked with a new message"], all_of(picks(1), message_among_new("Picked with a new message"))),
     Case("cherry-pick-no-commit", "classic", ["cherry-pick", "branch2", "-n"], after_commits(0)),
     Case("cherry-pick-missing", "classic", ["cherry-pick", "nope"], error="git-sim error"),
+    Case("cherry-pick-abort", "picking", ["cherry-pick", "--abort"], all_of(texts("Calls off the cherry-pick"), after_commits(0))),
+    Case("cherry-pick-continue", "picking-resolved", ["cherry-pick", "--continue"], all_of(texts("Commits the picked change"), after_commits(1))),
+    Case("cherry-pick-skip", "picking", ["cherry-pick", "--skip"], texts("Drops the commit that conflicted")),
+    Case("cherry-pick-continue-none", "classic", ["cherry-pick", "--continue"], error="No cherry-pick in progress"),
     # clean
     Case("clean-force", "messy", ["clean", "-f"], all_of(title("git clean"), gone("scratch.txt", "notes-2.txt"))),
     Case("clean-force-dirs", "messy", ["clean", "-f", "-d"], gone("scratch.txt")),
@@ -437,6 +475,8 @@ CASES: List[Case] = [
     Case("fetch-default", "behind", ["fetch"], after_commits(2)),
     Case("fetch-up-to-date", "ahead", ["fetch", "origin", "main"], after_commits(0)),
     Case("fetch-no-remote", "classic", ["fetch"], error="no remotes"),
+    Case("fetch-prune", "stale-remote", ["fetch", "--prune"], all_of(title("git fetch --prune"), texts("Pruned origin/gone"), ref_removed("origin/gone"))),
+    Case("fetch-stale-note", "stale-remote", ["fetch", "-p", "origin", "main"], texts("Pruned origin/gone")),
     # init
     Case("init-new", "notrepo", ["init"], all_of(title("git init"), texts("Initialized"))),
     Case("init-existing", "history", ["init"], texts("Reinitialized")),
@@ -462,6 +502,12 @@ CASES: List[Case] = [
     Case("merge-criss-cross", "criss-cross", ["merge", M], merge_of(M)),
     Case("merge-into-feature", "rebase-ready", ["merge", "main"], merge_of("main")),
     Case("merge-missing", "classic", ["merge", "nope"], error="git-sim error"),
+    Case("merge-squash", "rebase-ready", ["merge", "--squash", "main"], all_of(title("git merge --squash main"), squashes("main"))),
+    Case("merge-squash-no-ff", "rebase-ready", ["merge", "--squash", "--no-ff", "main"], error="cannot combine"),
+    Case("merge-abort", "merging", ["merge", "--abort"], all_of(title("git merge --abort"), texts("Calls off the merge"), after_commits(0))),
+    Case("merge-continue", "merging-resolved", ["merge", "--continue"], merge_committed),
+    Case("merge-continue-unresolved", "merging", ["merge", "--continue"], error="still have conflicts"),
+    Case("merge-abort-none", "history", ["merge", "--abort"], error="no merge in progress"),
     # mv
     Case("mv", "history", ["mv", "config.yaml", "settings.yaml"], all_of(title("git mv"), lambda m, r: any(f["name"] == "settings.yaml" for f in m["files"]) and any(f["name"] == "config.yaml" for f in m["files"]))),
     Case("mv-missing", "history", ["mv", "nope.txt", "x.txt"], error="git-sim error"),
@@ -471,6 +517,8 @@ CASES: List[Case] = [
     Case("pull-default", "behind", ["pull"], after_commits(2)),
     Case("pull-diverged", "diverged", ["pull", "origin", "main"], after_commits(3)),
     Case("pull-no-remote", "classic", ["pull"], error="no remotes"),
+    Case("pull-rebase", "diverged", ["pull", "--rebase", "origin", "main"], all_of(title("git pull --rebase"), texts("replayed on top of what was fetched"), lambda m, r: not any(len(c["parents"]) == 2 for c in commits_by_phase(m, "after").values()))),
+    Case("pull-rebase-short", "behind", ["pull", "-r"], texts("fast-forwards")),
     # push
     Case("push", "ahead", ["push", "origin", "main"], all_of(title("git push"), relabelled("origin/main"))),
     Case("push-default", "ahead", ["push"], relabelled("origin/main")),
@@ -480,6 +528,10 @@ CASES: List[Case] = [
     Case("push-force-with-lease-stale", "diverged", ["push", "--force-with-lease", "origin", "main"], texts("force-with-lease")),
     Case("push-force-with-lease-fresh", "ahead", ["push", "--force-with-lease", "origin", "main"], relabelled("origin/main")),
     Case("push-no-remote", "classic", ["push"], error="git-sim error"),
+    Case("push-delete", "remote-branch", ["push", "origin", "--delete", "old-idea"], all_of(texts("Deletes old-idea on origin"), ref_removed("origin/old-idea"))),
+    Case("push-delete-short", "remote-branch", ["push", "origin", "-d", "old-idea"], texts("Deletes old-idea")),
+    Case("push-delete-missing", "remote-branch", ["push", "origin", "--delete", "nope"], error="does not exist"),
+    Case("push-tags", "new-tag", ["push", "--tags"], all_of(texts("Pushes 1 tag(s) origin doesn't have: v9.9"), ref_after("on origin"))),
     # rebase
     Case("rebase", "rebase-ready", ["rebase", "main"], all_of(title("git rebase main"), rebase_onto("main"))),
     Case("rebase-classic", "classic", ["rebase", "branch2"], rebase_onto("branch2")),
@@ -488,6 +540,11 @@ CASES: List[Case] = [
     Case("rebase-todo", "rebase-ready", ["rebase", "-i", "main", "--todo", "{todo}"], after_commits(1)),
     Case("rebase-already", "classic", ["rebase", "branch1"], error="git-sim error"),
     Case("rebase-missing", "classic", ["rebase", "nope"], error="git-sim error"),
+    Case("rebase-abort", "rebasing", ["rebase", "--abort"], all_of(title("git rebase --abort"), texts("Calls off the rebase"), relabelled("HEAD"))),
+    Case("rebase-continue", "rebasing-resolved", ["rebase", "--continue"], all_of(texts("the rebase is done"), after_commits(1))),
+    Case("rebase-skip", "rebasing", ["rebase", "--skip"], all_of(texts("Drops the commit that conflicted"), after_commits(0))),
+    Case("rebase-continue-none", "history", ["rebase", "--continue"], error="No rebase in progress"),
+    Case("rebase-abort-with-branch", "rebasing", ["rebase", "main", "--abort"], error="takes no other arguments"),
     # reflog
     Case("reflog", "reflog", ["reflog"], all_of(title("git reflog"), reflog_labels())),
     Case("reflog-n", "reflog", ["reflog", "-n", "2"], reflog_labels(at_most=2)),
@@ -530,6 +587,7 @@ CASES: List[Case] = [
     Case("rm-two", "history", ["rm", "utils.py", "config.yaml"], gone("utils.py", "config.yaml")),
     Case("rm-untracked", "messy", ["rm", "scratch.txt"], error="git-sim error"),
     Case("rm-missing", "history", ["rm", "nope.txt"], error="git-sim error"),
+    Case("rm-cached", "history", ["rm", "--cached", "utils.py"], all_of(title("git rm --cached utils.py"), untracks("utils.py"), texts("stays on disk"))),
     # stash
     Case("stash", "messy", ["stash"], all_of(title("git stash"), stashes_something)),
     Case("stash-push", "messy", ["stash", "push"], stashes_something),
@@ -544,6 +602,9 @@ CASES: List[Case] = [
     Case("stash-pop-empty", "history", ["stash", "pop"], error="git-sim error"),
     Case("stash-drop-bad-index", "messy", ["stash", "drop", "7"], error="git-sim error"),
     Case("stash-push-missing", "messy", ["stash", "push", "nope.txt"], error="git-sim error"),
+    Case("stash-push-u", "messy", ["stash", "push", "-u", "-m", "Half-done pagination"], all_of(stashes_untracked, texts("On main: Half-done pagination"))),
+    Case("stash-untracked-without-u", "messy", ["stash", "push", "scratch.txt"], error="stash push -u"),
+    Case("stash-drop-with-m", "messy", ["stash", "drop", "--message", "x"], error="stash push only"),
     Case("stash-nothing", "history", ["stash"], title("git stash")),
     # status
     Case("status", "messy", ["status"], all_of(title("git status"), status_matches)),

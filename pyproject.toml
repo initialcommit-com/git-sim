@@ -62,4 +62,6 @@ git-sim-hook = "git_sim.claude_hook:main"
 
 [project.urls]
 Homepage = "https://initialcommit.com/tools/git-sim"
+"Git command reference" = "https://initialcommit.com/learn/git/visual-command-reference"
+"Learn Git" = "https://initialcommit.com/learn/git"
 Source = "https://github.com/initialcommit-com/git-sim"

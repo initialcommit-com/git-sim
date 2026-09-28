@@ -1,43 +1,24 @@
 {
  "commits": {
-  "Finish pagination": {
+  "Handle missing config values": {
    "kind": "commit",
    "parents": [
-    "Polish pagination"
+    "Raise the default log level"
    ],
    "phase": "before",
    "recolored": false,
    "step": 0
   },
-  "Merge branch 'feature/pagination'": {
-   "kind": "merge",
-   "parents": [
-    "?",
-    "Finish pagination"
-   ],
-   "phase": "before",
-   "recolored": false,
-   "step": 0
-  },
-  "Polish pagination": {
+  "Pin the test dependencies": {
    "kind": "commit",
    "parents": [
-    "Test pagination"
+    "Handle missing config values"
    ],
    "phase": "before",
    "recolored": false,
    "step": 0
   },
-  "Test pagination": {
-   "kind": "commit",
-   "parents": [
-    "Wire up pagination"
-   ],
-   "phase": "before",
-   "recolored": false,
-   "step": 0
-  },
-  "Wire up pagination": {
+  "Raise the default log level": {
    "kind": "commit",
    "parents": [
     "?"
@@ -45,6 +26,24 @@
    "phase": "before",
    "recolored": false,
    "step": 0
+  },
+  "Retry failed database connections": {
+   "kind": "commit",
+   "parents": [
+    "Update the README quickstart"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Update the README quickstart": {
+   "kind": "commit",
+   "parents": [
+    "Pin the test dependencies"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 2
   }
  },
  "edges": {
@@ -55,18 +54,13 @@
  },
  "files": [],
  "notes": [
-  "No local changes to save: git stash does nothing."
+  "Deletes old-idea on origin, and your origin/old-idea label with it.",
+  "1 commit(s) only it reached (gold) are left unreachable on origin."
  ],
  "refs": {
   "HEAD": {
    "count": 2,
    "kind": "head",
-   "moved": false,
-   "phase": "before"
-  },
-  "feature/pagination": {
-   "count": 2,
-   "kind": "branch",
    "moved": false,
    "phase": "before"
   },
@@ -76,13 +70,19 @@
    "moved": false,
    "phase": "before"
   },
-  "v1.1.0": {
+  "origin/main": {
    "count": 2,
-   "kind": "tag",
+   "kind": "remote",
    "moved": false,
    "phase": "before"
+  },
+  "origin/old-idea": {
+   "count": 2,
+   "kind": "remote",
+   "moved": false,
+   "phase": "removed"
   }
  },
- "steps": 1,
- "title": "git stash"
+ "steps": 2,
+ "title": "git push --delete origin old-idea"
 }

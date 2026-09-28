@@ -24,6 +24,14 @@ into the frame), ``data-title`` (the command, for the share text), ``data-state`
 or ``light``; default follows the host page's ``prefers-color-scheme``),
 ``data-controls`` (``full`` or ``compact``, which drops the brand and share
 links), ``data-height`` (a fixed height instead of fitting the graph).
+
+Under the frame goes a one-line credit, "<command>, simulated with git-sim",
+linking to git-sim's page at initialcommit.com. It is part of the host page,
+not the frame, so readers (and search engines) see where the graph comes
+from. The snippet in docs/embed.md writes the link inside the ``.git-sim``
+element, where it is also the fallback when the script can't run; the script
+keeps that link rather than adding a second one. On initialcommit.com itself
+the credit is left out.
 """
 
 import json
@@ -76,6 +84,29 @@ EMBED_JS = r"""
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   }
 
+  // The credit under each graph: the host page's own link when the snippet has
+  // one (docs/embed.md), else a new one. Not shown on initialcommit.com itself.
+  const HOME = 'https://initialcommit.com/tools/git-sim';
+  function credit(el){
+    if (/(^|\.)initialcommit\.com$/i.test(location.hostname)) return null;
+    let link = el.querySelector('a[href*="initialcommit.com"]');
+    if (!link) {
+      link = document.createElement('a');
+      link.href = HOME;
+      link.textContent = (el.dataset.title ? el.dataset.title + ', simulated' : 'Simulated') + ' with git-sim';
+    }
+    const line = document.createElement('p');
+    line.className = 'git-sim-credit';
+    line.style.cssText = 'margin:6px 2px 0;font:12px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;text-align:right;opacity:.75';
+    link.style.color = 'inherit';
+    line.appendChild(link);
+    return line;
+  }
+  function place(el, iframe){
+    const line = credit(el);
+    if (line) el.replaceChildren(iframe, line); else el.replaceChildren(iframe);
+  }
+
   function mount(el){
     if (el.dataset.gitSimMounted) return;
     el.dataset.gitSimMounted = '1';
@@ -93,7 +124,7 @@ EMBED_JS = r"""
       // and given to the frame as its document, so a host that refuses to be
       // framed by URL (X-Frame-Options) still shows it; its own script runs it.
       if (!el.dataset.height) iframe.style.height = '560px';
-      el.replaceChildren(iframe);
+      place(el, iframe);
       fetch(src, {credentials: 'same-origin'}).then(r => { if (!r.ok) throw new Error(r.status + ' fetching ' + src); return r.text(); })
         .then(html => { iframe.srcdoc = html; })
         .catch(err => { el.textContent = 'git-sim embed: ' + err.message; });
@@ -101,7 +132,7 @@ EMBED_JS = r"""
     }
     iframe.srcdoc = documentFor(id, theme, controls, el.dataset.title || '');
     frames.set(id, {iframe, element: el, theme, svg: null, ready: false});
-    el.replaceChildren(iframe);
+    place(el, iframe);
     fetch(src, {credentials: 'same-origin'}).then(r => { if (!r.ok) throw new Error(r.status + ' fetching ' + src); return r.text(); })
       .then(svg => { const f = frames.get(id); f.svg = svg; if (f.ready) deliver(id); })
       .catch(err => { el.textContent = 'git-sim embed: ' + err.message; });

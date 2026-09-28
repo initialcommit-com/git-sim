@@ -1,0 +1,109 @@
+{
+ "commits": {
+  "Add a health check": {
+   "kind": "commit",
+   "parents": [
+    "Update the changelog (2)"
+   ],
+   "phase": "after",
+   "recolored": false,
+   "step": 1
+  },
+  "Add a health check (48f0b34)": {
+   "kind": "commit",
+   "parents": [
+    "Export orders as CSV"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 0
+  },
+  "Add currency to totals": {
+   "kind": "commit",
+   "parents": [
+    "Retry failed database connections"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Export orders as CSV": {
+   "kind": "commit",
+   "parents": [
+    "Refactor Order into a dataclass"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Refactor Order into a dataclass": {
+   "kind": "commit",
+   "parents": [
+    "Add currency to totals"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Retry failed database connections": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Update the changelog (1)": {
+   "kind": "commit",
+   "parents": [
+    "Export orders as CSV"
+   ],
+   "phase": "after",
+   "recolored": false,
+   "step": 1
+  },
+  "Update the changelog (2)": {
+   "kind": "commit",
+   "parents": [
+    "Update the changelog (1)"
+   ],
+   "phase": "after",
+   "recolored": false,
+   "step": 1
+  }
+ },
+ "edges": {
+  "after": 6,
+  "before": 8,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [
+  "Your local commit is replayed on top of what was fetched, as a new commit with a new id.",
+  "The original (gold) is left behind, and no merge commit is made."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "after"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "after"
+  },
+  "origin/main": {
+   "count": 2,
+   "kind": "remote",
+   "moved": true,
+   "phase": "before"
+  }
+ },
+ "steps": 2,
+ "title": "git pull --rebase origin main"
+}

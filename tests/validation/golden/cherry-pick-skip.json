@@ -1,46 +1,52 @@
 {
  "commits": {
-  "Finish pagination": {
+  "Bump flask": {
    "kind": "commit",
    "parents": [
-    "Polish pagination"
+    "Retry failed database connections"
    ],
    "phase": "before",
    "recolored": false,
    "step": 0
   },
-  "Merge branch 'feature/pagination'": {
-   "kind": "merge",
+  "Change README.md on feature/conflict": {
+   "kind": "commit",
    "parents": [
-    "?",
-    "Finish pagination"
+    "Return 404 for unknown orders"
    ],
    "phase": "before",
    "recolored": false,
    "step": 0
   },
-  "Polish pagination": {
+  "Change README.md on main": {
    "kind": "commit",
    "parents": [
-    "Test pagination"
+    "Return 404 for unknown orders"
    ],
    "phase": "before",
    "recolored": false,
    "step": 0
   },
-  "Test pagination": {
+  "Initial commit": {
+   "kind": "commit",
+   "parents": [],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Retry failed database connections": {
    "kind": "commit",
    "parents": [
-    "Wire up pagination"
+    "Initial commit"
    ],
    "phase": "before",
    "recolored": false,
    "step": 0
   },
-  "Wire up pagination": {
+  "Return 404 for unknown orders": {
    "kind": "commit",
    "parents": [
-    "?"
+    "Bump flask"
    ],
    "phase": "before",
    "recolored": false,
@@ -49,13 +55,13 @@
  },
  "edges": {
   "after": 0,
-  "before": 8,
+  "before": 10,
   "origin": 0,
   "removed": 0
  },
  "files": [],
  "notes": [
-  "No local changes to save: git stash does nothing."
+  "Drops the commit that conflicted; main ends at 10506e2."
  ],
  "refs": {
   "HEAD": {
@@ -64,7 +70,7 @@
    "moved": false,
    "phase": "before"
   },
-  "feature/pagination": {
+  "feature/conflict": {
    "count": 2,
    "kind": "branch",
    "moved": false,
@@ -75,14 +81,8 @@
    "kind": "branch",
    "moved": false,
    "phase": "before"
-  },
-  "v1.1.0": {
-   "count": 2,
-   "kind": "tag",
-   "moved": false,
-   "phase": "before"
   }
  },
  "steps": 1,
- "title": "git stash"
+ "title": "git cherry-pick --skip"
 }

@@ -50,6 +50,7 @@ approves.
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 import time
@@ -139,6 +140,97 @@ def risky_git_commands(shell_command: str) -> List[str]:
         for cmd in extract_git_commands(shell_command)
         if _subcommand(cmd) in RISKY_SUBCOMMANDS
     ]
+
+
+CD_COMMANDS = {"cd", "chdir", "set-location", "sl", "pushd", "push-location"}
+POPD_COMMANDS = {"popd", "pop-location"}
+
+
+def _unquote(token: str) -> str:
+    if len(token) >= 2 and token[0] == token[-1] and token[0] in "'\"":
+        return token[1:-1]
+    return token
+
+
+def _resolve_dir(target: str, current: Optional[str]) -> Optional[str]:
+    """Where `cd target` lands from `current`, or None when it can't be told
+    without running the shell (variables, `cd -`, a relative path from an
+    unknown place)."""
+    target = os.path.expandvars(os.path.expanduser(_unquote(target)))
+    if "$" in target or "%" in target or target == "-":
+        return None
+    # Git Bash spells C:\x as /c/x.
+    m = re.match(r"^/([A-Za-z])(/.*)?$", target) if os.name == "nt" else None
+    if m:
+        target = f"{m.group(1)}:{m.group(2) or '/'}"
+    if os.path.isabs(target):
+        return os.path.normpath(target)
+    if current is None:
+        return None
+    return os.path.normpath(os.path.join(current, target))
+
+
+def _strip_global_options(tokens: List[str], where: Optional[str]):
+    """`git -C dir -c k=v reset ...` -> (["git", "reset", ...], dir). Global
+    options before the subcommand are dropped; -C moves the directory like
+    git does (relative to the previous one)."""
+    out, i = [tokens[0]], 1
+    while i < len(tokens) and tokens[i].startswith("-"):
+        opt = tokens[i]
+        if opt == "-C" and i + 1 < len(tokens):
+            where = _resolve_dir(tokens[i + 1], where)
+            i += 2
+        elif opt in ("-c", "--git-dir", "--work-tree", "--namespace") and i + 1 < len(tokens):
+            if opt == "--work-tree":
+                where = _resolve_dir(tokens[i + 1], where)
+            i += 2
+        elif opt.startswith("--work-tree="):
+            where = _resolve_dir(opt.split("=", 1)[1], where)
+            i += 1
+        else:
+            i += 1
+    return out + tokens[i:], where
+
+
+def located_git_commands(shell_command: str, cwd: str) -> List[Tuple[str, Optional[str]]]:
+    """The risky git invocations in a shell command, each with the directory
+    it runs in: the hook's cwd, moved by any cd / Set-Location / pushd / popd
+    before it and by git's own -C. The directory is None when it can't be
+    worked out, so the command is not judged against the wrong repository."""
+    located = []
+    where: Optional[str] = cwd
+    stack: List[Optional[str]] = []
+    for segment in SHELL_SEPARATORS.split(shell_command):
+        segment = segment.strip().lstrip("(").rstrip(")")
+        try:
+            tokens = shlex.split(segment, posix=False)  # keeps C:\ paths intact
+        except ValueError:
+            tokens = segment.split()
+        while tokens and "=" in tokens[0] and not tokens[0].startswith("-"):
+            tokens = tokens[1:]
+        if not tokens:
+            continue
+        word = tokens[0].lower()
+        if word in CD_COMMANDS:
+            args = [t for t in tokens[1:] if t.lower() not in ("-path", "-literalpath")]
+            if word in ("pushd", "push-location"):
+                stack.append(where)
+            if args:
+                where = _resolve_dir(args[0], where)
+            elif word in ("cd", "chdir"):
+                where = os.path.expanduser("~")
+            continue
+        if word in POPD_COMMANDS:
+            where = stack.pop() if stack else None
+            continue
+        if tokens[0] != "git":
+            continue
+        command = " ".join(tokens)
+        if _subcommand(command) not in RISKY_SUBCOMMANDS:
+            continue
+        stripped, target = _strip_global_options(tokens, where)
+        located.append((" ".join(stripped), target))
+    return located
 
 
 def _risk_triggers(risk: Risk, threshold: str) -> bool:
@@ -385,13 +477,17 @@ def run_hook(hook_input: dict, agent: Optional[str] = None) -> Optional[dict]:
     threshold = os.environ.get("GIT_SIM_HOOK_ASK_ON", "caution")
     render_text = os.environ.get("GIT_SIM_HOOK_TEXT", "1") != "0"
     analysed, flagged = [], []
-    for git_command in risky_git_commands(command):
-        report = analyze(git_command, cwd, render_text=render_text)
+    for git_command, where in located_git_commands(command, cwd):
+        if where is None:
+            continue  # somewhere the hook can't see; judging cwd would mislead
+        report = analyze(git_command, where, render_text=render_text)
         if report.error is not None:
             continue
         analysed.append(report)
         if _risk_triggers(report.risk, threshold):
             flagged.append(report)
+            if len(flagged) == 1:
+                cwd = where  # the repository the render and the note are about
 
     if not flagged:
         # Below the threshold: silent by default, or an "allow" that still names

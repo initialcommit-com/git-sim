@@ -250,4 +250,30 @@ class Reset(GitSimBaseCommand):
         """Column titles for a reset that moves the branch (see construct)."""
         if self.mode == ResetMode.HARD:
             return ("Discarded changes", "Uncommitted changes", "Undone commits")
-        return ("Modified files", "Staged files", "Undone commits")
+        if self.mode == ResetMode.SOFT:
+            return ("Modified files", "Staged files", "Undone commits")
+        # a mixed reset leaves modified files and, for files the undone
+        # commits added, untracked ones
+        return ("Working directory", "Staged files", "Undone commits")
+
+    def added_since_target(self):
+        """Files the undone commits bring in that the target commit doesn't
+        have: a mixed reset leaves them untracked, a soft one staged as new."""
+        if not hasattr(self, "_added"):
+            try:
+                target = {b.path for b in self.resetTo.tree.traverse() if b.type == "blob"}
+                head = {b.path for b in self.repo.head.commit.tree.traverse() if b.type == "blob"}
+                self._added = head - target
+            except (ValueError, AttributeError):
+                self._added = set()
+        return self._added
+
+    def zone_label(self, column, name):
+        label = self.trim_path(name, 24)
+        if self.paths or self.forward or name not in self.added_since_target():
+            return self.trim_path(name)
+        if self.mode == ResetMode.MIXED and column == 1:
+            return f"{label} (untracked)"
+        if self.mode == ResetMode.SOFT and column == 2:
+            return f"{label} (new file)"
+        return self.trim_path(name)

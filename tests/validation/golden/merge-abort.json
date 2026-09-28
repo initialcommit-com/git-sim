@@ -1,0 +1,102 @@
+{
+ "commits": {
+  "Bump flask": {
+   "kind": "commit",
+   "parents": [
+    "Retry failed database connections"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Change README.md on feature/conflict": {
+   "kind": "commit",
+   "parents": [
+    "Return 404 for unknown orders"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Change README.md on main": {
+   "kind": "commit",
+   "parents": [
+    "Return 404 for unknown orders"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Initial commit": {
+   "kind": "commit",
+   "parents": [],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Retry failed database connections": {
+   "kind": "commit",
+   "parents": [
+    "Initial commit"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Return 404 for unknown orders": {
+   "kind": "commit",
+   "parents": [
+    "Bump flask"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 10,
+  "origin": 0,
+  "removed": 13
+ },
+ "files": [
+  {
+   "column": "Working directory and staging area",
+   "moved": false,
+   "name": "README.md",
+   "phase": "before"
+  }
+ ],
+ "notes": [
+  "Calls off the merge: the working directory and staging area go back to 10506e2. Nothing is committed.",
+  "Any work on the conflicted file is discarded too."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "MERGE_HEAD": {
+   "count": 2,
+   "kind": "marker",
+   "moved": false,
+   "phase": "removed"
+  },
+  "feature/conflict": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 2,
+ "title": "git merge --abort"
+}

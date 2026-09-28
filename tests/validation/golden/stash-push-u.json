@@ -45,32 +45,77 @@
   }
  },
  "edges": {
-  "after": 2,
+  "after": 10,
   "before": 8,
   "origin": 0,
   "removed": 0
  },
  "files": [
   {
-   "column": "Stashed changes",
+   "column": "Staging area",
    "moved": false,
-   "name": "README.md",
-   "phase": "after"
+   "name": "models.py",
+   "phase": "before"
   },
   {
    "column": "Stashed changes",
-   "moved": false,
-   "name": "README.md",
-   "phase": "removed"
-  },
-  {
-   "column": "Working directory",
    "moved": true,
    "name": "README.md",
    "phase": "after"
+  },
+  {
+   "column": "Stashed changes",
+   "moved": true,
+   "name": "app.py",
+   "phase": "after"
+  },
+  {
+   "column": "Stashed changes",
+   "moved": true,
+   "name": "models.py",
+   "phase": "after"
+  },
+  {
+   "column": "Stashed changes",
+   "moved": true,
+   "name": "notes-2.txt",
+   "phase": "after"
+  },
+  {
+   "column": "Stashed changes",
+   "moved": true,
+   "name": "scratch.txt",
+   "phase": "after"
+  },
+  {
+   "column": "Working directory",
+   "moved": false,
+   "name": "README.md",
+   "phase": "before"
+  },
+  {
+   "column": "Working directory",
+   "moved": false,
+   "name": "app.py",
+   "phase": "before"
+  },
+  {
+   "column": "Working directory",
+   "moved": false,
+   "name": "notes-2.txt",
+   "phase": "before"
+  },
+  {
+   "column": "Working directory",
+   "moved": false,
+   "name": "scratch.txt",
+   "phase": "before"
   }
  ],
- "notes": [],
+ "notes": [
+  "Saved as stash@{0}: On main: Half-done pagination",
+  "The 1 existing entry moves down one number."
+ ],
  "refs": {
   "HEAD": {
    "count": 2,
@@ -85,6 +130,6 @@
    "phase": "before"
   }
  },
- "steps": 2,
- "title": "git stash pop"
+ "steps": 1,
+ "title": "git stash push -u -m \"Half-done pagination\""
 }
