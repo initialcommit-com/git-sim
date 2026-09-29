@@ -602,12 +602,28 @@ function makeViewer(root){
   }
   // A host page can play the command once, before to after, and leave it there
   // (a lesson does this when the learner types the command), or pin a state.
+  let onceThen = null, oncePaused = false;
   function playOnce(then){
     stopPlay();
     if (!animatable) { if (then) then(); return; }
     setProgress(0);
+    onceThen = then || null; oncePaused = false;
     playing = true; play.innerHTML = '&#10074;&#10074;'; play.title = 'pause (A)';
-    tween(maxStep, perStep * maxStep + 200, () => { stopPlay(); if (then) then(); });
+    tween(maxStep, perStep * maxStep + 200, finishOnce);
+  }
+  function finishOnce(){ stopPlay(); const then = onceThen; onceThen = null; if (then) then(); }
+  // ...and pause it where it is, then carry on from there to the end (and its callback).
+  function pauseOnce(){
+    if (!playing || !onceThen) return false;
+    playing = false; cancelAnimationFrame(raf); clearTimeout(hold); oncePaused = true;
+    play.innerHTML = '&#9654;';
+    return true;
+  }
+  function resumeOnce(){
+    if (!oncePaused) return false;
+    oncePaused = false; playing = true; play.innerHTML = '&#10074;&#10074;';
+    tween(maxStep, perStep * Math.max(0.3, maxStep - progress) + 200, finishOnce);
+    return true;
   }
   // A host page can lock the playback controls (a lesson does until the
   // learner has typed the command, so "After" cannot stand in for typing it):
@@ -623,7 +639,7 @@ function makeViewer(root){
     [play, btnBefore, btnAfter, scrub].forEach(el => { el.disabled = locked; });
   }
   control = {
-    playOnce, setLocked,
+    playOnce, pauseOnce, resumeOnce, setLocked,
     setState: s => { stopPlay(); setProgress(s === 'after' ? maxStep : s === 'before' ? 0 : clamp(parseInt(String(s).replace(/^step=/, ''), 10) || 0, 0, maxStep)); },
     // A host that drives the animation itself (the live page recording a video) sets a fractional progress.
     setProgress: p => { stopPlay(); setProgress(p); },
@@ -901,6 +917,9 @@ function makeViewer(root){
   // playOnce(then): play the graph on the stage from before to after, once,
   // then call then(). setState('before' | 'after' | 'step=N'): jump there.
   function playOnce(then){ if (control) control.playOnce(then); else if (then) then(); }
+  // pauseOnce() / resumeOnce(): hold a play-once where it is, and carry it on; false when there is none.
+  function pauseOnce(){ return !!(control && control.pauseOnce()); }
+  function resumeOnce(){ return !!(control && control.resumeOnce()); }
   function setState(s){ if (control) control.setState(s); }
   // setLocked(true | false): lock or free the playback controls of the graph on the stage.
   function setLocked(v){ if (control) control.setLocked(v); }
@@ -909,7 +928,7 @@ function makeViewer(root){
   function steps(){ return control ? control.steps() : 0; }
   function animatable(){ return !!(control && control.animatable()); }
 
-  return {init, boot, mount, load, unmount, deflate, inflate, setTheme, retheme, playOnce, setState, setLocked, setProgress, steps, animatable, root};
+  return {init, boot, mount, load, unmount, deflate, inflate, setTheme, retheme, playOnce, pauseOnce, resumeOnce, setState, setLocked, setProgress, steps, animatable, root};
 }
 window.GitSimViewer = Object.assign(makeViewer(document), {instance: makeViewer});
 """

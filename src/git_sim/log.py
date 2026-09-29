@@ -46,7 +46,7 @@ class Log(GitSimBaseCommand):
             )
             sys.exit(1)
         self.show_intro()
-        self.parse_commits()
+        self.parse_commits(self.first_row_commit())
         self.parse_all()
         self.recenter_frame()
         self.scale_frame()

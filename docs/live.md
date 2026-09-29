@@ -79,7 +79,7 @@ be shared the same way.
 **Serving it.** In the browser mode a small HTTP server on `127.0.0.1` serves
 the page, `/history`, `/svg/<n>`, `/page/<n>` and an `/events` stream
 (server-sent events). By default the page that opens is the one hosted at
-`initialcommit.com/tools/git-sim/live`, with the local server's address and a
+`initialcommit.com/tools/git-sim/viewer`, with the local server's address and a
 per-session key in the URL fragment (`#live=http://127.0.0.1:PORT&k=KEY`),
 which the browser never sends to the site: the site serves the page, the
 graphs come from the local server, exactly the split shared simulations

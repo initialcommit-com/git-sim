@@ -240,6 +240,31 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     self.n_dark_commits += 1
                     self.parse_commits(self.create_dark_commit(), i, circle)
 
+    def first_row_commit(self):
+        """Where the first row of the graph starts: HEAD's commit, unless (with
+        --all) another branch is simply ahead of it, HEAD sitting on that
+        branch's first-parent line. Then the row starts at that branch's tip, so
+        the history is drawn as the one line it is and HEAD is a label partway
+        along it; drawn from HEAD, the branch's newer commits would take a row
+        of their own, as if they had split off."""
+        head = self.get_commit()
+        if not getattr(self, "all", False) or head == "dark":
+            return head
+        best = None
+        for branch in self.get_nonparent_branch_names():
+            tip, steps = branch.commit, 0
+            if tip.hexsha == head.hexsha:
+                continue
+            walk = tip
+            while walk is not None and steps < self.n:
+                if walk.hexsha == head.hexsha:
+                    if best is None or steps < best[1]:
+                        best = (tip, steps)
+                    break
+                walk = walk.parents[0] if walk.parents else None
+                steps += 1
+        return best[0] if best else head
+
     def parse_all(self):
         if self.all:
             for branch in self.get_nonparent_branch_names():
@@ -486,8 +511,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
             stroke_color=ring,
             stroke_width=self.commit_stroke_width,
             fill_color=fill,
-            fill_opacity=1.0,
+            fill_opacity=0.0 if kind == "dark" else 1.0,
         )
+        if kind == "dark":
+            circle.set_stroke(opacity=0.0)
         circle.height = 1
         if kind != "dark":
             apply_shadow(circle, theme.shadow(fill))
@@ -636,7 +663,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
         arrow = self.lane_arrow(start, end)
 
         if commit == "dark":
-            arrow = m.Arrow(start, end, color=self.theme.bg)
+            arrow = m.Arrow(start, end, color=self.theme.bg, stroke_opacity=0.0)
+            arrow.set_opacity(0.0)
 
         length = numpy.linalg.norm(start - end) - (1.5 if start[1] == end[1] else 3)
         arrow.set_length(length)
@@ -1012,56 +1040,35 @@ class GitSimBaseCommand(m.MovingCameraScene):
         if self.check_all_dark():
             self.zone_title_offset = 2.0 if platform.system() == "Windows" else 2.0
 
-        horizontal = m.Line(
-            (
-                self.camera.frame.get_left()[0],
-                self.camera.frame.get_center()[1],
-                0,
-            ),
-            (
-                self.camera.frame.get_right()[0],
-                self.camera.frame.get_center()[1],
-                0,
-            ),
-            color=self.ruleColor,
-            stroke_width=3,
-        ).shift(m.UP * 1.75)
-        horizontal2 = m.Line(
-            (
-                self.camera.frame.get_left()[0],
-                self.camera.frame.get_center()[1],
-                0,
-            ),
-            (
-                self.camera.frame.get_right()[0],
-                self.camera.frame.get_center()[1],
-                0,
-            ),
-            color=self.ruleColor,
-            stroke_width=3,
-        ).shift(m.UP * 0.75)
-        vert1 = m.DashedLine(
-            (
-                self.camera.frame.get_left()[0],
-                self.camera.frame.get_bottom()[1],
-                0,
-            ),
-            (self.camera.frame.get_left()[0], horizontal.get_start()[1], 0),
-            dash_length=0.2,
-            color=self.ruleColor,
-            stroke_width=3,
-        ).shift(m.RIGHT * 8)
-        vert2 = m.DashedLine(
-            (
-                self.camera.frame.get_right()[0],
-                self.camera.frame.get_bottom()[1],
-                0,
-            ),
-            (self.camera.frame.get_right()[0], horizontal.get_start()[1], 0),
-            dash_length=0.2,
-            color=self.ruleColor,
-            stroke_width=3,
-        ).shift(m.LEFT * 8)
+        # The table spans the frame, its outer columns 8 wide, down to the frame's
+        # bottom edge. A compact table (live drawings: compact_zones) is sized to
+        # its content instead: three columns 5 wide, centred under the graph, and
+        # only as tall as its rows, so it doesn't dwarf a short history.
+        compact = getattr(self, "compact_zones", False)
+        frame = self.camera.frame
+        cx, cy = frame.get_center()[0], frame.get_center()[1]
+        if compact:
+            col = 5.0
+            left, right = cx - 1.5 * col, cx + 1.5 * col
+            v1x, v2x = cx - col / 2, cx + col / 2
+        else:
+            left, right = frame.get_left()[0], frame.get_right()[0]
+            v1x, v2x = left + 8, right - 8
+        top_y, rule_y = cy + 1.75, cy + 0.75
+        if compact and len(self.toFadeOut):
+            # right under the graph, rather than at the middle of the frame
+            top_y = self.toFadeOut.get_bottom()[1] - 0.9
+            rule_y = top_y - 1.0
+        bottom_y = rule_y - 0.9 if compact else frame.get_bottom()[1]
+
+        horizontal = m.Line((left, top_y, 0), (right, top_y, 0), color=self.ruleColor, stroke_width=3)
+        horizontal2 = m.Line((left, rule_y, 0), (right, rule_y, 0), color=self.ruleColor, stroke_width=3)
+
+        def column_rule(x, bottom):
+            return m.DashedLine((x, bottom, 0), (x, top_y, 0), dash_length=0.2, color=self.ruleColor, stroke_width=3)
+
+        vert1 = column_rule(v1x, bottom_y)
+        vert2 = column_rule(v2x, bottom_y)
 
         # reverse flips the arrow direction (first -> second column). Callers
         # that relied on the old implicit renaming still get it; explicit
@@ -1074,7 +1081,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         # A faint band behind the header row, drawn beneath the rules.
         header_band = m.Rectangle(
-            width=self.camera.frame.get_width(),
+            width=right - left,
             height=abs(horizontal.get_start()[1] - horizontal2.get_start()[1]),
             color=self.theme.panel,
             fill_color=self.theme.panel,
@@ -1082,7 +1089,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             stroke_width=0,
         ).move_to(
             (
-                self.camera.frame.get_center()[0],
+                (left + right) / 2,
                 (horizontal.get_start()[1] + horizontal2.get_start()[1]) / 2,
                 0,
             )
@@ -1102,7 +1109,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 color=title_color(first_column_name),
                 weight=m.BOLD,
             )
-            .move_to((vert1.get_center()[0] - 4, horizontal.get_start()[1], 0))
+            .move_to(((left + v1x) / 2, horizontal.get_start()[1], 0))
             .shift(m.DOWN * title_v_shift)
         )
         secondColumnTitle = (
@@ -1113,7 +1120,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 color=title_color(second_column_name),
                 weight=m.BOLD,
             )
-            .move_to(self.camera.frame.get_center())
+            .move_to(((v1x + v2x) / 2, cy, 0))
             .align_to(firstColumnTitle, m.UP)
         )
         thirdColumnTitle = (
@@ -1124,7 +1131,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 color=title_color(third_column_name),
                 weight=m.BOLD,
             )
-            .move_to((vert2.get_center()[0] + 4, 0, 0))
+            .move_to(((v2x + right) / 2, 0, 0))
             .align_to(firstColumnTitle, m.UP)
         )
 
@@ -1212,9 +1219,18 @@ class GitSimBaseCommand(m.MovingCameraScene):
         # they sit underneath it. Rows are 0.5 high, starting just below the
         # header's lower rule.
         n_rows = max(self._zone_rows.values(), default=-1) + 1
+        if compact:
+            # the column rules end just below the last row
+            bottom = rule_y - 0.5 * max(n_rows, 1) - 0.4
+            for old, x in ((vert1, v1x), (vert2, v2x)):
+                new = column_rule(x, bottom)
+                self.remove(old)
+                self.toFadeOut.remove(old)
+                self.add(new)
+                self.toFadeOut.add(new)
         for row in range(1, n_rows, 2):
             stripe = m.Rectangle(
-                width=self.camera.frame.get_width(),
+                width=right - left,
                 height=0.5,
                 color=self.theme.panel,
                 fill_color=self.theme.panel,
@@ -1222,7 +1238,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 stroke_width=0,
             ).move_to(
                 (
-                    self.camera.frame.get_center()[0],
+                    (left + right) / 2,
                     horizontal2.get_center()[1] - 0.5 * (row + 1),
                     0,
                 )

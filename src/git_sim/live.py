@@ -207,10 +207,28 @@ def _names(paths: List[str], limit: int = 2) -> str:
     return " ".join(shown) + (f" +{more}" if more > 0 else "")
 
 
+def _reset_mode(before: RepoState, after: RepoState) -> str:
+    """" --soft", "" (mixed, the default) or " --hard", from what a reset
+    that moved HEAD left behind in the index and the working tree."""
+    was = before.entries()
+    new = {p: s for p, s in after.entries().items() if was.get(p) != s}
+    if any(i not in " ?" for i, _ in new.values()):
+        return " --soft"
+    if any(w not in " ?" for _, w in new.values()):
+        return ""
+    return " --hard"
+
+
 def describe_change(before: RepoState, after: RepoState) -> Tuple[str, str]:
     """(label, detail): the command that most likely produced ``after`` from
     ``before``, short enough for a title, and a longer line for a tooltip."""
     entries = new_reflog_entries(before.reflog, after.reflog)
+    # git stash resets the working tree to HEAD, which HEAD's reflog records
+    # as "reset: moving to HEAD": the new stash entry says what really ran.
+    if len(after.stash) > len(before.stash) and all(
+        e == "reset: moving to HEAD" for e in entries
+    ):
+        return "git stash", "stashed the working directory and index"
     if entries:
         if any(e.startswith("rebase") for e in entries):
             label = "git rebase"
@@ -220,6 +238,11 @@ def describe_change(before: RepoState, after: RepoState) -> Tuple[str, str]:
         m = re.match(r"^git checkout (.+)$", label)
         if m and m.group(1) in after.heads() and m.group(1) not in before.heads():
             label = f"git checkout -b {m.group(1)}"
+        # reset: the reflog doesn't say which kind; where the undone changes
+        # went does (staged: --soft, in the working tree: mixed, gone: --hard)
+        m = re.match(r"^git reset (.+)$", label)
+        if m and before.head_sha != after.head_sha:
+            label = f"git reset{_reset_mode(before, after)} {m.group(1)}"
         return label, entries[0]
 
     if len(after.stash) > len(before.stash):

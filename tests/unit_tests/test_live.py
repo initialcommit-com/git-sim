@@ -245,6 +245,22 @@ def test_checkout_of_a_branch_that_did_not_exist_is_checkout_b():
     assert describe_change(before, after)[0] == "git checkout -b topic"
 
 
+def test_a_stash_is_named_a_stash_not_the_reset_it_logs():
+    # git stash writes "reset: moving to HEAD" to HEAD's reflog
+    before = state(head_sha="1", status=(" M a.txt",), reflog=("commit: a",))
+    after = state(head_sha="1", stash=("s",), reflog=("reset: moving to HEAD", "commit: a"))
+    assert describe_change(before, after)[0] == "git stash"
+
+
+def test_a_reset_is_named_with_its_mode():
+    before = state(head_sha="2", reflog=("commit: b",))
+    moved = dict(head_sha="1", reflog=("reset: moving to HEAD~1", "commit: b"))
+    # where the undone commit's changes went says which reset ran
+    assert describe_change(before, state(**moved, status=("M  a.txt",)))[0] == "git reset --soft HEAD~1"
+    assert describe_change(before, state(**moved, status=(" M a.txt",)))[0] == "git reset HEAD~1"
+    assert describe_change(before, state(**moved))[0] == "git reset --hard HEAD~1"
+
+
 def test_changes_without_a_reflog_entry_are_read_from_the_diff():
     base = {"refs/heads/main": "1"}
     assert (
@@ -373,12 +389,13 @@ def test_the_live_page_has_the_strip_and_every_transport():
     assert "acquireVsCodeApi" in page and "new EventSource(api('/events'))" in page
     assert "window.GitSimViewer" in page
     assert '"repo": "demo"' in page and '"key": "s3cret"' in page
-    # the live page sits under git-sim's page, beside the viewer (not under it)
-    for viewer in ("https://initialcommit.com/tools/git-sim/viewer", "https://initialcommit.com/tools/git-sim"):
-        assert (
-            hosted_live_url(viewer, "http://127.0.0.1:8123", "s3cret")
-            == "https://initialcommit.com/tools/git-sim/live#live=http%3A%2F%2F127.0.0.1%3A8123&k=s3cret"
+    # a live session opens in the hosted viewer
+    assert (
+        hosted_live_url(
+            "https://initialcommit.com/tools/git-sim/viewer", "http://127.0.0.1:8123", "s3cret"
         )
+        == "https://initialcommit.com/tools/git-sim/viewer#live=http%3A%2F%2F127.0.0.1%3A8123&k=s3cret"
+    )
 
 
 def test_the_live_assets_are_exported_for_the_site(tmp_path):

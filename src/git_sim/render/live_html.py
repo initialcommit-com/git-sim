@@ -108,10 +108,11 @@ LIVE_JS = r"""
 
   function setStatus(){
     const repo = repoName() ? ' · ' + repoName() : '';
-    const changes = Math.max(0, items.length - 1);
+    const changes = items.filter(i => i.index !== 0).length;
     dot.className = recording ? 'rec' : recorded ? '' : connected ? (follow && !replaying ? 'on' : '') : 'off';
     if (lastError) { status.textContent = lastError; dot.className = 'off'; }
     else if (recording) status.textContent = recording;
+    else if (recorded && recorded.title) status.textContent = `${recorded.title} · ${changes} step${changes === 1 ? '' : 's'}`;
     else if (recorded) status.textContent = `recorded${repo} · ${changes} change${changes === 1 ? '' : 's'}` + (recorded.started ? ' · ' + new Date(recorded.started * 1000).toLocaleString([], {dateStyle: 'medium', timeStyle: 'short'}) : '');
     else if (!connected) status.textContent = 'disconnected' + repo;
     else if (replaying) status.textContent = `replaying ${current} / ${changes}`;
@@ -120,20 +121,21 @@ LIVE_JS = r"""
     followBtn.classList.toggle('on', follow && !recorded);
     replayBtn.classList.toggle('on', replaying);
     const busy = !!recording;
-    replayBtn.disabled = busy || items.length < 2;
+    replayBtn.disabled = busy || items.filter(i => i.index !== 0).length < (recorded ? 1 : 2);
     clearBtn.disabled = busy || items.length < 2;
     followBtn.disabled = busy;
     if (saveBtn) saveBtn.disabled = busy || items.length < 1;
     if (recordBtn) { recordBtn.disabled = items.length < 1 || !window.MediaRecorder; recordBtn.classList.toggle('rec', busy); }
-    document.title = (items[current] ? items[current].label + ' — ' : '') + 'git-sim live' + (repoName() ? ': ' + repoName() : '');
+    document.title = recorded && recorded.title
+      ? (items[current] ? items[current].label + ' — ' : '') + recorded.title + ' — git-sim'
+      : (items[current] ? items[current].label + ' — ' : '') + 'git-sim live' + (repoName() ? ': ' + repoName() : '');
   }
   function chipFor(item){
     const b = document.createElement('button');
     b.className = 'chip'; b.dataset.i = item.index;
-    b.title = (item.detail || item.label) + '\n' + clock(item.time) + (recorded ? '' : '\nshift+click opens this change as a page of its own');
-    b.innerHTML = item.index === 0
-      ? `<b>start</b> ${esc(item.label)} <small>${clock(item.time)}</small>`
-      : `<b>${item.index}</b> ${esc(item.label)} <small>${clock(item.time)}</small>`;
+    const when = item.time ? clock(item.time) : '';
+    b.title = (item.detail || item.label) + (when ? '\n' + when : '') + (recorded ? '' : '\nshift+click opens this change as a page of its own');
+    b.innerHTML = (item.index === 0 ? '<b>start</b> ' : `<b>${item.index}</b> `) + esc(item.label) + (when ? ` <small>${when}</small>` : '');
     b.addEventListener('click', e => {
       if (recording) return;
       if (e.shiftKey && !recorded) {
@@ -193,19 +195,36 @@ LIVE_JS = r"""
     else if (current < 0 && !recording) show(item.index, false);
     setStatus();
   }
-  function replay(){
-    if (items.length < 2) return;
-    replaying = true; follow = false;
+  function replay(from){
     const order = items.map(i => i.index).filter(i => i !== 0);
-    let at = 0;
+    if (!order.length || (items.length < 2 && !recorded)) return;
+    replaying = true; follow = false;
+    let at = from == null ? 0 : Math.max(0, order.indexOf(from));
     const next = () => {
       if (!replaying) return;
       if (at >= order.length) { replaying = false; follow = !recorded; setStatus(); return; }
-      show(order[at++], true, () => setTimeout(next, 700));
+      show(order[at++], true, () => {
+        // A page hosting the strip may hold the run after each step (to let it be
+        // read, or read aloud): window.GitSimLiveHooks.hold(isLast) returns a promise.
+        const hooks = window.GitSimLiveHooks || {};
+        if (!hooks.hold) { setTimeout(next, 700); return; }
+        Promise.resolve().then(() => hooks.hold(at >= order.length)).catch(() => {}).then(() => setTimeout(next, 150));
+      });
     };
     next();
   }
-  replayBtn.addEventListener('click', () => { if (replaying) { replaying = false; setStatus(); } else replay(); });
+  // ending a replay early tells the hosting page, which may be reading a step aloud
+  function stopReplay(){ replaying = false; setStatus(); const hooks = window.GitSimLiveHooks || {}; if (hooks.stopped) hooks.stopped(); }
+  replayBtn.addEventListener('click', () => { if (replaying) stopReplay(); else replay(); });
+  // For a page that hosts the strip (the site's viewer): play the session on from
+  // the change on screen (from the first when on the last), or stop it.
+  window.GitSimLive = {
+    play(from){ if (recording) return; const order = items.map(i => i.index).filter(i => i !== 0);
+      if (from != null && order.includes(from)) { replay(from); return; }
+      replay(current === order[order.length - 1] ? order[0] : current); },
+    stop(){ stopReplay(); },
+    get playing(){ return replaying; },
+  };
   followBtn.addEventListener('click', () => {
     follow = !follow; replaying = false;
     if (follow && items.length) show(items[items.length - 1].index, false);
@@ -384,7 +403,9 @@ LIVE_JS = r"""
     follow = false;
     (recorded.items || []).forEach(i => add(i, i.svg, false));
     const last = items[items.length - 1];
-    if (last) show(last.index, false);
+    // a demo (start "first") waits on its first step, before its command, for Play
+    if (recorded.start === 'first' && items.length) show(items[0].index, false, () => V.setProgress(0));
+    else if (last) show(last.index, false);
   } else if (inVscode) {
     window.addEventListener('message', e => handle(e.data));
     host.postMessage({type: 'ready'});
@@ -448,7 +469,10 @@ def build_live_html(
 
     With ``session`` ({"repo", "started", "items": [{index, label, detail,
     time, svg}]}) the page is a recorded session instead: every graph inline,
-    no server, the strip stepping through them."""
+    no server, the strip stepping through them. A session with a ``title`` (a
+    demo) is named by it in the strip, and one with ``start: "first"`` opens on
+    its first step, before the command, and waits to be played; steps without a
+    ``time`` show no clock."""
     theme = theme or DARK
     meta = json.dumps(
         {
@@ -497,14 +521,9 @@ def build_live_html(
 
 
 def hosted_live_url(viewer_url, base, key):
-    """The address git-sim opens for live mode: the hosted page, with the
+    """The address git-sim opens for live mode: the hosted viewer, with the
     local server's address and the session key in the fragment, which the
     browser never sends to the site."""
     import urllib.parse
 
-    # the live page sits beside the viewer, under git-sim's page (/tools/git-sim/live)
-    base_url = viewer_url.rstrip("/")
-    if base_url.endswith("/viewer"):
-        base_url = base_url[: -len("/viewer")]
-    page = base_url + "/live"
-    return page + "#" + urllib.parse.urlencode({"live": base, "k": key})
+    return viewer_url.rstrip("/") + "#" + urllib.parse.urlencode({"live": base, "k": key})
