@@ -42,6 +42,7 @@ def test_embed_script_carries_the_viewer_and_mounts_by_class():
     # a credit under the frame, in the host page: the snippet's own link kept, else one
     # made; left out on initialcommit.com itself
     assert "git-sim-credit" in js and "https://initialcommit.com/tools/git-sim" in js
+    assert "viewer_url: 'https://initialcommit.com/tools/git-sim/viewer'" in js, "shares open in the viewer"
     assert "a[href*=\"initialcommit.com\"]" in js and "initialcommit\\.com$" in js
     assert js.count("el.replaceChildren(iframe)") == 1  # only inside place(), never bare
 

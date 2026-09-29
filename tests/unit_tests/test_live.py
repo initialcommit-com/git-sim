@@ -373,12 +373,12 @@ def test_the_live_page_has_the_strip_and_every_transport():
     assert "acquireVsCodeApi" in page and "new EventSource(api('/events'))" in page
     assert "window.GitSimViewer" in page
     assert '"repo": "demo"' in page and '"key": "s3cret"' in page
-    assert (
-        hosted_live_url(
-            "https://initialcommit.com/tools/git-sim", "http://127.0.0.1:8123", "s3cret"
+    # the live page sits under git-sim's page, beside the viewer (not under it)
+    for viewer in ("https://initialcommit.com/tools/git-sim/viewer", "https://initialcommit.com/tools/git-sim"):
+        assert (
+            hosted_live_url(viewer, "http://127.0.0.1:8123", "s3cret")
+            == "https://initialcommit.com/tools/git-sim/live#live=http%3A%2F%2F127.0.0.1%3A8123&k=s3cret"
         )
-        == "https://initialcommit.com/tools/git-sim/live#live=http%3A%2F%2F127.0.0.1%3A8123&k=s3cret"
-    )
 
 
 def test_the_live_assets_are_exported_for_the_site(tmp_path):

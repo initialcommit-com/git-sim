@@ -70,7 +70,7 @@ EMBED_JS = r"""
   const frames = new Map();  // id -> {iframe, element, svg, ...}
 
   function documentFor(id, theme, controls, title){
-    const meta = JSON.stringify({title: title || 'git-sim', theme: theme, viewer_url: 'https://initialcommit.com/tools/git-sim'}).replace(/<\//g, '<\\/');
+    const meta = JSON.stringify({title: title || 'git-sim', theme: theme, viewer_url: 'https://initialcommit.com/tools/git-sim/viewer'}).replace(/<\//g, '<\\/');
     return '<!DOCTYPE html><html lang="en" data-theme="' + theme + '" data-embed-id="' + id + '" data-controls="' + controls + '"><head><meta charset="utf-8">' +
       '<meta name="viewport" content="width=device-width, initial-scale=1"><style>' + CSS + FRAME_CSS + '</style></head><body>' +
       HEADER + '<div id="stage"></div><div id="tip"></div><div id="toast"></div>' +

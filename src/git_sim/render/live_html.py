@@ -502,5 +502,9 @@ def hosted_live_url(viewer_url, base, key):
     browser never sends to the site."""
     import urllib.parse
 
-    page = viewer_url.rstrip("/") + "/live"
+    # the live page sits beside the viewer, under git-sim's page (/tools/git-sim/live)
+    base_url = viewer_url.rstrip("/")
+    if base_url.endswith("/viewer"):
+        base_url = base_url[: -len("/viewer")]
+    page = base_url + "/live"
     return page + "#" + urllib.parse.urlencode({"live": base, "k": key})

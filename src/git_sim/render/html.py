@@ -38,7 +38,9 @@ import zlib
 from git_sim.render.svg import DEFAULT_FONT_STACK as FONT_STACK
 from git_sim.theme import DARK, LIGHT
 
-DEFAULT_VIEWER_URL = "https://initialcommit.com/tools/git-sim"
+# git-sim's page on the site, and its viewer: where shared links open.
+TOOL_URL = "https://initialcommit.com/tools/git-sim"
+DEFAULT_VIEWER_URL = TOOL_URL + "/viewer"
 
 
 def _theme_vars(theme):
