@@ -6,8 +6,8 @@ on your machine and writes into each one's own configuration:
 
 - a **pre-flight hook** (Claude Code, Codex CLI, Cursor, GitHub Copilot CLI,
   Gemini CLI, and Copilot in VS Code) that stops the agent before a destructive
-  Git command and asks you to approve it, with the facts, a text graph and the
-  simulation in front of you;
+  Git command and asks you to approve it, with what it would lose, how to undo
+  it and the simulation in front of you;
 - the **MCP server**, which also reaches Windsurf, Cline, Roo Code, Amazon Q
   Developer CLI and Claude Desktop, so the agent can check or simulate a
   command itself.

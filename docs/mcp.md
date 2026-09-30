@@ -161,10 +161,10 @@ Agents without a hook API get the MCP server alone: they can call `git_preflight
 
 Where people type `git` themselves, `git sim <command>` already works (git runs any `git-<name>` program), and `git-sim aliases` adds `git preflight` and `git live` to your global git config; see [shell.md](shell.md).
 
-Under VS Code the hook behaves a little differently: it renders the
-interactive page instead of an image, does not open a viewer window, and leaves
-a note in `git-sim_media/inbox/` that the git-sim extension picks up to open the
-page in an editor tab. It also answers for git commands that rate below the
+Under VS Code the hook behaves a little differently: it leaves a note in
+`git-sim_media/inbox/` that the git-sim extension picks up to open the
+simulation in an editor tab (when no extension picks the note up, the hook
+goes on as it does anywhere else). It also answers for git commands that rate below the
 threshold with an "allow" carrying a one-line SAFE or CAUTION note, so a
 verdict shows on every git command (`GIT_SIM_HOOK_REPORT_SAFE=0` turns that
 off; `=1` turns it on for other agents).
@@ -214,8 +214,8 @@ The MCP tools rely on the agent choosing to call them. The `git-sim-hook`
 command removes that reliance: registered as a PreToolUse hook, it
 intercepts every shell command the agent is about to run, analyzes any git
 invocations in it, and — when the pre-flight engine rates one risky —
-forces an approval prompt showing the deterministic facts, and renders and
-opens the git-sim simulation image. The agent cannot skip it.
+forces an approval prompt showing the deterministic facts, and offers you the
+git-sim simulation before you decide. The agent cannot skip it.
 
 Add to `.claude/settings.json` (project) or `~/.claude/settings.json`
 (global; run `/hooks` or restart Claude Code after editing):
@@ -244,11 +244,34 @@ Behavior:
 
 - Safe commands (and non-git commands) pass through instantly — a cheap
   string pre-filter avoids any analysis cost on the vast majority of calls.
-- Risky commands trigger an "ask" permission decision whose reason contains
-  the pre-flight report (risk level, the text graph of affected commits and
-  files, what would be lost, recovery command), so you approve or reject
-  with ground truth in front of you — even in a terminal where the image
-  cannot open.
+- Risky commands trigger an "ask" permission decision whose reason is the
+  pre-flight report in a few lines, so you approve or reject with ground
+  truth in front of you:
+
+  ```
+  git-sim preflight: DESTRUCTIVE — git reset -q --hard HEAD~2
+  Moves main from e35b0b7 to cb54632 (hard reset).
+  Loses: 2 commits removed from branch main; unstaged changes in README.md (NOT recoverable)
+  Undo: Commits stay in the reflog ~90 days: git reset --hard e35b0b7
+  ```
+
+- As the prompt appears, git-sim's interactive simulation of the command
+  opens in the git-sim viewer at initialcommit.com, so you see it before you
+  decide. The link has no query string: the graph, the command and the theme
+  all ride in its `#fragment`, which your browser never sends to the server,
+  so the site serves the page and learns nothing about your repository.
+  `GIT_SIM_HOOK_OPEN_IN=local` (or git-sim's own `git_sim_open_in=local`)
+  opens the saved `.html` file instead. If the hook is registered twice
+  (globally and in a project, say), it still opens once.
+  `GIT_SIM_HOOK_OPEN=never` leaves it out; `GIT_SIM_HOOK_OPEN=ask` asks first, in a small dialog of the system's own
+  just before the prompt (an agent's prompt has only approve and deny, so the
+  question can't go there). The dialog gives up after a minute, and never
+  shows over SSH, in CI, or on a Linux desktop without zenity or kdialog.
+- Options git-sim doesn't draw, which agents add freely (`-q`, `--no-edit`,
+  `--no-verify`, `-s ours`), are left out of the simulation; the ones that
+  shape it (`--hard`, `-f`, `--force-with-lease`) are kept. Git's own global
+  options (`-C <dir>`, `-c key=value`) point the check at the right
+  repository.
 - The hook never denies on its own and fails open on any internal error —
   it adds information to Claude Code's existing permission flow, never a
   new failure mode.
@@ -260,9 +283,10 @@ Configuration via environment variables:
 | `GIT_SIM_HOOK_ASK_ON` | `caution` | Minimum risk that triggers the prompt (`caution` or `destructive`) |
 | `GIT_SIM_HOOK_MODE` | `ask` | `ask` prompts (or denies with instructions where the agent cannot prompt); `deny` denies risky commands outright; `warn` allows them with the facts attached |
 | `GIT_SIM_HOOK_AGENT` | detected | Force the hook dialect (`claude`, `codex`, `cursor`, `copilot`, `gemini`); `git-sim wire-agents` passes `--agent` instead |
-| `GIT_SIM_HOOK_RENDER` | `1` | Set `0` to skip rendering the image (facts only, faster) |
-| `GIT_SIM_HOOK_OPEN` | `1` | Set `0` to not auto-open the rendered image |
-| `GIT_SIM_HOOK_TEXT` | `1` | Set `0` to omit the text graph from the prompt |
+| `GIT_SIM_HOOK_RENDER` | `1` | Set `0` to skip rendering the simulation (facts only, faster) |
+| `GIT_SIM_HOOK_OPEN` | `always` | `always` opens the simulation in your browser; `never` doesn't make one; `ask` asks in a dialog whether to open it |
+| `GIT_SIM_HOOK_OPEN_IN` | `hosted` | `hosted` opens it in the git-sim viewer at initialcommit.com (everything in the `#fragment`); `local` opens the saved `.html` file. Defaults to `git_sim_open_in` |
+| `GIT_SIM_HOOK_TEXT` | `0` | Set `1` to add the plain-text commit graph to the prompt |
 
 ## Other MCP clients
 

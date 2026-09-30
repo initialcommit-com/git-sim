@@ -25,9 +25,19 @@ Environment variables:
                          instructions where the agent cannot prompt.
                          "deny": deny risky commands outright (unattended runs).
                          "warn": allow, but attach the facts as a message.
-    GIT_SIM_HOOK_RENDER  "0" to skip rendering the git-sim image (facts only).
-    GIT_SIM_HOOK_OPEN    "0" to skip auto-opening the rendered image.
-    GIT_SIM_HOOK_TEXT    "0" to omit the plain-text commit graph.
+    GIT_SIM_HOOK_RENDER  "0" to skip rendering the simulation (facts only).
+    GIT_SIM_HOOK_OPEN    "always" (default): open the simulation in the
+                         browser as the approval prompt appears.
+                         Where: GIT_SIM_HOOK_OPEN_IN below.
+                         "never": don't render or open it (facts only).
+                         "ask": a small dialog asks whether to see it before
+                         the approval prompt appears.
+    GIT_SIM_HOOK_OPEN_IN "hosted" (default): the git-sim viewer at
+                         initialcommit.com, everything in the link's #fragment
+                         (no query string), so nothing reaches the server.
+                         "local": the saved .html file. Defaults to git-sim's
+                         own setting, so git_sim_open_in=local covers both.
+    GIT_SIM_HOOK_TEXT    "1" to add the plain-text commit graph to the reason.
     GIT_SIM_HOOK_AGENT   force the agent dialect (same values as --agent).
     GIT_SIM_HOOK_REPORT_SAFE
                          "1": also answer for git commands the engine rated
@@ -36,10 +46,10 @@ Environment variables:
                          the level every time. Default "1" inside VS Code,
                          "0" elsewhere (where it would only add noise).
 
-Inside VS Code (its agent hooks, or Copilot CLI's shared hook file running
-under VS Code) the hook renders the interactive page instead of an image, does
-not pop a viewer window, and leaves a note in git-sim_media/inbox for the
-git-sim extension, which opens the page in an editor tab.
+The simulation is git-sim's interactive page. Inside VS Code (its agent hooks,
+or any agent running in its terminal) the hook leaves a note in
+git-sim_media/inbox for the git-sim extension, which opens the page in an
+editor tab; when no extension picks the note up, it goes on as anywhere else.
 
 Approval override: a command prefixed with ``GIT_SIM_APPROVE=1`` (or
 ``$env:GIT_SIM_APPROVE=1;`` in PowerShell) is let through without a
@@ -287,52 +297,230 @@ def post_to_inbox(page_path: str, report: PreflightReport, cwd: str) -> Optional
         return None
 
 
+def _plural(text: str) -> str:
+    """The engine writes "2 commit(s)"; a prompt reads better as "2 commits"."""
+    text = re.sub(r"\b1 ((?:[a-z]+ )?\w+?)\(s\)", r"1 \1", text)  # "1 untracked path"
+    return re.sub(r"(\w)\(s\)", r"\1s", text)  # "2 of the replayed commits" too
+
+
+def _headline(report: PreflightReport) -> str:
+    line = f"git-sim preflight: {report.risk.value.upper()} — {report.command}"
+    elsewhere = getattr(report, "elsewhere", None)
+    if elsewhere:
+        line += f"  (in {elsewhere})"
+    return line
+
+
+def _summary(report: PreflightReport) -> str:
+    """The summary on one line. A summary ending in a colon introduces a list
+    in the facts (the commits a branch deletion abandons); the first few go
+    on the same line."""
+    summary = report.summary.strip()
+    if summary.endswith(":"):
+        items = [f.strip() for f in report.facts if f.startswith("  ")]
+        summary = summary[:-1]
+        if items:
+            more = f" and {len(items) - 3} more" if len(items) > 3 else ""
+            summary += ": " + ", ".join(items[:3]) + more
+        summary += "."
+    return summary
+
+
+def _losses(report: PreflightReport) -> Optional[str]:
+    if not report.would_lose:
+        return None
+    shown = report.would_lose[:4]
+    more = f"; and {len(report.would_lose) - 4} more" if len(report.would_lose) > 4 else ""
+    return "Loses: " + "; ".join(shown) + more
+
+
+def _warnings(report: PreflightReport) -> List[str]:
+    """Warnings that add something: "can't be recovered" goes without saying
+    once a loss is already marked NOT recoverable."""
+    unrecoverable = any("NOT recoverable" in loss for loss in report.would_lose)
+    kept = [
+        w
+        for w in report.warnings
+        if not (unrecoverable and re.search(r"cannot be recovered|permanent", w, re.I))
+    ]
+    return [f"Warning: {w}" for w in kept[:2]]
+
+
+CLAIM_SECONDS = 30
+
+
+def claim_simulation(hook_input: dict, command: str, cwd: str) -> bool:
+    """Whether this hook run is the one to render and open the simulation.
+
+    The hook can be registered more than once for the same agent (a global
+    and a project settings file, say), and every copy runs for each command.
+    The first to claim the tool call shows the simulation; the others only
+    answer. A call is known by the agent's tool-call id, or failing that by
+    its session, command and directory within CLAIM_SECONDS."""
+    import hashlib
+    import tempfile
+
+    call = hook_input.get("tool_use_id") or hook_input.get("toolUseId") or ""
+    session = hook_input.get("session_id") or hook_input.get("sessionId") or ""
+    key = call or f"{session}\0{command}\0{cwd}"
+    claims = os.path.join(tempfile.gettempdir(), "git-sim-hook-claims")
+    try:
+        os.makedirs(claims, exist_ok=True)
+        now = time.time()
+        for name in os.listdir(claims):  # forget old claims
+            path = os.path.join(claims, name)
+            try:
+                if now - os.path.getmtime(path) > CLAIM_SECONDS:
+                    os.remove(path)
+            except OSError:
+                pass
+        name = hashlib.sha1(key.encode("utf-8")).hexdigest()
+        os.close(os.open(os.path.join(claims, name), os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+        return True
+    except FileExistsError:
+        return False
+    except OSError:
+        return True  # can't tell: better twice than never
+
+
+def picked_up(note: Optional[str], wait: float = 1.5) -> bool:
+    """Whether the VS Code extension took the note from the inbox (it deletes
+    each note it opens). A note still there after a moment means nothing is
+    watching, so the note is withdrawn and the caller shows the page itself."""
+    if not note:
+        return False
+    deadline = time.time() + wait
+    while time.time() < deadline:
+        if not os.path.exists(note):
+            return True
+        time.sleep(0.1)
+    try:
+        os.remove(note)
+    except OSError:
+        return not os.path.exists(note)
+    return False
+
+
+# --------------------------------------------------------------------------
+# Asking the user whether to see the simulation
+# --------------------------------------------------------------------------
+# With GIT_SIM_HOOK_OPEN=ask. An agent's approval prompt offers approve or
+# deny, nothing else, so the question "see it first?" is asked in a small
+# dialog of the system's own, just before the prompt appears. It gives up
+# after DIALOG_SECONDS as if the answer were no.
+
+DIALOG_SECONDS = 60
+DIALOG_TITLE = "git-sim preflight"
+
+
+def can_show_dialog() -> bool:
+    """A desktop to show a dialog on: not CI, not over SSH, and on Linux a
+    display with zenity or kdialog."""
+    import shutil
+
+    if os.environ.get("CI") or os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_TTY"):
+        return False
+    if sys.platform == "win32":
+        return True
+    if sys.platform == "darwin":
+        return bool(shutil.which("osascript"))
+    if not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+        return False
+    return bool(shutil.which("zenity") or shutil.which("kdialog"))
+
+
+def dialog_text(report: PreflightReport, agent: str) -> str:
+    label = AGENTS.get(agent, {}).get("label", "Your agent")
+    lines = [f"{label} wants to run:", f"    {report.command}", ""]
+    lines.append(f"{report.risk.value.upper()}: {_summary(report)}".strip())
+    losses = _losses(report)
+    if losses:
+        lines.append(losses)
+    lines += ["", "Simulate it visually before you approve or deny it?"]
+    return _plural("\n".join(lines))
+
+
+def ask_to_simulate(text: str, seconds: int = DIALOG_SECONDS) -> bool:
+    """Show the question; True when the user asks to see the simulation."""
+    try:
+        if sys.platform == "win32":
+            import ctypes
+            from ctypes import wintypes
+
+            user32 = ctypes.windll.user32
+            # Yes/No, question icon, on top of other windows, brought forward.
+            flags = 0x4 | 0x20 | 0x40000 | 0x10000
+            box = getattr(user32, "MessageBoxTimeoutW", None)
+            if box is not None:
+                box.argtypes = [wintypes.HWND, wintypes.LPCWSTR, wintypes.LPCWSTR,
+                                wintypes.UINT, wintypes.WORD, wintypes.DWORD]  # fmt: skip
+                answer = box(None, text, DIALOG_TITLE, flags, 0, seconds * 1000)
+            else:
+                answer = user32.MessageBoxW(None, text, DIALOG_TITLE, flags)
+            return answer == 6  # IDYES
+        if sys.platform == "darwin":
+            quote = lambda s: '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'  # noqa: E731
+            script = (
+                f"display dialog {quote(text)} with title {quote(DIALOG_TITLE)} "
+                'buttons {"Skip", "Simulate"} default button "Simulate" '
+                f'cancel button "Skip" giving up after {seconds} with icon caution'
+            )
+            done = subprocess.run(["osascript", "-e", script], capture_output=True,
+                                  text=True, timeout=seconds + 5)  # fmt: skip
+            return done.returncode == 0 and "button returned:Simulate" in done.stdout
+        import shutil
+
+        if shutil.which("zenity"):
+            args = ["zenity", "--question", "--no-markup", f"--title={DIALOG_TITLE}",
+                    f"--text={text}", "--ok-label=Simulate", "--cancel-label=Skip",
+                    f"--timeout={seconds}"]  # fmt: skip
+        else:
+            args = ["kdialog", "--title", DIALOG_TITLE, "--yes-label", "Simulate",
+                    "--no-label", "Skip", "--yesno", text]  # fmt: skip
+        return subprocess.run(args, capture_output=True, timeout=seconds + 5).returncode == 0
+    except Exception:
+        return False
+
+
 def safe_note(reports: List[PreflightReport]) -> str:
     """One line per analysed command that stayed below the threshold."""
     lines = []
     for report in reports:
-        line = f"git-sim preflight: {report.risk.value.upper()} — {report.command}"
+        line = _headline(report)
         if report.summary:
-            line += f" ({report.summary.rstrip('.')})"
+            line += f" ({_summary(report).rstrip('.')})"
         lines.append(line)
-    return "\n".join(lines)
+    return _plural("\n".join(lines))
 
 
-def format_reason(
-    reports: List[PreflightReport],
-    image_path: Optional[str],
-    page_path: Optional[str] = None,
-) -> str:
-    lines = []
+def brief(report: PreflightReport) -> List[str]:
+    """What the command does and what it costs, in a few short lines."""
+    lines = [_headline(report)]
+    if report.location:
+        lines.append(report.location)
+    if report.summary:
+        lines.append(_summary(report))
+    losses = _losses(report)
+    if losses:
+        lines.append(losses)
+    lines += _warnings(report)
+    if report.recovery:
+        undo = "; ".join(report.recovery)
+        lines.append(undo if undo.lower().startswith("undo") else "Undo: " + undo)
+    return lines
+
+
+def format_reason(reports: List[PreflightReport]) -> str:
+    """The text of the approval prompt: a few lines per flagged command (the
+    plain-text graph too, with GIT_SIM_HOOK_TEXT=1). The simulation opens on
+    its own, so the prompt doesn't point at it."""
+    blocks = []
     for report in reports:
-        lines.append(
-            f"git-sim preflight: {report.risk.value.upper()} — {report.command}"
-        )
-        if report.location:
-            lines.append(report.location)
-        if report.summary:
-            lines.append(report.summary)
+        lines = brief(report)
         if report.text_graph:
-            lines.append("")
-            lines.append(report.text_graph)
-            lines.append("")
-        if report.would_lose:
-            lines.append("Would lose:")
-            lines.extend(f"  - {loss}" for loss in report.would_lose[:8])
-            if len(report.would_lose) > 8:
-                lines.append(f"  ... and {len(report.would_lose) - 8} more")
-        for warning in report.warnings:
-            lines.append(f"WARNING: {warning}")
-        if report.recovery:
-            lines.append("To undo afterwards: " + "; ".join(report.recovery))
-        lines.append("")
-    if image_path:
-        lines.append(f"Simulation image: {image_path}")
-    if page_path:
-        lines.append(
-            f"Interactive simulation: {page_path} (opening in a git-sim tab in VS Code)"
-        )
-    return "\n".join(lines).strip()
+            lines += ["", report.text_graph]
+        blocks.append("\n".join(lines))
+    return _plural("\n\n".join(blocks).strip())
 
 
 # --------------------------------------------------------------------------
@@ -460,6 +648,61 @@ def build_output(agent: str, decision: str, reason: str) -> dict:
 # --------------------------------------------------------------------------
 
 
+RENDER_SECONDS = 45  # the hook itself has 120 seconds (see install.py)
+
+
+def _simulate(report: PreflightReport, cwd: str, agent: str, vscode: bool, mode: str) -> Optional[str]:
+    """Render the interactive page of the flagged command and show it: in a
+    VS Code tab when the git-sim extension is watching, otherwise in the
+    browser (after asking, with GIT_SIM_HOOK_OPEN=ask). Returns where it was
+    shown: "vscode", "browser" or None."""
+    from git_sim.simulate import render_simulation
+
+    # Rendered first (a second or two), so the question is only asked about a
+    # simulation that exists.
+    page = render_simulation(report.command, cwd, img_format="html",
+                             timeout=RENDER_SECONDS).get("image_path")  # fmt: skip
+    if not page:
+        return None
+    if vscode and picked_up(post_to_inbox(page, report, cwd)):
+        # The git-sim extension opened it in an editor tab. If it isn't
+        # watching, carry on as anywhere else.
+        return "vscode"
+    if os.environ.get("GIT_SIM_HOOK_OPEN", "always").lower() == "ask":
+        if not (mode == "ask" and can_show_dialog() and ask_to_simulate(dialog_text(report, agent))):
+            return None
+    show_page(page)
+    return "browser"
+
+
+def _open_url(url: str) -> None:
+    from git_sim.render.scene import open_url
+
+    open_url(url)
+
+
+def show_page(page: str) -> None:
+    """Open the saved page in the browser: in the git-sim viewer at
+    initialcommit.com (default), or the file itself with
+    GIT_SIM_HOOK_OPEN_IN=local (or git-sim's own git_sim_open_in=local). The
+    viewer link has no query string; the graph, command and theme ride in its
+    #fragment, which the browser never sends to the server."""
+    from git_sim.settings import settings
+
+    where = (os.environ.get("GIT_SIM_HOOK_OPEN_IN") or getattr(settings.open_in, "value", "hosted")).lower()
+    if where != "local":
+        from git_sim.render.html import hosted_link_for_page
+
+        url = hosted_link_for_page(page, settings.viewer_url)
+        if url:
+            try:
+                _open_url(url)
+                return
+            except Exception:
+                pass
+    _open_file(page)
+
+
 def run_hook(hook_input: dict, agent: Optional[str] = None) -> Optional[dict]:
     """Core hook logic. Returns the hook output dict, or None to stay silent."""
     agent = agent or os.environ.get("GIT_SIM_HOOK_AGENT") or None
@@ -475,7 +718,7 @@ def run_hook(hook_input: dict, agent: Optional[str] = None) -> Optional[dict]:
 
     vscode = in_vscode(agent, hook_input)
     threshold = os.environ.get("GIT_SIM_HOOK_ASK_ON", "caution")
-    render_text = os.environ.get("GIT_SIM_HOOK_TEXT", "1") != "0"
+    render_text = os.environ.get("GIT_SIM_HOOK_TEXT", "0") == "1"
     analysed, flagged = [], []
     for git_command, where in located_git_commands(command, cwd):
         if where is None:
@@ -483,6 +726,8 @@ def run_hook(hook_input: dict, agent: Optional[str] = None) -> Optional[dict]:
         report = analyze(git_command, where, render_text=render_text)
         if report.error is not None:
             continue
+        if os.path.normcase(os.path.normpath(where)) != os.path.normcase(os.path.normpath(cwd)):
+            report.elsewhere = os.path.basename(os.path.normpath(where)) or where
         analysed.append(report)
         if _risk_triggers(report.risk, threshold):
             flagged.append(report)
@@ -497,26 +742,14 @@ def run_hook(hook_input: dict, agent: Optional[str] = None) -> Optional[dict]:
             return build_output(agent, "allow", safe_note(analysed))
         return None
 
-    image_path = page_path = None
-    if os.environ.get("GIT_SIM_HOOK_RENDER", "1") != "0":
-        from git_sim.simulate import render_simulation
-
-        if vscode:
-            # The interactive page, opened by the git-sim extension in an editor
-            # tab (via the inbox note) rather than a picture in a viewer window.
-            rendered = render_simulation(flagged[0].command, cwd, img_format="html")
-            page_path = rendered.get("image_path")
-            if page_path:
-                post_to_inbox(page_path, flagged[0], cwd)
-        else:
-            rendered = render_simulation(flagged[0].command, cwd)
-            image_path = rendered.get("image_path")
-            if image_path and os.environ.get("GIT_SIM_HOOK_OPEN", "1") != "0":
-                _open_file(image_path)
-
     mode = os.environ.get("GIT_SIM_HOOK_MODE", "ask").lower()
     decision = _decide(agent, mode)
-    reason = format_reason(flagged, image_path, page_path)
+    show = os.environ.get("GIT_SIM_HOOK_RENDER", "1") != "0" and os.environ.get(
+        "GIT_SIM_HOOK_OPEN", "always"
+    ).lower() not in ("0", "never", "no", "false")
+    if show and claim_simulation(hook_input, command, cwd):
+        _simulate(flagged[0], cwd, agent, vscode, mode)
+    reason = format_reason(flagged)
     if decision == "deny" and mode == "ask":
         reason += _cannot_ask_note(agent)
     return build_output(agent, decision, reason)

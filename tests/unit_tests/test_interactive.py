@@ -320,9 +320,9 @@ def test_hosted_viewer_link_carries_the_graph_in_the_fragment():
     private = urllib.parse.urlsplit(
         viewer_link(svg, title="git reset --hard", summary="* abc secret", share=False)
     )
-    assert dict(urllib.parse.parse_qsl(private.query)) == {"m": "dark"}
+    assert private.query == "", "no query string at all"
     private_fragment = dict(urllib.parse.parse_qsl(private.fragment))
-    assert private_fragment["t"] == "git reset --hard" and "g" not in private.query
+    assert private_fragment["t"] == "git reset --hard" and private_fragment["m"] == "dark"
     assert "secret" not in private.geturl()
 
     def unpack(packed):
@@ -371,11 +371,15 @@ def test_page_opens_in_the_hosted_viewer_unless_told_otherwise(
     animations._open_page(scene, str(page), DARK)
     assert len(opened["urls"]) == 1 and not opened["files"]
     url = opened["urls"][0]
-    assert url.startswith(settings.viewer_url + "?m=dark#")
-    query, fragment = url.split("?", 1)[1].split("#", 1)
-    assert query == "m=dark", "the server is told nothing but the theme"
+    assert url.startswith(settings.viewer_url + "#"), "no query string: the server is told nothing"
+    fragment = url.split("#", 1)[1]
     frag = dict(urllib.parse.parse_qsl(fragment))
-    assert frag["d"] and frag["t"].startswith("git commit")
+    assert frag["d"] and frag["t"].startswith("git commit") and frag["m"] == "dark"
+    # the hook opens the same link from the saved page
+    from git_sim.render.html import hosted_link_for_page
+
+    assert hosted_link_for_page(str(page), settings.viewer_url) == url
+    assert hosted_link_for_page(str(tmp_path / "missing.html")) is None
     assert frag["p"] == page.name and str(tmp_path) not in url, "file name only"
     out = capsys.readouterr().out
     assert "Opened in the git-sim viewer at initialcommit.com" in out

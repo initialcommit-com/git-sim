@@ -350,11 +350,13 @@ function makeViewer(root){
     }
     // The graph says which theme drew it (its own data-theme, since git-sim
     // draws light by default; older graphs carry none and were drawn dark);
-    // the page says which it shows.
+    // the page says which it shows: the site's toggle once the visitor has
+    // used it, else the theme a link from git-sim carries in its fragment (#m=).
     const info = meta();
     const shown = byId('scene');
     shown.dataset.theme = shown.dataset.theme || options.svgTheme || info.svg_theme || info.theme || 'dark';
-    const want = siteTheme() || info.theme;
+    const hashTheme = /^(dark|light)$/.test(hashParams().m || '') ? hashParams().m : '';
+    const want = siteTheme() || hashTheme || info.theme;
     if (want && shown.dataset.theme !== want) retheme(shown, shown.dataset.theme, want);
     if (want) document.documentElement.dataset.theme = want;
     pendingState = options.state || null;
@@ -843,7 +845,15 @@ function makeViewer(root){
       const p = new URLSearchParams(location.hash.replace(/^#/, ''));
       if (s) p.set('s', s); else p.delete('s');
       p.delete('p');  // the local path only means something on this machine
-      return location.href.split('#')[0] + '#' + p.toString();
+      let base = location.href.split('#')[0];
+      // git-sim opened this page with nothing in the query; sharing it puts
+      // the command and theme there, for the link's preview card.
+      if (!new URLSearchParams(location.search).get('t')) {
+        const q = new URLSearchParams({t: title, m: p.get('m') || pristineTheme});
+        p.delete('t'); p.delete('m');
+        base = location.origin + location.pathname + '?' + q;
+      }
+      return base + '#' + p.toString();
     }
     if (!info.viewer_url || !canPack) return location.href.split('#')[0] + (s ? '#' + s : '');
     const q = new URLSearchParams({t: title, m: pristineTheme});
@@ -1101,29 +1111,52 @@ def viewer_link(
     With ``share=True`` (what the page's own "Copy link" produces) the
     command, theme and a short text graph go in the query string so the
     server can draw a preview card for the link when it is posted. With
-    ``share=False`` (git-sim opening the page for its own user) the query
-    string carries only the theme; the command rides in the fragment and no
-    text graph is sent, so nothing about the repository reaches the server.
+    ``share=False`` (git-sim opening the page for its own user) there is no
+    query string at all: the command and theme ride in the fragment too, so
+    the server sees a plain request for the viewer page and nothing more.
 
     ``local_path`` (the saved page's name) rides in the fragment too, so the
     viewer can say where the local copy is. Without ``state`` the page opens
     on "before" and plays the command."""
     title = " ".join((title or "").split())
-    query = {"m": theme_name}
+    query = {}
     fragment = {"d": _pack(svg)}
     if share:
         query = {"t": title, "m": theme_name}
         if summary:
             query["g"] = _pack(summary)
-    elif title:
-        fragment["t"] = title
+    else:
+        if title:
+            fragment["t"] = title
+        fragment["m"] = theme_name
     if state:  # "before", "after" or "step=N" pins the view; unpinned, it plays
         fragment["s"] = state
     if local_path:
         fragment["p"] = os.path.basename(str(local_path))
-    return (
-        f"{viewer_url}?{urllib.parse.urlencode(query)}"
-        f"#{urllib.parse.urlencode(fragment)}"
+    search = f"?{urllib.parse.urlencode(query)}" if query else ""
+    return f"{viewer_url}{search}#{urllib.parse.urlencode(fragment)}"
+
+
+def hosted_link_for_page(page_path, viewer_url=DEFAULT_VIEWER_URL):
+    """The hosted viewer link (share=False: nothing in the query string) for a
+    page git-sim saved, read back from the page itself: its graph, command and
+    theme. None when the file isn't such a page."""
+    try:
+        with open(page_path, encoding="utf-8") as f:
+            page = f.read()
+        start = page.index('<div id="stage">') + len('<div id="stage">')
+        svg = page[start : page.index('</div><div id="tip">', start)]
+        meta = page.index('id="git-sim-meta">') + len('id="git-sim-meta">')
+        info = json.loads(page[meta : page.index("</script>", meta)].replace("<\\/", "</"))
+    except (OSError, ValueError):
+        return None
+    return viewer_link(
+        svg,
+        title=info.get("title", ""),
+        theme_name=info.get("theme", "dark"),
+        viewer_url=viewer_url,
+        local_path=page_path,
+        share=False,
     )
 
 

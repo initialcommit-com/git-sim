@@ -120,7 +120,7 @@ The extension is the human side. For the agents in your editor, `git-sim wire-ag
 (also available as a command here) does two things for VS Code: it installs the
 pre-flight hook that VS Code's agent hooks run before Copilot executes a
 terminal command, so a destructive `git` command stops at an approval prompt
-with the facts and the text graph, and it registers git-sim's MCP server so
+with what it would lose and how to undo it, and it registers git-sim's MCP server so
 Copilot's agent mode can call `git_preflight` and `git_simulate` itself.
 Restart VS Code after running it, and use Copilot in Agent mode, where hooks
 and tools apply.

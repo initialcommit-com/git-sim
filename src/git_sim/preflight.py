@@ -599,8 +599,9 @@ def _analyze_clean(repo: git.Repo, args: List[str], report: PreflightReport) -> 
         a.startswith("-") and "f" in a.lstrip("-") and not a.startswith("--") for a in args
     )
     # Re-run the exact command as a dry run to get git's own answer.
-    dry_args = [a for a in args if a not in ("-f", "--force")]
-    dry_args = [a.replace("f", "") if a.startswith("-") and not a.startswith("--") else a for a in dry_args]
+    # (and without -q, which would silence the list of what it would remove)
+    dry_args = [a for a in args if a not in ("-f", "--force", "-q", "--quiet")]
+    dry_args = [a.replace("f", "").replace("q", "") if a.startswith("-") and not a.startswith("--") else a for a in dry_args]
     dry_args = [a for a in dry_args if a not in ("-", "")]
     out = repo.git.clean("-n", *dry_args)
     files = [line.replace("Would remove ", "") for line in out.splitlines() if line]
@@ -645,11 +646,15 @@ def _analyze_rebase(repo: git.Repo, args: List[str], report: PreflightReport) ->
         return
     upstream = repo.commit(positional[0])
     new_base = repo.commit(onto) if onto else upstream
-    head = repo.head.commit
-    # git replays the commits HEAD has that the upstream doesn't
-    replayed = list(repo.iter_commits(f"{upstream.hexsha}..HEAD", no_merges=True))
+    # `git rebase <upstream> <branch>` switches to <branch> first
+    if len(positional) > 1:
+        head, branch = repo.commit(positional[1]), positional[1]
+    else:
+        head = repo.head.commit
+        branch = repo.active_branch.name if not repo.head.is_detached else "HEAD"
+    # git replays the commits the branch has that the upstream doesn't
+    replayed = list(repo.iter_commits(f"{upstream.hexsha}..{head.hexsha}", no_merges=True))
 
-    branch = repo.active_branch.name if not repo.head.is_detached else "HEAD"
     report.escalate(Risk.CAUTION)
     report.summary = (
         f"Replays {len(replayed)} commit(s) from {branch} onto "
@@ -677,9 +682,13 @@ def _analyze_rebase(repo: git.Repo, args: List[str], report: PreflightReport) ->
                 f"history diverges from {branch}."
             )
 
-    tracking = _tracking_ref(repo)
+    if len(positional) > 1:
+        rebased = next((h for h in repo.heads if h.name == branch), None)
+        tracking = rebased.tracking_branch() if rebased is not None else None
+    else:
+        tracking = _tracking_ref(repo)
     if tracking and replayed:
-        published = list(repo.iter_commits(f"{tracking.name}..HEAD"))
+        published = list(repo.iter_commits(f"{tracking.name}..{head.hexsha}"))
         already_pushed = len(replayed) - len(published)
         if already_pushed > 0:
             report.escalate(Risk.DESTRUCTIVE)

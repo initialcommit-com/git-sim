@@ -56,9 +56,8 @@ def _talking() -> bool:
 
 def _open_page(scene, page_path: str, theme) -> None:
     """Open the interactive page: in the hosted viewer (default) or the saved
-    file. The hosted link carries the graph in its #fragment, which never
-    reaches the server; only the command and a short text graph go in the
-    query string, for the preview card."""
+    file. The hosted link carries everything in its #fragment (graph, command,
+    theme), which never reaches the server; it has no query string."""
     from git_sim.enums import OpenIn
     from git_sim.render import open_file
     from git_sim.render.html import viewer_link
@@ -70,9 +69,9 @@ def _open_page(scene, page_path: str, theme) -> None:
     if not hosted:
         _auto_open(page_path, open_file)
         return
-    # share=False: the command rides in the fragment and no text graph is
-    # sent, so the server learns nothing about the repository. Only the
-    # page's own Share button builds links that carry preview-card data.
+    # share=False: the command and theme ride in the fragment and no text
+    # graph is sent, so the server learns nothing about the repository. Only
+    # the page's own Share button builds links that carry preview-card data.
     url = viewer_link(
         scene.rendered_svg,
         title=getattr(scene, "cmd", ""),

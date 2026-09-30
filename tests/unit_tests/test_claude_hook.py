@@ -1,5 +1,6 @@
 import os
 import subprocess
+import uuid
 
 import pytest
 
@@ -30,7 +31,8 @@ def no_render(monkeypatch):
 
 
 def hook_input(command, cwd, tool="Bash"):
-    return {"tool_name": tool, "tool_input": {"command": command}, "cwd": str(cwd)}
+    return {"tool_name": tool, "tool_input": {"command": command}, "cwd": str(cwd),
+            "tool_use_id": f"toolu_{uuid.uuid4().hex}"}
 
 
 def test_extracts_git_from_compound_commands():
@@ -151,39 +153,162 @@ def test_outside_a_repo_stays_silent(tmp_path):
     assert run_hook(hook_input("git reset --hard", tmp_path)) is None
 
 
-def test_reason_includes_text_graph(repo):
+def test_reason_is_a_few_short_lines(repo, monkeypatch):
+    run_git(repo, "commit", "--allow-empty", "-m", "commit 3")
+    (repo / "file1.txt").write_text("modified\n")
+    output = run_hook(hook_input(f'git -C "{repo}" reset -q --hard HEAD~2', repo.parent))
+    lines = output["hookSpecificOutput"]["permissionDecisionReason"].splitlines()
+    assert lines[0] == "git-sim preflight: DESTRUCTIVE — git reset -q --hard HEAD~2  (in repo)"
+    assert lines[1].endswith("(hard reset).")
+    assert lines[2] == (
+        "Loses: 2 commits removed from branch main; "
+        "unstaged changes in file1.txt (NOT recoverable)"
+    )
+    assert lines[3].startswith("Undo: ") and "reflog" in lines[3]
+    assert len(lines) == 4  # no graph, and the "cannot be recovered" warning goes without saying
+
+
+def test_reason_includes_text_graph_on_request(repo, monkeypatch):
+    monkeypatch.setenv("GIT_SIM_HOOK_TEXT", "1")
     (repo / "file1.txt").write_text("modified\n")
     output = run_hook(hook_input("git reset --hard HEAD~1", repo))
     reason = output["hookSpecificOutput"]["permissionDecisionReason"]
     assert "<- ABANDONED" in reason
     assert "<- NEW HEAD" in reason
     assert "Working tree:" in reason
-    # Graph sits between the summary and the losses.
-    assert (
-        reason.index("hard reset")
-        < reason.index("<- ABANDONED")
-        < reason.index("Would lose:")
-    )
+    assert reason.index("hard reset") < reason.index("Loses:") < reason.index("<- ABANDONED")
 
 
-def test_hook_renders_simulation_image(repo, monkeypatch, tmp_path):
+def real_render(monkeypatch, tmp_path):
     from git_sim.settings import settings
 
     # Clear the user's git_sim_* settings first: the loop would otherwise
-    # also delete the GIT_SIM_HOOK_* switches below, and the hook would open
-    # the image in a viewer window.
+    # also delete the GIT_SIM_HOOK_* switches set after it.
     for var in [v for v in os.environ if v.lower().startswith("git_sim_")]:
         monkeypatch.delenv(var, raising=False)
     monkeypatch.delenv("VSCODE_PID", raising=False)
     monkeypatch.setenv("GIT_SIM_HOOK_RENDER", "1")
-    monkeypatch.setenv("GIT_SIM_HOOK_OPEN", "0")
     monkeypatch.setattr(settings, "media_dir", tmp_path / "media")
-    output = run_hook(hook_input("git reset --hard HEAD~1", repo))
+
+
+def test_hook_opens_the_simulation_in_the_hosted_viewer(repo, monkeypatch, tmp_path):
+    import urllib.parse
+
+    from git_sim.settings import settings
+
+    real_render(monkeypatch, tmp_path)
+    urls, files = [], []
+    monkeypatch.setattr("git_sim.claude_hook._open_url", lambda u: urls.append(u))
+    monkeypatch.setattr("git_sim.claude_hook._open_file", lambda p: files.append(p))
+    output = run_hook(hook_input("git reset -q --hard HEAD~1", repo))
+    assert len(urls) == 1 and not files
+    # no query string: the graph, command and theme all ride in the fragment
+    assert urls[0].startswith(settings.viewer_url + "#")
+    frag = dict(urllib.parse.parse_qsl(urls[0].split("#", 1)[1]))
+    assert frag["d"] and frag["t"] == "git reset --hard HEAD~1" and frag["m"] in ("dark", "light")
+    assert frag["p"].endswith(".html") and str(tmp_path) not in urls[0]
+    # the prompt carries the facts, not a link
     reason = output["hookSpecificOutput"]["permissionDecisionReason"]
-    assert "Simulation image:" in reason
-    image_path = reason.rsplit("Simulation image:", 1)[1].strip()
-    assert os.path.exists(image_path)
-    assert image_path.endswith((".jpg", ".png"))
+    assert "http" not in reason and "file:" not in reason and ".html" not in reason
+    # local: the saved page itself
+    monkeypatch.setenv("GIT_SIM_HOOK_OPEN_IN", "local")
+    run_hook(hook_input("git reset -q --hard HEAD~1", repo))
+    assert len(urls) == 1 and len(files) == 1
+    assert files[0].endswith(".html") and os.path.exists(files[0])
+
+def fake_page(monkeypatch, tmp_path):
+    from git_sim import simulate
+    from git_sim.settings import settings
+
+    monkeypatch.setenv("GIT_SIM_HOOK_RENDER", "1")
+    monkeypatch.delenv("VSCODE_PID", raising=False)
+    monkeypatch.setattr(settings, "media_dir", tmp_path)
+    page = tmp_path / "git-sim_media" / "repo" / "images" / "git-sim-reset.html"
+    page.parent.mkdir(parents=True)
+    page.write_text("<html></html>")
+    calls = []
+
+    def fake_render(command, repo_path, img_format=None, timeout=None):
+        calls.append(img_format)
+        return {"image_path": str(page), "render_note": None}
+
+    monkeypatch.setattr(simulate, "render_simulation", fake_render)
+    opened = []
+    monkeypatch.setattr("git_sim.claude_hook._open_file", lambda p: opened.append(p))
+    return page, calls, opened
+
+
+def test_by_default_the_simulation_opens_without_asking(repo, monkeypatch, tmp_path):
+    from git_sim import claude_hook
+
+    page, calls, opened = fake_page(monkeypatch, tmp_path)
+    monkeypatch.delenv("GIT_SIM_HOOK_OPEN", raising=False)
+    monkeypatch.setattr(claude_hook, "can_show_dialog", lambda: True)
+    monkeypatch.setattr(claude_hook, "ask_to_simulate", lambda text: pytest.fail("asked"))
+    dirty(repo)
+    run_hook(hook_input("git reset --hard HEAD~1", repo))
+    assert calls == ["html"] and opened == [str(page)]
+    # never: no simulation at all
+    monkeypatch.setenv("GIT_SIM_HOOK_OPEN", "never")
+    output = run_hook(hook_input("git reset --hard HEAD~1", repo))
+    assert calls == ["html"] and len(opened) == 1
+    assert "DESTRUCTIVE" in output["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_a_hook_registered_twice_opens_the_simulation_once(repo, monkeypatch, tmp_path):
+    page, calls, opened = fake_page(monkeypatch, tmp_path)
+    monkeypatch.delenv("GIT_SIM_HOOK_OPEN", raising=False)
+    dirty(repo)
+    payload = hook_input("git reset --hard HEAD~1", repo)
+    first, second = run_hook(payload), run_hook(payload)  # the same tool call, twice
+    assert opened == [str(page)]
+    assert first == second  # both still answer with the facts
+    run_hook(hook_input("git reset --hard HEAD~1", repo))  # the next call opens again
+    assert len(opened) == 2
+    # without a tool-call id: the same command in the same place, moments apart
+    bare = {k: v for k, v in payload.items() if k != "tool_use_id"}
+    run_hook(bare), run_hook(bare)
+    assert len(opened) == 3
+
+
+def test_asks_whether_to_simulate_and_opens_on_yes(repo, monkeypatch, tmp_path):
+    from git_sim import claude_hook
+
+    page, calls, opened = fake_page(monkeypatch, tmp_path)
+    monkeypatch.setenv("GIT_SIM_HOOK_OPEN", "ask")
+    monkeypatch.setattr(claude_hook, "can_show_dialog", lambda: True)
+    asked = []
+    answer = {"yes": True}
+    monkeypatch.setattr(
+        claude_hook, "ask_to_simulate", lambda text: asked.append(text) or answer["yes"]
+    )
+    dirty(repo)
+    run_hook(hook_input("git reset --hard HEAD~1", repo))
+    assert calls == ["html"] and opened == [str(page)]
+    assert asked[0].startswith("Claude Code wants to run:\n    git reset --hard HEAD~1")
+    assert "Loses:" in asked[0] and asked[0].endswith("before you approve or deny it?")
+    # no: nothing opens
+    answer["yes"] = False
+    run_hook(hook_input("git reset --hard HEAD~1", repo))
+    assert len(opened) == 1
+    # never asked where there is no desktop, or in unattended modes
+    monkeypatch.setattr(claude_hook, "can_show_dialog", lambda: False)
+    run_hook(hook_input("git reset --hard HEAD~1", repo))
+    monkeypatch.setattr(claude_hook, "can_show_dialog", lambda: True)
+    monkeypatch.setenv("GIT_SIM_HOOK_MODE", "deny")
+    run_hook(hook_input("git reset --hard HEAD~1", repo))
+    assert len(asked) == 2 and len(opened) == 1
+
+def test_simulation_options_git_sim_does_not_model_are_left_out():
+    from git_sim.simulate import modeled_args
+
+    assert modeled_args("reset", ["-q", "--hard", "HEAD~2"]) == (["--hard", "HEAD~2"], ["-q"])
+    assert modeled_args("merge", ["--no-edit", "-s", "ours", "feature"])[0] == ["feature"]
+    assert modeled_args("clean", ["-fdxq"]) == (["-f", "-d", "-x"], ["-q"])
+    assert modeled_args("commit", ["-am", "fix it", "--no-verify"])[0] == ["-a", "-m", "fix it"]
+    assert modeled_args("push", ["--force-with-lease=main:abc", "origin", "main"])[0] == [
+        "--force-with-lease", "origin", "main"
+    ]
 
 
 def test_reason_includes_worktree_location(repo, tmp_path):
@@ -192,7 +317,7 @@ def test_reason_includes_worktree_location(repo, tmp_path):
     (repo / "file1.txt").write_text("modified\n")
     output = run_hook(hook_input("git reset --hard HEAD~1", repo))
     reason = output["hookSpecificOutput"]["permissionDecisionReason"]
-    assert "In the main worktree on main; other worktree(s): wt (feature)." in reason
+    assert "In the main worktree on main; other worktrees: wt (feature)." in reason
 
 
 def test_worktree_remove_is_prefiltered_and_analyzed(repo, tmp_path):
@@ -264,24 +389,12 @@ def test_vscode_gets_the_interactive_page_through_the_inbox(
 ):
     import json
 
-    from git_sim import simulate
-    from git_sim.settings import settings
+    from git_sim import claude_hook
 
     dirty(repo)
-    monkeypatch.setenv("GIT_SIM_HOOK_RENDER", "1")
-    monkeypatch.setattr(settings, "media_dir", tmp_path)
-    page = tmp_path / "git-sim_media" / "repo" / "images" / "git-sim-reset.html"
-    page.parent.mkdir(parents=True)
-    page.write_text("<html></html>")
-    calls = []
-
-    def fake_render(command, repo_path, img_format=None):
-        calls.append(img_format)
-        return {"image_path": str(page), "render_note": None}
-
-    monkeypatch.setattr(simulate, "render_simulation", fake_render)
-    opened = []
-    monkeypatch.setattr("git_sim.claude_hook._open_file", lambda p: opened.append(p))
+    page, calls, opened = fake_page(monkeypatch, tmp_path)
+    notes = []
+    monkeypatch.setattr(claude_hook, "picked_up", lambda note: notes.append(note) or True)
     payload = {
         "hook_event_name": "PreToolUse",
         "tool_name": "runTerminalCommand",
@@ -291,16 +404,29 @@ def test_vscode_gets_the_interactive_page_through_the_inbox(
     output = run_hook(
         payload, "copilot"
     )  # the shared Copilot hook file, run by VS Code
-    assert calls == ["html"] and opened == []  # a page, and no viewer window
-    assert (
-        "Interactive simulation"
-        in output["hookSpecificOutput"]["permissionDecisionReason"]
-    )
-    notes = list((tmp_path / "git-sim_media" / "inbox").glob("*.json"))
+    assert calls == ["html"] and opened == []  # a page in a tab, no browser
+    assert "DESTRUCTIVE" in output["hookSpecificOutput"]["permissionDecisionReason"]
     assert len(notes) == 1
-    note = json.loads(notes[0].read_text())
+    note = json.loads(open(notes[0], encoding="utf-8").read())
     assert note["page"] == str(page) and note["command"] == "git reset --hard HEAD~1"
     assert note["risk"] == "destructive" and note["repo"] == str(repo)
+
+
+def test_vscode_without_the_extension_goes_on_as_elsewhere(repo, monkeypatch, tmp_path):
+    from git_sim import claude_hook
+
+    dirty(repo)
+    page, calls, opened = fake_page(monkeypatch, tmp_path)
+    monkeypatch.setenv("VSCODE_PID", "1234")  # an agent in VS Code's terminal
+    monkeypatch.setenv("GIT_SIM_HOOK_OPEN", "ask")
+    monkeypatch.setattr(claude_hook, "can_show_dialog", lambda: True)
+    monkeypatch.setattr(claude_hook, "ask_to_simulate", lambda text: True)
+    real_picked_up = claude_hook.picked_up
+    monkeypatch.setattr(claude_hook, "picked_up", lambda note: real_picked_up(note, wait=0.2))
+    run_hook(hook_input("git reset --hard HEAD~1", repo))
+    assert opened == [str(page)]
+    # the note nobody read is withdrawn
+    assert not list((tmp_path / "git-sim_media" / "inbox").glob("*.json"))
 
 
 def test_vscode_reports_the_level_of_a_safe_command(repo, monkeypatch):
@@ -385,8 +511,8 @@ def test_agent_flag_parsing():
     assert _agent_from_argv([]) is None
 
 
-def test_text_graph_can_be_disabled_by_env(repo, monkeypatch):
-    monkeypatch.setenv("GIT_SIM_HOOK_TEXT", "0")
+def test_text_graph_is_off_by_default(repo, monkeypatch):
+    monkeypatch.delenv("GIT_SIM_HOOK_TEXT", raising=False)
     output = run_hook(hook_input("git reset --hard HEAD~1", repo))
     reason = output["hookSpecificOutput"]["permissionDecisionReason"]
     assert "<- " not in reason
