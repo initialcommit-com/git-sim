@@ -70,7 +70,7 @@ def branch(
     ),
     new_name: str = typer.Argument(
         default=None,
-        help="With -m: the new name for the branch",
+        help="With -m: the new name for the branch. Otherwise the commit the new branch starts at (default: HEAD), e.g. a deleted branch's tip from the reflog",
     ),
     d: bool = typer.Option(
         False, "-d", "--delete", help="Delete the branch (refused if unmerged)"

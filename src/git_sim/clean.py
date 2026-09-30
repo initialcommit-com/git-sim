@@ -9,6 +9,8 @@ from git_sim.settings import settings
 
 
 class Clean(GitSimBaseCommand):
+    FILES_ONLY = True  # its commits don't change: drawn compact, only the files
+
     def __init__(
         self,
         force: bool = False,
@@ -47,10 +49,7 @@ class Clean(GitSimBaseCommand):
             print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
-        self.parse_commits()
-        self.recenter_frame()
-        self.scale_frame()
-        self.vsplit_frame()
+        self.draw_history_above_zones()
         # Deleting moves files backwards, off the table: the arrows point left.
         self.setup_and_draw_zones(
             first_column_name="Deleted files"

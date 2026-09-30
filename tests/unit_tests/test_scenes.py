@@ -226,6 +226,25 @@ def test_branch_move_relabels_the_same_commit(repo):
     assert scene.cmd == "git branch -m feature topic"
 
 
+def test_branch_at_a_start_point_brings_back_a_deleted_branch(repo):
+    from git_sim.branch import Branch
+
+    wip = make_branch_with_commit(repo, "wip", "wip.txt")
+    run_git(repo, "branch", "-D", "wip")
+    scene = Branch(name="wip", new_name=wip[:7])
+    scene.construct()
+    assert scene.cmd == f"git branch wip {wip[:7]}"
+    assert ref_commit(scene, "wip") == wip  # the label lands on the deleted tip
+    assert scene.rescued == [wip]  # the commit only the reflog had
+    # a start point any branch already reaches rescues nothing
+    feature = run_git(repo, "rev-parse", "feature").strip()
+    other = Branch(name="topic", new_name="feature")
+    other.construct()
+    assert ref_commit(other, "topic") == feature and other.rescued == []
+    with pytest.raises(SystemExit):
+        Branch(name="nope", new_name="not-a-commit")
+
+
 def test_zone_rows_keep_arrows_straight_and_off_other_text():
     from git_sim.git_sim_base_command import GitSimBaseCommand, ZoneNames
 

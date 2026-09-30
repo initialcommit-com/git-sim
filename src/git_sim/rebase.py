@@ -231,7 +231,7 @@ class Rebase(GitSimBaseCommand):
         ])
         mark = m.Text("?", font=self.font, font_size=30, color=gold, weight=m.BOLD).move_to(center)
         heading = m.Text("conflict", font=self.font, font_size=20, color=gold, weight=m.BOLD).next_to(ring, m.UP)
-        caption = m.Text(self.wrap_message(commit.message.split("\n")[0][:40]), font=self.font,
+        caption = m.Text(self.shown_message(commit.message.split("\n")[0][:40]), font=self.font,
                          font_size=14, color=self.mutedColor).next_to(ring, m.DOWN)
         arrow = self.lane_arrow(center, prev.get_center())
         arrow.set_length(2.5 - 1.5)
@@ -492,7 +492,7 @@ class Rebase(GitSimBaseCommand):
 
         commitMessage = commitMessage[:40].replace("\n", " ")
         message = m.Text(
-            self.wrap_message(commitMessage),
+            self.shown_message(commitMessage),
             font=self.font,
             font_size=14,
             color=self.mutedColor,

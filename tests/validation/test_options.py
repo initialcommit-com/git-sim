@@ -208,6 +208,20 @@ def test_title_can_be_switched_off_and_on(shapes, gitsim):
     assert on.model["title"].startswith("git log")
 
 
+def test_compact_draws_for_a_small_space(shapes, gitsim):
+    repo = shapes.get("history").path
+    full = gitsim.run(repo, "log", globals_=["--no-compact"]).ok()
+    small = gitsim.run(repo, "log", globals_=["--compact"]).ok()
+    # the same commits, without the title or the messages under them
+    assert len(small.model["commits"]) == len(full.model["commits"])
+    assert full.model["title"].startswith("git log") and small.model["title"] == ""
+    assert len(label_font_sizes(small.path)) < len(label_font_sizes(full.path))
+    # a command that only moves files is just its file table
+    status = gitsim.run(repo, "status", globals_=["--compact"]).ok()
+    assert not status.model["commits"]
+    assert gitsim.run(repo, "status").ok().model["commits"]
+
+
 def test_interactive_flag_is_accepted(shapes, gitsim):
     run = gitsim.run(shapes.get("history").path, "log", fmt="", globals_=["--interactive"]).ok()
     assert run.path.suffix == ".html"

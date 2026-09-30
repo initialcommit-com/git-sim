@@ -9,6 +9,8 @@ from git_sim.settings import settings
 
 
 class Rm(GitSimBaseCommand):
+    FILES_ONLY = True  # its commits don't change: drawn compact, only the files
+
     """git rm deletes files and stages the deletion. With --cached only the
     deletion is staged: the file stays on disk, now untracked, so the next
     commit removes it from the repository while your copy is kept."""
@@ -40,10 +42,7 @@ class Rm(GitSimBaseCommand):
             print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
-        self.parse_commits()
-        self.recenter_frame()
-        self.scale_frame()
-        self.vsplit_frame()
+        self.draw_history_above_zones()
         if self.cached:
             # The file stays on disk and turns untracked (left), and its
             # deletion is staged (right): git status then lists it twice.

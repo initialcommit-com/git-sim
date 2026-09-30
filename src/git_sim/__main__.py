@@ -197,6 +197,11 @@ def main(
         settings.show_command_as_title,
         help="Use the simulated git command as the title of the output image or animated video",
     ),
+    compact: bool = typer.Option(
+        settings.compact,
+        "--compact/--no-compact",
+        help="Draw for a small space, such as a card or a thumbnail: no title, a file table only as big as its rows, and only the files for a command that doesn't touch commits.",
+    ),
 ):
     import git
 
@@ -237,6 +242,7 @@ def main(
     settings.highlight_commit_messages = highlight_commit_messages
     settings.style = style
     settings.show_command_as_title = show_command_as_title
+    settings.compact = compact
 
     # The backend (skia for images, Manim for --animate) is chosen from
     # settings.animate on first import, so import it only now.

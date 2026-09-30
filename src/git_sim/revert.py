@@ -149,7 +149,7 @@ class Revert(GitSimBaseCommand):
         commitMessage = "Revert " + self.revert.hexsha[0:6]
         commitMessage = commitMessage[:40].replace("\n", " ")
         message = m.Text(
-            self.wrap_message(commitMessage),
+            self.shown_message(commitMessage),
             font=self.font,
             font_size=14,
             color=self.mutedColor,

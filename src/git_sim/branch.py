@@ -23,6 +23,10 @@ class Branch(GitSimBaseCommand):
         self.move = move
         self.orphaned = []
         self.unmerged = []
+        # git branch <name> <start-point>: the second argument is where the new
+        # branch starts (with -m it is the new name instead)
+        self.start = new_name if not (delete or force_delete or move) else None
+        self.rescued = []
 
         heads = [b.name for b in self.repo.heads]
         try:
@@ -64,6 +68,15 @@ class Branch(GitSimBaseCommand):
         elif self.name in heads:
             print(f"git-sim error: branch '{self.name}' already exists")
             sys.exit(1)
+        elif self.start:
+            try:
+                start = self.repo.commit(self.start)
+            except Exception:
+                print(f"git-sim error: '{self.start}' is not a valid commit to start the branch at")
+                sys.exit(1)
+            # Commits no branch or tag reaches (a deleted branch's, say) that
+            # the new branch makes reachable again.
+            self.rescued = self.repo.git.rev_list(start.hexsha, "--not", "--branches", "--tags").split()
 
         flag = (
             " -D"
@@ -73,6 +86,8 @@ class Branch(GitSimBaseCommand):
         self.cmd += f"{type(self).__name__.lower()}{flag} {self.name}"
         if self.move:
             self.cmd += f" {self.new_name}"
+        elif self.start:
+            self.cmd += f" {self.start}"
 
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
@@ -100,7 +115,21 @@ class Branch(GitSimBaseCommand):
     def create_branch(self):
         branchRec, branchText = self.ref_pill(self.name, self.theme.branch)
 
-        branchRec.next_to(self.topref, m.UP)
+        above = self.topref
+        if self.start:
+            target = self.get_commit(self.start)
+            if target.hexsha not in self.drawnCommits:
+                # the start point is outside HEAD's window (a deleted branch's
+                # tip, found in the reflog): draw its history too
+                self.parse_commits(target, shift=4 * m.DOWN)
+            above = self.stack_top(target.hexsha)
+            if self.rescued:
+                self.mark_commits(self.rescued)
+                n = len(self.rescued)
+                self.add_notes([
+                    (f"{n} commit{'s' if n != 1 else ''} only the reflog still had (gold) {'are' if n != 1 else 'is'} on a branch again.", self.theme.gold),
+                ])
+        branchRec.next_to(above, m.UP)
         self.center_label(branchText, branchRec)
 
         fullbranch = m.VGroup(branchRec, branchText)

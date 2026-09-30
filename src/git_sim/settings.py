@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     font: str = "Monospace"
     font_context: bool = False
     show_command_as_title: bool = True
+    # Drawn for a small space (a cheat sheet card, a thumbnail): no title, the
+    # file table only as big as its rows, and no commit row for a command
+    # that only moves files. See GitSimBaseCommand.compact.
+    compact: bool = False
     # Hosted viewer that "Copy link" on an interactive page points at. The
     # graph travels in the URL fragment, so the host never receives it.
     viewer_url: str = "https://initialcommit.com/tools/git-sim/viewer"

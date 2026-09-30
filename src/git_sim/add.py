@@ -9,6 +9,8 @@ from git_sim.settings import settings
 
 
 class Add(GitSimBaseCommand):
+    FILES_ONLY = True  # its commits don't change: drawn compact, only the files
+
     def __init__(self, files: List[str]):
         super().__init__()
         self.allow_no_commits = True
@@ -35,10 +37,7 @@ class Add(GitSimBaseCommand):
             print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
-        self.parse_commits()
-        self.recenter_frame()
-        self.scale_frame()
-        self.vsplit_frame()
+        self.draw_history_above_zones()
         self.setup_and_draw_zones()
         self.show_command_as_title()
         self.fadeout()

@@ -136,7 +136,7 @@ class Commit(GitSimBaseCommand):
             weight=self.font_weight,
         ).next_to(old_circle, m.UP)
         old_message = m.Text(
-            self.wrap_message(original.message.split("\n")[0][:40]),
+            self.shown_message(original.message.split("\n")[0][:40]),
             font=self.font,
             font_size=14,
             color=self.mutedColor,

@@ -10,6 +10,8 @@ from git_sim.settings import settings
 
 
 class Restore(GitSimBaseCommand):
+    FILES_ONLY = True  # its commits don't change: drawn compact, only the files
+
     def __init__(self, files: List[str], staged: bool):
         super().__init__()
         self.files = files or []  # newer typer passes None for an omitted list
@@ -43,10 +45,7 @@ class Restore(GitSimBaseCommand):
             print(f"{settings.INFO_STRING} {self.cmd}")
 
         self.show_intro()
-        self.parse_commits()
-        self.recenter_frame()
-        self.scale_frame()
-        self.vsplit_frame()
+        self.draw_history_above_zones()
         # Restoring moves content backwards through the pipeline, so every
         # arrow here points left: from the staging area back to the working
         # directory, or off the table altogether.

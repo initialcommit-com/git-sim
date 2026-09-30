@@ -67,11 +67,18 @@ class GrowArrow(m.Animation):
 
 class GitSimBaseCommand(m.MovingCameraScene):
     TITLE_MIN_SCALE = 0.6  # how small a long title may be set before the frame widens for it
+    # A command that only moves files between the working directory, the
+    # staging area and friends (restore, add, rm...): drawn compact, it shows
+    # the file table alone, since its commits don't change.
+    FILES_ONLY = False
 
     def __init__(self):
         super().__init__()
         self.cmd = "git "
         self.init_repo()
+        # --compact: drawn for a small space (see settings.compact)
+        self.compact = settings.compact
+        self.compact_zones = self.compact
 
         self.font = settings.font
         self.theme = theme_for(settings.light)
@@ -575,6 +582,14 @@ class GitSimBaseCommand(m.MovingCameraScene):
             :max_chars
         ]
 
+    def shown_message(self, message):
+        """The text under a disc: the wrapped message, or nothing drawn compact
+        (too small to read there; hovering the commit still shows it). The
+        "..." that stands for skipped commits stays."""
+        if self.compact and message != "...":
+            return ""
+        return self.wrap_message(message)
+
     def recolor_commit(self, circle, color):
         """Recolor a drawn commit (e.g. gold for one that becomes unreachable),
         keeping its glow in step. The previous color is remembered for the
@@ -759,7 +774,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.drawnCommitIds[commit.hexsha] = commitId
 
         message = m.Text(
-            self.wrap_message(commitMessage),
+            self.shown_message(commitMessage),
             font=self.font,
             font_size=20 if settings.highlight_commit_messages else 14,
             color=(
@@ -1300,6 +1315,18 @@ class GitSimBaseCommand(m.MovingCameraScene):
         # they sit underneath it. Rows are 0.5 high, starting just below the
         # header's lower rule.
         n_rows = max(self._zone_rows.values(), default=-1) + 1
+        if compact and not n_rows and getattr(self, "compact", False):
+            # drawn for a small space, an empty table is only noise (a reset
+            # with a clean working tree moves no files): leave it out
+            for mob in (header_band, horizontal, horizontal2, vert1, vert2,
+                        firstColumnTitle, secondColumnTitle, thirdColumnTitle):  # fmt: skip
+                self.remove(mob)
+                self.toFadeOut.remove(mob)
+            self.zoneSeparators = ()
+            self.firstColumnFiles = m.VGroup()
+            self.secondColumnFiles = m.VGroup()
+            self.thirdColumnFiles = m.VGroup()
+            return
         if compact:
             # the column rules end just below the last row
             bottom = rule_y - 0.5 * max(n_rows, 1) - 0.4
@@ -1711,7 +1738,7 @@ class GitSimBaseCommand(m.MovingCameraScene):
 
         commitMessage = commitMessage.split("\n")[0][:40].replace("\n", " ")
         message = m.Text(
-            self.wrap_message(commitMessage),
+            self.shown_message(commitMessage),
             font=self.font,
             font_size=14,
             color=self.mutedColor,
@@ -2142,7 +2169,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         Each item is a string or a (string, color) pair. Used by scenes that
         need to say what happened (force-push overwrote N commits, branch
         deletion orphaned M commits, ...)."""
-        if not lines:
+        # compact: a small drawing has its explanation beside it, and a line of
+        # prose as wide as these would shrink everything else to fit
+        if not lines or self.compact:
             return
         top = max((e.get_top()[1] for e in self.toFadeOut if e.has_points()), default=0)
         texts = []
@@ -2272,8 +2301,24 @@ class GitSimBaseCommand(m.MovingCameraScene):
             orphaned.extend(s for s in out.split() if s not in orphaned)
         return orphaned
 
+    def draw_history_above_zones(self):
+        """The commit graph, framed to leave the lower half of the picture to
+        the file table. Drawn compact, a files-only command skips it."""
+        if self.files_only():
+            return
+        self.parse_commits()
+        self.recenter_frame()
+        self.scale_frame()
+        self.vsplit_frame()
+
+    def files_only(self):
+        """Whether this drawing leaves the commits out (compact, and a
+        command that doesn't touch them)."""
+        return self.compact and self.FILES_ONLY
+
     def show_command_as_title(self):
-        if settings.show_command_as_title:
+        # compact: the command is written wherever the small drawing is shown
+        if settings.show_command_as_title and not self.compact:
             # Scenes build the command with stray spaces; measured and fitted
             # text (textLength in the SVG) would stretch to cover them.
             self.cmd = " ".join(self.cmd.split())
