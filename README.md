@@ -67,7 +67,7 @@ This default ("core") install includes the deterministic pre-flight engine and t
 Using an AI coding agent? Wire git-sim into it with one command — it detects Claude Code, Codex CLI, Cursor, GitHub Copilot CLI, Gemini CLI and VS Code and writes the hook and MCP entries into each one's config, and gives Windsurf, Cline, Roo Code, Amazon Q Developer CLI and Claude Desktop the MCP server (see [docs/mcp.md](docs/mcp.md)):
 
 ```console
-$ git-sim install
+$ git-sim wire-agents
 ```
 
 Prefer to stay in `git`? `git sim rebase main` already works (git runs any `git-<name>` program), and `git-sim aliases` adds `git preflight` and `git live`. Recipes for lazygit and tig are in [docs/shell.md](docs/shell.md).

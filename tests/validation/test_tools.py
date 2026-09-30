@@ -114,12 +114,12 @@ def test_aliases_local(shapes, gitsim):
 
 
 def test_install_dry_run_touches_nothing(shapes, gitsim, tmp_path):
-    code, out, err = run_cli(gitsim, tmp_path, "install", "--dry-run", "--all")
+    code, out, err = run_cli(gitsim, tmp_path, "wire-agents", "--dry-run", "--all")
     assert code == 0, err
     assert out.strip(), "the dry run reports what it would do"
     assert not list(tmp_path.iterdir()), "nothing written"
 
 
 def test_uninstall_dry_run(shapes, gitsim, tmp_path):
-    code, out, err = run_cli(gitsim, tmp_path, "uninstall", "--dry-run", "--all")
+    code, out, err = run_cli(gitsim, tmp_path, "unwire-agents", "--dry-run", "--all")
     assert code == 0, err

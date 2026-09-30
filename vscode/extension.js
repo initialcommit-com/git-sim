@@ -733,16 +733,16 @@ async function commandRecent(context) {
 function commandInstallAgents() {
   const terminal = vscode.window.createTerminal({ name: 'git-sim' });
   terminal.show();
-  terminal.sendText(`${executable()} install`);
+  terminal.sendText(`${executable()} wire-agents`);
 }
 
-// The reverse: `git-sim uninstall` takes the hook and MCP entries out again.
+// The reverse: `git-sim unwire-agents` takes the hook and MCP entries out again.
 // Typed, not run, so the list of agents it will touch is read first.
 function commandUninstallAgents() {
   const terminal = vscode.window.createTerminal({ name: 'git-sim' });
   terminal.show();
-  terminal.sendText(`${executable()} uninstall --dry-run`, false);
-  vscode.window.showInformationMessage('Press Enter to see what git-sim uninstall would remove; run it again without --dry-run to remove it.');
+  terminal.sendText(`${executable()} unwire-agents --dry-run`, false);
+  vscode.window.showInformationMessage('Press Enter to see what git-sim unwire-agents would remove; run it again without --dry-run to remove it.');
 }
 
 function activate(context) {

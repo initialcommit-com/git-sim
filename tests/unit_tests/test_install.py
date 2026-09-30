@@ -1,4 +1,4 @@
-"""git-sim install / uninstall: config written per agent, idempotently."""
+"""git-sim wire-agents / unwire-agents: config written per agent, idempotently."""
 
 import json
 import subprocess
@@ -344,7 +344,7 @@ def test_cli_dry_run_writes_nothing(fake_env, monkeypatch):
 
     from git_sim.__main__ import app
 
-    result = CliRunner().invoke(app, ["install", "--all", "--dry-run"])
+    result = CliRunner().invoke(app, ["wire-agents", "--all", "--dry-run"])
     assert result.exit_code == 0, result.output
     assert (
         "would add" in result.output
@@ -353,5 +353,24 @@ def test_cli_dry_run_writes_nothing(fake_env, monkeypatch):
     )
     assert not (home / ".claude").exists()
 
-    result = CliRunner().invoke(app, ["install", "--agent", "nope"])
+    result = CliRunner().invoke(app, ["wire-agents", "--agent", "nope"])
     assert result.exit_code != 0
+
+
+def test_old_names_still_run_and_point_at_the_new_ones(fake_env, monkeypatch):
+    """install / uninstall were renamed wire-agents / unwire-agents; the old
+    names still work, out of the help, with a note naming the new command."""
+    home, project = fake_env
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
+    monkeypatch.chdir(project)
+    from typer.testing import CliRunner
+
+    from git_sim.__main__ import app
+
+    for old, new in (("install", "wire-agents"), ("uninstall", "unwire-agents")):
+        result = CliRunner().invoke(app, [old, "--all", "--dry-run"])
+        assert result.exit_code == 0, result.output
+        assert f"`git-sim {old}` is now `git-sim {new}`" in result.output  # stderr is mixed in
+    help_text = CliRunner().invoke(app, ["--help"]).output
+    assert "wire-agents" in help_text and "unwire-agents" in help_text
+

@@ -91,7 +91,7 @@ descriptions.
 
 ## Beside an AI agent
 
-`git-sim install` wires the pre-flight hook and the MCP server into the agents
+`git-sim wire-agents` wires the pre-flight hook and the MCP server into the agents
 on your machine ([mcp.md](mcp.md)). For an agent that runs in a terminal,
 `git-sim live` in a second pane shows every commit, reset and rebase the agent
 makes as it makes it, and the session's strip is the record of what it did.

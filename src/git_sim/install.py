@@ -1,4 +1,4 @@
-"""``git-sim install``: wire the pre-flight hook and MCP server into AI coding agents.
+"""``git-sim wire-agents``: wire the pre-flight hook and MCP server into AI coding agents.
 
 Detects which agents are present (Claude Code, Codex CLI, Cursor, GitHub
 Copilot CLI, Gemini CLI, VS Code; and, for the MCP server alone, Windsurf,
@@ -7,7 +7,7 @@ hook and MCP entries into each one's own configuration, in its own format, at
 user or project scope. ``git-sim aliases`` adds ``git preflight`` and ``git
 live`` to git's own config.
 Every write is idempotent: an existing git-sim entry is updated in place,
-and ``git-sim uninstall`` removes exactly what was added.
+and ``git-sim unwire-agents`` removes exactly what was added.
 
 The hook command is the absolute path of ``git-sim-hook`` with forward
 slashes (Claude Code runs hooks through Git Bash on Windows, which eats
@@ -19,6 +19,7 @@ shares Copilot's hook file and gets the MCP server in its own ``mcp.json``.
 """
 
 import json
+import functools
 import os
 import re
 import shutil
@@ -844,6 +845,18 @@ def install(
         typer.echo(
             "Done. Agents read their config at startup: restart any that are running."
         )
+
+
+def renamed(command, old: str, new: str):
+    """The command under its earlier name: runs it after a one-line note on
+    stderr, so scripts and habits from before the rename keep working."""
+
+    @functools.wraps(command)
+    def run(*args, **kwargs):
+        typer.echo(f"note: `git-sim {old}` is now `git-sim {new}`", err=True)
+        return command(*args, **kwargs)
+
+    return run
 
 
 def uninstall(

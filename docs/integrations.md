@@ -17,7 +17,7 @@ below is a thin layer over it.
 | GitHub CLI | `gh sim pr 42`: what merging a pull request would do, in a temporary worktree | [integrations/gh-sim](../integrations/gh-sim) |
 | GitHub Actions | a comment on each pull request with the pre-flight report and the graph as an artifact | [integrations/github-action](../integrations/github-action) |
 | Blogs and docs | `git-sim-embed.js`: the interactive viewer around any git-sim SVG | [embed.md](embed.md) |
-| AI agents | the pre-flight hook and MCP server, wired by `git-sim install` | [mcp.md](mcp.md) |
+| AI agents | the pre-flight hook and MCP server, wired by `git-sim wire-agents` | [mcp.md](mcp.md) |
 
 ## Jupyter
 

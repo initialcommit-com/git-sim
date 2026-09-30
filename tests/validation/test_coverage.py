@@ -16,7 +16,7 @@ EXEMPT_GLOBAL = {
     "--show-intro", "--no-show-intro", "--show-outro", "--no-show-outro", "--outro-top-text", "--outro-bottom-text",
     "--install-completion", "--show-completion", "--auto-open", "-d", "-v", "--version",
 }
-EXEMPT_COMMANDS = {"install", "uninstall", "aliases", "live", "preflight", "media-dir"}  # test_tools.py
+EXEMPT_COMMANDS = {"wire-agents", "unwire-agents", "install", "uninstall", "aliases", "live", "preflight", "media-dir"}  # test_tools.py
 EXEMPT_OPTIONS = {
     ("live", "--port"), ("live", "--interval"), ("live", "--zones"), ("live", "--no-zones"), ("live", "--replay"), ("live", "--session"),
 }

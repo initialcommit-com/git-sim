@@ -66,8 +66,8 @@ and saved in your user cache folder, never inside the repository.
 | git-sim: Simulate a recent command | Picks from the commands you simulated before |
 | git-sim: Show the repository graph | `git log` as a graph |
 | git-sim: Simulate / Pre-flight the selected command | The same, for text selected in an editor or terminal |
-| git-sim: Wire git-sim into AI coding agents | Runs `git-sim install`, which adds the pre-flight hook and MCP server to Claude Code, Codex CLI, Cursor, GitHub Copilot CLI, Gemini CLI and VS Code (Copilot), and the MCP server to Windsurf, Cline, Roo Code, Amazon Q Developer CLI and Claude Desktop |
-| git-sim: Remove git-sim from AI coding agents | Types `git-sim uninstall --dry-run` in a terminal: see what it would take out, then run it without `--dry-run` |
+| git-sim: Wire git-sim into AI coding agents | Runs `git-sim wire-agents`, which adds the pre-flight hook and MCP server to Claude Code, Codex CLI, Cursor, GitHub Copilot CLI, Gemini CLI and VS Code (Copilot), and the MCP server to Windsurf, Cline, Roo Code, Amazon Q Developer CLI and Claude Desktop |
+| git-sim: Remove git-sim from AI coding agents | Types `git-sim unwire-agents --dry-run` in a terminal: see what it would take out, then run it without `--dry-run` |
 | git-sim: Watch Git workflow demos | Opens the git-sim viewer at initialcommit.com: whole Git workflows played step by step, and one demo per command |
 | git-sim: Learn Git with git-sim | Opens the guided lessons at initialcommit.com |
 
@@ -116,7 +116,7 @@ your browser.
 
 ## Copilot and other agents
 
-The extension is the human side. For the agents in your editor, `git-sim install`
+The extension is the human side. For the agents in your editor, `git-sim wire-agents`
 (also available as a command here) does two things for VS Code: it installs the
 pre-flight hook that VS Code's agent hooks run before Copilot executes a
 terminal command, so a destructive `git` command stops at an approval prompt

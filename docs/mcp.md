@@ -136,10 +136,10 @@ see the main README.
 ## One-command setup for any agent
 
 ```console
-$ git-sim install
+$ git-sim wire-agents
 ```
 
-`git-sim install` detects the AI coding agents on your machine and wires
+`git-sim wire-agents` detects the AI coding agents on your machine and wires
 both the pre-flight hook and the MCP server into each one's own config, in
 its own format:
 
@@ -180,7 +180,7 @@ your home config (`.claude/settings.json`, `.codex/hooks.json`,
 `.cursor/hooks.json`, `.github/hooks/git-sim.json`, `.gemini/settings.json`,
 `.mcp.json`, `.vscode/mcp.json`), `--no-hook` / `--no-mcp`, and `--dry-run`.
 Writes are idempotent (an existing git-sim entry is updated in place) and
-`git-sim uninstall` removes exactly what was added. Agents read their config
+`git-sim unwire-agents` removes exactly what was added. Agents read their config
 at startup, so restart any that are running.
 
 The hook is one executable, `git-sim-hook`, invoked with `--agent <name>` so
@@ -259,7 +259,7 @@ Configuration via environment variables:
 |---|---|---|
 | `GIT_SIM_HOOK_ASK_ON` | `caution` | Minimum risk that triggers the prompt (`caution` or `destructive`) |
 | `GIT_SIM_HOOK_MODE` | `ask` | `ask` prompts (or denies with instructions where the agent cannot prompt); `deny` denies risky commands outright; `warn` allows them with the facts attached |
-| `GIT_SIM_HOOK_AGENT` | detected | Force the hook dialect (`claude`, `codex`, `cursor`, `copilot`, `gemini`); `git-sim install` passes `--agent` instead |
+| `GIT_SIM_HOOK_AGENT` | detected | Force the hook dialect (`claude`, `codex`, `cursor`, `copilot`, `gemini`); `git-sim wire-agents` passes `--agent` instead |
 | `GIT_SIM_HOOK_RENDER` | `1` | Set `0` to skip rendering the image (facts only, faster) |
 | `GIT_SIM_HOOK_OPEN` | `1` | Set `0` to not auto-open the rendered image |
 | `GIT_SIM_HOOK_TEXT` | `1` | Set `0` to omit the text graph from the prompt |

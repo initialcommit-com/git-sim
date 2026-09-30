@@ -8,11 +8,14 @@
   browser. (A tab cannot copy an image, so **Copy image** saves the PNG.)
   The same goes for the live graph and recorded sessions. Needs a git-sim
   with the matching page (`pipx upgrade git-sim`).
+- `git-sim install` is now `git-sim wire-agents` (and `uninstall` is
+  `unwire-agents`): **Wire git-sim into AI coding agents** runs the new name.
+  The old names still work in git-sim.
 - **git-sim: Remove git-sim from AI coding agents** types
-  `git-sim uninstall --dry-run` in a terminal.
+  `git-sim unwire-agents --dry-run` in a terminal.
 - **git-sim: Watch Git workflow demos** opens the git-sim viewer at
   initialcommit.com.
-- The agents list in the README covers every agent `git-sim install`
+- The agents list in the README covers every agent `git-sim wire-agents`
   configures, the MCP-only ones included.
 
 ## 0.3.0

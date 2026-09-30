@@ -1,7 +1,7 @@
 ## A human in the loop
 
 AI coding agents run Git on your behalf, and they run it fast. **git-sim: Wire
-git-sim into AI coding agents** runs `git-sim install`, which detects the agents
+git-sim into AI coding agents** runs `git-sim wire-agents`, which detects the agents
 on your machine and writes into each one's own configuration:
 
 - a **pre-flight hook** (Claude Code, Codex CLI, Cursor, GitHub Copilot CLI,

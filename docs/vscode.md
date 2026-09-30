@@ -104,7 +104,7 @@ reachable on the repository's default branch.
   window.
 - The repository is the one holding the active file, else the workspace folder
   (a quick pick when there are several).
-- `git-sim: Wire git-sim into AI coding agents` runs `git-sim install`, which
+- `git-sim: Wire git-sim into AI coding agents` runs `git-sim wire-agents`, which
   gives VS Code both halves of the agent story: the pre-flight hook (VS Code's
   agent hooks read Copilot CLI hook files, so it shares
   `~/.copilot/hooks/git-sim.json`) and the MCP server in the user `mcp.json`,

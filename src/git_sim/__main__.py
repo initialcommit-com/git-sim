@@ -320,13 +320,16 @@ app.command()(git_sim.commands.blame)
 app.command()(git_sim.commands.bisect)
 
 # Agent integration and the pre-flight check (not git subcommands).
-from git_sim.install import aliases, install, uninstall  # noqa: E402
+from git_sim.install import aliases, install, renamed, uninstall  # noqa: E402
 from git_sim.live import live  # noqa: E402
 from git_sim.paths import media_dir  # noqa: E402
 from git_sim.preflight_cli import preflight  # noqa: E402
 
-app.command()(install)
-app.command()(uninstall)
+app.command(name="wire-agents")(install)
+app.command(name="unwire-agents")(uninstall)
+# The names before wire-agents / unwire-agents: still accepted, out of the help.
+app.command(name="install", hidden=True)(renamed(install, "install", "wire-agents"))
+app.command(name="uninstall", hidden=True)(renamed(uninstall, "uninstall", "unwire-agents"))
 app.command()(aliases)
 app.command()(media_dir)
 app.command()(live)
