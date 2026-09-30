@@ -169,7 +169,9 @@ LIVE_JS = r"""
     current = index;
     Array.from(chips.children).forEach(c => c.classList.toggle('cur', Number(c.dataset.i) === index));
     const chip = chips.querySelector(`.chip[data-i="${index}"]`);
-    if (chip) chip.scrollIntoView({block: 'nearest', inline: 'nearest'});
+    // scroll only the strip: scrollIntoView would also scroll a page this one is framed in
+    if (chip) { const cr = chip.getBoundingClientRect(), sr = chips.getBoundingClientRect();
+      if (cr.left < sr.left) chips.scrollLeft += cr.left - sr.left; else if (cr.right > sr.right) chips.scrollLeft += cr.right - sr.right; }
     const empty = $('empty'); if (empty) empty.remove();
     // Opens on "after" (the repository as it is) and plays the change once,
     // rather than looping: a live page should settle on the current state.
