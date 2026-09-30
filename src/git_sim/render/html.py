@@ -237,7 +237,10 @@ function makeViewer(root){
       d.setAttribute('dx', '0'); d.setAttribute('dy', String(dy)); d.setAttribute('stdDeviation', String(sigma)); d.setAttribute('flood-color', color); d.setAttribute('flood-opacity', String(opacity));
       f.appendChild(d); defs.appendChild(f);
     };
-    const ensure = (id, ...spec) => { if (!defs.querySelector('#' + id)) make(id, ...spec); return `url(#${id})`; };
+    // ids of this graph's own (see mount): the same filter names in another graph
+    // on the page would otherwise be the ones found
+    const own = svg.dataset.uid ? svg.dataset.uid + '-' : '';
+    const ensure = (name, ...spec) => { const id = own + name; if (!defs.querySelector('#' + id)) make(id, ...spec); return `url(#${id})`; };
     $('[filter]', svg).forEach(el => {
       if (el.dataset.role === 'ref') { if (light) el.setAttribute('filter', ensure('shadow-pill', 0.02 * scale, 0.03 * scale, '#000000', .14)); else el.removeAttribute('filter'); return; }
       if (light) el.setAttribute('filter', ensure('shadow-drop', 0.035 * scale, 0.05 * scale, '#000000', .16));
@@ -341,6 +344,18 @@ function makeViewer(root){
     if (svgEl.nodeName !== 'svg') throw new Error('not an svg');
     $('script', svgEl).forEach(el => el.remove());
     svgEl.querySelectorAll('*').forEach(el => { Array.from(el.attributes).forEach(a => { if (/^on/i.test(a.name) || (a.name === 'href' && !a.value.startsWith('data:image/'))) el.removeAttribute(a.name); }); });
+    // An id inside a graph (its shadow filters) is looked up across the whole
+    // document: with several graphs on a page, url(#shadow1) finds the first
+    // graph's, and when that graph is hidden (display: none) the discs and
+    // pills that use it stop drawing. Each graph gets ids of its own.
+    const uid = 'g' + (window.__gitSimGraphs = (window.__gitSimGraphs || 0) + 1);
+    const renamed = new Set();
+    svgEl.querySelectorAll('[id]').forEach(el => { renamed.add(el.id); el.id = uid + '-' + el.id; });
+    if (renamed.size) svgEl.querySelectorAll('*').forEach(el => Array.from(el.attributes).forEach(a => {
+      if (a.value.indexOf('url(#') < 0) return;
+      el.setAttribute(a.name, a.value.replace(/url\(#([^)]+)\)/g, (m, id) => renamed.has(id) ? `url(#${uid}-${id})` : m));
+    }));
+    svgEl.dataset.uid = uid;
     svgEl.id = 'scene';
     const stage = byId('stage');
     stage.innerHTML = ''; stage.appendChild(document.importNode(svgEl, true));
