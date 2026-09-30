@@ -78,7 +78,8 @@ LIVE_JS = r"""
 (function(){
   const V = window.GitSimViewer;
   const inVscode = typeof acquireVsCodeApi === 'function';
-  const host = inVscode ? acquireVsCodeApi() : null;
+  // the editor's handle can be taken only once per page; the viewer's Share menu uses it too
+  const host = inVscode ? (window.__gitSimHost = window.__gitSimHost || acquireVsCodeApi()) : null;
   const $ = id => document.getElementById(id);
   const dot = $('liveDot'), status = $('liveStatus'), chips = $('chips');
   const replayBtn = $('replay'), followBtn = $('follow'), clearBtn = $('clear'), saveBtn = $('save'), recordBtn = $('record');

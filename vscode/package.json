@@ -2,7 +2,7 @@
   "name": "git-sim",
   "displayName": "git-sim",
   "description": "See what a Git command will do before you run it, and watch your repository change live: interactive before / after simulations, deterministic pre-flight checks and a live graph of your real repository, powered by git-sim.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "initialcommit",
   "license": "GPL-2.0-only",
   "icon": "media/icon.png",
@@ -61,6 +61,8 @@
       { "command": "git-sim.simulateSelection", "title": "Simulate the selected command", "category": "git-sim" },
       { "command": "git-sim.preflightSelection", "title": "Pre-flight the selected command", "category": "git-sim" },
       { "command": "git-sim.installAgents", "title": "Wire git-sim into AI coding agents", "category": "git-sim" },
+      { "command": "git-sim.uninstallAgents", "title": "Remove git-sim from AI coding agents", "category": "git-sim" },
+      { "command": "git-sim.openDemos", "title": "Watch Git workflow demos (initialcommit.com)", "category": "git-sim" },
       { "command": "git-sim.installGitSim", "title": "Install git-sim (opens a terminal)", "category": "git-sim" },
       { "command": "git-sim.openLearn", "title": "Learn Git with git-sim (initialcommit.com)", "category": "git-sim" }
     ],

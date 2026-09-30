@@ -20,6 +20,7 @@ const RECENT_KEY = 'git-sim.recent';
 const RECENT_MAX = 20;
 const LEARN_URL = 'https://initialcommit.com/learn/git';
 const TOOL_URL = 'https://initialcommit.com/tools/git-sim';
+const DEMOS_URL = 'https://initialcommit.com/tools/git-sim/viewer';
 const INSTALL_URL = 'https://github.com/initialcommit-com/git-sim#installation';
 
 let output;      // the "git-sim" output channel: every command run, stdout and stderr
@@ -274,7 +275,23 @@ function showPage(context, page, title) {
     { enableScripts: true, retainContextWhenHidden: true, localResourceRoots: [] });
   panel.iconPath = vscode.Uri.file(path.join(context.extensionPath, 'media', 'icon.png'));
   panel.webview.html = html;
+  panel.webview.onDidReceiveMessage(msg => fromPage(msg));
   return panel;
+}
+
+// What a git-sim page hands the editor from its Share menu (a webview can
+// neither download nor open a window): a file to save, text for the
+// clipboard, or a link to open in the browser (a post on X, Bluesky, ...).
+function fromPage(msg) {
+  if (!msg || !msg.type) return false;
+  if (msg.type === 'saveFile' && msg.name && msg.data) {
+    saveFromPage(msg.name, msg.data, msg.mime).catch(e => vscode.window.showErrorMessage(`git-sim: ${e.message}`));
+  } else if (msg.type === 'copyText' && typeof msg.text === 'string') {
+    vscode.env.clipboard.writeText(msg.text).then(() => vscode.window.setStatusBarMessage('git-sim: link copied', 2000));
+  } else if (msg.type === 'openExternal' && typeof msg.url === 'string' && /^(https:|mailto:)/i.test(msg.url)) {
+    vscode.env.openExternal(vscode.Uri.parse(msg.url));
+  } else return false;
+  return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -570,7 +587,8 @@ async function livePageHtml(repo) {
 // Save bytes the page hands over (a recorded video, a session file): a
 // webview cannot download, so the page posts them and the editor asks where.
 async function saveFromPage(name, data, mime) {
-  const filters = /\.mp4$/i.test(name) ? { 'MP4 video': ['mp4'] } : /\.webm$/i.test(name) ? { 'WebM video': ['webm'] } : { 'HTML page': ['html'] };
+  const filters = /\.mp4$/i.test(name) ? { 'MP4 video': ['mp4'] } : /\.webm$/i.test(name) ? { 'WebM video': ['webm'] }
+    : /\.png$/i.test(name) ? { 'PNG image': ['png'] } : /\.svg$/i.test(name) ? { 'SVG image': ['svg'] } : { 'HTML page': ['html'] };
   const folders = vscode.workspace.workspaceFolders || [];
   const target = await vscode.window.showSaveDialog({
     defaultUri: vscode.Uri.file(path.join(folders.length ? path.dirname(folders[0].uri.fsPath) : require('os').homedir(), name)),
@@ -600,7 +618,7 @@ function wireLiveWebview(webview, repo, zones, onDispose) {
     else if (msg.type === 'clear') session.clear(Number(msg.keep) || 0);
     else if (msg.type === 'openPage' && msg.page) vscode.env.openExternal(vscode.Uri.file(msg.page));
     else if (msg.type === 'saveSession') saveSessionOf(session).catch(e => vscode.window.showErrorMessage(`git-sim: ${e.message}`));
-    else if (msg.type === 'saveFile' && msg.name && msg.data) saveFromPage(msg.name, msg.data, msg.mime).catch(e => vscode.window.showErrorMessage(`git-sim: ${e.message}`));
+    else fromPage(msg);  // a recorded video, and the graph's Share menu
   });
   onDispose(() => { sub.dispose(); session.detach(webview); });
 }
@@ -623,10 +641,7 @@ async function commandLiveSessions(context) {
     })),
     { placeHolder: 'Which recorded session?' });
   if (!pick) return;
-  const panel = showPage(context, pick.session.page, `live session ${new Date(pick.session.started * 1000).toLocaleDateString()}`);
-  panel.webview.onDidReceiveMessage(msg => {
-    if (msg && msg.type === 'saveFile' && msg.name && msg.data) saveFromPage(msg.name, msg.data, msg.mime).catch(e => vscode.window.showErrorMessage(`git-sim: ${e.message}`));
-  });
+  showPage(context, pick.session.page, `live session ${new Date(pick.session.started * 1000).toLocaleDateString()}`);  // its saves go through fromPage
 }
 
 function noteHtml(text) {
@@ -721,6 +736,15 @@ function commandInstallAgents() {
   terminal.sendText(`${executable()} install`);
 }
 
+// The reverse: `git-sim uninstall` takes the hook and MCP entries out again.
+// Typed, not run, so the list of agents it will touch is read first.
+function commandUninstallAgents() {
+  const terminal = vscode.window.createTerminal({ name: 'git-sim' });
+  terminal.show();
+  terminal.sendText(`${executable()} uninstall --dry-run`, false);
+  vscode.window.showInformationMessage('Press Enter to see what git-sim uninstall would remove; run it again without --dry-run to remove it.');
+}
+
 function activate(context) {
   currentContext = context;
   output = vscode.window.createOutputChannel('git-sim');
@@ -738,6 +762,8 @@ function activate(context) {
   reg('git-sim.simulateSelection', () => commandSimulate(context, selectedText()));
   reg('git-sim.preflightSelection', () => commandPreflight(context, selectedText()));
   reg('git-sim.installAgents', commandInstallAgents);
+  reg('git-sim.uninstallAgents', commandUninstallAgents);
+  reg('git-sim.openDemos', () => vscode.env.openExternal(vscode.Uri.parse(DEMOS_URL)));
   reg('git-sim.installGitSim', commandInstallGitSim);
   reg('git-sim.openLearn', () => vscode.env.openExternal(vscode.Uri.parse(LEARN_URL)));
   reg('git-sim.live', async () => { const repo = await pickRepo(); if (repo) await openLivePanel(context, repo); });
@@ -758,4 +784,4 @@ function deactivate() {
   liveSessions.forEach(s => s.stop());
 }
 
-module.exports = { activate, deactivate, _internal: { words, cleanCommand, gitSimError, LiveSession } };
+module.exports = { activate, deactivate, _internal: { words, cleanCommand, gitSimError, LiveSession, fromPage } };

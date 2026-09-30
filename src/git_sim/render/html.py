@@ -866,21 +866,33 @@ function makeViewer(root){
       return await new Promise(ok => canvas.toBlob(ok, 'image/png'));
     } finally { URL.revokeObjectURL(url); }
   }
-  const download = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); };
+  // In a VS Code tab (the git-sim extension) a page can neither download a file
+  // nor open a window, so it hands the file, the text or the link to the editor,
+  // which saves it through a dialog, puts it on the clipboard or opens it. The
+  // editor's handle can be taken only once per page; the live page shares it.
+  const editor = typeof acquireVsCodeApi === 'function' ? (window.__gitSimHost = window.__gitSimHost || acquireVsCodeApi()) : null;
+  const toEditor = (blob, name) => new Promise(ok => {
+    const reader = new FileReader();
+    reader.onload = () => { editor.postMessage({type: 'saveFile', name, mime: blob.type, data: String(reader.result).split(',')[1]}); ok(); };
+    reader.readAsDataURL(blob);
+  });
+  const download = (blob, name) => { if (editor) return toEditor(blob, name); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); };
+  const copyText = text => editor ? (editor.postMessage({type: 'copyText', text}), Promise.resolve()) : navigator.clipboard.writeText(text);
   const actions = {
     link: async () => {
       const url = await shareUrl();
-      await navigator.clipboard.writeText(url);
+      await copyText(url);
       say(url.length > 60000 ? 'link copied — it is long; chat and email carry it, some social sites will not' : 'link copied');
     },
     image: async () => {
       const png = await toPng(2);
+      if (editor) { await download(png, fileName() + '.png'); say('the editor cannot copy an image: save the PNG instead'); return; }
       try { await navigator.clipboard.write([new ClipboardItem({'image/png': png})]); say('image copied — paste it anywhere'); }
       catch (e) { download(png, fileName() + '.png'); say('image downloaded'); }
     },
-    png: async () => { download(await toPng(2), fileName() + '.png'); say('PNG downloaded'); },
-    svg: async () => { download(new Blob([pristine], {type: 'image/svg+xml'}), fileName() + '.svg'); say('SVG downloaded'); },
-    html: async () => { download(new Blob(['<!DOCTYPE html>\n' + document.documentElement.outerHTML], {type: 'text/html'}), fileName() + '.html'); say('page downloaded'); },
+    png: async () => { await download(await toPng(2), fileName() + '.png'); if (!editor) say('PNG downloaded'); },
+    svg: async () => { await download(new Blob([pristine], {type: 'image/svg+xml'}), fileName() + '.svg'); if (!editor) say('SVG downloaded'); },
+    html: async () => { await download(new Blob(['<!DOCTYPE html>\n' + document.documentElement.outerHTML], {type: 'text/html'}), fileName() + '.html'); if (!editor) say('page downloaded'); },
     native: async () => { await navigator.share({title, text: shareText(), url: await shareUrl()}); },
   };
   const enc = encodeURIComponent;
@@ -898,6 +910,15 @@ function makeViewer(root){
     if (!b) return;
     e.preventDefault();
     if (b.dataset.action) { Promise.resolve().then(() => actions[b.dataset.action]()).catch(() => say('could not share')); return; }
+    if (editor) {  // the editor opens the post in the browser
+      shareUrl().then(u => {
+        const limit = shortOnly[b.dataset.intent];
+        if (limit && u.length > limit) { say(`this graph makes a link too long for ${b.textContent}; save the image and post that instead`); return; }
+        editor.postMessage({type: 'openExternal', url: intents[b.dataset.intent](u)});
+        showShare(false);
+      }).catch(() => say('could not share'));
+      return;
+    }
     const w = window.open('', '_blank');  // open synchronously so the popup is not blocked
     shareUrl().then(u => {
       const limit = shortOnly[b.dataset.intent];

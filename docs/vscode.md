@@ -19,7 +19,7 @@ be lost, how to undo it and a text commit graph, with a button to simulate it.
 Select a command in a file or a terminal and the context menu offers both.
 
 Settings live under `git-sim` (executable, extra options, dark graphs when
-the editor theme is light, open in the browser instead of a tab, timeout).
+the editor theme is dark, open in the browser instead of a tab, timeout).
 
 ## The live graph
 
@@ -60,8 +60,8 @@ The extension is plain JavaScript, so there is nothing to compile. To package
 it without Node, run the bundled script (Python 3.10+):
 
 ```
-python vscode/build_vsix.py        # -> vscode/git-sim-0.2.0.vsix
-code --install-extension vscode/git-sim-0.2.0.vsix
+python vscode/build_vsix.py        # -> vscode/git-sim-<version>.vsix, e.g. git-sim-0.4.0.vsix
+code --install-extension vscode/git-sim-0.4.0.vsix
 ```
 
 With Node available, `npx @vscode/vsce package` in `vscode/` produces the same
@@ -88,6 +88,12 @@ reachable on the repository's default branch.
 - Simulations: `git-sim --img-format html --output-only-path <command>` in the
   chosen repository. The self-contained page git-sim writes is shown in a
   webview with a content-security policy allowing only its inline parts.
+- Share from a tab: a webview can neither download a file nor open a window,
+  so git-sim's page, seeing `acquireVsCodeApi`, posts the file (`saveFile`),
+  the link (`copyText`) or the post's address (`openExternal`) to the
+  extension, which saves it through a dialog, puts it on the clipboard or
+  opens it in the browser. The live page and the graph's Share menu share the
+  one editor handle a webview allows (`window.__gitSimHost`).
 - Pre-flight: `git-sim preflight --json -- <command>`, rendered as a small
   report page with a Simulate button.
 - Live graph: `git-sim live --json -C <repo>`, one process per repository

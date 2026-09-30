@@ -25,7 +25,9 @@ would in a terminal (`rebase main`, `reset --hard HEAD~2`, `stash`), and the
 command plays out on a graph of your repository in an editor tab. A rebase
 replays one commit at a time; a reset shows what falls out of reach; a merge
 shows whether it fast-forwards. Drag the slider or press play, hover a commit
-for its details, share the graph as a link or an image.
+for its details, and share it from the tab: copy a link, save a PNG, an SVG
+or the page, or post it (the editor saves files through a dialog and opens
+posts in your browser).
 
 **Is this safe? Pre-flight.** The risk level, exactly which commits would become
 unreachable, which uncommitted changes would be lost and whether they can be
@@ -64,7 +66,9 @@ and saved in your user cache folder, never inside the repository.
 | git-sim: Simulate a recent command | Picks from the commands you simulated before |
 | git-sim: Show the repository graph | `git log` as a graph |
 | git-sim: Simulate / Pre-flight the selected command | The same, for text selected in an editor or terminal |
-| git-sim: Wire git-sim into AI coding agents | Runs `git-sim install`, which adds the pre-flight hook and MCP server to Claude Code, Codex, Cursor, Copilot, Gemini and VS Code |
+| git-sim: Wire git-sim into AI coding agents | Runs `git-sim install`, which adds the pre-flight hook and MCP server to Claude Code, Codex CLI, Cursor, GitHub Copilot CLI, Gemini CLI and VS Code (Copilot), and the MCP server to Windsurf, Cline, Roo Code, Amazon Q Developer CLI and Claude Desktop |
+| git-sim: Remove git-sim from AI coding agents | Types `git-sim uninstall --dry-run` in a terminal: see what it would take out, then run it without `--dry-run` |
+| git-sim: Watch Git workflow demos | Opens the git-sim viewer at initialcommit.com: whole Git workflows played step by step, and one demo per command |
 | git-sim: Learn Git with git-sim | Opens the guided lessons at initialcommit.com |
 
 ## Settings
@@ -129,5 +133,6 @@ in a separate window. Commands that rate safe get a one-line verdict too.
 ## More
 
 - [git-sim](https://initialcommit.com/tools/git-sim): the tool, its commands and options
+- [Git workflow demos](https://initialcommit.com/tools/git-sim/viewer): whole workflows played step by step in the git-sim viewer
 - [Learn Git](https://initialcommit.com/learn/git): sixteen guided levels played on git-sim graphs
 - [Visual Git command reference](https://initialcommit.com/learn/git/visual-command-reference): what each Git command does, one graph and page per command
