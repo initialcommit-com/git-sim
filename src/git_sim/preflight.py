@@ -695,7 +695,9 @@ def _analyze_rebase(repo: git.Repo, args: List[str], report: PreflightReport) ->
 
 
 def _analyze_merge(repo: git.Repo, args: List[str], report: PreflightReport) -> None:
-    positional = _positionals(args)
+    # -m / --message take a value, which is not the branch to merge
+    skip = {i + 1 for i, a in enumerate(args) if a in ("-m", "--message", "-F", "--file", "-s", "--strategy", "-X", "--strategy-option")}
+    positional = [a for i, a in enumerate(args) if not a.startswith("-") and i not in skip]
     if not positional:
         report.summary = "Merge with no branch argument."
         return
@@ -703,6 +705,14 @@ def _analyze_merge(repo: git.Repo, args: List[str], report: PreflightReport) -> 
     head = repo.head.commit
     bases = repo.merge_base(head, other)
     base = bases[0] if bases else None
+    unrelated_ok = "--allow-unrelated-histories" in args
+
+    if base is None and not unrelated_ok:
+        report.summary = (
+            f"git refuses: {positional[0]} shares no commit with HEAD (unrelated histories), "
+            "so nothing changes. git merge --allow-unrelated-histories merges them anyway."
+        )
+        return
 
     incoming = list(repo.iter_commits(f"HEAD..{other.hexsha}"))
     if not incoming:
@@ -711,6 +721,12 @@ def _analyze_merge(repo: git.Repo, args: List[str], report: PreflightReport) -> 
 
     squash = "--squash" in args
     ff = not squash and base is not None and base.hexsha == head.hexsha and "--no-ff" not in args
+    if "--ff-only" in args and not squash and not ff:
+        report.summary = (
+            f"git refuses: HEAD and {positional[0]} have diverged, so --ff-only cannot fast-forward "
+            "and nothing changes. Merge without --ff-only, or rebase first."
+        )
+        return
     if squash:
         report.summary = (
             f"Stages the combined changes of {len(incoming)} commit(s) from {positional[0]} "
@@ -726,13 +742,15 @@ def _analyze_merge(repo: git.Repo, args: List[str], report: PreflightReport) -> 
 
     # Deterministic conflict detection via git's own merge machinery (git >= 2.38).
     if not ff:
-        try:
-            repo.git.merge_tree("--write-tree", "--name-only", "HEAD", other.hexsha)
+        mt = ["git", "merge-tree", "--write-tree", "--name-only", "--no-messages"]
+        if unrelated_ok:
+            mt.append("--allow-unrelated-histories")
+        status, out, _err = repo.git.execute(mt + ["HEAD", other.hexsha], with_extended_output=True, with_exceptions=False)
+        if status == 0:
             report.facts.append("No conflicts detected by git merge-tree.")
-        except git.GitCommandError as e:
-            conflicted = [
-                line for line in (e.stdout or "").splitlines()[1:] if line.strip()
-            ]
+        else:
+            # the merged tree's id, then one conflicted path per line
+            conflicted = list(dict.fromkeys(line.strip() for line in out.splitlines()[1:] if line.strip()))
             report.escalate(Risk.CAUTION)
             report.warnings.append(
                 f"Merge WILL conflict in {len(conflicted)} file(s): "

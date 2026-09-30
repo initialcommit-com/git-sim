@@ -3,62 +3,43 @@
   "Add a health check": {
    "kind": "commit",
    "parents": [
-    "?"
+    "Export orders as CSV"
    ],
    "phase": "before",
    "recolored": false,
    "step": 0
   },
-  "Bump flask": {
+  "Add a health check (9737be)": {
    "kind": "commit",
    "parents": [
-    "Cover pagination in the tests"
-   ],
-   "phase": "before",
-   "recolored": false,
-   "step": 0
-  },
-  "Cover pagination in the tests": {
-   "kind": "commit",
-   "parents": [
-    "Retry failed database connections"
-   ],
-   "phase": "before",
-   "recolored": false,
-   "step": 0
-  },
-  "Finish pagination": {
-   "kind": "commit",
-   "parents": [
-    "Polish pagination"
-   ],
-   "phase": "before",
-   "recolored": false,
-   "step": 0
-  },
-  "Handle missing config values": {
-   "kind": "commit",
-   "parents": [
-    "Add a health check"
-   ],
-   "phase": "before",
-   "recolored": false,
-   "step": 0
-  },
-  "Merge branch 'main' into feature/paginat": {
-   "kind": "merge",
-   "parents": [
-    "Bump flask",
-    "Finish pagination"
+    "Update the changelog (2)"
    ],
    "phase": "after",
    "recolored": false,
    "step": 1
   },
-  "Polish pagination": {
+  "Add currency to totals": {
    "kind": "commit",
    "parents": [
     "Retry failed database connections"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Export orders as CSV": {
+   "kind": "commit",
+   "parents": [
+    "Refactor Order into a dataclass"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Refactor Order into a dataclass": {
+   "kind": "commit",
+   "parents": [
+    "Add currency to totals"
    ],
    "phase": "before",
    "recolored": false,
@@ -67,7 +48,25 @@
   "Retry failed database connections": {
    "kind": "commit",
    "parents": [
-    "Handle missing config values"
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Update the changelog (1)": {
+   "kind": "commit",
+   "parents": [
+    "Export orders as CSV"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Update the changelog (2)": {
+   "kind": "commit",
+   "parents": [
+    "Update the changelog (1)"
    ],
    "phase": "before",
    "recolored": false,
@@ -75,9 +74,9 @@
   }
  },
  "edges": {
-  "after": 16,
+  "after": 2,
   "before": 12,
-  "origin": 0,
+  "origin": 11,
   "removed": 0
  },
  "files": [],
@@ -89,19 +88,19 @@
    "moved": true,
    "phase": "before"
   },
-  "feature/pagination": {
+  "main": {
    "count": 2,
    "kind": "branch",
    "moved": true,
    "phase": "before"
   },
-  "main": {
+  "origin/main": {
    "count": 2,
-   "kind": "branch",
+   "kind": "remote",
    "moved": false,
    "phase": "before"
   }
  },
  "steps": 2,
- "title": "git merge main"
+ "title": "git rebase origin/main"
 }

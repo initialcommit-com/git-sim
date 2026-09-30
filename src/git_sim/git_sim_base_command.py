@@ -102,6 +102,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.selected_branches = []
         self.zone_title_offset = 2.6 if platform.system() == "Windows" else 2.6
         self.arrow_map = []
+        # sha -> how many more commits back parse_commits could still draw when
+        # it walked that commit's parents (see parse_commits)
+        self.walked = {}
         self.arrows = []
         self.all = settings.all
         self.first_parse = True
@@ -153,6 +156,18 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.fadeout()
         self.show_outro()
 
+
+    def in_history(self, rev, of) -> bool:
+        """Whether rev is in the history of `of` (rev == of counts): git
+        merge-base --is-ancestor. Works for any revision, local or
+        remote-tracking branch, tag or sha, where the name-matching on
+        `git branch --contains` output it replaces knew only local branches
+        and matched names by substring."""
+        try:
+            self.repo.git.merge_base("--is-ancestor", str(getattr(rev, "hexsha", rev)), str(getattr(of, "hexsha", of)))
+            return True
+        except git.exc.GitCommandError:
+            return False
     def get_commit(self, sha_or_ref="HEAD"):
         if self.head_exists():
             return self.repo.commit(sha_or_ref)
@@ -187,6 +202,14 @@ class GitSimBaseCommand(m.MovingCameraScene):
             isNewCommit = True
 
         if i < self.n:
+            # -n is a depth, taken along every parent: in a history that merges
+            # at every step (a big project's main line) that fans out to
+            # thousands of commits, no picture anyone can read, drawn in
+            # minutes. Past a ceiling no ordinary graph reaches, stop adding
+            # commits, and let the scene say so.
+            if commit != "dark" and isNewCommit and len(self.drawnCommits) >= self.max_drawn_commits():
+                self.capped = True
+                return
             commitId, circle, arrow, hide_refs = self.draw_commit(
                 commit, i, prevCircle, shift
             )
@@ -217,6 +240,15 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     self.draw_dark_ref()
 
             self.first_parse = False
+            # A commit reached again along another path through a merge has
+            # had its parents walked already, unless this path leaves room to
+            # draw further back than the first did. Walking them again on every
+            # path made drawing a history with merges exponential in -n.
+            if commit != "dark":
+                budget = self.n - i
+                if self.walked.get(commit.hexsha, -1) >= budget:
+                    return
+                self.walked[commit.hexsha] = budget
             i += 1
             try:
                 commitParents = list(commit.parents)
@@ -239,6 +271,21 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 if (len(self.drawnCommits) + self.n_dark_commits) < self.n_default:
                     self.n_dark_commits += 1
                     self.parse_commits(self.create_dark_commit(), i, circle)
+
+    @staticmethod
+    def remote_url(remote):
+        """A remote's URL as git reads it. GitPython's remote.url is the raw
+        config value, still escaped: a Windows path comes back with every
+        backslash doubled, and a clone given it wrote the doubled path into
+        its merge messages ("Merge branch 'main' of C:\\\\Users...")."""
+        try:
+            return remote.repo.git.remote("get-url", remote.name)
+        except git.exc.GitCommandError:
+            return remote.url
+
+    def max_drawn_commits(self):
+        """The most commits one picture draws (see parse_commits)."""
+        return max(10 * self.n, 60)
 
     def first_row_commit(self):
         """Where the first row of the graph starts: HEAD's commit, unless (with
@@ -634,7 +681,13 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 prevCircle, m.RIGHT if settings.reverse else m.LEFT, buff=1.5
             )
 
-        while any((circle.get_center() == c).all() for c in self.get_centers()):
+        # Where every drawn commit sits, worked out once: finding a free spot
+        # and testing the arrow below each asked every circle again, which in
+        # a wide graph (log --all on a big project) was most of the run.
+        drawn = list(self.drawnCommits.values())
+        centers = [c.get_center() for c in drawn]
+        taken = {tuple(numpy.round(c, 4)) for c in centers}
+        while tuple(numpy.round(circle.get_center(), 4)) in taken:
             circle.shift(m.DOWN * 4)
 
         if commit != "dark":
@@ -675,7 +728,14 @@ class GitSimBaseCommand(m.MovingCameraScene):
             .rotate(angle)
         )
 
-        for commitCircle in self.drawnCommits.values():
+        # only circles near the arrow's line can touch it
+        line_pts = numpy.asarray(lineRect.get_all_points())[:, :2]
+        (lx0, ly0), (lx1, ly1) = line_pts.min(axis=0), line_pts.max(axis=0)
+        circle_pts = numpy.asarray(circle.get_all_points())[:, :2]
+        reach = float((circle_pts.max(axis=0) - circle_pts.min(axis=0)).max())  # a circle's width, with room to spare
+        for commitCircle, c in zip(drawn, centers):
+            if c[0] + reach < lx0 or c[0] - reach > lx1 or c[1] + reach < ly0 or c[1] - reach > ly1:
+                continue
             inter = m.Intersection(lineRect, commitCircle)
             if inter.has_points():
                 arrow = m.CurvedArrow(
@@ -778,6 +838,14 @@ class GitSimBaseCommand(m.MovingCameraScene):
         return commitId, circle, arrow, hide_refs
 
     def get_nonparent_branch_names(self):
+        # once per run and repository (some commands work in a clone)
+        cached = getattr(self, "_nonparent_branches", None)
+        if cached is not None and cached[0] == self.repo.git_dir:
+            return cached[1]
+        self._nonparent_branches = (self.repo.git_dir, self._nonparent_branch_names())
+        return self._nonparent_branches[1]
+
+    def _nonparent_branch_names(self):
         branches = [b for b in self.repo.heads if not b.name.startswith("remotes/")]
         if getattr(self, "all", False):
             # Like git log --all: remote-tracking branches are starting points
@@ -789,19 +857,21 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     if "HEAD" not in ref.name and ref.name not in seen:
                         branches.append(ref)
                         seen.add(ref.name)
-        exclude = []
-        for b1 in branches:
-            for b2 in branches:
-                if b1.name != b2.name:
-                    if b1.commit == b2.commit:
-                        # Two branches on one commit are each other's
-                        # ancestor; keep one of them (the first by name)
-                        # instead of dropping both.
-                        if b1.name > b2.name:
-                            exclude.append(b1.name)
-                    elif self.repo.is_ancestor(b1.commit, b2.commit):
-                        exclude.append(b1.name)
-        return [b for b in branches if b.name not in exclude]
+        # The tips that no other tip contains, in one call (git merge-base
+        # --independent), where comparing every pair took a merge-base walk
+        # each: minutes in a large history with a few dozen branches. Two
+        # branches on one commit keep one of them, the first by name.
+        by_tip = {}
+        for b in branches:
+            by_tip.setdefault(b.commit.hexsha, []).append(b.name)
+        if len(by_tip) > 1:
+            independent = set(self.repo.git.merge_base("--independent", *by_tip).split())
+        else:
+            independent = set(by_tip)
+        return [
+            b for b in branches
+            if b.commit.hexsha in independent and b.name == min(by_tip[b.commit.hexsha])
+        ]
 
     def build_commit_id_and_message(self, commit, i):
         hide_refs = False
@@ -913,44 +983,55 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 if x >= settings.max_branches_per_commit:
                     return
 
+    def tags_at(self, sha):
+        """The names of the tags on a commit. Read once for the whole run with
+        for-each-ref (annotated tags peeled to their commit): reading every
+        tag's object for every drawn commit took seconds per commit in a
+        repository with a thousand tags."""
+        if getattr(self, "_tags_by_commit", None) is None:
+            self._tags_by_commit = {}
+            listing = self.repo.git.for_each_ref(
+                "refs/tags", "--format=%(objectname) %(*objectname) %(refname:short)"
+            )
+            for line in listing.splitlines():
+                obj, peeled, name = line.split(" ", 2)
+                self._tags_by_commit.setdefault(peeled or obj, []).append(name)
+        return self._tags_by_commit.get(sha, [])
+
     def draw_tag(self, commit, i):
         x = 0
 
-        for tag in self.repo.tags:
-            try:
-                if commit.hexsha == tag.commit.hexsha:
-                    tagRec, tagText = self.ref_pill(tag.name, self.theme.tag)
+        for name in self.tags_at(commit.hexsha):
+            tagRec, tagText = self.ref_pill(name, self.theme.tag)
 
-                    tagRec.next_to(self.prevRef, m.UP)
-                    self.center_label(tagText, tagRec)
+            tagRec.next_to(self.prevRef, m.UP)
+            self.center_label(tagText, tagRec)
 
-                    fulltag = m.VGroup(tagRec, tagText)
-                    self.tag(
-                        fulltag, role="ref", name=tag.name, kind="tag", phase="before"
-                    )
+            fulltag = m.VGroup(tagRec, tagText)
+            self.tag(
+                fulltag, role="ref", name=name, kind="tag", phase="before"
+            )
 
-                    self.prevRef = fulltag
+            self.prevRef = fulltag
 
-                    if settings.animate:
-                        self.play(
-                            m.Create(fulltag),
-                            run_time=1 / settings.speed,
-                        )
-                    else:
-                        self.add(fulltag)
+            if settings.animate:
+                self.play(
+                    m.Create(fulltag),
+                    run_time=1 / settings.speed,
+                )
+            else:
+                self.add(fulltag)
 
-                    self.toFadeOut.add(fulltag)
-                    self.drawnRefs[tag.name] = fulltag
-                    self.add_ref_to_drawn_refs_by_commit(commit.hexsha, fulltag)
+            self.toFadeOut.add(fulltag)
+            self.drawnRefs[name] = fulltag
+            self.add_ref_to_drawn_refs_by_commit(commit.hexsha, fulltag)
 
-                    if i == 0 and self.first_parse:
-                        self.topref = self.prevRef
+            if i == 0 and self.first_parse:
+                self.topref = self.prevRef
 
-                    x += 1
-                    if x >= settings.max_tags_per_commit:
-                        return
-            except ValueError:
-                pass
+            x += 1
+            if x >= settings.max_tags_per_commit:
+                return
 
     def grow_arrow(self, arrow, **kwargs):
         """Animated output: draw an arrow with its head riding the line."""

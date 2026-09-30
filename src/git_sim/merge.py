@@ -13,15 +13,27 @@ from git_sim.settings import settings
 
 
 class Merge(GitSimBaseCommand):
-    def __init__(self, branch: str, no_ff: bool, message: str, squash: bool = False):
+    def __init__(
+        self,
+        branch: str,
+        no_ff: bool,
+        message: str = None,
+        squash: bool = False,
+        ff_only: bool = False,
+        allow_unrelated_histories: bool = False,
+    ):
         super().__init__()
         self.branch = branch
         self.no_ff = no_ff
-        self.message = message
         self.squash = squash
+        self.ff_only = ff_only
+        self.allow_unrelated = allow_unrelated_histories
         self.conflicted_files = []
         if squash and no_ff:
             print("git-sim error: You cannot combine --squash with --no-ff.")
+            sys.exit(1)
+        if ff_only and no_ff:
+            print("git-sim error: You cannot combine --no-ff with --ff-only.")
             sys.exit(1)
 
         try:
@@ -34,6 +46,8 @@ class Merge(GitSimBaseCommand):
             )
             sys.exit(1)
 
+        self.message = message or self.default_message()
+
         self.ff = False
         if self.branch in [branch.name for branch in self.repo.heads]:
             self.selected_branches.append(self.branch)
@@ -43,16 +57,41 @@ class Merge(GitSimBaseCommand):
         except TypeError:
             pass
 
-        flag = " --squash" if self.squash else (" --no-ff" if self.no_ff else "")
+        flag = " --squash" if self.squash else (" --no-ff" if self.no_ff else (" --ff-only" if self.ff_only else ""))
+        if self.allow_unrelated:
+            flag += " --allow-unrelated-histories"
         self.cmd += f"{type(self).__name__.lower()}{flag} {self.branch}"
 
+    def default_message(self):
+        """The message git itself writes for this merge (git fmt-merge-msg):
+        Merge branch / remote-tracking branch / tag / commit '<name>', and
+        ' into <branch>' unless the merge lands on main or master."""
+        name = self.branch
+        if name in [h.name for h in self.repo.heads]:
+            kind = "branch"
+        elif name in self.get_remote_tracking_branches():
+            kind = "remote-tracking branch"
+        elif name in [t.name for t in self.repo.tags]:
+            kind = "tag"
+        elif name.endswith("~0") and name[:-2] in [h.name for h in self.repo.heads]:
+            kind, name = "branch", name[:-2]
+        else:
+            kind = "commit"
+        message = f"Merge {kind} '{name}'"
+        try:
+            into = self.repo.active_branch.name
+        except TypeError:
+            into = None
+        if into and into not in ("main", "master"):
+            message += f" into {into}"
+        return message
+
     def construct(self):
+        new_dir = None
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(f"{settings.INFO_STRING} {self.cmd}")
 
-        if self.repo.active_branch.name in self.repo.git.branch(
-            "--contains", self.branch
-        ):
+        if self.in_history(self.branch, "HEAD"):
             print(
                 "git-sim error: Branch '"
                 + self.branch
@@ -62,21 +101,37 @@ class Merge(GitSimBaseCommand):
             )
             sys.exit(1)
 
-        self.show_intro()
         head_commit = self.get_commit()
         branch_commit = self.get_commit(self.branch)
+        # No commit in common: git refuses unless told otherwise.
+        if not self.allow_unrelated and not self.repo.merge_base(head_commit, branch_commit):
+            print(
+                "git-sim error: refusing to merge unrelated histories: '"
+                + self.branch
+                + "' shares no commit with '"
+                + self.repo.active_branch.name
+                + "'. git refuses too; git merge --allow-unrelated-histories merges them anyway."
+            )
+            sys.exit(1)
+
+        # --ff-only: git merges only when it can fast-forward.
+        if self.ff_only and not self.squash and not self.in_history("HEAD", self.branch):
+            print(
+                "git-sim error: Not possible to fast-forward: '"
+                + self.repo.active_branch.name
+                + "' and '"
+                + self.branch
+                + "' have diverged, so git merge --ff-only refuses. Merge without --ff-only, or rebase first."
+            )
+            sys.exit(1)
+
+        self.show_intro()
         if self.squash:
             self.construct_squash(head_commit, branch_commit)
             return
 
-        if self.branch not in self.get_remote_tracking_branches():
-            if self.branch in self.repo.git.branch("--contains", head_commit.hexsha):
-                self.ff = True
-        else:
-            if self.branch in self.repo.git.branch(
-                "-r", "--contains", head_commit.hexsha
-            ):
-                self.ff = True
+        if self.in_history(head_commit, branch_commit):
+            self.ff = True
 
         if self.ff:
             self.parse_commits(branch_commit)
@@ -185,11 +240,9 @@ class Merge(GitSimBaseCommand):
         # Unlink the program from the filesystem
         self.repo.git.clear_cache()
 
-        # Delete the local clone
-        try:
-            shutil.rmtree(new_dir, onerror=self.del_rw)
-        except (FileNotFoundError, UnboundLocalError):
-            pass
+        # Delete the throwaway clone, if an older git needed one
+        if new_dir:
+            shutil.rmtree(new_dir, ignore_errors=True)
 
     def construct_squash(self, head_commit, branch_commit):
         """git merge --squash: the branch's changes since it split off are
@@ -245,37 +298,56 @@ class Merge(GitSimBaseCommand):
         self.fadeout()
         self.show_outro()
         self.repo.git.clear_cache()
-        try:
-            shutil.rmtree(new_dir, onerror=self.del_rw)
-        except (FileNotFoundError, UnboundLocalError, TypeError):
-            pass
+        if new_dir:
+            shutil.rmtree(new_dir, ignore_errors=True)
 
     def check_merge_conflict(self, branch1, branch2, squash=False):
-        git_root = self.repo.git.rev_parse("--show-toplevel")
-        repo_name = os.path.basename(self.repo.working_dir)
-        new_dir = os.path.join(tempfile.gettempdir(), "git_sim", repo_name)
+        """Whether merging branch2 into branch1 conflicts, and in which files.
+        Returns (conflicted, None). A squash conflicts exactly when the merge
+        would, so the same check serves both.
 
-        orig_repo = self.repo
-        orig_remotes = self.repo.remotes
-        self.repo = git.Repo.clone_from(git_root, new_dir, no_hardlinks=True)
-        self.repo.git.checkout(branch2)
-        self.repo.git.checkout(branch1)
+        git merge-tree --write-tree (git 2.38+) does the whole merge in memory,
+        in this repository, touching no working tree or ref. Older git gets a
+        throwaway clone to merge in instead."""
+        ours = self.repo.git.rev_parse(branch1 + "^{commit}")
+        theirs = self.repo.git.rev_parse(branch2 + "^{commit}")
+        args = ["--write-tree", "--name-only", "--no-messages"]
+        if self.allow_unrelated:
+            args.append("--allow-unrelated-histories")
+        status, out, err = self.repo.git.execute(
+            ["git", "merge-tree", *args, ours, theirs], with_extended_output=True, with_exceptions=False
+        )
+        if status == 0:
+            return 0, None
+        lines = [line.strip() for line in out.splitlines() if line.strip()]
+        if status == 1 and lines:
+            # the merged tree's id, then one conflicted path per line
+            self.conflicted_files = list(dict.fromkeys(lines[1:]))
+            self.n = 5
+            return 1, None
+        # a git without merge-tree --write-tree answers with its usage
+        return self._check_merge_conflict_in_clone(ours, theirs, squash)
 
+    def _check_merge_conflict_in_clone(self, ours, theirs, squash):
+        """For git older than 2.38: merge in a throwaway clone, by commit id
+        (a remote-tracking branch has no local name there)."""
+        new_dir = tempfile.mkdtemp(prefix="git_sim_merge_")
+        clone = git.Repo.clone_from(self.repo.git.rev_parse("--show-toplevel"), new_dir, shared=True, no_checkout=True)
         try:
-            if squash:
-                self.repo.git.merge("--squash", branch2)
-            else:
-                self.repo.git.merge(branch2)
-        except git.GitCommandError as e:
-            if "CONFLICT" in e.stdout:
-                self.conflicted_files = []
-                self.n = 5
-                for entry in self.repo.index.entries:
-                    if len(entry) == 2 and entry[1] > 0:
-                        self.conflicted_files.append(entry[0])
-            return 1, new_dir
-        self.repo = orig_repo
-        return 0, new_dir
+            clone.git.checkout("--detach", ours)
+            try:
+                clone.git.merge("--squash" if squash else "--no-edit", theirs)
+            except git.GitCommandError as e:
+                if "CONFLICT" in (e.stdout or ""):
+                    self.conflicted_files = []
+                    self.n = 5
+                    for entry in clone.index.entries:
+                        if len(entry) == 2 and entry[1] > 0 and entry[0] not in self.conflicted_files:
+                            self.conflicted_files.append(entry[0])
+                return 1, new_dir
+            return 0, new_dir
+        finally:
+            clone.git.clear_cache()
 
     # Override to display conflicted filenames
     def populate_zones(

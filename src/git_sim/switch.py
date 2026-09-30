@@ -54,22 +54,11 @@ class Switch(GitSimBaseCommand):
             self.is_descendant = False
 
             # branch being switched to is behind HEAD
-            branch_names = self.repo.git.branch("--contains", self.branch)
-            branch_names = branch_names.split("\n")
-            for i, bn in enumerate(branch_names):
-                branch_names[i] = bn.strip("*").strip()
-            # a detached HEAD is listed as "(HEAD detached at ...)", which is not a branch
-            branch_names = [bn for bn in branch_names if bn and not bn.startswith("(")]
-            branch_hexshas = [
-                self.repo.branches[branch].commit.hexsha for branch in branch_names
-            ]
-            if self.repo.head.commit.hexsha in branch_hexshas:
+            if self.in_history(self.branch, "HEAD"):
                 self.is_ancestor = True
 
             # HEAD is behind branch being switched to
-            elif self.branch in self.repo.git.branch(
-                "--contains", self.repo.head.commit.hexsha
-            ):
+            elif self.in_history("HEAD", self.branch):
                 self.is_descendant = True
 
         if self.branch in [branch.name for branch in self.repo.heads]:

@@ -42,20 +42,10 @@
    "phase": "before",
    "recolored": false,
    "step": 0
-  },
-  "Merge branch 'branch1'": {
-   "kind": "commit",
-   "parents": [
-    "Dummy commit #3 on main",
-    "Dummy commit #5 on branch1"
-   ],
-   "phase": "after",
-   "recolored": false,
-   "step": 1
   }
  },
  "edges": {
-  "after": 4,
+  "after": 0,
   "before": 8,
   "origin": 0,
   "removed": 0
@@ -82,6 +72,6 @@
    "phase": "before"
   }
  },
- "steps": 2,
- "title": "git merge --no-ff branch1"
+ "steps": 1,
+ "title": "git merge --ff-only branch1"
 }

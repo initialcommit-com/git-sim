@@ -50,6 +50,13 @@ class Log(GitSimBaseCommand):
         self.parse_all()
         self.recenter_frame()
         self.scale_frame()
+        if getattr(self, "capped", False):
+            self.add_notes(
+                [
+                    f"Only the first {len(self.drawnCommits)} commits are drawn: this history merges too often to show "
+                    f"everything within -n {self.n}. --hide-merged-branches draws the main line alone.",
+                ]
+            )
         self.color_by()
         self.show_command_as_title()
         self.fadeout()

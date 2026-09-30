@@ -55,9 +55,7 @@ class CherryPick(GitSimBaseCommand):
             print(f"{settings.INFO_STRING} {self.cmd}")
 
         for pick in self.picks:
-            if self.repo.active_branch.name in self.repo.git.branch(
-                "--contains", pick.hexsha
-            ):
+            if self.in_history(pick, "HEAD"):
                 print(
                     "git-sim error: Commit '"
                     + pick.hexsha[:6]

@@ -105,7 +105,7 @@ class Fetch(GitSimBaseCommand):
         for r1 in orig_remotes:
             for r2 in self.repo.remotes:
                 if r1.name == r2.name:
-                    r2.set_url(r1.url)
+                    r2.set_url(self.remote_url(r1))
         self.mirror_refs(user_refs)
 
         try:
@@ -122,14 +122,10 @@ class Fetch(GitSimBaseCommand):
         if self.branch not in self.repo.heads:
             start_parse_from_remote = True
         # fetched branch is ahead of local branch
-        elif (self.remote + "/" + self.branch) in self.repo.git.branch(
-            "-r", "--contains", self.branch
-        ):
+        elif self.in_history(self.branch, self.remote + "/" + self.branch):
             start_parse_from_remote = True
         # fetched branch is behind local branch
-        elif self.branch in self.repo.git.branch(
-            "--contains", (self.remote + "/" + self.branch)
-        ):
+        elif self.in_history(self.remote + "/" + self.branch, self.branch):
             start_parse_from_remote = False
         else:
             start_parse_from_remote = True

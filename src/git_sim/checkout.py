@@ -42,14 +42,10 @@ class Checkout(GitSimBaseCommand):
             self.is_descendant = False
 
             # branch being checked out is behind HEAD
-            if self.repo.active_branch.name in self.repo.git.branch(
-                "--contains", self.branch
-            ):
+            if self.in_history(self.branch, "HEAD"):
                 self.is_ancestor = True
             # HEAD is behind branch being checked out
-            elif self.branch in self.repo.git.branch(
-                "--contains", self.repo.active_branch.name
-            ):
+            elif self.in_history("HEAD", self.branch):
                 self.is_descendant = True
 
         if self.branch in [branch.name for branch in self.repo.heads]:

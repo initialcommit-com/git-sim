@@ -316,7 +316,9 @@ def roots(n):
 
 def message_among_new(text):
     def check(m, repo):
-        assert any(c["message"] == text for c in commits_by_phase(m, "after").values()), f"no simulated commit with message {text!r}"
+        drawn = [c["message"] for c in commits_by_phase(m, "after").values()]
+        # the drawing keeps the first 40 characters of a message
+        assert any(d == text or (len(d) >= 40 and text.startswith(d)) for d in drawn), f"no simulated commit with message {text!r}; drew {drawn}"
     return check
 
 
@@ -508,6 +510,14 @@ CASES: List[Case] = [
     Case("merge-continue", "merging-resolved", ["merge", "--continue"], merge_committed),
     Case("merge-continue-unresolved", "merging", ["merge", "--continue"], error="still have conflicts"),
     Case("merge-abort-none", "history", ["merge", "--abort"], error="no merge in progress"),
+    Case("merge-default-message", "classic", ["merge", "branch2"], message_among_new("Merge branch 'branch2'")),
+    Case("merge-ff-only", "ff", ["merge", "--ff-only", "branch1"], merge_of("branch1")),
+    Case("merge-ff-only-diverged", "classic", ["merge", "--ff-only", "branch2"], error="Not possible to fast-forward"),
+    Case("merge-ff-only-no-ff", "ff", ["merge", "--ff-only", "--no-ff", "branch1"], error="cannot combine"),
+    Case("merge-unrelated", "orphan", ["merge", "gh-pages"], error="refusing to merge unrelated histories"),
+    Case("merge-allow-unrelated", "orphan", ["merge", "--allow-unrelated-histories", "gh-pages"], merge_of("gh-pages")),
+    # a remote-tracking branch that has diverged: merged (conflict check included) and rebased onto
+    Case("merge-remote-tracking", "diverged-fetched", ["merge", "origin/main"], all_of(merge_of("origin/main"), message_among_new("Merge remote-tracking branch 'origin/main'"))),
     # mv
     Case("mv", "history", ["mv", "config.yaml", "settings.yaml"], all_of(title("git mv"), lambda m, r: any(f["name"] == "settings.yaml" for f in m["files"]) and any(f["name"] == "config.yaml" for f in m["files"]))),
     Case("mv-missing", "history", ["mv", "nope.txt", "x.txt"], error="git-sim error"),
@@ -538,7 +548,8 @@ CASES: List[Case] = [
     Case("rebase-interactive", "rebase-ready", ["rebase", "-i", "main"], all_of(rebase_onto("main"), lambda m, r: m["steps"] >= 2)),
     Case("rebase-onto", "classic", ["rebase", "branch3", "--onto", "branch2"], lambda m, r: len(commits_by_phase(m, "after")) == min(o.count(r, "branch3..main"), N_DEFAULT)),
     Case("rebase-todo", "rebase-ready", ["rebase", "-i", "main", "--todo", "{todo}"], after_commits(1)),
-    Case("rebase-already", "classic", ["rebase", "branch1"], error="git-sim error"),
+    Case("rebase-already", "classic", ["rebase", "branch1"], error="is up to date"),
+    Case("rebase-remote-tracking", "diverged-fetched", ["rebase", "origin/main"], rebase_onto("origin/main")),
     Case("rebase-missing", "classic", ["rebase", "nope"], error="git-sim error"),
     Case("rebase-abort", "rebasing", ["rebase", "--abort"], all_of(title("git rebase --abort"), texts("Calls off the rebase"), relabelled("HEAD"))),
     Case("rebase-continue", "rebasing-resolved", ["rebase", "--continue"], all_of(texts("the rebase is done"), after_commits(1))),

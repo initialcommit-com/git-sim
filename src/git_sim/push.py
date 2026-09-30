@@ -104,7 +104,7 @@ class Push(GitSimBaseCommand):
 
         # Create local clone of local repo
         self.repo = git.Repo.clone_from(git_root, new_dir, no_hardlinks=True)
-        remote_url = next(r.url for r in orig_remotes if r.name == remote_name)
+        remote_url = next(self.remote_url(r) for r in orig_remotes if r.name == remote_name)
 
         # Create local clone of remote repo to simulate push to so we don't touch the real remote
         self.remote_repo = git.Repo.clone_from(

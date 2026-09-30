@@ -57,6 +57,8 @@ SHAPES: Dict[str, tuple] = {
     "ahead": (dict(scenario="ahead-of-remote", seed=5), []),
     "behind": (dict(scenario="behind-remote", seed=6), []),
     "diverged": (dict(scenario="diverged-remote", seed=7), []),
+    # fetched, so the local origin/main has really diverged from main (merge/rebase onto a remote-tracking branch)
+    "diverged-fetched": (dict(scenario="diverged-remote", seed=7), ["fetch -q origin"]),
     "detached": (dict(scenario="detached-head", seed=8), []),
     "release": (dict(scenario="release", seed=9), []),
     "orphan": (dict(scenario="orphan", seed=10), []),

@@ -27,7 +27,7 @@
    "recolored": false,
    "step": 0
   },
-  "Merge commit": {
+  "Merge branch 'feature/pagination'": {
    "kind": "merge",
    "parents": [
     "Merge feature/pagination into main",

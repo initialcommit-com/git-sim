@@ -277,15 +277,25 @@ def merge(
         help="Simulate creation of a merge commit in all cases, even when the merge could instead be resolved as a fast-forward",
     ),
     message: str = typer.Option(
-        "Merge commit",
+        None,
         "--message",
         "-m",
-        help="The commit message of the new merge commit",
+        help="The commit message of the new merge commit (default: the one git writes, e.g. Merge branch 'feature')",
     ),
     squash: bool = typer.Option(
         False,
         "--squash",
         help="Stage the branch's changes as one set, without committing or recording a merge",
+    ),
+    ff_only: bool = typer.Option(
+        False,
+        "--ff-only",
+        help="Merge only if it can fast-forward; git refuses otherwise",
+    ),
+    allow_unrelated_histories: bool = typer.Option(
+        False,
+        "--allow-unrelated-histories",
+        help="Merge a branch that shares no commit with this one (git refuses without it)",
     ),
     cont: bool = typer.Option(
         False, "--continue", help="After resolving a conflict: carry on with the merge in progress"
@@ -294,12 +304,19 @@ def merge(
         False, "--abort", help="Call off the merge in progress and go back to where it started"
     ),
 ):
-    if _resume("merge", cont, abort, False, branch, no_ff, squash):
+    if _resume("merge", cont, abort, False, branch, no_ff, squash, ff_only, allow_unrelated_histories):
         return
     _need(branch, "name the branch to merge")
     from git_sim.merge import Merge
 
-    scene = Merge(branch=branch, no_ff=no_ff, message=message, squash=squash)
+    scene = Merge(
+        branch=branch,
+        no_ff=no_ff,
+        message=message,
+        squash=squash,
+        ff_only=ff_only,
+        allow_unrelated_histories=allow_unrelated_histories,
+    )
     handle_animations(scene=scene)
 
 

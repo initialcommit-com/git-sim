@@ -542,6 +542,14 @@ def _point_in_polygon(point, poly):
 def _polygons_intersect(a, b):
     if len(a) == 0 or len(b) == 0:
         return False
+    # Shapes whose bounding boxes don't overlap cannot intersect. Drawing a
+    # graph asks this for every arrow against every commit, and almost every
+    # pair is far apart, so the exact test below only runs for near neighbours.
+    a2, b2 = np.asarray(a)[:, :2], np.asarray(b)[:, :2]
+    (ax0, ay0), (ax1, ay1) = a2.min(axis=0), a2.max(axis=0)
+    (bx0, by0), (bx1, by1) = b2.min(axis=0), b2.max(axis=0)
+    if ax1 < bx0 or bx1 < ax0 or ay1 < by0 or by1 < ay0:
+        return False
     if any(_point_in_polygon(p, b) for p in a) or any(
         _point_in_polygon(p, a) for p in b
     ):

@@ -78,7 +78,7 @@ class Pull(GitSimBaseCommand):
         for r1 in orig_remotes:
             for r2 in self.repo.remotes:
                 if r1.name == r2.name:
-                    r2.set_url(r1.url)
+                    r2.set_url(self.remote_url(r1))
 
         if self.rebase:
             # The clone's remote-tracking refs start out as this repository's
@@ -112,7 +112,8 @@ class Pull(GitSimBaseCommand):
                 settings.hide_merged_branches = True
 
                 # Get list of conflicted filenames
-                self.conflicted_files = re.findall(r"Merge conflict in (.+)", e.stdout)
+                # (GitPython quotes the output, so the last name would carry the closing quote)
+                self.conflicted_files = list(dict.fromkeys(name.strip().rstrip("'").strip() for name in re.findall(r"Merge conflict in (.+)", e.stdout)))
                 if self.rebase:
                     self.add_notes(
                         [

@@ -3,22 +3,13 @@
   "Add a health check": {
    "kind": "commit",
    "parents": [
-    "?"
+    "Export orders as CSV"
    ],
    "phase": "before",
    "recolored": false,
    "step": 0
   },
-  "Bump flask": {
-   "kind": "commit",
-   "parents": [
-    "Cover pagination in the tests"
-   ],
-   "phase": "before",
-   "recolored": false,
-   "step": 0
-  },
-  "Cover pagination in the tests": {
+  "Add currency to totals": {
    "kind": "commit",
    "parents": [
     "Retry failed database connections"
@@ -27,38 +18,29 @@
    "recolored": false,
    "step": 0
   },
-  "Finish pagination": {
+  "Export orders as CSV": {
    "kind": "commit",
    "parents": [
-    "Polish pagination"
+    "Refactor Order into a dataclass"
    ],
    "phase": "before",
    "recolored": false,
    "step": 0
   },
-  "Handle missing config values": {
-   "kind": "commit",
-   "parents": [
-    "Add a health check"
-   ],
-   "phase": "before",
-   "recolored": false,
-   "step": 0
-  },
-  "Merge branch 'main' into feature/paginat": {
+  "Merge remote-tracking branch 'origin/mai": {
    "kind": "merge",
    "parents": [
-    "Bump flask",
-    "Finish pagination"
+    "Add a health check",
+    "Update the changelog (2)"
    ],
    "phase": "after",
    "recolored": false,
    "step": 1
   },
-  "Polish pagination": {
+  "Refactor Order into a dataclass": {
    "kind": "commit",
    "parents": [
-    "Retry failed database connections"
+    "Add currency to totals"
    ],
    "phase": "before",
    "recolored": false,
@@ -67,7 +49,25 @@
   "Retry failed database connections": {
    "kind": "commit",
    "parents": [
-    "Handle missing config values"
+    "?"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Update the changelog (1)": {
+   "kind": "commit",
+   "parents": [
+    "Export orders as CSV"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Update the changelog (2)": {
+   "kind": "commit",
+   "parents": [
+    "Update the changelog (1)"
    ],
    "phase": "before",
    "recolored": false,
@@ -89,19 +89,19 @@
    "moved": true,
    "phase": "before"
   },
-  "feature/pagination": {
+  "main": {
    "count": 2,
    "kind": "branch",
    "moved": true,
    "phase": "before"
   },
-  "main": {
+  "origin/main": {
    "count": 2,
-   "kind": "branch",
+   "kind": "remote",
    "moved": false,
    "phase": "before"
   }
  },
  "steps": 2,
- "title": "git merge main"
+ "title": "git merge origin/main"
 }

@@ -73,32 +73,26 @@ class Rebase(GitSimBaseCommand):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(f"{settings.INFO_STRING} {self.cmd}")
 
-        if self.branch in self.repo.git.branch(
-            "--contains", self.repo.active_branch.name
-        ):
+        # `rebase -i <ancestor>` is how history gets rewritten in place, and
+        # --onto moves commits somewhere else entirely, so the "up to date"
+        # check only applies to the plain form. It comes first: a branch at
+        # the same commit as the upstream is up to date, as git says.
+        if not self.onto and not self.interactive and self.in_history(self.branch, "HEAD"):
             print(
-                "git-sim error: Branch '"
+                "git-sim error: Current branch '"
                 + self.repo.active_branch.name
-                + "' is already included in the history of active branch '"
+                + "' is up to date: it already has everything on '"
                 + self.branch
-                + "'."
+                + "', so there is nothing to rebase."
             )
             sys.exit(1)
 
-        # `rebase -i <ancestor>` is how history gets rewritten in place, and
-        # --onto moves commits somewhere else entirely, so the "already based
-        # on" check only applies to the plain form.
-        if (
-            not self.onto
-            and not self.interactive
-            and self.repo.active_branch.name
-            in self.repo.git.branch("--contains", self.branch)
-        ):
+        if self.in_history("HEAD", self.branch):
             print(
                 "git-sim error: Branch '"
-                + self.branch
-                + "' is already based on active branch '"
                 + self.repo.active_branch.name
+                + "' is already included in the history of '"
+                + self.branch
                 + "'."
             )
             sys.exit(1)
@@ -114,9 +108,7 @@ class Rebase(GitSimBaseCommand):
 
         reached_base = False
         for commit in self.get_default_commits():
-            if commit != "dark" and self.branch in self.repo.git.branch(
-                "--contains", commit
-            ):
+            if commit != "dark" and self.in_history(commit, self.branch):
                 reached_base = True
 
         self.parse_commits(head_commit, shift=4 * m.DOWN)
@@ -126,7 +118,7 @@ class Rebase(GitSimBaseCommand):
         to_rebase = []
         i = 0
         current = head_commit
-        while self.branch not in self.repo.git.branch("--contains", current):
+        while not self.in_history(current, self.branch):
             to_rebase.append(current)
             i += 1
             if i >= self.n:
