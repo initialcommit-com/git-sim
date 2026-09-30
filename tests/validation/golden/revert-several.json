@@ -1,0 +1,98 @@
+{
+ "commits": {
+  "Dummy commit #10 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #9 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #7 on main": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 0
+  },
+  "Dummy commit #8 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #7 on main"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Dummy commit #9 on main": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #8 on main"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 0
+  },
+  "Revert 3ba4cb": {
+   "kind": "commit",
+   "parents": [
+    "Dummy commit #10 on main"
+   ],
+   "phase": "after",
+   "recolored": false,
+   "step": 1
+  },
+  "Revert a537c1": {
+   "kind": "commit",
+   "parents": [
+    "Revert 3ba4cb"
+   ],
+   "phase": "after",
+   "recolored": false,
+   "step": 3
+  }
+ },
+ "edges": {
+  "after": 4,
+  "before": 6,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [
+  {
+   "column": "Changes reverted from",
+   "moved": false,
+   "name": "main.7",
+   "phase": "before"
+  },
+  {
+   "column": "Changes reverted from",
+   "moved": false,
+   "name": "main.9",
+   "phase": "before"
+  }
+ ],
+ "notes": [
+  "The 2 reverted commits are marked; they stay in the history.",
+  "2 new commits, one per reverted commit, in the order git makes them."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": true,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": true,
+   "phase": "before"
+  }
+ },
+ "steps": 5,
+ "title": "git revert HEAD~1 HEAD~3"
+}

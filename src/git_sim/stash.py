@@ -25,6 +25,8 @@ class Stash(GitSimBaseCommand):
         stash_index: int,
         include_untracked: bool = False,
         message: str = None,
+        patch: bool = False,
+        branch: str = None,
     ):
         super().__init__()
         self.files = files or []  # newer typer passes None for an omitted list
@@ -32,8 +34,13 @@ class Stash(GitSimBaseCommand):
         self.command = command
         self.include_untracked = include_untracked
         self.message = message
+        self.patch = patch
+        self.branch = branch
         if (include_untracked or message is not None) and command not in (StashSubCommand.PUSH, None):
             print("git-sim error: -u and -m apply to stash push only")
+            sys.exit(1)
+        if patch and command != StashSubCommand.SHOW:
+            print("git-sim error: -p applies to stash show only")
             sys.exit(1)
         settings.hide_merged_branches = True
         self.n = self.n_default
@@ -60,6 +67,24 @@ class Stash(GitSimBaseCommand):
                 print(
                     f"git-sim error: No stash entry with index {self.stash_index} exists in stash"
                 )
+                sys.exit(1)
+        elif self.command == StashSubCommand.BRANCH:
+            if not self.entries:
+                print("git-sim error: the stash list is empty")
+                sys.exit(1)
+            if self.stash_index >= len(self.entries):
+                print(f"git-sim error: No stash entry with index {self.stash_index} exists in stash")
+                sys.exit(1)
+            if not self.branch:
+                print("git-sim error: git stash branch needs the new branch's name")
+                sys.exit(1)
+            if self.branch in [b.name for b in self.repo.heads]:
+                print(f"git-sim error: a branch named '{self.branch}' already exists")
+                sys.exit(1)
+            try:
+                self.repo.git.check_ref_format("--branch", self.branch)
+            except Exception:
+                print(f"git-sim error: '{self.branch}' is not a valid branch name")
                 sys.exit(1)
         elif self.command in [StashSubCommand.PUSH, None]:
             changed = [x.a_path for x in self.repo.index.diff(None)] + [
@@ -90,7 +115,11 @@ class Stash(GitSimBaseCommand):
                     "Files are not required in apply/pop subcommand. Ignoring the file list..."
                 )
 
-        if self.command in (StashSubCommand.DROP, StashSubCommand.SHOW):
+        if self.command == StashSubCommand.SHOW:
+            self.cmd += f"stash show{' -p' if self.patch else ''} stash@{{{self.stash_index}}}"
+        elif self.command == StashSubCommand.BRANCH:
+            self.cmd += f"stash branch {self.branch} stash@{{{self.stash_index}}}"
+        elif self.command == StashSubCommand.DROP:
             self.cmd += f"stash {self.command.value} stash@{{{self.stash_index}}}"
         elif self.command in (StashSubCommand.CLEAR, StashSubCommand.LIST):
             self.cmd += f"stash {self.command.value}"
@@ -109,6 +138,12 @@ class Stash(GitSimBaseCommand):
         self.show_intro()
         if self.command in LIST_COMMANDS:
             self.construct_entries()
+            self.show_command_as_title()
+            self.fadeout()
+            self.show_outro()
+            return
+        if self.command == StashSubCommand.BRANCH:
+            self.construct_branch()
             self.show_command_as_title()
             self.fadeout()
             self.show_outro()
@@ -152,6 +187,75 @@ class Stash(GitSimBaseCommand):
             notes.append(f"{len(left)} untracked file(s) stay in the working directory: git stash -u stashes them too.")
         return notes
 
+    # -- branch: the entry comes back on a branch of its own ------------------------
+    def entry_commit(self):
+        return self.repo.commit(self.repo.git.rev_parse(f"stash@{{{self.stash_index}}}"))
+
+    def construct_branch(self):
+        """git stash branch: a new branch starts at the commit the entry was
+        made on and HEAD moves to it, then the entry is applied there (what
+        was staged is staged again) and dropped. Applied where it was made,
+        it can't conflict, which is what the command is for."""
+        entry = self.entry_commit()
+        base = entry.parents[0]
+        head = self.repo.head.commit if self.head_exists() else None
+        self.widen_window_for([base.hexsha])
+        self.parse_commits()
+        self.ensure_drawn(base)
+        # Interactive page: the branch appears and HEAD moves onto it, then
+        # the entry's files come back and the entry is dropped.
+        self.current_step = self.move_step = 1
+        if base.hexsha in self.drawnCommits:
+            if head is None or base.hexsha != head.hexsha:
+                self.reset_head(base.hexsha)
+            self.draw_ref(
+                base,
+                self.stack_top(base.hexsha),
+                text=self.branch,
+                color=self.theme.branch,
+                kind="branch",
+                phase="after",
+            )
+        self.recenter_frame()
+        self.scale_frame()
+        self.vsplit_frame()
+        self.current_step = 2
+        self.setup_and_draw_zones(
+            first_column_name="Stashed changes",
+            second_column_name="Working directory",
+            third_column_name="Staging area",
+        )
+        # the entry's plain names give way to struck ones as it is dropped
+        for mob in self.removed_mobjects:
+            meta = getattr(mob, "meta", None) or {}
+            if meta.get("role") == "file" and not meta.get("step"):
+                self.tag(mob, step=2)
+        n = len(self.entries)
+        notes = [
+            f"Creates branch {self.branch} at {base.hexsha[:7]}, the commit stash@{{{self.stash_index}}} was made on, and switches to it.",
+            f"Applies stash@{{{self.stash_index}}} there, its staged changes staged again, then drops it.",
+        ]
+        if self.stash_index < n - 1:
+            notes.append("The entries below it move up one number.")
+        self.add_notes(notes)
+        self.current_step = self.move_step = 0
+
+    def branch_files(self):
+        """The entry's files by where git stash branch puts them back: those
+        whose staged version it saved go to the staging area, the rest (and
+        untracked files saved with -u) to the working directory."""
+        entry = self.entry_commit()
+        base, index = entry.parents[0], entry.parents[1]
+
+        def changed(a, b):
+            return [f for f in self.repo.git.diff("--name-only", a, b).splitlines() if f]
+
+        staged = changed(base.hexsha, index.hexsha)
+        working = [f for f in changed(index.hexsha, entry.hexsha) if f not in staged]
+        if len(entry.parents) > 2:  # saved with -u: its untracked files
+            working += [f for f in self.repo.git.ls_tree("-r", "--name-only", entry.parents[2].hexsha).splitlines() if f]
+        return staged, working
+
     # -- list / show / drop / clear: the stash as a stack of entries ----------------
     MAX_DRAWN = 5  # entries drawn; the rest are counted in a row of their own
     ROW = 1.35  # distance between the entries' cards
@@ -189,7 +293,12 @@ class Stash(GitSimBaseCommand):
 
         caption = m.Text("newest first", font=self.font, font_size=16, color=self.mutedColor)
         caption.move_to((-width / 2 + caption.width / 2, 0.55 + 0.3, 0))
-        self.show_mobs([caption])
+        if clear:
+            # an empty stash has no order to speak of: the caption goes with the cards
+            self.tag(caption, phase="removed", step=1)
+            self.removed_mobjects.append(caption)
+        else:
+            self.show_mobs([caption])
 
         # each card's place after the command: a dropped card leaves a gap the rest close up
         for k, row in enumerate(built):
@@ -247,6 +356,18 @@ class Stash(GitSimBaseCommand):
                 if n == 1
                 else f"{n} stash entries: changes set aside, each with the commit it was made on."
             )
+        elif self.command == StashSubCommand.SHOW and self.patch:
+            from git_sim.panels import patch_card
+
+            entry = entries[target]
+            patch_card(
+                self,
+                f"Patch of stash@{{{target}}}",
+                self.repo.git.diff(f"{entry['sha']}^1", entry["sha"]),
+                subtitle=self.entry_title(entry["subject"]),
+                appear=True,
+            )
+            notes.append("git stash show -p prints the entry's changes line by line, against the commit it was made on.")
         elif self.command == StashSubCommand.SHOW:
             from git_sim.panels import diffstat_card
 
@@ -268,6 +389,10 @@ class Stash(GitSimBaseCommand):
         else:
             notes.append((f"All {n} stash entr{'y is' if n == 1 else 'ies are'} dropped.", self.theme.gold))
             notes.append("Only 'git fsck --unreachable' can find them afterwards.")
+        # show's card hangs below the cards: frame it (drawn compact, there
+        # are no notes to refit the frame after it)
+        self.recenter_frame()
+        self.scale_frame()
         self.add_notes(notes)
 
     def show_mobs(self, mobs):
@@ -350,8 +475,9 @@ class Stash(GitSimBaseCommand):
             cx -= c.width + 0.25
 
     def zone_struck(self, column, name):
-        # The left column holds what a pop consumes: the stashed files it takes back.
-        return column == 1 and self.command == StashSubCommand.POP
+        # The left column holds what a pop consumes: the stashed files it takes
+        # back (stash branch drops the entry too).
+        return column == 1 and self.command in (StashSubCommand.POP, StashSubCommand.BRANCH)
 
     def stashed_files(self, index):
         try:
@@ -376,6 +502,18 @@ class Stash(GitSimBaseCommand):
                 firstColumnFileNames.add(s)
                 secondColumnFileNames.add(s)
                 self.zone_arrows.append((s, 1, 2))
+            return
+
+        if self.command == StashSubCommand.BRANCH:
+            staged, working = self.branch_files()
+            for s in working:
+                firstColumnFileNames.add(s)
+                secondColumnFileNames.add(s)
+                self.zone_arrows.append((s, 1, 2))
+            for s in staged:  # past the working directory, into the staging area
+                firstColumnFileNames.add(s)
+                thirdColumnFileNames.add(s)
+                self.zone_arrows.append((s, 1, 3))
             return
 
         # push: modified and staged changes leave their columns for the stash

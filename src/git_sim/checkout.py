@@ -1,3 +1,4 @@
+import os
 import sys
 from argparse import Namespace
 
@@ -6,7 +7,62 @@ from git_sim.backend import m
 import numpy
 
 from git_sim.git_sim_base_command import GitSimBaseCommand
+from git_sim.restore import Restore
 from git_sim.settings import settings
+
+
+def split_checkout_args(args, after_dashes=None):
+    """git checkout's two forms, told apart the way git does: what follows
+    -- is a path; without a --, a single argument that names a revision is
+    a branch or commit to switch to (followed by paths, the files to take
+    from it), and anything else is a list of paths (git checkout file.txt,
+    git checkout .). ``after_dashes`` is how many of ``args`` came after a
+    --, or None when there was none.
+
+    Returns (revisions, paths): the words before the paths, and the paths."""
+    args = list(args or [])
+    if after_dashes is not None:
+        split = max(len(args) - after_dashes, 0)
+        return args[:split], args[split:]
+    if not args:
+        return [], []
+    try:
+        repo = git.Repo(search_parent_directories=True)
+    except git.InvalidGitRepositoryError:
+        return args[:1], args[1:]
+    try:
+        repo.commit(args[0])
+        return args[:1], args[1:]
+    except (git.BadName, ValueError, git.GitCommandError):
+        pass
+
+    def known_path(arg):
+        if os.path.exists(arg):
+            return True
+        try:
+            return bool(git.Git(os.getcwd()).ls_files("--", arg))
+        except git.GitCommandError:
+            return False
+
+    if all(known_path(a) for a in args):
+        return [], args
+    # neither a revision nor a file: reported as the revision it isn't
+    return args[:1], args[1:]
+
+
+def args_after_dashes(argv):
+    """How many command line words follow the first --, or None."""
+    return len(argv) - argv.index("--") - 1 if "--" in argv else None
+
+
+class CheckoutFiles(Restore):
+    """git checkout -- <paths>: the older spelling of git restore <paths>.
+    It discards the working directory's changes to the files, and is drawn
+    just as restore draws them, under its own command."""
+
+    def __init__(self, paths):
+        super().__init__(files=paths, staged=False)
+        self.cmd = f"git checkout -- {' '.join(self.pathspecs)}"
 
 
 class Checkout(GitSimBaseCommand):

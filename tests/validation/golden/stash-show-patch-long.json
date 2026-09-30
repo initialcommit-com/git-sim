@@ -1,0 +1,30 @@
+{
+ "commits": {},
+ "edges": {
+  "after": 0,
+  "before": 0,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [
+  {
+   "column": "Patch of stash@{0}",
+   "moved": false,
+   "name": "README.md",
+   "phase": "after"
+  }
+ ],
+ "notes": [
+  "git stash show -p prints the entry's changes line by line, against the commit it was made on."
+ ],
+ "refs": {
+  "stash@{0}": {
+   "count": 2,
+   "kind": "stash",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 1,
+ "title": "git stash show -p stash@{0}"
+}

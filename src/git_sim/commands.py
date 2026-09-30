@@ -65,8 +65,8 @@ def add(
 
 def branch(
     name: str = typer.Argument(
-        ...,
-        help="The branch to create, delete (-d/-D) or rename (-m)",
+        None,
+        help="The branch to create, delete (-d/-D), rename (-m) or set the upstream of (-u; default: the current branch). Without one, the branches are listed. With --merged/--no-merged: the commit to compare with",
     ),
     new_name: str = typer.Argument(
         default=None,
@@ -79,17 +79,62 @@ def branch(
         False, "-D", help="Force-delete the branch even if unmerged"
     ),
     m: bool = typer.Option(False, "-m", "--move", help="Rename the branch to NEW_NAME"),
+    all: bool = typer.Option(
+        False, "-a", "--all", help="List the remote-tracking branches too"
+    ),
+    verbose: int = typer.Option(
+        0,
+        "-v",
+        "--verbose",
+        count=True,
+        help="List each branch's last commit; twice (-vv) also its upstream and how far ahead or behind it is",
+    ),
+    merged: bool = typer.Option(
+        False,
+        "--merged",
+        help="List the branches whose tips are in the history of the commit given as NAME (default: HEAD)",
+    ),
+    no_merged: bool = typer.Option(
+        False,
+        "--no-merged",
+        help="List the branches whose tips are not in the history of the commit given as NAME (default: HEAD)",
+    ),
+    set_upstream_to: str = typer.Option(
+        None,
+        "-u",
+        "--set-upstream-to",
+        help="Set the upstream of the branch (default: the current one) to this remote-tracking or local branch",
+    ),
 ):
     from git_sim.branch import Branch
 
-    scene = Branch(name=name, new_name=new_name, delete=d, force_delete=D, move=m)
+    # git branch --merged [<commit>]: the commit is optional, so it arrives
+    # as the positional argument (typer options can't take an optional value)
+    commit = None
+    if merged or no_merged:
+        commit, name = name or "HEAD", None
+        if new_name:
+            print("git-sim error: --merged and --no-merged take at most one commit")
+            raise typer.Exit(1)
+    scene = Branch(
+        name=name,
+        new_name=new_name,
+        delete=d,
+        force_delete=D,
+        move=m,
+        all=all,
+        verbose=verbose,
+        merged=commit if merged else None,
+        no_merged=commit if no_merged else None,
+        set_upstream_to=set_upstream_to,
+    )
     handle_animations(scene=scene)
 
 
 def checkout(
-    branch: str = typer.Argument(
-        ...,
-        help="The name of the branch to checkout",
+    branch: List[str] = typer.Argument(
+        default=None,
+        help="The name of the branch to checkout, or after -- the files whose changes to discard (git checkout -- <paths>)",
     ),
     b: bool = typer.Option(
         False,
@@ -97,9 +142,33 @@ def checkout(
         help="Create the specified branch if it doesn't already exist",
     ),
 ):
-    from git_sim.checkout import Checkout
+    import sys
 
-    scene = Checkout(branch=branch, b=b)
+    from git_sim.checkout import Checkout, CheckoutFiles, args_after_dashes, split_checkout_args
+
+    # click drops the --, so it is looked for on the command line itself
+    after = args_after_dashes(sys.argv[1:]) if "checkout" in sys.argv else None
+    if b and after is None:  # -b names a new branch, which is no file
+        revisions, paths = list(branch or []), []
+    else:
+        revisions, paths = split_checkout_args(branch, after)
+    if paths:
+        if b:
+            print("git-sim error: -b creates a branch; it takes no paths")
+            raise typer.Exit(1)
+        if revisions:
+            print(
+                f"git-sim error: git checkout {revisions[0]} -- <paths> isn't simulated; "
+                f"git-sim restore --source {revisions[0]} <paths> draws the files arriving in the working directory"
+            )
+            raise typer.Exit(1)
+        scene = CheckoutFiles(paths=paths)
+    else:
+        _need(revisions, "name the branch to check out, or the files after --")
+        if len(revisions) > 1:
+            print("git-sim error: git checkout takes one branch or commit")
+            raise typer.Exit(1)
+        scene = Checkout(branch=revisions[0], b=b)
     handle_animations(scene=scene)
 
 
@@ -162,12 +231,24 @@ def clone(
     ),
     path: str = typer.Argument(
         default=".",
-        help="The web URL or filesystem path of the Git repo to clone",
+        help="The directory to clone into (default: one named after the repo)",
+    ),
+    depth: int = typer.Option(
+        None,
+        "--depth",
+        min=1,
+        help="Shallow clone: only the last DEPTH commits, the oldest cut off from its parents",
+    ),
+    branch: str = typer.Option(
+        None,
+        "--branch",
+        "-b",
+        help="Check out this branch (or tag) instead of the one the remote's HEAD points at",
     ),
 ):
     from git_sim.clone import Clone
 
-    scene = Clone(url=url, path=path)
+    scene = Clone(url=url, path=path, depth=depth, branch=branch)
     handle_animations(scene=scene)
 
 
@@ -207,6 +288,11 @@ def config(
         "--list",
         help="List existing local repo config settings",
     ),
+    glob: bool = typer.Option(
+        False,
+        "--global",
+        help="Read or write your own settings file (~/.gitconfig), used by every repository of yours",
+    ),
     settings: List[str] = typer.Argument(
         default=None,
         help="The names and values of one or more config settings to set",
@@ -214,7 +300,7 @@ def config(
 ):
     from git_sim.config import Config
 
-    scene = Config(l=l, settings=settings)
+    scene = Config(l=l, settings=settings, glob=glob)
     handle_animations(scene=scene)
 
 
@@ -233,10 +319,15 @@ def fetch(
         "-p",
         help="Remove remote-tracking branches whose branch is gone from the remote",
     ),
+    all: bool = typer.Option(
+        False,
+        "--all",
+        help="Fetch every remote, not just one",
+    ),
 ):
     from git_sim.fetch import Fetch
 
-    scene = Fetch(remote=remote, branch=branch, prune=prune)
+    scene = Fetch(remote=remote, branch=branch, prune=prune, all=all)
     handle_animations(scene=scene)
 
 
@@ -259,10 +350,104 @@ def log(
         "--all",
         help="Display all local branches in the log output",
     ),
+    paths: List[str] = typer.Argument(
+        default=None,
+        help="Only the commits that changed these files (git log -- <file>)",
+    ),
+    oneline: bool = typer.Option(
+        False, "--oneline", help="One line per commit (the drawing is the same; it shows in the title)"
+    ),
+    graph: bool = typer.Option(
+        False, "--graph", help="Draw the history as a graph (it always is; it shows in the title)"
+    ),
+    patch: bool = typer.Option(
+        False, "-p", "--patch", help="Also show the newest listed commit's patch"
+    ),
+    follow: bool = typer.Option(
+        False, "--follow", help="With one file: carry its history back past renames"
+    ),
+    search: str = typer.Option(
+        None, "-S", help="Only the commits that added or removed this text"
+    ),
+    author: str = typer.Option(
+        None, "--author", help="Only the commits whose author matches this name or email"
+    ),
+    since: str = typer.Option(
+        None, "--since", "--after", help="Only the commits newer than this date, e.g. 2024-03-01 or '2 weeks ago'"
+    ),
+    until: str = typer.Option(
+        None, "--until", "--before", help="Only the commits older than this date"
+    ),
 ):
     from git_sim.log import Log
 
-    scene = Log(ctx=ctx, n=n, all=all)
+    scene = Log(
+        ctx=ctx,
+        n=n,
+        all=all,
+        oneline=oneline,
+        graph=graph,
+        paths=paths,
+        patch=patch,
+        follow=follow,
+        search=search,
+        author=author,
+        since=since,
+        until=until,
+    )
+    handle_animations(scene=scene)
+
+
+def shortlog(
+    rev: str = typer.Argument(
+        default=None,
+        help="The commits to count: a branch, tag, commit or range A..B (default HEAD)",
+    ),
+    summary: bool = typer.Option(
+        False, "-s", "--summary", help="Only the counts, not each author's commit subjects"
+    ),
+    numbered: bool = typer.Option(
+        False, "-n", "--numbered", help="Most commits first, rather than by name"
+    ),
+    email: bool = typer.Option(False, "-e", "--email", help="Show each author's email address"),
+):
+    from git_sim.shortlog import Shortlog
+
+    scene = Shortlog(rev=rev, summary=summary, numbered=numbered, email=email)
+    handle_animations(scene=scene)
+
+
+def grep(
+    pattern: str = typer.Argument(..., help="The text (a regular expression) to search for"),
+    args: List[str] = typer.Argument(
+        default=None,
+        help="A commit, branch or tag to search instead of the working tree, and/or paths to search in",
+    ),
+    line_number: bool = typer.Option(
+        False, "-n", "--line-number", help="Show the line number of each match"
+    ),
+    ignore_case: bool = typer.Option(
+        False, "-i", "--ignore-case", help="Match regardless of upper and lower case"
+    ),
+):
+    from git_sim.grep import Grep
+
+    scene = Grep(pattern=pattern, args=args, line_number=line_number, ignore_case=ignore_case)
+    handle_animations(scene=scene)
+
+
+def describe(
+    commit: str = typer.Argument(
+        default=None,
+        help="The commit to name after its nearest tag (default HEAD)",
+    ),
+    tags: bool = typer.Option(
+        False, "--tags", help="Count lightweight tags too, not only annotated ones"
+    ),
+):
+    from git_sim.describe import Describe
+
+    scene = Describe(commit=commit, tags=tags)
     handle_animations(scene=scene)
 
 
@@ -453,7 +638,7 @@ def rebase(
 def remote(
     command: RemoteSubCommand = typer.Argument(
         default=None,
-        help="Remote subcommand (add, rename, remove, get-url, set-url)",
+        help="Remote subcommand (add, rename, remove, get-url, set-url, show)",
     ),
     remote: str = typer.Argument(
         default=None,
@@ -463,10 +648,42 @@ def remote(
         default=None,
         help="The url or path to the remote",
     ),
+    verbose: bool = typer.Option(
+        False,
+        "-v",
+        "--verbose",
+        help="With no subcommand: list each remote with its fetch and push URLs",
+    ),
 ):
     from git_sim.remote import Remote
 
-    scene = Remote(command=command, remote=remote, url_or_path=url_or_path)
+    scene = Remote(
+        command=command, remote=remote, url_or_path=url_or_path, verbose=verbose
+    )
+    handle_animations(scene=scene)
+
+
+def ls_remote(
+    remote: str = typer.Argument(
+        default=None,
+        help="The remote (a name, or a URL or path) to list the refs of (default: the current branch's remote, else origin)",
+    ),
+    heads: bool = typer.Option(
+        False,
+        "--heads",
+        "--branches",
+        help="List only the remote's branches",
+    ),
+    tags: bool = typer.Option(
+        False,
+        "--tags",
+        "-t",
+        help="List only the remote's tags",
+    ),
+):
+    from git_sim.lsremote import LsRemote
+
+    scene = LsRemote(remote=remote, heads=heads, tags=tags)
     handle_animations(scene=scene)
 
 
@@ -507,24 +724,30 @@ def reset(
 def restore(
     files: List[str] = typer.Argument(
         default=None,
-        help="The names of one or more files to restore",
+        help="The files to restore: names, folders or . for every changed file",
     ),
     staged: bool = typer.Option(
         False,
         "--staged",
         help="Restore staged file to working directory",
     ),
+    source: str = typer.Option(
+        None,
+        "--source",
+        "-s",
+        help="Take the files' content from this commit (default: the staging area, or HEAD with --staged)",
+    ),
 ):
     from git_sim.restore import Restore
 
-    scene = Restore(files=files, staged=staged)
+    scene = Restore(files=files, staged=staged, source=source)
     handle_animations(scene=scene)
 
 
 def revert(
-    commit: str = typer.Argument(
-        default="HEAD",
-        help="The ref (branch/tag), or commit ID to simulate revert",
+    commit: List[str] = typer.Argument(
+        default=None,
+        help="The commits to simulate reverting (default: HEAD): refs, commit IDs or ranges A..B",
     ),
     mainline: int = typer.Option(
         None,
@@ -541,7 +764,7 @@ def revert(
 ):
     from git_sim.revert import Revert
 
-    scene = Revert(commit=commit, mainline=mainline, no_commit=no_commit)
+    scene = Revert(commit=commit or ["HEAD"], mainline=mainline, no_commit=no_commit)
     handle_animations(scene=scene)
 
 
@@ -565,11 +788,11 @@ def rm(
 def stash(
     command: StashSubCommand = typer.Argument(
         default=None,
-        help="Stash subcommand (push, pop, apply, drop, clear, list, show)",
+        help="Stash subcommand (push, pop, apply, drop, clear, list, show, branch)",
     ),
     files: List[str] = typer.Argument(
         default=None,
-        help="The name of the file to stash changes for",
+        help="push: the files to stash changes for; branch: the new branch's name",
     ),
     stash_index: str = typer.Argument(
         default="0",
@@ -587,6 +810,12 @@ def stash(
         "-m",
         help="push: the message the entry is saved with",
     ),
+    patch: bool = typer.Option(
+        False,
+        "--patch",
+        "-p",
+        help="show: the entry's changes line by line, not just its files",
+    ),
 ):
     from git_sim.stash import Stash
 
@@ -595,7 +824,22 @@ def stash(
     # a file when the subcommand takes files.
     import re
 
-    if (
+    branch = None
+    if command == StashSubCommand.BRANCH:
+        # `stash branch topic [stash@{1}]`: the name, then the entry
+        words = list(files or [])
+        if words or stash_index != "0":  # a lone default "0" is no name
+            words.append(stash_index)
+        if not words:
+            print("git-sim error: git stash branch needs the new branch's name")
+            raise typer.Exit(1)
+        if len(words) > 2:
+            print("git-sim error: git stash branch takes a branch name and one stash entry")
+            raise typer.Exit(1)
+        branch = words[0]
+        stash_index = words[1] if len(words) > 1 else "0"
+        files = []
+    elif (
         command
         in (StashSubCommand.PUSH, StashSubCommand.POP, StashSubCommand.APPLY, None)
         and stash_index is not None
@@ -610,6 +854,8 @@ def stash(
         stash_index=stash_index,
         include_untracked=include_untracked,
         message=message,
+        patch=patch,
+        branch=branch,
     )
     handle_animations(scene=scene)
 
@@ -626,7 +872,11 @@ def status():
 def switch(
     branch: str = typer.Argument(
         ...,
-        help="The name of the branch to switch to",
+        help="The name of the branch to switch to ('-' for the previous one); a name only a remote has (origin/NAME) makes a local branch tracking it",
+    ),
+    start_point: str = typer.Argument(
+        None,
+        help="With -c: the commit the new branch starts at (default: HEAD); a remote-tracking branch also becomes its upstream",
     ),
     c: bool = typer.Option(
         False,
@@ -641,14 +891,14 @@ def switch(
 ):
     from git_sim.switch import Switch
 
-    scene = Switch(branch=branch, c=c, detach=detach)
+    scene = Switch(branch=branch, c=c, detach=detach, start_point=start_point)
     handle_animations(scene=scene)
 
 
 def tag(
     name: str = typer.Argument(
-        ...,
-        help="The name of the tag",
+        None,
+        help="The name of the tag (with -l: a pattern such as 'v1.*' to list the matching tags)",
     ),
     commit: str = typer.Argument(
         default=None,
@@ -659,16 +909,34 @@ def tag(
         "-d",
         help="Delete the specified tag",
     ),
+    annotate: bool = typer.Option(
+        False,
+        "-a",
+        "--annotate",
+        help="Make an annotated tag: a tag object with a tagger, a date and the message given with -m",
+    ),
+    message: str = typer.Option(
+        None,
+        "-m",
+        "--message",
+        help="The annotated tag's message (implies -a)",
+    ),
+    l: bool = typer.Option(
+        False,
+        "-l",
+        "--list",
+        help="List the tags, highlighting the ones matching NAME as a pattern",
+    ),
 ):
     from git_sim.tag import Tag
 
-    scene = Tag(name=name, commit=commit, d=d)
+    scene = Tag(name=name, commit=commit, d=d, annotate=annotate, message=message, list_tags=l)
     handle_animations(scene=scene)
 
 
 def worktree(
     command: WorktreeSubCommand = typer.Argument(
-        default=WorktreeSubCommand.LIST,
+        default=WorktreeSubCommand.LIST.value,  # the value: click validates the default against its choices
         help="Worktree subcommand (add, remove, list, prune)",
     ),
     path: str = typer.Argument(default=None, help="Worktree path (add/remove)"),
@@ -726,10 +994,15 @@ def diff(
         "--cached",
         help="Compare the staging area with HEAD (or the given commit)",
     ),
+    stat: bool = typer.Option(
+        False,
+        "--stat",
+        help="Summarize: each changed file with its line counts, as git diff --stat prints them",
+    ),
 ):
     from git_sim.diff import Diff
 
-    scene = Diff(args=args, staged=staged)
+    scene = Diff(args=args, staged=staged, stat=stat)
     handle_animations(scene=scene)
 
 
@@ -747,6 +1020,24 @@ def blame(
     from git_sim.blame import Blame
 
     scene = Blame(file=file, lines=lines)
+    handle_animations(scene=scene)
+
+
+def check_ignore(
+    paths: List[str] = typer.Argument(
+        default=None,
+        help="The paths to check against the ignore rules",
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "-v",
+        "--verbose",
+        help="Print the rule that matches each path, as git check-ignore -v does",
+    ),
+):
+    from git_sim.check_ignore import CheckIgnore
+
+    scene = CheckIgnore(paths=paths, verbose=verbose)
     handle_animations(scene=scene)
 
 

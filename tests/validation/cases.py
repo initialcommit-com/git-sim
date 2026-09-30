@@ -215,6 +215,31 @@ def texts(*needles):
     return check
 
 
+def ignored_by_git(ignored=(), not_ignored=()):
+    """The drawing's verdicts agree with git check-ignore run on its own."""
+    def check(m, repo):
+        for p in ignored:
+            assert o.check_ignored(repo, p), f"git says {p!r} is not ignored"
+            assert has_text(m, p), f"path {p!r} not drawn"
+        for p in not_ignored:
+            assert not o.check_ignored(repo, p), f"git says {p!r} is ignored"
+            assert has_text(m, p), f"path {p!r} not drawn"
+    return check
+
+
+def no_text(*needles):
+    def check(m, repo):
+        for n in needles:
+            assert not has_text(m, n), f"did not expect text {n!r} in the drawing"
+    return check
+
+
+def commit_count(n):
+    def check(m, repo):
+        assert len(m["commits"]) == n, f"drew {len(m['commits'])} commits, {n} expected"
+    return check
+
+
 def all_of(*checks):
     def check(m, repo):
         for c in checks:
@@ -263,6 +288,41 @@ def stashes_untracked(m, repo):
     got = files_in(m, "stash", "after")
     missing = [f for f in untracked if f not in got]
     assert not missing, f"untracked files not stashed: {missing} (stash: {got})"
+
+
+def discards(*names):
+    """restore / checkout -- <paths>: exactly the files git would reset from
+    the staging area land in "Discarded changes"."""
+    def check(m, repo):
+        got = sorted(f["name"] for f in m["files"] if "discarded" in f["column"].lower() and f["phase"] == "after")
+        assert got == sorted(names), f"discarded {got}, expected {sorted(names)}"
+    return check
+
+
+def restores_from(rev, name, zone):
+    """restore --source REV: the commit is highlighted and labeled, and the
+    file arrives from its column in the working directory or staging area."""
+    def check(m, repo):
+        sha = o.rev_parse(repo, rev)
+        assert sha in m["commits"] and m["commits"][sha]["recolored"], f"{rev} ({sha[:7]}) is not highlighted"
+        ref_after("source")(m, repo)
+        assert name in table_column(m, f"from {sha[:7]}"), f"{name} is not listed as coming from {sha[:7]}"
+        arrives(name, zone)(m, repo)
+    return check
+
+
+def reverts(*revs, commits=True):
+    """revert of several commits: each is highlighted, and one revert commit
+    per reverted commit follows HEAD (none with -n)."""
+    def check(m, repo):
+        shas = [o.rev_parse(repo, r) for r in revs]
+        for r, s in zip(revs, shas):
+            assert s in m["commits"] and m["commits"][s]["recolored"], f"{r} ({s[:7]}) is not marked"
+        after_commits(len(shas) if commits else 0)(m, repo)
+        if commits:
+            drawn = sorted(c["message"] for c in commits_by_phase(m, "after").values())
+            assert drawn == sorted(f"Revert {s[:6]}" for s in shas), f"revert commits {drawn}"
+    return check
 
 
 def untracks(name):
@@ -382,6 +442,67 @@ def blames(path, lines=None):
     return check
 
 
+def lit(m):
+    return {s for s, c in m["commits"].items() if c["recolored"]}
+
+
+def logs(*git_args):
+    """git log ARGS: exactly the drawn commits git log lists are highlighted,
+    and the card says how many it lists."""
+    def check(m, repo):
+        listed = o.git(repo, "log", "--format=%H", *git_args).split()
+        drawn = lit(m)
+        assert drawn == set(listed) & set(m["commits"]), f"highlighted {sorted(s[:7] for s in drawn)}, git log lists {[s[:7] for s in listed]}"
+        assert drawn or not listed, "git log lists commits but none is drawn highlighted"
+        count = f"{len(listed)} commit" if listed else "No commits"
+        assert has_text(m, count), f"expected {count!r} in the card"
+    return check
+
+
+def shortlogs(rev):
+    """git shortlog REV: every drawn commit it counts takes its author's
+    color, no other does, and each author is named with their count."""
+    def check(m, repo):
+        counted = o.git(repo, "rev-list", rev, "--").split()
+        assert lit(m) == set(counted) & set(m["commits"]), "the counted commits are the colored ones"
+        authors = {}
+        for name in o.git(repo, "log", "--format=%aN", rev, "--").splitlines():
+            authors[name] = authors.get(name, 0) + 1
+        for name, count in sorted(authors.items(), key=lambda kv: -kv[1])[:8]:
+            assert has_text(m, name), f"author {name!r} not named"
+            assert has_text(m, str(count))
+    return check
+
+
+def greps(*git_args, rev=None):
+    """git grep ARGS: the card's files are ones git grep lists, and at least
+    one is drawn when it lists any."""
+    def check(m, repo):
+        out = o.git(repo, "grep", "-l", *git_args, check=False)
+        names = [n.split(":", 1)[1] if rev else n for n in out.splitlines() if n]
+        drawn = table_column(m, "match")
+        assert set(drawn) <= set(names), f"drew {sorted(set(drawn) - set(names))} that git grep doesn't list"
+        assert bool(drawn) == bool(names), f"git grep lists {names}, drew {drawn}"
+    return check
+
+
+def describes(*git_args):
+    """git describe ARGS: git's name is in the drawing, and the highlighted
+    commits are the tagged one and the drawn ones since it."""
+    def check(m, repo):
+        import re as _re
+
+        name = o.git(repo, "describe", *git_args)
+        assert has_text(m, name), f"git describe says {name!r}; not in the drawing"
+        target = git_args[-1] if git_args and not git_args[-1].startswith("-") else "HEAD"
+        tag = _re.sub(r"-\d+-g[0-9a-f]+$", "", name)
+        tagged = o.rev_parse(repo, f"refs/tags/{tag}")
+        since = set(o.git(repo, "rev-list", f"{tagged}..{o.rev_parse(repo, target)}").split())
+        assert lit(m) == (since | {tagged}) & set(m["commits"]), "highlighted commits differ from the tag and the commits since"
+        assert tagged in m["commits"], "the tagged commit is not drawn"
+    return check
+
+
 def bisect_next(bad="refs/bisect/bad", goods=None):
     """The commit git bisect checks out next, from git's own rev-list --bisect,
     is named in the drawing and HEAD moves to it."""
@@ -411,6 +532,49 @@ def bisect_next_after(word):
     return check
 
 
+def lists_filtered(*git_args):
+    """git branch --merged / --no-merged: the card says git lists as many
+    branches as git itself prints for the same filter."""
+    def check(m, repo):
+        out = o.git(repo, "branch", *git_args)
+        n = len([line for line in out.splitlines() if line.strip()])
+        assert has_text(m, f"git lists the {n} highlighted"), f"expected git's {n} branch(es) highlighted"
+    return check
+
+
+def lists_every_branch(remotes=False):
+    """git branch [-a]: every branch git prints is named in the card."""
+    def check(m, repo):
+        refs = ["refs/heads"] + (["refs/remotes"] if remotes else [])
+        for ref in o.git(repo, "for-each-ref", "--format=%(refname)", *refs).split():
+            if ref.endswith("/HEAD"):
+                continue
+            name = ref[len("refs/heads/"):] if ref.startswith("refs/heads/") else "remotes/" + ref[len("refs/remotes/"):]
+            assert name in m["texts"], f"branch {name!r} missing from the listing"
+    return check
+
+
+def tracks(branch, upstream):
+    """branch -u: the card shows the [branch "x"] lines git writes, and the
+    branch's label says how far ahead/behind the upstream it is."""
+    def check(m, repo):
+        ahead, behind = o.git(repo, "rev-list", "--left-right", "--count", f"{branch}...{upstream}").split()
+        parts = [p for p, k in ((f"ahead {ahead}", ahead), (f"behind {behind}", behind)) if k != "0"]
+        relation = f"[{upstream}{': ' + ', '.join(parts) if parts else ''}]"
+        ref_after(relation, "upstream")(m, repo)
+        assert has_text(m, f'[branch "{branch}"]'), f"no [branch \"{branch}\"] section drawn"
+    return check
+
+
+def tags_matching(pattern):
+    import fnmatch
+
+    def check(m, repo):
+        n = len([t for t in o.tags(repo) if fnmatch.fnmatchcase(t, pattern)])
+        assert has_text(m, f"git lists the {n} highlighted"), f"expected {n} tag(s) matching {pattern!r}"
+    return check
+
+
 # ---- the cases ----------------------------------------------------------------------------------
 
 M = "feature/pagination"  # the history, rebase-ready, criss-cross and worktree shapes' first branch
@@ -433,6 +597,16 @@ CASES: List[Case] = [
     Case("branch-existing", "classic", ["branch", "branch2"], error="git-sim error"),
     Case("branch-delete-missing", "classic", ["branch", "-d", "nope"], error="git-sim error"),
     Case("branch-delete-current", "classic", ["branch", "-D", "main"], error="git-sim error"),
+    Case("branch-list", "history", ["branch"], all_of(title("git branch"), lists_every_branch(), texts("* marks main"))),
+    Case("branch-list-all-vv", "remote-branch", ["branch", "-a", "-vv"], all_of(title("git branch -a -vv"), lists_every_branch(remotes=True), texts("[origin/main: ahead 2]"))),
+    Case("branch-list-all-verbose", "remote-branch", ["branch", "--all", "--verbose"], all_of(lists_every_branch(remotes=True), texts("[ahead 2]"))),
+    Case("branch-merged", "history", ["branch", "--merged"], all_of(title("git branch --merged"), lists_filtered("--merged"))),
+    Case("branch-no-merged", "classic", ["branch", "--no-merged", "branch3"], all_of(title("git branch --no-merged branch3"), lists_filtered("--no-merged", "branch3"))),
+    Case("branch-merged-and-no-merged", "classic", ["branch", "--merged", "--no-merged"], error="git-sim error"),
+    Case("branch-list-with-name", "classic", ["branch", "-v", "topic"], error="git-sim error"),
+    Case("branch-set-upstream", "remote-branch", ["branch", "-u", "origin/old-idea"], all_of(title("git branch -u origin/old-idea"), tracks("main", "origin/old-idea"), texts("merge = refs/heads/old-idea"))),
+    Case("branch-set-upstream-local", "classic", ["branch", "--set-upstream-to=main", "branch1"], all_of(tracks("branch1", "main"), texts("remote = ."))),
+    Case("branch-set-upstream-missing", "classic", ["branch", "-u", "origin/nope"], error="does not exist"),
     # checkout
     Case("checkout-branch", "classic", ["checkout", "branch2"], all_of(title("git checkout branch2"), relabelled("HEAD"))),
     Case("checkout-new", "classic", ["checkout", "-b", "topic"], ref_after("topic", "branch")),
@@ -440,6 +614,12 @@ CASES: List[Case] = [
     Case("checkout-commit", "classic", ["checkout", "HEAD~2"], relabelled("HEAD")),
     Case("checkout-missing", "classic", ["checkout", "nope"], error="git-sim error"),
     Case("checkout-current", "classic", ["checkout", "main"], error="already on"),
+    # the older spelling of restore: after --, paths whose changes are discarded
+    Case("checkout-paths", "messy", ["checkout", "--", "README.md"], all_of(title("git checkout -- README.md"), discards("README.md"))),
+    Case("checkout-paths-dot", "messy", ["checkout", "--", "."], all_of(title("git checkout -- ."), discards("README.md", "app.py"))),
+    Case("checkout-path-no-dashes", "messy", ["checkout", "app.py"], all_of(title("git checkout -- app.py"), discards("app.py"))),
+    Case("checkout-paths-from-commit", "messy", ["checkout", "HEAD~1", "--", "app.py"], error="isn't simulated"),
+    Case("checkout-paths-unmodified", "messy", ["checkout", "--", "routes.py"], error="No modified file"),
     # cherry-pick
     Case("cherry-pick-branch", "classic", ["cherry-pick", "branch2"], all_of(title("git cherry-pick"), picks(1))),
     Case("cherry-pick-sha", "classic", ["cherry-pick", "branch3~1"], picks(1)),
@@ -472,6 +652,12 @@ CASES: List[Case] = [
     Case("config-remote-key", "ahead", ["config", "remote.origin.url"], texts("remote")),
     Case("config-none", "history", ["config"], error="git-sim error"),
     Case("config-bad-key", "history", ["config", "nodot", "x"], error="git-sim error"),
+    # --global: the suite's private config file (GIT_CONFIG_GLOBAL) is the global scope
+    Case("config-global-set", "history", ["config", "--global", "core.editor", "code --wait"], all_of(title("git config --global core.editor"), texts("~/.gitconfig", "global", "editor = code --wait"))),
+    Case("config-global-change", "history", ["config", "--global", "user.email", "me@example.com"], texts("email = validation@example.com", "email = me@example.com")),
+    Case("config-global-get", "history", ["config", "--global", "user.email"], texts("~/.gitconfig", "validation@example.com")),
+    Case("config-global-list", "history", ["config", "--list", "--global"], all_of(title("git config --list --global"), texts("~/.gitconfig", "[user]"))),
+    Case("config-global-none", "history", ["config", "--global"], error="git-sim error"),
     # fetch
     Case("fetch", "behind", ["fetch", "origin", "main"], all_of(title("git fetch"), after_commits(2), relabelled("origin/main"))),
     Case("fetch-default", "behind", ["fetch"], after_commits(2)),
@@ -479,6 +665,11 @@ CASES: List[Case] = [
     Case("fetch-no-remote", "classic", ["fetch"], error="no remotes"),
     Case("fetch-prune", "stale-remote", ["fetch", "--prune"], all_of(title("git fetch --prune"), texts("Pruned origin/gone"), ref_removed("origin/gone"))),
     Case("fetch-stale-note", "stale-remote", ["fetch", "-p", "origin", "main"], texts("Pruned origin/gone")),
+    # --all: every remote, and a line for what each brought
+    Case("fetch-all", "remote-moved", ["fetch", "--all"], all_of(title("git fetch --all"), relabelled("origin/main"), ref_after("origin/fresh"), ref_after("upstream/main"), texts("origin: 2 new commits", "upstream:", "origin/old-idea no longer exists"))),
+    Case("fetch-all-prune", "remote-moved", ["fetch", "--all", "--prune"], all_of(title("git fetch --all --prune"), ref_removed("origin/old-idea"))),
+    Case("fetch-all-up-to-date", "ahead", ["fetch", "--all"], all_of(after_commits(0), texts("origin: nothing new"))),
+    Case("fetch-all-with-remote", "remote-moved", ["fetch", "--all", "origin"], error="takes no remote"),
     # init
     Case("init-new", "notrepo", ["init"], all_of(title("git init"), texts("Initialized"))),
     Case("init-existing", "history", ["init"], texts("Reinitialized")),
@@ -494,6 +685,21 @@ CASES: List[Case] = [
     Case("log-empty", "empty", ["log"], error="no commits"),
     Case("log-notrepo", "notrepo", ["log"], error="git-sim error"),
     Case("log-conflict", "conflict", ["log", "--all"], commits_at_least(4)),
+    # log's filters: the graph stays, the commits git lists are highlighted
+    Case("log-oneline-graph", "history", ["log", "--oneline", "--graph"], all_of(title("git log --oneline --graph"), recolored(0))),
+    Case("log-path", "history", ["log", "--", "app.py"], all_of(title("git log -- app.py"), logs("HEAD", "--", "app.py"))),
+    Case("log-path-n", "history", ["log", "-n", "2", "app.py"], logs("-n2", "HEAD", "--", "app.py")),
+    Case("log-author", "history", ["log", "--author", "Ada"], logs("--author=Ada", "HEAD")),
+    Case("log-since-until", "history", ["log", "--since", "2024-03-02T12:00", "--until", "2024-03-02T16:30"], logs("--since=2024-03-02T12:00", "--until=2024-03-02T16:30", "HEAD")),
+    Case("log-after-before", "history", ["log", "--all", "--after", "2024-03-02T14:00", "--before", "2024-03-02T18:00"], logs("--after=2024-03-02T14:00", "--before=2024-03-02T18:00", "--all")),
+    Case("log-pickaxe", "history", ["log", "-S", "pagination"], all_of(texts('added or removed "pagination"'), logs("-S", "pagination", "HEAD"))),
+    Case("log-patch", "history", ["log", "-p", "--", "app.py"], all_of(texts("The patch of"), logs("HEAD", "--", "app.py"))),
+    Case("log-patch-long", "history", ["log", "--patch"], texts("The patch of")),
+    Case("log-follow", "renamed", ["log", "--follow", "server.py"], all_of(texts("following its rename from app.py"), logs("--follow", "HEAD", "--", "server.py"))),
+    Case("log-renamed-no-follow", "renamed", ["log", "server.py"], all_of(texts("--follow goes further back"), logs("HEAD", "--", "server.py"))),
+    Case("log-no-match", "history", ["log", "--author", "Nobody"], texts("No commits by Nobody")),
+    Case("log-follow-two", "history", ["log", "--follow", "app.py", "models.py"], error="exactly one"),
+    Case("log-path-missing", "history", ["log", "--", "nope.py"], error="git-sim error"),
     # merge
     Case("merge", "classic", ["merge", "branch2"], all_of(title("git merge branch2"), merge_of("branch2"))),
     Case("merge-other", "classic", ["merge", "branch3"], merge_of("branch3")),
@@ -542,6 +748,11 @@ CASES: List[Case] = [
     Case("push-delete-short", "remote-branch", ["push", "origin", "-d", "old-idea"], texts("Deletes old-idea")),
     Case("push-delete-missing", "remote-branch", ["push", "origin", "--delete", "nope"], error="does not exist"),
     Case("push-tags", "new-tag", ["push", "--tags"], all_of(texts("Pushes 1 tag(s) origin doesn't have: v9.9"), ref_after("on origin"))),
+    Case("push-tag", "new-tag", ["push", "origin", "v9.9"], all_of(title("git push origin v9.9"), texts("Pushes tag v9.9 to origin", "The 2 commit(s) it reaches"), ref_after("on origin"))),
+    Case("push-tag-present", "remote-tag", ["push", "origin", "v0.9"], all_of(texts("origin already has tag v0.9"), ref_before("on origin"))),
+    Case("push-tag-missing", "new-tag", ["push", "origin", "refs/tags/nope"], error="no tag"),
+    Case("push-delete-tag", "remote-tag", ["push", "origin", "--delete", "v0.9"], all_of(texts("Deletes tag v0.9 on origin", "Your local tag v0.9 is kept"), ref_removed("on origin"), ref_after("deleted on origin", "deleted tag"))),
+    Case("push-delete-remote-only-tag", "remote-tag", ["push", "origin", "-d", "refs/tags/v0.8"], all_of(texts("You have no local tag v0.8"), ref_before("v0.8"), ref_after("deleted on origin"))),
     # rebase
     Case("rebase", "rebase-ready", ["rebase", "main"], all_of(title("git rebase main"), rebase_onto("main"))),
     Case("rebase-classic", "classic", ["rebase", "branch2"], rebase_onto("branch2")),
@@ -570,6 +781,20 @@ CASES: List[Case] = [
     Case("remote-none", "classic", ["remote"], texts("no remotes")),
     Case("remote-add-existing", "ahead", ["remote", "add", "origin", "x"], error="git-sim error"),
     Case("remote-remove-missing", "ahead", ["remote", "remove", "nope"], error="git-sim error"),
+    Case("remote-verbose", "remote-moved", ["remote", "-v"], all_of(title("git remote -v"), texts("../remote_moved.push.git", "../remote_moved.origin.git"))),
+    Case("remote-verbose-long", "ahead", ["remote", "--verbose"], all_of(title("git remote -v"), texts("push", "fetch"))),
+    Case("remote-show", "remote-moved", ["remote", "show", "origin"], all_of(title("git remote show origin"), texts("new: the next fetch stores it as origin/fresh", "stale: deleted on origin", "tracked as origin/main", "merges with main", "pushes to feature (fast-forwardable)", "pushes to main (local out of date)"))),
+    Case("remote-show-fresh", "ahead", ["remote", "show", "origin"], texts("tracked as origin/main", "pushes to main (fast-forwardable)")),
+    Case("remote-show-missing", "ahead", ["remote", "show", "nope"], error="doesn't exist"),
+    # ls-remote: the remote's refs beside the copies here
+    Case("ls-remote", "remote-moved", ["ls-remote"], all_of(title("git ls-remote"), texts("not fetched yet", "deleted on origin", "you're 1 ahead: push sends it", "moved on since your last fetch", "only here: push --tags sends it"))),
+    Case("ls-remote-heads", "remote-moved", ["ls-remote", "--heads", "origin"], all_of(title("git ls-remote --heads origin"), texts("fresh"), no_text("only here", "tags"))),
+    Case("ls-remote-branches", "behind", ["ls-remote", "--branches"], texts("moved on since your last fetch")),
+    Case("ls-remote-tags", "remote-moved", ["ls-remote", "-t"], all_of(title("git ls-remote --tags"), texts("v0.9"), no_text("not fetched yet", "branches"))),
+    Case("ls-remote-upstream", "remote-moved", ["ls-remote", "upstream"], texts("not fetched yet")),
+    Case("ls-remote-up-to-date", "ahead", ["ls-remote"], texts("you're 2 ahead: push sends them")),
+    Case("ls-remote-no-remote", "classic", ["ls-remote"], error="no remotes"),
+    Case("ls-remote-unreachable", "remote-moved", ["ls-remote", "../no-such-repo.git"], error="could not list the refs"),
     # reset
     Case("reset-mixed", "classic", ["reset", "HEAD~2"], all_of(title("git reset"), reset_to("HEAD~2"))),
     Case("reset-hard", "classic", ["reset", "--hard", "HEAD~2"], reset_to("HEAD~2")),
@@ -586,6 +811,11 @@ CASES: List[Case] = [
     Case("restore-staged", "messy", ["restore", "--staged", "models.py"], arrives("models.py", "working")),
     Case("restore-missing", "messy", ["restore", "nope.txt"], error="git-sim error"),
     Case("restore-all", "messy", ["restore"], title("git restore")),
+    Case("restore-dot", "messy", ["restore", "."], all_of(title("git restore ."), discards("README.md", "app.py"))),
+    Case("restore-source", "messy", ["restore", "--source", "HEAD~2", "utils.py"], all_of(title("git restore --source HEAD~2 utils.py"), restores_from("HEAD~2", "utils.py", "working"))),
+    Case("restore-source-staged", "messy", ["restore", "-s", "HEAD~3", "--staged", "app.py"], restores_from("HEAD~3", "app.py", "staging")),
+    Case("restore-source-missing", "messy", ["restore", "--source", "nope", "app.py"], error="not a valid Git ref"),
+    Case("restore-source-unchanged", "messy", ["restore", "-s", "HEAD", "routes.py"], error="nothing to restore"),
     # revert
     Case("revert", "classic", ["revert", "HEAD~1"], all_of(title("git revert"), after_commits(1), lambda m, r: any(o.rev_parse(r, "HEAD") in c["parents"] for c in commits_by_phase(m, "after").values()))),
     Case("revert-older", "classic", ["revert", "HEAD~2"], after_commits(1)),
@@ -593,6 +823,10 @@ CASES: List[Case] = [
     Case("revert-merge-needs-m", "classic", ["revert", "HEAD"], error="-m"),
     Case("revert-merge-mainline", "classic", ["revert", "-m", "1", "HEAD"], after_commits(1)),
     Case("revert-missing", "classic", ["revert", "nope"], error="git-sim error"),
+    Case("revert-several", "linear", ["revert", "HEAD~1", "HEAD~3"], all_of(title("git revert HEAD~1 HEAD~3"), reverts("HEAD~1", "HEAD~3"))),
+    Case("revert-range", "linear", ["revert", "HEAD~4..HEAD~1"], reverts("HEAD~1", "HEAD~2", "HEAD~3")),
+    Case("revert-several-no-commit", "linear", ["revert", "-n", "HEAD", "HEAD~2"], all_of(reverts("HEAD", "HEAD~2", commits=False), lambda m, r: same_files(table_column(m, "changes staged"), ["main.10", "main.8"]))),
+    Case("revert-empty-range", "linear", ["revert", "HEAD..HEAD"], error="contains no commits"),
     # rm
     Case("rm", "history", ["rm", "utils.py"], all_of(title("git rm"), gone("utils.py"))),
     Case("rm-two", "history", ["rm", "utils.py", "config.yaml"], gone("utils.py", "config.yaml")),
@@ -617,6 +851,16 @@ CASES: List[Case] = [
     Case("stash-untracked-without-u", "messy", ["stash", "push", "scratch.txt"], error="stash push -u"),
     Case("stash-drop-with-m", "messy", ["stash", "drop", "--message", "x"], error="stash push only"),
     Case("stash-nothing", "history", ["stash"], title("git stash")),
+    Case("stash-push-message", "messy", ["stash", "push", "-m", "Pagination WIP"], all_of(title('git stash push -m "Pagination WIP"'), stashes_something, texts("On main: Pagination WIP"))),
+    Case("stash-push-paths", "messy", ["stash", "push", "README.md", "models.py"], lambda m, r: files_in(m, "stash", "after") == ["README.md", "models.py"]),
+    Case("stash-show-patch", "messy", ["stash", "show", "-p"], all_of(title("git stash show -p stash@{0}"), stack_of_entries, lambda m, r: same_files(table_column(m, "patch of"), o.git(r, "stash", "show", "--name-only").split()))),
+    Case("stash-show-patch-long", "messy", ["stash", "show", "--patch", "stash@{{0}}"], title("git stash show -p stash@{0}")),
+    Case("stash-push-patch", "messy", ["stash", "push", "-p"], error="-p applies to stash show only"),
+    Case("stash-branch", "messy", ["stash", "branch", "topic"], all_of(title("git stash branch topic stash@{0}"), ref_after("topic", "branch"), unstashes_something)),
+    Case("stash-branch-index", "messy", ["stash", "branch", "retry", "0"], all_of(title("git stash branch retry stash@{0}"), ref_after("retry", "branch"))),
+    Case("stash-branch-existing", "messy", ["stash", "branch", "main"], error="already exists"),
+    Case("stash-branch-empty", "history", ["stash", "branch", "topic"], error="the stash list is empty"),
+    Case("stash-branch-no-name", "messy", ["stash", "branch"], error="needs the new branch's name"),
     # status
     Case("status", "messy", ["status"], all_of(title("git status"), status_matches)),
     Case("status-clean", "history", ["status"], status_matches),
@@ -638,6 +882,12 @@ CASES: List[Case] = [
     Case("switch-create", "classic", ["switch", "-c", "topic"], ref_after("topic", "branch")),
     Case("switch-detach", "classic", ["switch", "--detach", "branch2"], relabelled("HEAD")),
     Case("switch-missing", "classic", ["switch", "nope"], error="git-sim error"),
+    Case("switch-previous", "switched", ["switch", "-"], all_of(title("git switch -"), relabelled("HEAD"), ref_before("@{-1}"), texts("the branch you were on before this one: branch2"))),
+    Case("switch-previous-current", "history", ["switch", "-"], error="already on branch"),
+    Case("switch-guess", "remote-branch", ["switch", "old-idea"], all_of(title("git switch old-idea"), ref_after("old-idea", "branch"), relabelled("HEAD"), texts("git makes one from origin/old-idea"))),
+    Case("switch-create-tracking", "remote-branch", ["switch", "-c", "idea", "origin/old-idea"], all_of(title("git switch -c idea origin/old-idea"), ref_after("idea", "branch"), relabelled("HEAD"), texts("becomes idea's upstream"))),
+    Case("switch-create-at", "classic", ["switch", "-c", "topic", "branch2"], all_of(ref_after("topic", "branch"), relabelled("HEAD"))),
+    Case("switch-start-without-c", "classic", ["switch", "branch2", "main"], error="needs -c"),
     # tag
     Case("tag", "history", ["tag", "v9.9.9"], all_of(title("git tag v9.9.9"), ref_after("v9.9.9", "tag"))),
     Case("tag-commit", "history", ["tag", "v0.0.1", "HEAD~3"], ref_after("v0.0.1", "tag")),
@@ -645,6 +895,13 @@ CASES: List[Case] = [
     Case("tag-delete-older", "history", ["tag", "-d", "v1.0.0"], ref_removed("v1.0.0"), globals_=["-n", "20"]),
     Case("tag-existing", "history", ["tag", "v1.0.0"], error="git-sim error"),
     Case("tag-delete-missing", "history", ["tag", "-d", "nope"], error="git-sim error"),
+    Case("tag-annotated", "history", ["tag", "-a", "v2.0.0", "-m", "Release two"], all_of(title('git tag -a v2.0.0 -m "Release two"'), ref_after("v2.0.0", "annotated tag"), texts("tag object v2.0.0", "Release two", "Validation <validation@example.com>"))),
+    Case("tag-annotated-long", "history", ["tag", "--annotate", "v2.0.1", "--message", "Point release", "HEAD~1"], all_of(ref_after("v2.0.1", "annotated tag"), texts("tag object v2.0.1"))),
+    Case("tag-message-implies-a", "history", ["tag", "v2.0.2", "-m", "Just a message"], ref_after("v2.0.2", "annotated tag")),
+    Case("tag-annotated-no-message", "history", ["tag", "-a", "v2.0.0"], error="needs its message"),
+    Case("tag-list", "history", ["tag", "-l"], all_of(title("git tag -l"), texts("git lists every tag", "v1.0.0", "v1.1.0"))),
+    Case("tag-list-pattern", "history", ["tag", "--list", "v1.1*"], all_of(title('git tag -l "v1.1*"'), tags_matching("v1.1*"))),
+    Case("tag-list-and-delete", "history", ["tag", "-l", "-d", "v1.0.0"], error="git-sim error"),
     # worktree
     Case("worktree-list", "worktree", ["worktree", "list"], all_of(title("git worktree"), texts(M))),
     Case("worktree-add", "worktree", ["worktree", "add", "../hotfix", "main"], texts("hotfix")),
@@ -653,6 +910,9 @@ CASES: List[Case] = [
     Case("worktree-remove-force", "worktree", ["worktree", "remove", "--force", "{worktree_path}"], title("git worktree")),
     Case("worktree-prune", "worktree", ["worktree", "prune"], title("git worktree")),
     Case("worktree-remove-missing", "worktree", ["worktree", "remove", "../nope"], error="git-sim error"),
+    Case("worktree-default", "worktree", ["worktree"], all_of(title("git worktree list"), texts(M))),
+    Case("worktree-list-prunable", "worktree-gone", ["worktree", "list"], texts("prunable: directory missing", "git worktree prune removes its record")),
+    Case("worktree-prune-gone", "worktree-gone", ["worktree", "prune"], all_of(title("git worktree prune"), texts("Prunes the record of 'old-idea-wt'", "record pruned"))),
     # show
     Case("show", "history", ["show"], all_of(title("git show"), shows("HEAD"))),
     Case("show-commit", "history", ["show", "HEAD~2"], shows("HEAD~2")),
@@ -678,12 +938,41 @@ CASES: List[Case] = [
     Case("diff-clean", "history", ["diff"], texts("No differences")),
     Case("diff-missing", "history", ["diff", "nope"], error="git-sim error"),
     Case("diff-staged-two", "history", ["diff", "--staged", "HEAD~1", "HEAD"], error="git-sim error"),
+    Case("diff-stat", "history", ["diff", "--stat", "HEAD~2..HEAD"], all_of(title("git diff --stat HEAD~2..HEAD"), diffs("HEAD~2", "HEAD"), texts("files changed"))),
+    Case("diff-stat-two", "messy", ["diff", "--stat", "HEAD~1", "HEAD"], diffs("HEAD~1", "HEAD")),
+    # shortlog
+    Case("shortlog", "history", ["shortlog"], all_of(title("git shortlog"), shortlogs("HEAD"), texts("33 commits in HEAD by 6 authors"))),
+    Case("shortlog-sne", "history", ["shortlog", "-sne"], all_of(title("git shortlog -sne"), shortlogs("HEAD"), texts("ada@example.com", "most commits first"))),
+    Case("shortlog-range", "history", ["shortlog", "-s", "-n", "v1.0.0..HEAD"], shortlogs("v1.0.0..HEAD")),
+    Case("shortlog-long-flags", "release", ["shortlog", "--summary", "--numbered", "--email", "main"], shortlogs("main")),
+    Case("shortlog-missing", "history", ["shortlog", "nope"], error="git-sim error"),
+    # grep
+    Case("grep", "history", ["grep", "orders"], all_of(title("git grep orders"), greps("orders"))),
+    Case("grep-rev-path", "history", ["grep", "-n", "-i", "ORDER", "HEAD~3", "--", "routes.py"], all_of(title("git grep -n -i ORDER HEAD~3 -- routes.py"), greps("-i", "ORDER", "HEAD~3", "--", "routes.py", rev="HEAD~3"), recolored(1))),
+    Case("grep-long-flags", "history", ["grep", "--line-number", "--ignore-case", "PAGINATION"], greps("-i", "PAGINATION")),
+    Case("grep-none", "history", ["grep", "zzz-nowhere"], texts("No line matches")),
+    Case("grep-missing-rev", "history", ["grep", "orders", "nope"], error="git-sim error"),
+    Case("grep-bad-pattern", "history", ["grep", "["], error="git grep refused"),
+    # describe
+    Case("describe-tags", "history", ["describe", "--tags", "HEAD~1"], all_of(title("git describe --tags HEAD~1"), describes("--tags", "HEAD~1"), ref_after("v1.0.0-6-gbeea529", "describe"))),
+    Case("describe-exact", "history", ["describe", "--tags"], all_of(describes("--tags"), texts("the tagged commit"))),
+    Case("describe-annotated", "annotated", ["describe"], describes()),
+    Case("describe-lightweight", "history", ["describe"], error="try --tags"),
+    Case("describe-no-tags", "linear", ["describe"], error="no tags"),
+    Case("describe-missing", "history", ["describe", "nope"], error="git-sim error"),
     # blame
     Case("blame", "history", ["blame", "app.py"], all_of(title("git blame"), blames("app.py"))),
     Case("blame-lines", "history", ["blame", "-L", "1,3", "app.py"], blames("app.py", "1,3")),
     Case("blame-modified", "messy", ["blame", "README.md"], texts("not committed yet")),
     Case("blame-untracked", "messy", ["blame", "scratch.txt"], error="git-sim error"),
     Case("blame-bad-range", "history", ["blame", "-L", "abc", "app.py"], error="git-sim error"),
+    # check-ignore (the ignores shape: *.log ignored, !keep.log un-ignores, tracked.log committed anyway)
+    Case("check-ignore", "ignores", ["check-ignore", "debug.log", "notes.txt"], all_of(title("git check-ignore"), texts("ignored by .gitignore:1", "not ignored: no rule matches it"), ignored_by_git(["debug.log"], ["notes.txt"]))),
+    Case("check-ignore-verbose", "ignores", ["check-ignore", "-v", "keep.log", "debug.log"], texts(".gitignore:3:!keep.log", ".gitignore:1:*.log")),
+    Case("check-ignore-tracked", "ignores", ["check-ignore", "--verbose", "tracked.log"], all_of(texts("tracked, so .gitignore doesn't apply"), ignored_by_git(not_ignored=["tracked.log"]))),
+    Case("check-ignore-no-gitignore", "history", ["check-ignore", "debug.log"], texts("no .gitignore", "exits with status 1")),
+    Case("check-ignore-no-path", "ignores", ["check-ignore"], error="no path specified"),
+    Case("check-ignore-outside", "ignores", ["check-ignore", "../elsewhere.txt"], error="outside repository"),
     # bisect
     Case("bisect-start", "linear", ["bisect", "start", "HEAD", "HEAD~7"], all_of(title("git bisect start"), bisect_next("HEAD", ["HEAD~7"]), ref_after("bad", "bisect"))),
     Case("bisect-start-empty", "linear", ["bisect", "start"], texts("waiting")),
@@ -698,6 +987,11 @@ CASES: List[Case] = [
     # clone (runs in a plain folder; the URL is the ahead shape's remote)
     Case("clone", "notrepo", ["clone", "{remote_url}"], all_of(title("git clone"), texts("cloned"))),
     Case("clone-bad-url", "notrepo", ["clone", "not-a-url"], error="git-sim error"),
+    # shallow: only the last commits, the oldest drawn cut off (grafted)
+    Case("clone-depth", "notrepo", ["clone", "--depth", "2", "{remote_url}"], all_of(title("git clone --depth 2"), texts("grafted", "only the last 2 commits"), commit_count(2))),
+    Case("clone-branch", "notrepo", ["clone", "-b", "main", "{remote_url}", "copy"], all_of(title("git clone -b main"), texts("on main"), ref_before("main"))),
+    Case("clone-depth-branch", "notrepo", ["clone", "--depth", "1", "--branch", "main", "{remote_url}"], all_of(texts("grafted"), commit_count(1))),
+    Case("clone-bad-branch", "notrepo", ["clone", "-b", "nope", "{remote_url}"], error="Remote branch nope not found"),
     # not a repository / bare
     Case("status-notrepo", "notrepo", ["status"], error="git-sim error"),
     Case("log-bare", "bare", ["log"], error="git-sim error"),

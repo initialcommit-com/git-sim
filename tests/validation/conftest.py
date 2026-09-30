@@ -66,6 +66,9 @@ SHAPES: Dict[str, tuple] = {
     "octopus": (dict(scenario="octopus", seed=12), []),
     "submodule": (dict(scenario="submodule", seed=13), []),
     "worktree": (dict(scenario="worktree", seed=14), []),
+    # a second linked worktree whose folder was deleted by hand: prunable
+    # ("rm <dir>" deletes a folder, relative to the repository)
+    "worktree-gone": (dict(scenario="worktree", seed=14), ["worktree add -q -b old-idea ../old-idea-wt", "rm ../old-idea-wt"]),
     "reflog": (dict(scenario="reflog", seed=15), []),
     "single": (dict(commits=1, style="realistic", seed=16), []),
     # main moved back behind branch1, so merging branch1 is a fast-forward
@@ -81,6 +84,31 @@ SHAPES: Dict[str, tuple] = {
     "stale-remote": (dict(scenario="ahead-of-remote", seed=5), ["update-ref refs/remotes/origin/gone HEAD~1"]),
     "remote-branch": (dict(scenario="ahead-of-remote", seed=5), ["push -q origin HEAD~1:refs/heads/old-idea", "fetch -q origin"]),
     "new-tag": (dict(scenario="ahead-of-remote", seed=5), ["tag v9.9"]),
+    # a remote that moved on in every way at once, for remote show, ls-remote and
+    # fetch --all: new commits on main, a branch not fetched yet (fresh), one
+    # deleted there but still here (origin/old-idea), a local commit on feature
+    # not pushed, a tag only here, a push URL of its own, and a second remote
+    # (the same repository) with nothing fetched from it
+    "remote-moved": (
+        dict(scenario="behind-remote", seed=6),
+        [
+            "push -q origin HEAD~1:refs/heads/fresh",
+            "update-ref -d refs/remotes/origin/fresh",
+            "update-ref refs/remotes/origin/old-idea HEAD~2",
+            "push -q origin HEAD:refs/heads/feature",
+            "branch -q --track feature origin/feature",
+            "checkout -q feature",
+            "commit -q --allow-empty -m Feature-work",
+            "checkout -q main",
+            "tag v0.9 HEAD~1",
+            "config remote.origin.pushurl ../remote_moved.push.git",
+            "remote add upstream ../remote_moved.origin.git",
+        ],
+    ),
+    # tags the remote already has: v0.9 here too, the annotated v0.8 there only
+    "remote-tag": (dict(scenario="ahead-of-remote", seed=5), ["tag v0.9 HEAD~2", "tag -a v0.8 -m Beta HEAD~3", "push -q origin v0.9 v0.8", "tag -d v0.8"]),
+    # switched to branch2 and back, so @{-1} is branch2
+    "switched": (dict(commits=10, branches=4, diverge_at=2, merge=[1], constant_sha=True), ["checkout -q branch2", "checkout -q main"]),
     # an operation stopped on a conflict, as found and with the conflict resolved
     # ("!" marks a command expected to stop with a non-zero exit)
     "merging": (dict(scenario="merge-conflict", seed=4), []),
@@ -89,6 +117,17 @@ SHAPES: Dict[str, tuple] = {
     "rebasing-resolved": (dict(scenario="merge-conflict", seed=4), ["merge --abort", "checkout -q feature/conflict", "!rebase main", "checkout --theirs .", "add -A"]),
     "picking": (dict(scenario="merge-conflict", seed=4), ["merge --abort", "!cherry-pick feature/conflict"]),
     "picking-resolved": (dict(scenario="merge-conflict", seed=4), ["merge --abort", "!cherry-pick feature/conflict", "checkout --theirs .", "add -A"]),
+    # ignore rules for check-ignore: *.log ignored, keep.log un-ignored by a !
+    # line, tracked.log committed with add -f (so no rule applies to it)
+    "ignores": (dict(scenario="history", seed=1), [
+        (".gitignore", "*.log\nbuild/\n!keep.log\n"), ("tracked.log", "kept on purpose\n"),
+        "add .gitignore", "add -f tracked.log", "commit -q -m ignore-rules",
+        ("debug.log", "noise\n"), ("keep.log", "wanted\n"),
+    ]),
+    # the history's tags are lightweight; git describe without --tags needs an annotated one
+    "annotated": (dict(scenario="history", seed=1), ["tag -a v0.9 -m Beta HEAD~3"]),
+    # app.py renamed in the last commit, for log --follow
+    "renamed": (dict(scenario="history", seed=1), ["mv app.py server.py", "commit -q -m Rename"]),
 }
 
 
@@ -147,6 +186,12 @@ class Shapes:
             result = build(git_dir=str(base), name=name.replace("-", "_"), **kwargs)
             path = pathlib.Path(result["path"])
             for cmd in post:
+                if isinstance(cmd, tuple):  # (name, text): a file written into the working directory
+                    (path / cmd[0]).write_text(cmd[1], encoding="utf-8")
+                    continue
+                if cmd.startswith("rm "):
+                    shutil.rmtree(path / cmd[3:], onerror=lambda f, p, e: (os.chmod(p, 0o700), f(p)))
+                    continue
                 expect_stop = cmd.startswith("!")
                 subprocess.run(["git", "-C", str(path), *cmd.lstrip("!").split()], check=not expect_stop, capture_output=True)
         shape = Shape(name, path, result)

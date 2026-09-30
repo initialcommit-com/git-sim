@@ -24,6 +24,7 @@ RENDERABLE_COMMANDS = {
     "fetch",
     "init",
     "log",
+    "ls-remote",
     "merge",
     "mv",
     "pull",
@@ -45,6 +46,10 @@ RENDERABLE_COMMANDS = {
     "diff",
     "blame",
     "bisect",
+    "check-ignore",
+    "shortlog",
+    "grep",
+    "describe",
 }
 
 RENDER_TIMEOUT_SECONDS = 180
@@ -197,9 +202,6 @@ def render_simulation(
             "render_note": f"git-sim does not render '{subcommand}'",
         }
 
-    if subcommand == "checkout" and "--" in args:
-        # `checkout -- <paths>` restores files, which git-sim draws as restore
-        subcommand, args = "restore", args[args.index("--") + 1 :]
     kept, dropped = modeled_args(subcommand, args)
     attempts = [[subcommand, *kept]]
     positional_only = [subcommand, *[a for a in kept if not a.startswith("-")]]

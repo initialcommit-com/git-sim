@@ -96,3 +96,9 @@ def remotes(repo) -> List[str]:
 
 def tracked(repo) -> List[str]:
     return git(repo, "ls-files").split("\n") if git(repo, "ls-files") else []
+
+
+def check_ignored(repo, path) -> bool:
+    """Whether git check-ignore says the path is ignored (exit status 0)."""
+    proc = subprocess.run(["git", "-C", str(repo), "check-ignore", "-q", path], capture_output=True)
+    return proc.returncode == 0

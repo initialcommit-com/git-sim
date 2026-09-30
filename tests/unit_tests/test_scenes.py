@@ -640,3 +640,359 @@ def test_preflight_submodule_deinit_is_flagged():
     from git_sim.preflight import RISKY_SUBCOMMANDS
 
     assert "submodule" in RISKY_SUBCOMMANDS
+
+
+def test_restore_dot_takes_every_modified_file(repo):
+    from git_sim.restore import Restore
+
+    (repo / "file1.txt").write_text("changed\n")
+    (repo / "file2.txt").write_text("changed\n")
+    (repo / "file3.txt").write_text("staged\n")
+    run_git(repo, "add", "file3.txt")
+    scene = Restore(files=["."], staged=False)
+    assert scene.files == ["file1.txt", "file2.txt"]
+    assert scene.cmd == "git restore ."
+    scene.construct()
+    assert {t.text for t in scene.firstColumnFiles} == {"file1.txt", "file2.txt"}
+    assert set(scene.zone_arrows) == {("file1.txt", 2, 1), ("file2.txt", 2, 1)}
+    with pytest.raises(SystemExit):
+        Restore(files=["file4.txt"], staged=False)  # nothing to restore
+
+
+def test_restore_source_marks_the_commit_and_brings_the_file_over(repo):
+    from git_sim.restore import Restore
+
+    older = run_git(repo, "rev-parse", "HEAD~2").strip()
+    (repo / "file1.txt").write_text("changed\n")
+    scene = Restore(files=["file1.txt"], staged=False, source="HEAD~2")
+    assert scene.cmd == "git restore --source HEAD~2 file1.txt"
+    scene.construct()
+    assert ref_commit(scene, "source") == older
+    assert scene.drawnCommits[older].meta.get("before_fill") is not None
+    assert scene.zone_arrows == [("file1.txt", 3, 1)]
+    assert {t.text for t in scene.thirdColumnFiles} == {"file1.txt"}
+    # file5.txt came later: restoring it from HEAD~1 into the staging area removes it
+    staged = Restore(files=["file5.txt"], staged=True, source="HEAD~1")
+    staged.construct()
+    assert staged.zone_arrows == [("file5.txt", 3, 2)]
+    assert staged.absent_from_source() == ["file5.txt"]
+    assert any("Not in" in t and "file5.txt" in t for t in scene_texts(staged))
+    with pytest.raises(SystemExit):
+        Restore(files=["file2.txt"], staged=False, source="HEAD")  # the same there
+    with pytest.raises(SystemExit):
+        Restore(files=["file1.txt"], staged=False, source="nope")
+
+
+def test_checkout_paths_is_drawn_as_restore(repo):
+    from git_sim.checkout import CheckoutFiles, split_checkout_args
+
+    (repo / "file1.txt").write_text("changed\n")
+    assert split_checkout_args(["feature"]) == (["feature"], [])
+    assert split_checkout_args(["file1.txt"]) == ([], ["file1.txt"])
+    assert split_checkout_args(["."]) == ([], ["."])
+    assert split_checkout_args(["nope"]) == (["nope"], [])  # reported as a bad revision
+    # what follows a -- is a path, even one named like a branch
+    assert split_checkout_args(["feature"], after_dashes=1) == ([], ["feature"])
+    assert split_checkout_args(["HEAD~1", "file1.txt"], after_dashes=1) == (["HEAD~1"], ["file1.txt"])
+    scene = CheckoutFiles(paths=["."])
+    assert scene.cmd == "git checkout -- ."
+    scene.construct()
+    assert scene.zone_arrows == [("file1.txt", 2, 1)]
+
+
+def test_revert_several_commits_chains_the_reverts(repo):
+    from git_sim.revert import Revert
+
+    shas = {i: run_git(repo, "rev-parse", f"HEAD~{i}").strip() for i in range(4)}
+    scene = Revert(commit=["HEAD~1", "HEAD~3"])
+    assert [c.hexsha for c in scene.reverts] == [shas[1], shas[3]]  # in the order given
+    assert scene.cmd == "git revert HEAD~1 HEAD~3"
+    scene.construct()
+    assert {"abcdef", "abcdeg"} <= set(scene.drawnCommits)
+    assert ref_commit(scene, "HEAD") == "abcdeg"
+    for i in (1, 3):
+        assert scene.drawnCommits[shas[i]].meta.get("before_fill") is not None
+    assert {t.text for t in scene.secondColumnFiles} == {"file2.txt", "file4.txt"}
+    # a range is reverted newest first, as git walks it
+    ranged = Revert(commit=["HEAD~3..HEAD~1"])
+    assert [c.hexsha for c in ranged.reverts] == [shas[1], shas[2]]
+    staged = Revert(commit=["HEAD", "HEAD~2"], no_commit=True)
+    staged.construct()
+    assert "abcdef" not in staged.drawnCommits
+    assert {t.text for t in staged.secondColumnFiles} == {"file5.txt", "file3.txt"}
+    assert staged.cmd == "git revert -n HEAD HEAD~2"
+    with pytest.raises(SystemExit):
+        Revert(commit=["HEAD..HEAD"])
+
+
+def test_stash_show_patch_branch_and_clear(repo):
+    from git_sim.enums import StashSubCommand
+    from git_sim.stash import Stash
+
+    feature = run_git(repo, "rev-parse", "feature").strip()
+    run_git(repo, "checkout", "-q", "feature")
+    (repo / "file1.txt").write_text("unstaged\n")
+    (repo / "file2.txt").write_text("staged\n")
+    run_git(repo, "add", "file2.txt")
+    run_git(repo, "stash")
+    run_git(repo, "checkout", "-q", "main")
+
+    shown = Stash(files=[], command=StashSubCommand.SHOW, stash_index="0", patch=True)
+    assert shown.cmd == "git stash show -p stash@{0}"
+    shown.construct()
+    assert "+staged" in scene_texts(shown) and "-content 2" in scene_texts(shown)
+    with pytest.raises(SystemExit):
+        Stash(files=[], command=StashSubCommand.PUSH, stash_index="0", patch=True)
+
+    branch = Stash(files=[], command=StashSubCommand.BRANCH, stash_index="0", branch="topic")
+    assert branch.cmd == "git stash branch topic stash@{0}"
+    branch.construct()
+    # the branch starts where the entry was made, and HEAD goes with it
+    assert ref_commit(branch, "topic") == feature
+    assert ref_commit(branch, "HEAD") == feature
+    # what was staged is staged again; the rest goes to the working directory
+    assert set(branch.zone_arrows) == {("file1.txt", 1, 2), ("file2.txt", 1, 3)}
+    assert all(t.strikethrough for t in branch.firstColumnFiles)
+    with pytest.raises(SystemExit):
+        Stash(files=[], command=StashSubCommand.BRANCH, stash_index="0", branch="feature")
+    with pytest.raises(SystemExit):
+        Stash(files=[], command=StashSubCommand.BRANCH, stash_index="3", branch="other")
+
+    clear = Stash(files=[], command=StashSubCommand.CLEAR, stash_index="0")
+    clear.construct()
+    # nothing is left to be "newest first"
+    assert "newest first" not in scene_texts(clear)
+    assert "The stash is empty." in scene_texts(clear)
+
+
+def test_worktree_prune_and_list_name_the_missing_directory(repo, tmp_path):
+    import shutil
+
+    from git_sim.enums import WorktreeSubCommand
+    from git_sim.worktree import Worktree
+
+    gone = tmp_path / "gone"
+    run_git(repo, "worktree", "add", "-q", "-b", "old-idea", str(gone))
+    shutil.rmtree(gone)
+    listed = Worktree(command=WorktreeSubCommand.LIST, path=None, branch=None, force=False)
+    listed.construct()
+    assert listed.rows[1][2] == "prunable: directory missing"
+    assert any("'gone' is prunable" in n for n in listed.notes)
+    pruned = Worktree(command=WorktreeSubCommand.PRUNE, path=None, branch=None, force=False)
+    pruned.construct()
+    # the worktree's record goes, the branch it had stays
+    assert pruned.rows[1][1:4] == ("old-idea", ("prunable: directory missing", "record pruned"), (True, False, False))
+    assert any("Prunes the record of 'gone'" in n for n in pruned.notes)
+    assert Worktree(command=None, path=None, branch=None, force=False).cmd == "git worktree list"
+
+
+def with_origin(repo, tmp_path):
+    """A bare origin that has main, and remote-tracking branches for it."""
+    remote = tmp_path / "origin.git"
+    run_git(tmp_path, "init", "-q", "--bare", "-b", "main", str(remote))
+    run_git(repo, "remote", "add", "origin", str(remote))
+    run_git(repo, "push", "-q", "-u", "origin", "main")
+    return remote
+
+
+def test_branch_without_a_name_lists_the_branches(repo):
+    from git_sim.branch import Branch
+
+    scene = Branch()
+    assert scene.listing and scene.cmd == "git branch"
+    scene.construct()
+    texts = scene_texts(scene)
+    assert "local branches" in texts and "* marks main, the branch HEAD is on" in texts
+    assert {"feature", "main", "*"} <= set(texts)
+    # every branch is drawn in the graph, as log --all would
+    assert {"feature", "main"} <= set(scene.drawnRefs)
+    assert Branch(all=True, verbose=2).cmd == "git branch -a -vv"
+
+
+def test_branch_verbose_shows_the_upstream_and_how_far_ahead(repo, tmp_path):
+    from git_sim.branch import Branch
+
+    with_origin(repo, tmp_path)
+    (repo / "extra.txt").write_text("x\n")
+    run_git(repo, "add", "extra.txt")
+    run_git(repo, "commit", "-q", "-m", "local only")
+    scene = Branch(all=True, verbose=2)
+    scene.construct()
+    texts = scene_texts(scene)
+    assert "[origin/main: ahead 1]" in texts
+    assert "remotes/origin/main" in texts
+    assert run_git(repo, "rev-parse", "--short=7", "HEAD").strip() in texts
+    # -v alone: how far ahead, without the upstream's name
+    single = Branch(verbose=1)
+    single.construct()
+    assert "[ahead 1]" in scene_texts(single)
+
+
+def test_branch_merged_highlights_what_git_lists(repo):
+    from git_sim.branch import Branch
+
+    make_branch_with_commit(repo, "side", "side.txt")
+    for kwargs, flag in ((dict(merged="HEAD"), ["--merged"]), (dict(no_merged="HEAD"), ["--no-merged"]), (dict(merged="feature"), ["--merged", "feature"])):
+        scene = Branch(**kwargs)
+        scene.construct()
+        listed = [line for line in run_git(repo, "branch", *flag).splitlines() if line.strip()]
+        assert f"git lists the {len(listed)} highlighted" in " ".join(scene_texts(scene)), flag
+    assert Branch(merged="feature").cmd == "git branch --merged feature"
+    assert Branch(merged="HEAD").cmd == "git branch --merged"
+    with pytest.raises(SystemExit):
+        Branch(merged="HEAD", no_merged="HEAD")
+    with pytest.raises(SystemExit):
+        Branch(name="feature", verbose=1)
+
+
+def test_branch_set_upstream_writes_the_branch_section(repo, tmp_path):
+    from git_sim.branch import Branch
+
+    scene = Branch(name="feature", set_upstream_to="main")
+    assert scene.cmd == "git branch -u main feature"
+    scene.construct()
+    texts = scene_texts(scene)
+    assert {'[branch "feature"]', "remote = .", "merge = refs/heads/main"} <= set(texts)
+    behind = run_git(repo, "rev-list", "--count", "feature..main").strip()
+    assert f"[main: behind {behind}]" in scene.drawnRefs
+    assert scene.drawnRefs[f"[main: behind {behind}]"].meta["phase"] == "after"
+    # the checked-out branch gets git status's wording
+    with_origin(repo, tmp_path)
+    run_git(repo, "push", "-q", "origin", "feature")
+    run_git(repo, "fetch", "-q", "origin")
+    current = Branch(set_upstream_to="origin/feature")
+    current.construct()
+    texts = scene_texts(current)
+    assert "merge = refs/heads/main" in texts and "merge = refs/heads/feature" in texts
+    assert any(t.startswith("Your branch is ahead of 'origin/feature'") for t in texts)
+    for bad in ("origin/nope", "nope"):
+        with pytest.raises(SystemExit):
+            Branch(set_upstream_to=bad)
+    with pytest.raises(SystemExit):
+        Branch(set_upstream_to="main")  # its own upstream
+
+
+def test_switch_dash_goes_back_to_the_previous_branch(repo, capsys):
+    from git_sim.switch import Switch
+
+    with pytest.raises(SystemExit):
+        Switch(branch="-", c=False, detach=False)
+    assert "no previous branch" in capsys.readouterr().out
+    run_git(repo, "switch", "-q", "feature")
+    run_git(repo, "switch", "-q", "main")
+    scene = Switch(branch="-", c=False, detach=False)
+    assert scene.cmd == "git switch -" and scene.branch == "feature"
+    scene.construct()
+    feature = run_git(repo, "rev-parse", "feature").strip()
+    assert ref_commit(scene, "HEAD") == feature
+    assert scene.drawnRefs["@{-1}"].meta["kind"] == "reflog"
+    assert any("before this one: feature (@{-1} in the reflog)" in t for t in scene_texts(scene))
+
+
+def test_switch_guesses_a_local_branch_from_the_remote_one(repo, tmp_path):
+    from git_sim.switch import Switch
+
+    with_origin(repo, tmp_path)
+    run_git(repo, "push", "-q", "origin", "feature:release")
+    run_git(repo, "fetch", "-q", "origin")
+    scene = Switch(branch="release", c=False, detach=False)
+    assert scene.guess == "origin/release" and scene.cmd == "git switch release"
+    scene.construct()
+    feature = run_git(repo, "rev-parse", "feature").strip()
+    assert ref_commit(scene, "release") == feature
+    assert ref_commit(scene, "HEAD") == feature
+    assert scene.drawnRefs["release"].meta["phase"] == "after"
+    with pytest.raises(SystemExit):
+        Switch(branch="nothing-anywhere", c=False, detach=False)
+
+
+def test_switch_create_at_a_start_point(repo, tmp_path):
+    from git_sim.switch import Switch
+
+    scene = Switch(branch="topic", c=True, detach=False, start_point="feature")
+    assert scene.cmd == "git switch -c topic feature" and scene.track is None
+    scene.construct()
+    feature = run_git(repo, "rev-parse", "feature").strip()
+    assert ref_commit(scene, "topic") == feature and ref_commit(scene, "HEAD") == feature
+    with_origin(repo, tmp_path)
+    tracking = Switch(branch="topic", c=True, detach=False, start_point="origin/main")
+    assert tracking.track == "origin/main"
+    tracking.construct()
+    assert any("becomes topic's upstream" in t for t in scene_texts(tracking))
+    with pytest.raises(SystemExit):
+        Switch(branch="feature", c=False, detach=False, start_point="main")
+    with pytest.raises(SystemExit):
+        Switch(branch="topic", c=True, detach=False, start_point="nope")
+
+
+def test_annotated_tag_draws_the_tag_object(repo):
+    from git_sim.tag import Tag
+
+    scene = Tag(name="v2", commit=None, d=False, annotate=True, message="Second release")
+    assert scene.cmd == 'git tag -a v2 -m "Second release"'
+    scene.construct()
+    texts = scene_texts(scene)
+    assert {"tag object v2", "Second release", "Test <test@example.com>", "commit"} <= set(texts)
+    assert scene.drawnRefs["v2"].meta["kind"] == "annotated tag"
+    # -m alone makes an annotated tag too; -a alone has no message to give it
+    assert Tag(name="v3", commit="HEAD~1", d=False, message="Third").annotated
+    with pytest.raises(SystemExit):
+        Tag(name="v3", commit=None, d=False, annotate=True)
+    with pytest.raises(SystemExit):
+        Tag(name="v3", commit=None, d=True, message="x")
+
+
+def test_tag_on_another_branch_gets_a_row_of_its_own(repo):
+    from git_sim.tag import Tag
+
+    sha = make_branch_with_commit(repo, "side", "side.txt")
+    scene = Tag(name="v-side", commit="side", d=False)
+    scene.construct()
+    assert ref_commit(scene, "v-side") == sha
+
+
+def test_tag_list_highlights_the_matching_tags(repo):
+    from git_sim.tag import Tag
+
+    run_git(repo, "tag", "v1.0", "HEAD~2")
+    run_git(repo, "tag", "-a", "v1.1", "-m", "Point release", "HEAD~1")
+    run_git(repo, "tag", "v2.0")
+    scene = Tag(name="v1.*", commit=None, d=False, list_tags=True)
+    assert scene.cmd == 'git tag -l "v1.*"'
+    scene.construct()
+    texts = scene_texts(scene)
+    assert 'git lists the 2 highlighted: the tags matching "v1.*"' in texts
+    assert {"v1.0", "v1.1", "v2.0", "annotated", "lightweight", "Point release"} <= set(texts)
+    every = Tag(name=None, commit=None, d=False, list_tags=True)
+    assert every.cmd == "git tag -l"
+    every.construct()
+    assert "git lists every tag, sorted by name" in scene_texts(every)
+    with pytest.raises(SystemExit):
+        Tag(name=None, commit=None, d=False)
+
+
+def test_push_a_tag_and_delete_one_on_the_remote(repo, tmp_path):
+    from git_sim.push import Push
+
+    with_origin(repo, tmp_path)
+    run_git(repo, "tag", "v1")
+    scene = Push(remote="origin", branch="v1")
+    assert scene.tag_name == "v1" and scene.cmd == "git push origin v1"
+    scene.construct()
+    assert scene.drawnRefs["on origin"].meta["phase"] == "after"
+    assert any("Pushes tag v1 to origin" in t for t in scene_texts(scene))
+
+    run_git(repo, "push", "-q", "origin", "v1")
+    again = Push(remote="origin", branch="refs/tags/v1")
+    again.construct()
+    assert any("origin already has tag v1" in t for t in scene_texts(again))
+
+    gone = Push(remote="origin", branch="v1", delete=True)
+    gone.construct()
+    assert gone.drawnRefs["deleted on origin"].meta["phase"] == "after"
+    assert any(r.meta.get("name") == "on origin" and r.meta["phase"] == "removed" for r in gone.removed_mobjects)
+    assert any("Your local tag v1 is kept" in t for t in scene_texts(gone))
+    with pytest.raises(SystemExit):
+        Push(remote="origin", branch="refs/tags/nope")
+    with pytest.raises(SystemExit):
+        Push(remote="origin", branch="v1", force=True)

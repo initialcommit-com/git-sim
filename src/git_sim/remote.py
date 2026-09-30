@@ -7,36 +7,61 @@ new URL strikes the old line and puts the new one beneath it, get-url lights
 the line it answers from. The right card names the remote, shows its
 address, says what changed and what that means for fetch, pull and push and
 for the remote-tracking branches that carry its name.
+
+remote -v lists each remote's fetch and push address. remote show asks the
+remote for its branches and reports as git does: the URLs, the branch its
+HEAD points at, each branch as tracked, new (not fetched yet) or stale
+(deleted there, still here), and the local branches set up to pull from and
+push to it, whose sections light up in the file card. Neither changes
+anything.
 """
 
 import re
 import sys
 from configparser import Error as ConfigError
 
+import git
+
 from git_sim.backend import m
 from git_sim.cards import Cards
 from git_sim.enums import RemoteSubCommand
 from git_sim.git_sim_base_command import GitSimBaseCommand
+from git_sim.lsremote import ask_remote, known, short_url, tracking_refs
 from git_sim.settings import settings
 
 SECTION = re.compile(r'^remote "(.+)"$')
+BRANCH_SECTION = re.compile(r'^branch "(.+)"$')
 
 
 class Remote(Cards, GitSimBaseCommand):
-    def __init__(self, command: RemoteSubCommand, remote: str, url_or_path: str):
+    def __init__(
+        self,
+        command: RemoteSubCommand,
+        remote: str,
+        url_or_path: str,
+        verbose: bool = False,
+    ):
         super().__init__()
         self.command = command
         self.remote = remote
         self.url_or_path = url_or_path
+        # -v only changes the listing; git takes it and ignores it elsewhere
+        self.verbose = verbose and command is None
 
         self.cmd += f"{type(self).__name__.lower()}"
+        if self.verbose:
+            self.cmd += " -v"
         if self.command in (
             RemoteSubCommand.ADD,
             RemoteSubCommand.RENAME,
             RemoteSubCommand.SET_URL,
         ):
             self.cmd += f" {self.command.value} {self.remote} {self.url_or_path}"
-        elif self.command in (RemoteSubCommand.REMOVE, RemoteSubCommand.GET_URL):
+        elif self.command in (
+            RemoteSubCommand.REMOVE,
+            RemoteSubCommand.GET_URL,
+            RemoteSubCommand.SHOW,
+        ):
             self.cmd += f" {self.command.value} {self.remote}"
 
     def construct(self):
@@ -45,6 +70,8 @@ class Remote(Cards, GitSimBaseCommand):
 
         self.show_intro()
         self.check_arguments()
+        if self.command == RemoteSubCommand.SHOW:
+            self.shown = self.show_info(self.remote)
         self.draw()
         self.recenter_frame()
         self.scale_frame()
@@ -100,6 +127,90 @@ class Remote(Cards, GitSimBaseCommand):
             )
         except Exception:
             return []
+
+    def urls(self, name):
+        """(fetch URL, push URL) as git remote -v prints them: the push URL is
+        pushurl when one is set, else the same address."""
+        try:
+            fetch = self.repo.git.remote("get-url", name)
+        except git.GitCommandError:
+            fetch = self.remotes().get(name, {}).get("url", "?")
+        try:
+            push = self.repo.git.remote("get-url", "--push", name)
+        except git.GitCommandError:
+            push = fetch
+        return fetch, push
+
+    def show_info(self, name):
+        """What git remote show <name> reports, asking the remote for its
+        branches: its URLs, the branch its HEAD points at, each branch's
+        state here, and the local branches set up to pull from and push to
+        it."""
+        fetch_url, push_url = self.urls(name)
+        try:
+            head_branch, refs, _ = ask_remote(self.repo, name)
+        except git.GitCommandError as e:
+            reason = (e.stderr or str(e)).strip().splitlines()
+            reason = reason[0].replace("stderr: ", "").strip("' ") if reason else ""
+            print(f"git-sim error: could not reach remote '{name}': {reason}")
+            sys.exit(1)
+        theirs = {
+            r[len("refs/heads/") :]: sha
+            for r, sha in refs.items()
+            if r.startswith("refs/heads/")
+        }
+        tracking = tracking_refs(self.repo, name)
+        branches = []
+        for branch in sorted(set(theirs) | set(tracking)):
+            if branch in theirs and branch in tracking:
+                branches.append((branch, "tracked"))
+            elif branch in theirs:
+                branches.append((branch, "new"))
+            else:
+                branches.append((branch, "stale"))
+
+        # branch.<b>.remote and branch.<b>.merge: what a plain git pull on <b> does
+        pulls = []
+        reader = self.repo.config_reader(config_level="repository")
+        for head in self.repo.heads:
+            section = f'branch "{head.name}"'
+            try:
+                if self.clean(reader.get_value(section, "remote")) != name:
+                    continue
+                merge = self.clean(reader.get_value(section, "merge"))
+            except Exception:
+                continue
+            try:
+                rebase = str(reader.get_value(section, "rebase")).lower() not in ("false", "0", "no")
+            except Exception:
+                rebase = False
+            target = merge[len("refs/heads/") :] if merge.startswith("refs/heads/") else merge
+            pulls.append((head.name, "rebases onto" if rebase else "merges with", target))
+
+        # With no push refspec set, git remote show lists the local branches the
+        # remote has a branch of the same name for, and how a push would go.
+        pushes = []
+        for head in self.repo.heads:
+            there = theirs.get(head.name)
+            if there is None:
+                continue
+            here = head.commit.hexsha
+            if there == here:
+                status = "up to date"
+            elif known(self.repo, there) and self.in_history(there, here):
+                status = "fast-forwardable"
+            else:
+                status = "local out of date"
+            pushes.append((head.name, head.name, status))
+
+        return dict(
+            fetch_url=fetch_url,
+            push_url=push_url,
+            head_branch=head_branch,
+            branches=branches,
+            pulls=pulls,
+            pushes=pushes,
+        )
 
     def check_arguments(self):
         names = self.remotes()
@@ -204,6 +315,21 @@ class Remote(Cards, GitSimBaseCommand):
         # the subject and stay in full.
         for section, pairs in sections:
             match = SECTION.match(section)
+            branch_match = BRANCH_SECTION.match(section)
+            if (
+                c == RemoteSubCommand.SHOW
+                and branch_match
+                and dict(pairs).get("remote") == name
+            ):
+                # a branch that pulls from the remote: what show reports under git pull
+                plain(f"[{section}]", left, bold=True, color=theme.branch)
+                for k, v in pairs:
+                    text = self.fit(f"{k} = {v}")
+                    if k in ("remote", "merge", "rebase"):
+                        lit(text, left + 0.4, theme.branch)
+                    else:
+                        plain(text, left + 0.4)
+                continue
             if not match:
                 plain(
                     f"[{section}]  ·  {len(pairs)} setting{'s' if len(pairs) != 1 else ''}",
@@ -243,6 +369,10 @@ class Remote(Cards, GitSimBaseCommand):
                     )
                 elif hit and c == RemoteSubCommand.GET_URL and k == "url":
                     lit(text, left + 0.4, theme.head)
+                elif hit and c == RemoteSubCommand.SHOW:
+                    lit(text, left + 0.4, theme.head)
+                elif self.verbose and k in ("url", "pushurl"):
+                    lit(text, left + 0.4, theme.head)
                 else:
                     plain(text, left + 0.4)
         if c == RemoteSubCommand.ADD:
@@ -259,7 +389,8 @@ class Remote(Cards, GitSimBaseCommand):
         fcard.move_to((fx0 + fw / 2, (fy0 + fbottom) / 2, 0))
 
         # ---- the side card: the remote, its address, what the command means --------------
-        sw = 6.4
+        # show has a report to lay out, a name beside each line of it
+        sw = 8.4 if c == RemoteSubCommand.SHOW else 6.4
         sx0 = fx0 + fw + 0.6
         sin = sx0 + 0.45
         savail = sw - 0.9
@@ -282,6 +413,29 @@ class Remote(Cards, GitSimBaseCommand):
             (side if phase == "before" else side_after).append(para)
             sy -= para.height + 0.4
 
+        def rows(lines, size=16):
+            """(name, text, color) lines: the names in a column of their own,
+            each text beside its name, wrapped in the room left."""
+            nonlocal sy
+            names = [
+                self.mono(n, size=size, bold=True, color=ncolor)
+                for n, ncolor, _, _ in lines
+            ]
+            col = max(n.width for n in names) + 0.35
+            for label, (_, _, text, color) in zip(names, lines):
+                para = self.paragraph(
+                    text,
+                    size=size,
+                    max_width=savail - col,
+                    color=color,
+                    bold=color not in (None, self.mutedColor),
+                )
+                self.put(label, sin, sy)
+                self.put(para, sin + col, sy - para.height / 2 + label.height / 2)
+                side.extend([label, para])
+                sy -= max(para.height, label.height) + 0.28
+            sy -= 0.12
+
         if c is None:
             side.append(self.put(self.mono("remotes", size=22, bold=True), sin, sy))
             sy -= 0.65
@@ -295,7 +449,17 @@ class Remote(Cards, GitSimBaseCommand):
                 pill.move_to((sin + pill.width / 2, sy, 0))
                 side.append(pill)
                 sy -= 0.55
-                body(opts.get("url", "?"), size=16)
+                if self.verbose:
+                    # git remote -v: the address fetch reads from and the one push writes to
+                    fetch_url, push_url = self.urls(rname)
+                    rows(
+                        [
+                            ("fetch", self.mutedColor, short_url(fetch_url), None),
+                            ("push", self.mutedColor, short_url(push_url), None),
+                        ]
+                    )
+                else:
+                    body(opts.get("url", "?"), size=16)
                 tracking = self.tracking_branches(rname)
                 if tracking:
                     shown = ", ".join(tracking[:4]) + (
@@ -419,6 +583,50 @@ class Remote(Cards, GitSimBaseCommand):
                     color=self.mutedColor,
                     size=16,
                 )
+            elif c == RemoteSubCommand.SHOW:
+                info = self.shown
+                muted = self.mutedColor
+                rows(
+                    [
+                        ("Fetch URL", muted, short_url(info["fetch_url"]), None),
+                        ("Push URL", muted, short_url(info["push_url"]), None),
+                        ("HEAD branch", muted, info["head_branch"] or "(none: nothing pushed yet)", theme.head if info["head_branch"] else muted),
+                    ]
+                )
+                heading("remote branches")
+                states = {
+                    "tracked": lambda b: (f"tracked as {name}/{b}", None),
+                    "new": lambda b: (f"new: the next fetch stores it as {name}/{b}", theme.branch),
+                    "stale": lambda b: (f"stale: deleted on {name}; git remote prune {name} drops {name}/{b}", theme.gold),
+                }
+                if info["branches"]:
+                    rows([(b, None, *states[s](b)) for b, s in info["branches"]])
+                else:
+                    body(f"none: nothing was pushed to {name} yet", color=muted, size=16)
+                heading("configured for git pull")
+                if info["pulls"]:
+                    rows([(local, None, f"{verb} {target}", None) for local, verb, target in info["pulls"]])
+                else:
+                    body(f"no local branch pulls from {name}", color=muted, size=16)
+                heading("configured for git push")
+                push_colors = {"up to date": None, "fast-forwardable": theme.head, "local out of date": theme.gold}
+                if info["pushes"]:
+                    rows(
+                        [
+                            (local, None, f"pushes to {target} ({status})", push_colors[status])
+                            for local, target, status in info["pushes"]
+                        ]
+                    )
+                else:
+                    body(f"no local branch has a branch of its name on {name}", color=muted, size=16)
+                if not self.compact:
+                    heading("what it does")
+                    body(
+                        f"Asks {name} for its branches and compares them with the remote-tracking branches and the branch settings here. Nothing changes: git fetch brings the new ones, git remote prune {name} drops the stale ones.",
+                        color=muted,
+                        size=16,
+                    )
+        if c not in (None, RemoteSubCommand.SHOW):
             heading("scope")
             scope_pill = self.pill("local", theme.purple)
             scope_pill.move_to((sin + scope_pill.width / 2, sy, 0))

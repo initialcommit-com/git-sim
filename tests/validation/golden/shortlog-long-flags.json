@@ -1,0 +1,87 @@
+{
+ "commits": {
+  "Add created_at to orders": {
+   "kind": "commit",
+   "parents": [
+    "Log the request path"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 1
+  },
+  "Fix flaky test on Windows": {
+   "kind": "commit",
+   "parents": [
+    "Handle missing config values"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 1
+  },
+  "Handle missing config values": {
+   "kind": "commit",
+   "parents": [
+    "Add created_at to orders"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 1
+  },
+  "Log the request path": {
+   "kind": "commit",
+   "parents": [
+    "Raise the default log level"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 1
+  },
+  "Raise the default log level": {
+   "kind": "commit",
+   "parents": [
+    "?"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 1
+  }
+ },
+ "edges": {
+  "after": 0,
+  "before": 8,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [
+  "The graph shows 5 of the 8 commits counted."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "v1.0.0": {
+   "count": 2,
+   "kind": "tag",
+   "moved": false,
+   "phase": "before"
+  },
+  "v1.1.0": {
+   "count": 2,
+   "kind": "tag",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 1,
+ "title": "git shortlog -sne main"
+}

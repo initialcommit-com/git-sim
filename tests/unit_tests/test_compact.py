@@ -122,6 +122,68 @@ def test_compact_leaves_out_the_notes_above_the_graph(repo):
     assert not roles(draw(make, compact=True), "note")
 
 
+def test_compact_restore_from_a_commit_keeps_that_commit(repo):
+    from git_sim.restore import Restore
+
+    # restoring from a commit is about that commit: unlike a plain restore,
+    # the small drawing keeps the graph with it marked
+    make = lambda: Restore(files=["file2.txt"], staged=False, source="HEAD~3")  # noqa: E731
+    (repo / "file2.txt").write_text("changed\n")
+    small = draw(make, compact=True)
+    assert roles(small, "commit") and not roles(small, "title")
+    assert any('data-name="source"' in r for r in roles(small, "ref"))
+    sha = run_git(repo, "rev-parse", "HEAD~3").strip()
+    assert f"From {sha[:7]}" in texts(small)
+
+
+def test_compact_titles_fit_their_columns(repo):
+    from git_sim.revert import Revert
+
+    small = draw(lambda: Revert(commit=["HEAD", "HEAD~1"], no_commit=True), compact=True)
+    assert "Staged changes" in texts(small)
+    assert not any(t.startswith("Changes staged (") for t in texts(small))
+
+
+def test_compact_stash_show_frames_its_card(repo):
+    from git_sim.enums import StashSubCommand
+    from git_sim.stash import Stash
+
+    run_git(repo, "stash")
+    settings.compact = True
+    scene = Stash(files=[], command=StashSubCommand.SHOW, stash_index="0", patch=True)
+    scene.construct()
+    # with no notes to refit the frame after it, the card still sits inside
+    assert scene.camera.frame.get_bottom()[1] <= scene.toFadeOut.get_bottom()[1]
+
+
+def test_compact_listings_keep_the_card_but_not_the_messages(repo):
+    from git_sim.branch import Branch
+    from git_sim.tag import Tag
+
+    run_git(repo, "tag", "v1", "HEAD~1")
+    for make, row in (
+        (lambda: Branch(verbose=1), "feature"),
+        (lambda: Tag(name="v*", commit=None, d=False, list_tags=True), "v1"),
+    ):
+        full, small = draw(make, compact=False), draw(make, compact=True)
+        assert row in texts(small) and roles(small, "panel")
+        # the commit subject in the card goes, like the messages under the discs
+        assert "commit 4" in texts(full) and "commit 4" not in texts(small)
+        assert roles(full, "title") and not roles(small, "title")
+
+
+def test_compact_switch_dash_still_says_where_it_goes(repo):
+    from git_sim.switch import Switch
+
+    run_git(repo, "switch", "-q", "feature")
+    run_git(repo, "switch", "-q", "main")
+    make = lambda: Switch(branch="-", c=False, detach=False)  # noqa: E731
+    full, small = draw(make, compact=False), draw(make, compact=True)
+    assert roles(full, "note") and not roles(small, "note")
+    # without the note, the @{-1} label under the target names it
+    assert any('data-name="@{-1}"' in r for r in roles(small, "ref"))
+
+
 def test_the_compact_option_reaches_the_settings():
     from typer.testing import CliRunner
 

@@ -1,5 +1,6 @@
 import os
 import platform
+import re
 import shutil
 import stat
 import sys
@@ -284,11 +285,49 @@ class GitSimBaseCommand(m.MovingCameraScene):
         """A remote's URL as git reads it. GitPython's remote.url is the raw
         config value, still escaped: a Windows path comes back with every
         backslash doubled, and a clone given it wrote the doubled path into
-        its merge messages ("Merge branch 'main' of C:\\\\Users...")."""
+        its merge messages ("Merge branch 'main' of C:\\\\Users...").
+
+        A relative path (../origin.git) is made absolute: the networked
+        commands run in a throwaway clone elsewhere, where it would point at
+        nothing."""
         try:
-            return remote.repo.git.remote("get-url", remote.name)
+            url = remote.repo.git.remote("get-url", remote.name)
         except git.exc.GitCommandError:
-            return remote.url
+            url = remote.url
+        if "://" in url or os.path.isabs(url) or re.match(r"^[^/\\]+:", url):
+            return url  # a URL, an absolute path, or host:path
+        where = os.path.normpath(os.path.join(remote.repo.working_dir, url))
+        return where if os.path.exists(where) else url
+
+    def user_refs(self):
+        """This repository's local and remote-tracking branches, as refname -> sha."""
+        refs = {}
+        out = self.repo.git.for_each_ref(
+            "--format=%(refname) %(objectname)", "refs/heads", "refs/remotes"
+        )
+        for line in out.splitlines():
+            name, sha = line.rsplit(" ", 1)
+            if not name.endswith("/HEAD"):
+                refs[name] = sha
+        return refs
+
+    def mirror_refs(self, user_refs):
+        """Give the throwaway clone a networked command runs in (fetch, pull)
+        this repository's branches. A clone only checks out one branch, and
+        its remote-tracking branches are this repository's local ones, so
+        without this a local `feature` would be drawn as origin/feature."""
+        try:
+            current = self.repo.active_branch.path
+        except TypeError:  # a detached HEAD: no branch to leave alone
+            current = None
+        for ref in self.repo.git.for_each_ref(
+            "--format=%(refname)", "refs/remotes"
+        ).splitlines():
+            if not ref.endswith("/HEAD") and ref not in user_refs:
+                self.repo.git.update_ref("-d", ref)
+        for ref, sha in user_refs.items():
+            if ref != current:
+                self.repo.git.update_ref(ref, sha)
 
     def max_drawn_commits(self):
         """The most commits one picture draws (see parse_commits)."""
@@ -1108,8 +1147,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         try:
             # The graph sits 2.25 below the frame's top edge and the zone
             # table's header rule 1.75 above its center. A tall label stack
-            # can need more room than that leaves: widen the frame first.
-            needed = 2 * (self.toFadeOut.get_height() + 2.25 + 1.75 + 0.1)
+            # can need more room than that leaves: widen the frame first,
+            # keeping a gap between the commit messages and the table.
+            needed = 2 * (self.toFadeOut.get_height() + 2.25 + 1.75 + 0.6)
             if needed > self.camera.frame.get_height():
                 if settings.animate:
                     self.play(self.camera.frame.animate.scale_to_fit_height(needed))
@@ -2078,8 +2118,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
     ):
         """Row-aligned table in the three zones. ``rows`` holds
         (col1, col2, col3, struck, bold) tuples; a column value of None leaves
-        that cell empty. Used by scenes that list worktrees, submodules or
-        stash entries, where the columns describe one thing per row."""
+        that cell empty, and ``struck`` can be a tuple of three to strike some
+        cells of the row only. Used by scenes that list worktrees, submodules
+        or stash entries, where the columns describe one thing per row."""
         columns = (
             (firstColumnTitle, firstColumnFiles, firstColumnFilesDict),
             (secondColumnTitle, secondColumnFiles, secondColumnFilesDict),
@@ -2087,10 +2128,12 @@ class GitSimBaseCommand(m.MovingCameraScene):
         )
         for i, row in enumerate(rows):
             values = row[:3]
-            struck = row[3] if len(row) > 3 else False
+            struck_cells = row[3] if len(row) > 3 else False
+            if not isinstance(struck_cells, tuple):
+                struck_cells = (struck_cells,) * 3
             bold = row[4] if len(row) > 4 else False
             new = row[5] if len(row) > 5 else False  # arrives with the command
-            for value, (title, group, lookup) in zip(values, columns):
+            for value, struck, (title, group, lookup) in zip(values, struck_cells, columns):
                 if value is None:
                     continue
                 # A cell can be (before, after) when the command changes it

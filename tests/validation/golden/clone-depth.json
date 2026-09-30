@@ -1,0 +1,52 @@
+{
+ "commits": {
+  "Handle missing config values": {
+   "kind": "commit",
+   "parents": [],
+   "phase": "after",
+   "recolored": false,
+   "step": 1
+  },
+  "Pin the test dependencies": {
+   "kind": "commit",
+   "parents": [
+    "Handle missing config values"
+   ],
+   "phase": "after",
+   "recolored": false,
+   "step": 1
+  }
+ },
+ "edges": {
+  "after": 2,
+  "before": 0,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [
+  "grafted"
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "origin/main": {
+   "count": 2,
+   "kind": "remote",
+   "moved": false,
+   "phase": "before"
+  }
+ },
+ "steps": 1,
+ "title": "git clone --depth 2 fil<path>"
+}

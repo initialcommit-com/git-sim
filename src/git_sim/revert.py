@@ -9,34 +9,34 @@ from git_sim.settings import settings
 
 
 class Revert(GitSimBaseCommand):
-    def __init__(self, commit: str, mainline: int = None, no_commit: bool = False):
+    def __init__(self, commit="HEAD", mainline: int = None, no_commit: bool = False):
         super().__init__()
-        self.commit = commit
+        # one revision, or several (git revert A B, git revert A..B)
+        self.revs = [commit] if isinstance(commit, str) else list(commit or ["HEAD"])
+        self.commit = " ".join(self.revs)
         self.mainline = mainline
         self.no_commit = no_commit
 
-        try:
-            self.revert = git.repo.fun.rev_parse(self.repo, self.commit)
-        except git.exc.BadName:
-            print(
-                "git-sim error: '"
-                + self.commit
-                + "' is not a valid Git ref or identifier."
-            )
-            sys.exit(1)
+        # The commits in the order git reverts them: as named, and a range
+        # A..B newest first (git revert walks it the way git log does).
+        self.reverts = []
+        for rev in self.revs:
+            for c in self.expand(rev):
+                if c.hexsha not in [r.hexsha for r in self.reverts]:
+                    self.reverts.append(c)
+        self.revert = self.reverts[0]
 
-        if len(self.revert.parents) > 1 and self.mainline is None:
-            print(
-                f"git-sim error: commit {self.revert.hexsha[:6]} is a merge but no -m option was given."
-            )
-            sys.exit(1)
-        if self.mainline is not None and not (
-            1 <= self.mainline <= len(self.revert.parents)
-        ):
-            print(
-                f"git-sim error: commit {self.revert.hexsha[:6]} does not have parent {self.mainline}"
-            )
-            sys.exit(1)
+        for c in self.reverts:
+            if len(c.parents) > 1 and self.mainline is None:
+                print(
+                    f"git-sim error: commit {c.hexsha[:6]} is a merge but no -m option was given."
+                )
+                sys.exit(1)
+            if self.mainline is not None and not (1 <= self.mainline <= len(c.parents)):
+                print(
+                    f"git-sim error: commit {c.hexsha[:6]} does not have parent {self.mainline}"
+                )
+                sys.exit(1)
 
         self.n_default = 4
         self.n = self.n_default
@@ -54,9 +54,32 @@ class Revert(GitSimBaseCommand):
         )
         self.cmd += f"{type(self).__name__.lower()}{flags} {self.commit}"
 
+    def expand(self, rev):
+        def parse(r):
+            try:
+                return git.repo.fun.rev_parse(self.repo, r)
+            except (git.exc.BadName, ValueError):
+                print("git-sim error: '" + r + "' is not a valid Git ref or identifier.")
+                sys.exit(1)
+
+        if ".." not in rev:
+            return [parse(rev)]
+        start, end = rev.split("..", 1)
+        for r in (start, end):
+            parse(r or "HEAD")
+        commits = list(self.repo.iter_commits(f"{start or 'HEAD'}..{end or 'HEAD'}"))
+        if not commits:
+            print(f"git-sim error: the range '{rev}' contains no commits")
+            sys.exit(1)
+        return commits
+
     def construct(self):
         if not settings.stdout and not settings.output_only_path and not settings.quiet:
             print(f"{settings.INFO_STRING} {self.cmd}")
+
+        if len(self.reverts) > 1:
+            self.construct_several()
+            return
 
         self.show_intro()
         self.parse_commits()
@@ -70,11 +93,7 @@ class Revert(GitSimBaseCommand):
         self.vsplit_frame()
         self.setup_and_draw_zones(
             first_column_name="----",
-            second_column_name=(
-                f"Changes staged (revert of {self.revert.hexsha[:6]})"
-                if self.no_commit
-                else "Changes reverted from"
-            ),
+            second_column_name=self.changes_column(self.revert.hexsha[:6]),
             third_column_name="----",
         )
         notes = []
@@ -93,7 +112,67 @@ class Revert(GitSimBaseCommand):
         self.fadeout()
         self.show_outro()
 
+    def changes_column(self, of):
+        """The table's middle column title; drawn compact, the column is
+        only as wide as its title should be short."""
+        if self.compact:
+            return "Staged changes" if self.no_commit else "Reverted changes"
+        return f"Changes staged (revert of {of})" if self.no_commit else "Changes reverted from"
+
+    def construct_several(self):
+        """Several commits: each one reverted is marked where it sits in the
+        history, and git's revert commits follow HEAD one after another, in
+        the order git makes them. With -n there are no commits: the reverse
+        changes of all of them are staged together."""
+        self.show_intro()
+        shas = [c.hexsha for c in self.reverts]
+        self.widen_window_for(shas)
+        self.parse_commits()
+        for c in self.reverts:
+            self.ensure_drawn(c)
+        self.mark_commits(shas, self.theme.purple)
+        if not self.no_commit:
+            parent = self.get_commit()
+            # Interactive page: the revert commits appear one by one, then
+            # the labels move.
+            self.begin_sequence(len(self.reverts))
+            for k, c in enumerate(self.reverts):
+                self.sequence_item(k)
+                new_id = f"abcde{chr(ord('f') + k)}"
+                self.setup_and_draw_parent(parent, f"Revert {c.hexsha[:6]}", new_id=new_id)
+                parent = new_id
+            self.end_sequence()
+        self.recenter_frame()
+        self.scale_frame()
+        if not self.no_commit:
+            self.reset_head_branch(parent)
+        self.vsplit_frame()
+        n = len(self.reverts)
+        self.setup_and_draw_zones(
+            first_column_name="----",
+            second_column_name=self.changes_column(f"{n} commits"),
+            third_column_name="----",
+        )
+        drawn = sum(1 for s in shas if s in self.drawnCommits)
+        notes = [
+            f"The {n} reverted commits are marked{'' if drawn == n else f' ({n - drawn} not drawn)'}; they stay in the history."
+        ]
+        if self.mainline is not None:
+            notes.append(f"-m {self.mainline}: each merge keeps parent {self.mainline} and undoes the other side.")
+        if self.no_commit:
+            notes.append(
+                "-n applies all their reverse changes to the index and working tree, without committing."
+            )
+        else:
+            notes.append(f"{n} new commits, one per reverted commit, in the order git makes them.")
+        self.add_notes(notes)
+        self.show_command_as_title()
+        self.fadeout()
+        self.show_outro()
+
     def build_commit_id_and_message(self, commit, i):
+        if len(self.reverts) > 1:
+            return super().build_commit_id_and_message(commit, i)
         hide_refs = False
         if commit == "dark":
             commitId = m.Text("", font=self.font, font_size=20, color=self.fontColor)
@@ -186,16 +265,14 @@ class Revert(GitSimBaseCommand):
         self.toFadeOut.add(arrow)
 
     def reverted_files(self):
-        if self.mainline is not None:
-            kept = self.revert.parents[self.mainline - 1]
-            return sorted(
-                {
-                    d.a_path or d.b_path
-                    for d in kept.diff(self.revert)
-                    if d.a_path or d.b_path
-                }
-            )
-        return sorted(self.revert.stats.files)
+        files = set()
+        for c in self.reverts:
+            if self.mainline is not None:
+                kept = c.parents[self.mainline - 1]
+                files |= {d.a_path or d.b_path for d in kept.diff(c) if d.a_path or d.b_path}
+            else:
+                files |= set(c.stats.files)
+        return sorted(files)
 
     def populate_zones(
         self,

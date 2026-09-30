@@ -47,6 +47,7 @@ class StashSubCommand(Enum):
     CLEAR = "clear"
     LIST = "list"
     SHOW = "show"
+    BRANCH = "branch"
 
 
 class WorktreeSubCommand(Enum):
@@ -80,3 +81,4 @@ class RemoteSubCommand(Enum):
     REMOVE = "remove"
     GET_URL = "get-url"
     SET_URL = "set-url"
+    SHOW = "show"

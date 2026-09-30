@@ -117,12 +117,15 @@ class Worktree(GitSimBaseCommand):
             return None
 
     def state(self, wt):
+        # drawn compact, the column is narrow: the short form
         if wt["prunable"]:
-            return "directory missing"
+            return "prunable" if self.compact else "prunable: directory missing"
         count = self.dirty_count(wt["path"])
         if count is None:
             return "unreadable"
-        return "clean" if count == 0 else f"{count} uncommitted change(s)"
+        if count == 0:
+            return "clean"
+        return f"{count} change(s)" if self.compact else f"{count} uncommitted change(s)"
 
     # -- scene -------------------------------------------------------------------
     def construct(self):
@@ -177,8 +180,16 @@ class Worktree(GitSimBaseCommand):
                         f"Worktree '{wt['name']}' removed; branch {branch} is kept and can be checked out again."
                     )
             elif self.command == WorktreeSubCommand.PRUNE and wt["prunable"]:
-                state = (state, "PRUNED (directory missing)")
-                struck = True
+                # its record goes; the branch it had checked out stays
+                state = (state, "record pruned")
+                struck = (True, False, False)
+                self.notes.append(
+                    f"Prunes the record of '{wt['name']}', whose directory is gone; branch {branch} is kept."
+                )
+            elif self.command == WorktreeSubCommand.LIST and wt["prunable"]:
+                self.notes.append(
+                    f"'{wt['name']}' is prunable: its directory is gone. git worktree prune removes its record."
+                )
             self.rows.append((name, branch, state, struck, bold))
         if self.command == WorktreeSubCommand.ADD:
             branch = (

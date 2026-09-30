@@ -64,14 +64,7 @@ class Pull(GitSimBaseCommand):
             moved[tracking] = self.repo.commit(tracking).hexsha
         except Exception:
             pass
-        user_tracking = {}
-        for r in orig_remotes:
-            for ref in r.refs:
-                if not ref.name.endswith("/HEAD"):
-                    try:
-                        user_tracking[ref.name] = ref.commit.hexsha
-                    except ValueError:
-                        pass
+        user_refs = self.user_refs()
         self.repo = git.Repo.clone_from(git_root, new_dir, no_hardlinks=True)
 
         # Reset the remotes in the local clone to the original remotes
@@ -80,14 +73,14 @@ class Pull(GitSimBaseCommand):
                 if r1.name == r2.name:
                     r2.set_url(self.remote_url(r1))
 
+        # The clone's remote-tracking refs start out as this repository's
+        # branches: origin/feature would be drawn where the local feature is.
+        # Give it this repository's own branches and remote-tracking branches.
+        self.mirror_refs(user_refs)
         if self.rebase:
-            # The clone's remote-tracking refs start out as this repository's
-            # branches, and their reflog would make pull --rebase's fork-point
-            # logic treat the local commits as already upstream and drop them.
-            # Give them the user's own values instead, then drop the history
-            # (a reflog entry keeps the value it replaced, so this comes last).
-            for name, sha in user_tracking.items():
-                self.repo.git.update_ref(f"refs/remotes/{name}", sha)
+            # Their reflog would make pull --rebase's fork-point logic treat
+            # the local commits as already upstream and drop them, so the
+            # history goes too (a reflog entry keeps the value it replaced).
             self.repo.git.reflog("expire", "--expire=now", "--all")
 
         # Pull the remote into the local clone

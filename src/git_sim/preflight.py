@@ -50,6 +50,7 @@ READ_ONLY_COMMANDS = {
     "diff",
     "show",
     "blame",
+    "check-ignore",
     "shortlog",
     "describe",
     "reflog",

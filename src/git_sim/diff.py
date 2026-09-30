@@ -12,6 +12,19 @@ from git_sim.settings import settings
 MAX_ROWS = 14
 
 
+def stat_summary(files: int, added: int, deleted: int) -> str:
+    """The last line of git diff --stat, worded as git words it:
+    "3 files changed, 10 insertions(+), 2 deletions(-)"."""
+    if not files:
+        return "0 files changed"
+    parts = [f"{files} file{'s' if files != 1 else ''} changed"]
+    if added:
+        parts.append(f"{added} insertion{'s' if added != 1 else ''}(+)")
+    if deleted:
+        parts.append(f"{deleted} deletion{'s' if deleted != 1 else ''}(-)")
+    return ", ".join(parts)
+
+
 class Diff(GitSimBaseCommand):
     """git diff: which two versions are compared, and what differs.
 
@@ -31,12 +44,17 @@ class Diff(GitSimBaseCommand):
     (purple, in the graph if it is a commit and as a chip under it), then
     an arrow brings in the "to" side (teal), then the card lists each changed
     file with its change and line counts, from git's own diff.
-    Arguments that aren't revisions are paths, as git reads them."""
+    Arguments that aren't revisions are paths, as git reads them.
 
-    def __init__(self, args: List[str] = None, staged: bool = False):
+    The card is what git diff --stat prints, with or without --stat (the
+    patch itself is too long to draw); --stat sums it up in git's own words,
+    "3 files changed, 10 insertions(+), 2 deletions(-)"."""
+
+    def __init__(self, args: List[str] = None, staged: bool = False, stat: bool = False):
         super().__init__()
         self.args = list(args or [])
         self.staged = staged
+        self.stat = stat
         settings.hide_merged_branches = True
         self.n = self.n_default
         self.revs = []
@@ -69,7 +87,7 @@ class Diff(GitSimBaseCommand):
             pass
 
         self.resolve_sides()
-        flags =" --staged" if self.staged else ""
+        flags = (" --staged" if self.staged else "") + (" --stat" if self.stat else "")
         words = " ".join(self.args)
         self.cmd += f"diff{flags}{' ' + words if words else ''}"
 
@@ -244,12 +262,15 @@ class Diff(GitSimBaseCommand):
         sides_strip(self, self.old_label, self.new_label, colors["old"], colors["new"], old_note=self.old_note)
         self.current_step = 2
         added, deleted = totals(self.changes)
+        subtitle = f"{len(self.changes)} file(s), +{added} -{deleted}"
+        if self.stat:
+            subtitle = stat_summary(len(self.changes), added, deleted)
         diffstat_card(
             self,
             self.card_title,
             self.changes[:MAX_ROWS],
             more=max(0, len(self.changes) - MAX_ROWS),
-            subtitle=f"{len(self.changes)} file(s), +{added} -{deleted}",
+            subtitle=subtitle,
             appear=True,
         )
         self.current_step = 0

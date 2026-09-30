@@ -1,0 +1,111 @@
+{
+ "commits": {
+  "Cover pagination in the tests": {
+   "kind": "commit",
+   "parents": [
+    "Initial commit"
+   ],
+   "phase": "before",
+   "recolored": true,
+   "step": 1
+  },
+  "Handle missing config values": {
+   "kind": "commit",
+   "parents": [
+    "Log the request path"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Initial commit": {
+   "kind": "commit",
+   "parents": [],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Log the request path": {
+   "kind": "commit",
+   "parents": [
+    "Cover pagination in the tests"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  },
+  "Pin the test dependencies": {
+   "kind": "commit",
+   "parents": [
+    "Handle missing config values"
+   ],
+   "phase": "before",
+   "recolored": false,
+   "step": 0
+  }
+ },
+ "edges": {
+  "after": 2,
+  "before": 8,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [
+  {
+   "column": "From 7629f32",
+   "moved": false,
+   "name": "app.py",
+   "phase": "before"
+  },
+  {
+   "column": "Staging area",
+   "moved": true,
+   "name": "app.py",
+   "phase": "after"
+  },
+  {
+   "column": "Staging area",
+   "moved": false,
+   "name": "models.py",
+   "phase": "before"
+  },
+  {
+   "column": "Working directory",
+   "moved": false,
+   "name": "README.md",
+   "phase": "before"
+  },
+  {
+   "column": "Working directory",
+   "moved": false,
+   "name": "app.py",
+   "phase": "before"
+  }
+ ],
+ "notes": [
+  "Copies 1 file(s) as they are in 7629f32 into the staging area.",
+  "The working directory, HEAD and the branches stay as they are."
+ ],
+ "refs": {
+  "HEAD": {
+   "count": 2,
+   "kind": "head",
+   "moved": false,
+   "phase": "before"
+  },
+  "main": {
+   "count": 2,
+   "kind": "branch",
+   "moved": false,
+   "phase": "before"
+  },
+  "source": {
+   "count": 2,
+   "kind": "restore source",
+   "moved": false,
+   "phase": "after"
+  }
+ },
+ "steps": 2,
+ "title": "git restore --source HEAD~3 --staged app.py"
+}
