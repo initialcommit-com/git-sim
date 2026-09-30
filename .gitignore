@@ -15,3 +15,6 @@ git_sim.egg-info/
 # VS Code extension build output
 vscode/*.vsix
 vscode/LICENSE.txt
+
+# the sanity run's clones, results and logs (tests/sanity/README.md)
+tests/sanity/.work/
