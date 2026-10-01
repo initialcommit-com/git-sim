@@ -238,7 +238,7 @@ Usage: `git-sim add <file 1> <file 2> ... <file n>`
 - Specify one or more `<file>` as a *modified* working directory file, or an untracked file
 - Simulated output will show files being moved to the staging area
 - Note that simulated output will also show the most recent 5 commits on the active branch
-- In depth: [how git add works](https://initialcommit.com/blog/git-add), played out step by step on a sample repository
+- In depth: [how git add works](https://initialcommit.com/learn/git/commands/git-add), played out step by step on a sample repository
 
 [![git-sim add scratch.txt README.md](docs/img/add.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=add)
 
@@ -249,7 +249,7 @@ Usage: `git-sim bisect start [<bad> [<good>...]]` | `git-sim bisect good|bad|old
 - The next commit comes from git itself (`git rev-list --bisect`, and git's own rule when commits were skipped), so the drawing matches what `git bisect` does
 - `good`, `bad` and `skip` continue the session in progress (read from `refs/bisect/*`), marking `HEAD` or the given commit; once one suspect is left it is drawn in gold as the first bad commit
 - `reset` removes the marks and returns `HEAD` to where the session started
-- In depth: [how git bisect works](https://initialcommit.com/blog/git-bisect), played out step by step on a sample repository
+- In depth: [how git bisect works](https://initialcommit.com/learn/git/commands/git-bisect), played out step by step on a sample repository
 
 ### git blame
 Usage: `git-sim blame <file> [-L <start>,<end>]`
@@ -257,7 +257,7 @@ Usage: `git-sim blame <file> [-L <start>,<end>]`
 - A code view of the file: each line has a colored gutter for the commit that last changed it, with that commit's short hash at the start of each run of lines
 - Each of those commits is painted the same color in the graph; lines edited but not committed yet are grey
 - `-L` limits it to a range of lines, as in git (`10,20` or `10,+5`)
-- In depth: [how git blame works](https://initialcommit.com/blog/git-blame), played out step by step on a sample repository
+- In depth: [how git blame works](https://initialcommit.com/learn/git/commands/git-blame), played out step by step on a sample repository
 
 ### git branch
 Usage: `git-sim branch <new branch name> [<start-point>]` | `git-sim branch -d|-D <branch>` | `git-sim branch -m <branch> <new name>` | `git-sim branch [-a] [-v|-vv] [--merged|--no-merged [<commit>]]` | `git-sim branch -u <upstream> [<branch>]`
@@ -270,7 +270,7 @@ Usage: `git-sim branch <new branch name> [<start-point>]` | `git-sim branch -d|-
 - Without a name, lists the branches: the graph with every branch drawn, and a card listing them with the current one marked. `-a`/`--all` adds the remote-tracking branches, `-v` each branch's last commit, `-vv` also its upstream and how far ahead or behind it is
 - `--merged [<commit>]` and `--no-merged [<commit>]` (default `HEAD`) highlight the branches git would list: those whose tips are, or aren't, in the commit's history
 - `-u <upstream>`/`--set-upstream-to=<upstream>` shows the `[branch "x"]` lines it writes to `.git/config`, and the branch's new `[upstream: ahead n, behind m]` on its label
-- In depth: [how git branch works](https://initialcommit.com/blog/git-branch), played out step by step on a sample repository
+- In depth: [how git branch works](https://initialcommit.com/learn/git/commands/git-branch), played out step by step on a sample repository
 
 [![git-sim branch -D fix/order-totals](docs/img/branch-d.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=branch-d)
 
@@ -286,7 +286,7 @@ Usage: `git-sim checkout [-b] <branch>`
 
 - Checks out `<branch>` into the working directory, i.e. moves `HEAD` to the specified `<branch>`
 - The `-b` flag creates a new branch with the specified name `<branch>` and checks it out, assuming it doesn't already exist
-- In depth: [how git checkout works](https://initialcommit.com/blog/git-checkout), played out step by step on a sample repository
+- In depth: [how git checkout works](https://initialcommit.com/learn/git/commands/git-checkout), played out step by step on a sample repository
 
 [![git-sim checkout fix/order-totals](docs/img/checkout.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=checkout)
 
@@ -298,7 +298,7 @@ Usage: `git-sim cherry-pick <commit>|<A..B> [-n]` | `git-sim cherry-pick --conti
 - `-n`/`--no-commit` applies the changes to the index and working tree without creating a commit
 - Supports editing the cherry-picked commit message with: `$ git-sim cherry-pick <commit> -e "Edited commit message"`
 - `--continue`, `--abort` and `--skip` act on a cherry-pick stopped on a conflict: git-sim runs the real command in a copy of the repository (yours is never touched) and draws what it would do: new commits fade in, HEAD and the branch move, commits left behind turn gold, and a new conflict is listed
-- In depth: [how git cherry-pick works](https://initialcommit.com/blog/git-cherry-pick), played out step by step on a sample repository
+- In depth: [how git cherry-pick works](https://initialcommit.com/learn/git/commands/git-cherry-pick), played out step by step on a sample repository
 
 [![git-sim cherry-pick fix/order-totals](docs/img/cherry-pick.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=cherry-pick)
 
@@ -309,7 +309,7 @@ Usage: `git-sim clean [-f] [-n] [-d] [-x]`
 - `-d` includes untracked directories, `-x` includes ignored files (build output, virtualenvs)
 - Without `-f` or `-n` the simulation notes that real git would refuse to run
 - Note that simulated output will also show the most recent 5 commits on the active branch
-- In depth: [how git clean works](https://initialcommit.com/blog/git-clean), played out step by step on a sample repository
+- In depth: [how git clean works](https://initialcommit.com/learn/git/commands/git-clean), played out step by step on a sample repository
 
 [![git-sim clean -fd](docs/img/clean.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=clean)
 
@@ -320,7 +320,7 @@ Usage: `git-sim clone [--depth <n>] [-b <branch>] <url> [<path>]`
 - Output will report if clone operation is successful and show log of local clone
 - `--depth <n>` makes a shallow clone: only the last `<n>` commits are drawn, and the oldest is marked `grafted`, cut off from parents that stay on the server
 - `-b`/`--branch <branch>` checks out that branch (or tag) instead of the one the remote's HEAD points at
-- In depth: [how git clone works](https://initialcommit.com/blog/git-clone), played out step by step on a sample repository
+- In depth: [how git clone works](https://initialcommit.com/learn/git/commands/git-clone), played out step by step on a sample repository
 
 [![git-sim clone <url>](docs/img/clone.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=clone)
 
@@ -334,7 +334,7 @@ Usage: `git-sim commit -m "Commit message"`
 - Supports amending the last commit with: `$ git-sim commit --amend -m "Amended commit message"`
 - `--amend --no-edit` keeps the current commit message
 - `-a` stages every modified tracked file first (untracked files are not included)
-- In depth: [how git commit works](https://initialcommit.com/blog/git-commit), played out step by step on a sample repository
+- In depth: [how git commit works](https://initialcommit.com/learn/git/commands/git-commit), played out step by step on a sample repository
 
 [![git-sim commit -m "Ship the pagination fix"](docs/img/commit.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=commit)
 
@@ -344,7 +344,7 @@ Usage: `git-sim config [--list] [--global] <section.option> [<value>]`
 - Simulated output describes the specified configuration change
 - Use `--list` or `-l` to display all configuration
 - Use `--global` to read or write your own settings file, ~/.gitconfig, which applies to every repository of yours unless one sets its own value
-- In depth: [how git config works](https://initialcommit.com/blog/git-config), played out step by step on a sample repository
+- In depth: [how git config works](https://initialcommit.com/learn/git/commands/git-config), played out step by step on a sample repository
 
 [![git-sim config user.name "Ada Lovelace"](docs/img/config.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=config)
 
@@ -363,7 +363,7 @@ Usage: `git-sim diff [--staged] [--stat] [<commit> [<commit>]] [<path>...]` | `g
 - Plays in order: the "from" side alone (purple, as a chip under the graph and on its commit), then an arrow to the "to" side (teal), then the card
 - The card lists each changed file like `git diff --stat`: its status (M, A, D, R), path, lines added and removed, and a five-block bar; arguments that aren't revisions are paths to limit it to
 - `--stat` sums the card up in git's own words: "3 files changed, 10 insertions(+), 2 deletions(-)"
-- In depth: [how git diff works](https://initialcommit.com/blog/git-diff), played out step by step on a sample repository
+- In depth: [how git diff works](https://initialcommit.com/learn/git/commands/git-diff), played out step by step on a sample repository
 
 ### git fetch
 Usage: `git-sim fetch [--prune] <remote> <branch>` | `git-sim fetch --all [--prune]`
@@ -371,7 +371,7 @@ Usage: `git-sim fetch [--prune] <remote> <branch>` | `git-sim fetch --all [--pru
 - Fetches the specified `<branch>` from the specified `<remote>` to the local repo
 - `--prune`/`-p` also removes remote-tracking branches whose branch is gone from the remote: their labels fade out; without it, a note names the ones that linger
 - `--all` fetches every remote: the remote-tracking labels each one moves or creates are drawn, with a line per remote saying what it brought (or that it had nothing new)
-- In depth: [how git fetch works](https://initialcommit.com/blog/git-fetch), played out step by step on a sample repository
+- In depth: [how git fetch works](https://initialcommit.com/learn/git/commands/git-fetch), played out step by step on a sample repository
 
 [![git-sim fetch origin main](docs/img/fetch.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=fetch)
 
@@ -386,7 +386,7 @@ Usage: `git-sim grep [-n] [-i] <pattern> [<revision>] [-- <path>...]`
 Usage: `git-sim init`
 
 - Simulated output describes the initialized `.git/` directory and it's contents
-- In depth: [how git init works](https://initialcommit.com/blog/git-init), played out step by step on a sample repository
+- In depth: [how git init works](https://initialcommit.com/learn/git/commands/git-init), played out step by step on a sample repository
 
 [![git-sim init](docs/img/init.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=init)
 
@@ -399,7 +399,7 @@ Usage: `git-sim log [-n <number>] [--all] [--oneline] [--graph] [-p] [--follow] 
 - `--oneline` and `--graph` change how git prints the list; the drawing is already a graph, so they show in the title
 - Filters keep the graph and highlight the commits git would list: paths (`git-sim log -- app.py`), `-S <text>` (commits that added or removed the text), `--author`, `--since`/`--after` and `--until`/`--before`. A card says what matched ("3 commits changed app.py") and lists them newest first; with a filter, `-n` is how many commits git lists
 - `--follow <file>` carries a file's history back past its renames ("following its rename from main.py"); `-p` adds the newest listed commit's patch as a card
-- In depth: [how git log works](https://initialcommit.com/blog/git-log), played out step by step on a sample repository
+- In depth: [how git log works](https://initialcommit.com/learn/git/commands/git-log), played out step by step on a sample repository
 
 [![git-sim log --all](docs/img/log.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=log)
 
@@ -423,7 +423,7 @@ Usage: `git-sim merge <branch> [-m "Commit message"] [--no-ff|--squash]` | `git-
 - If merge fails due to merge conflicts, the conflicting files are displayed
 - `--squash` stages the branch's changes as one set and commits nothing: HEAD doesn't move, and the branch is not recorded as merged
 - `--continue`, `--abort` act on a merge stopped on a conflict: git-sim runs the real command in a copy of the repository (yours is never touched) and draws what it would do: new commits fade in, HEAD and the branch move, commits left behind turn gold, and a new conflict is listed
-- In depth: [how git merge works](https://initialcommit.com/blog/git-merge), played out step by step on a sample repository
+- In depth: [how git merge works](https://initialcommit.com/learn/git/commands/git-merge), played out step by step on a sample repository
 
 [![git-sim merge feature/pagination](docs/img/merge.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=merge)
 
@@ -434,7 +434,7 @@ Usage: `git-sim mv <file> <new file>`
 - Specify `<new file>` as new name/path of file 
 - Simulated output will show the name/path of the file being updated 
 - Note that simulated output will also show the most recent 5 commits on the active branch
-- In depth: [how git mv works](https://initialcommit.com/blog/git-mv), played out step by step on a sample repository
+- In depth: [how git mv works](https://initialcommit.com/learn/git/commands/git-mv), played out step by step on a sample repository
 
 [![git-sim mv config.yaml settings.yaml](docs/img/mv.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=mv)
 
@@ -445,7 +445,7 @@ Usage: `git-sim pull [--rebase] [<remote> <branch>]`
 - If `<remote>` and `<branch>` are not specified, the active branch is pulled from the default remote
 - If merge conflicts occur, they are displayed in a table
 - `--rebase`/`-r` replays your local commits on top of what was fetched instead of merging: the copies fade in, and the originals are drawn below in gold
-- In depth: [how git pull works](https://initialcommit.com/blog/git-pull), played out step by step on a sample repository
+- In depth: [how git pull works](https://initialcommit.com/learn/git/commands/git-pull), played out step by step on a sample repository
 
 [![git-sim pull origin main](docs/img/pull.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=pull)
 
@@ -460,7 +460,7 @@ Usage: `git-sim push [<remote> <branch>] [--force|--force-with-lease]` | `git-si
 - `--tags` pushes every tag the remote doesn't have (and no branches): each gets an `on origin` label
 - `git-sim push <remote> <tag>` pushes one tag the same way (and says how many commits go with it); `--delete <tag>` deletes a tag on the remote, its `on origin` label turning into `deleted on origin`, while your own tag stays
 - If the push fails due to remote changes that don't exist in the local repo, a message is included telling the user to pull first, along with color coding which commits need to be pulled
-- In depth: [how git push works](https://initialcommit.com/blog/git-push), played out step by step on a sample repository
+- In depth: [how git push works](https://initialcommit.com/learn/git/commands/git-push), played out step by step on a sample repository
 
 [![git-sim push origin main](docs/img/push.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=push)
 
@@ -471,7 +471,7 @@ Usage: `git-sim rebase <new-base> [--onto <commit>] [-i [--todo <file>]]` | `git
 - `--onto <commit>` replays the commits after `<new-base>` on top of `<commit>` instead
 - `-i` replays each commit individually; `--todo <file>` takes a rebase todo list (`pick`, `reword`, `edit`, `squash`, `fixup`, `drop` + sha) so squashes fold into the previous copy and drops are shown in gold
 - `--continue`, `--abort` and `--skip` act on a rebase stopped on a conflict: git-sim runs the real command in a copy of the repository (yours is never touched) and draws what it would do: new commits fade in, HEAD and the branch move, commits left behind turn gold, and a new conflict is listed
-- In depth: [how git rebase works](https://initialcommit.com/blog/git-rebase), played out step by step on a sample repository
+- In depth: [how git rebase works](https://initialcommit.com/learn/git/commands/git-rebase), played out step by step on a sample repository
 
 [![git-sim rebase feature/pagination](docs/img/rebase.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=rebase)
 
@@ -480,7 +480,7 @@ Usage: `git-sim reflog [-n <number>]`
 
 - Draws the last `<number>` positions of HEAD (default 5) as purple `HEAD@{k}` labels
 - Commits that no branch or tag reaches any more are drawn in gold, with the `git reset --hard HEAD@{k}` command that brings them back
-- In depth: [how git reflog works](https://initialcommit.com/blog/git-reflog), played out step by step on a sample repository
+- In depth: [how git reflog works](https://initialcommit.com/learn/git/commands/git-reflog), played out step by step on a sample repository
 
 [![git-sim reflog](docs/img/reflog.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=reflog)
 
@@ -491,7 +491,7 @@ Usage: `git-sim remote [-v] [add|rename|remove|get-url|set-url|show] [<remote>] 
 - Running `git-sim remote` with no options will list all existing remotes and their details  
 - `-v`/`--verbose` lists each remote's fetch and push URLs, as `git remote -v` prints them
 - `show <remote>` asks the remote for its branches and reports like `git remote show`: its URLs and HEAD branch, each branch as tracked, new (not fetched yet) or stale (deleted there, still here), and the local branches configured for `git pull` and `git push`, whose settings light up in `.git/config`. Nothing changes
-- In depth: [how git remote add works](https://initialcommit.com/blog/git-remote-add), played out step by step on a sample repository
+- In depth: [how git remote add works](https://initialcommit.com/learn/git/commands/git-remote-add), played out step by step on a sample repository
 
 [![git-sim remote](docs/img/remote.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=remote)
 
@@ -502,7 +502,7 @@ Usage: `git-sim reset <reset-to> [--mixed|--soft|--hard]` | `git-sim reset [<com
 - With paths, HEAD stays put and the named files are unstaged (their index entries return to the commit's version)
 - As with a normal git reset command, default reset mode is `--mixed`, but can be specified using `--soft`, `--hard`, or `--mixed`
 - Simulated output will show branch/HEAD resets and resulting state of the working directory, staging area, and whether any file changes would be deleted by running the actual command
-- In depth: git reset [--soft](https://initialcommit.com/blog/git-reset-soft), [--mixed](https://initialcommit.com/blog/git-reset-mixed) and [--hard](https://initialcommit.com/blog/git-reset-hard), each played out step by step on a sample repository
+- In depth: git reset [--soft](https://initialcommit.com/learn/git/commands/git-reset-soft), [--mixed](https://initialcommit.com/learn/git/commands/git-reset) and [--hard](https://initialcommit.com/learn/git/commands/git-reset-hard), each played out step by step on a sample repository
 
 [![git-sim reset --hard HEAD~2](docs/img/reset-hard.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=reset-hard)
 
@@ -512,7 +512,7 @@ Usage: `git-sim restore [--staged] <file 1> <file 2> ... <file n>`
 - Specify one or more `<file>` as a *modified* working directory file, or staged file
 - Simulated output will show files being moved back to the working directory or discarded changes
 - Note that simulated output will also show the most recent 5 commits on the active branch
-- In depth: [how git restore works](https://initialcommit.com/blog/git-restore), played out step by step on a sample repository
+- In depth: [how git restore works](https://initialcommit.com/learn/git/commands/git-restore), played out step by step on a sample repository
 
 [![git-sim restore --staged app.py](docs/img/restore-staged.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=restore-staged)
 
@@ -524,7 +524,7 @@ Usage: `git-sim revert <to-revert> [-m <parent-number>] [-n]`
 - `-n`/`--no-commit` stages the reverse changes without creating a commit
 - Simulated output will show the new commit which reverts the changes from `<to-revert>`
 - Simulated output will include the next 4 most recent commits on the active branch
-- In depth: [how git revert works](https://initialcommit.com/blog/git-revert), played out step by step on a sample repository
+- In depth: [how git revert works](https://initialcommit.com/learn/git/commands/git-revert), played out step by step on a sample repository
 
 [![git-sim revert HEAD](docs/img/revert.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=revert)
 
@@ -535,7 +535,7 @@ Usage: `git-sim rm [--cached] <file 1> <file 2> ... <file n>`
 - Simulated output will show files being removed from Git tracking
 - `--cached` stops tracking the files but keeps them on disk: each turns untracked while its deletion is staged
 - Note that simulated output will also show the most recent 5 commits on the active branch
-- In depth: [how git rm works](https://initialcommit.com/blog/git-rm), played out step by step on a sample repository
+- In depth: [how git rm works](https://initialcommit.com/learn/git/commands/git-rm), played out step by step on a sample repository
 
 [![git-sim rm utils.py](docs/img/rm.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=rm)
 
@@ -552,7 +552,7 @@ Usage: `git-sim show [<commit>|<tag>|<commit>:<path>]`
 - Highlights the commit shown (default `HEAD`) and, in a card under the graph, lists the files it changed like `git show --stat`; an annotated tag's tagger and message are noted
 - For a merge commit the files are compared with its first parent (git prints a combined diff)
 - `<commit>:<path>` shows the start of one file (or a directory listing) as it was in that commit
-- In depth: [how git show works](https://initialcommit.com/blog/git-show), played out step by step on a sample repository
+- In depth: [how git show works](https://initialcommit.com/learn/git/commands/git-show), played out step by step on a sample repository
 
 ### git stash
 Usage: `git-sim stash [push] [-u] [-m <message>] <file>` | `git-sim stash pop|apply` | `git-sim stash list|show|drop|clear [<stash-index>]`
@@ -563,7 +563,7 @@ Usage: `git-sim stash [push] [-u] [-m <message>] <file>` | `git-sim stash pop|ap
 - `list`, `show`, `drop` and `clear` draw the stash as a stack of entries, newest (`stash@{0}`) on top: each card has the entry's message, its file and line counts, and the commit it was made on (short sha and message, not the history around it); `drop` fades the dropped entry out and slides the ones below it up a number, `clear` fades them all out, and `show` highlights the entry and lists its files like `git stash show --stat`
 - Simulated output will show files being moved in/out of the Git stash
 - Note that simulated output will also show the most recent 5 commits on the active branch
-- In depth: [how git stash works](https://initialcommit.com/blog/git-stash), played out step by step on a sample repository
+- In depth: [how git stash works](https://initialcommit.com/learn/git/commands/git-stash), played out step by step on a sample repository
 
 [![git-sim stash](docs/img/stash.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=stash)
 
@@ -572,7 +572,7 @@ Usage: `git-sim status`
 
 - Simulated output will show the state of the working directory, staging area, and untracked files
 - Note that simulated output will also show the most recent 5 commits on the active branch
-- In depth: [how git status works](https://initialcommit.com/blog/git-status), played out step by step on a sample repository
+- In depth: [how git status works](https://initialcommit.com/learn/git/commands/git-status), played out step by step on a sample repository
 
 [![git-sim status](docs/img/status.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=status)
 
@@ -590,7 +590,7 @@ Usage: `git-sim switch [-c] <branch> [<start-point>]` | `git-sim switch -`
 - The `-c` flag creates a new branch with the specified name `<branch>` and switches to it, assuming it doesn't already exist; with a `<start-point>` the branch starts there, and a remote-tracking start point (`origin/x`) becomes its upstream
 - `git-sim switch -` goes back to the previous branch (`@{-1}` in the reflog), labeled under its commit
 - A `<branch>` only a remote has (just `origin/<branch>` exists) is made locally at the same commit, tracking it, as git does
-- In depth: [how git switch works](https://initialcommit.com/blog/git-switch), played out step by step on a sample repository
+- In depth: [how git switch works](https://initialcommit.com/learn/git/commands/git-switch), played out step by step on a sample repository
 
 [![git-sim switch -c feature/search](docs/img/switch-c.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=switch-c)
 
@@ -601,7 +601,7 @@ Usage: `git-sim tag <new tag name> [<commit>]` | `git-sim tag -a <name> -m "<mes
 - Simulated output will show the newly create tag ref along with most recent 5 commits on the active branch
 - `-a` with `-m` (or `-m` alone) makes an annotated tag: a card under the graph shows the tag object it writes, with the commit it points at, the tagger, the date and the message
 - `-l`/`--list` lists the tags in a card, highlighting the ones matching the pattern (a glob, such as `"v1.*"`)
-- In depth: [how git tag works](https://initialcommit.com/blog/git-tag), played out step by step on a sample repository
+- In depth: [how git tag works](https://initialcommit.com/learn/git/commands/git-tag), played out step by step on a sample repository
 
 [![git-sim tag v1.1.0](docs/img/tag.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=tag)
 
@@ -611,7 +611,7 @@ Usage: `git-sim worktree [list|add [-b <new-branch>] <path> [<branch>]|remove [-
 - Draws the commit graph plus a table with one row per worktree: its directory, branch and state (clean, N uncommitted changes, directory missing)
 - `remove` is refused (as in git) when the worktree has uncommitted changes unless `--force` is given, in which case the row is struck through and the deleted change count shown
 - `prune` strikes through worktree records whose directory no longer exists
-- In depth: [how git worktree add works](https://initialcommit.com/blog/git-worktree-add), played out step by step on a sample repository
+- In depth: [how git worktree add works](https://initialcommit.com/learn/git/commands/git-worktree-add), played out step by step on a sample repository
 
 [![git-sim worktree add ../hotfix fix/order-totals](docs/img/worktree.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=worktree)
 
