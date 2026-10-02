@@ -1199,7 +1199,8 @@ def export_viewer_assets(directory):
         "git-sim-viewer-header.html": THYMELEAF_HEADER_TEMPLATE.format(
             header=header_markup(' th:fragment="header"')
         ),
-        # The live page's strip, stylesheet and script, for /tools/git-sim/live
+        # The live strip, stylesheet and script, for live sessions in the viewer
+        # (/tools/git-sim/viewer#live=...)
         "git-sim-live.css": LIVE_CSS,
         "git-sim-live.js": LIVE_JS,
         "git-sim-live-strip.html": THYMELEAF_HEADER_TEMPLATE.format(
