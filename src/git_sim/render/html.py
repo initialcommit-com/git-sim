@@ -132,6 +132,8 @@ html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-f
 /* Narrow windows: the bar gives up its side links, then the brand and step label, rather than overflowing. */
 @media (max-width:1180px){#bar .right a{display:none}#scrub{width:min(36vw,520px)}}
 @media (max-width:820px){#bar{grid-template-columns:auto 1fr auto;padding:0 10px}#brand,#stepLabel{display:none}#scrub{width:min(40vw,520px)}}
+/* Phones (and small embeds): one row that fits, the slider taking what is left; no keyboard, so no shortcut help. */
+@media (max-width:480px){#bar{grid-template-columns:minmax(0,1fr) auto;gap:6px;padding:0 6px}#controls{min-width:0;gap:6px;padding:4px 8px 4px 4px}#play{flex:none;width:32px;height:32px;font-size:13px}.end{flex:none;font-size:12.5px;padding:4px 2px}#scrub{flex:1 1 auto;width:auto;min-width:40px;margin:0}#help,#helpMenu{display:none!important}#share{margin-left:0;padding:7px 10px}#shareMenu{right:0;width:min(340px,calc(100vw - 16px))}}
 #stage{padding:0 0 24px}
 #scene{display:block;width:100%;height:auto;margin:0 auto;user-select:none}
 #scene .dim{filter:opacity(.18)}

@@ -46,11 +46,14 @@ EMBED_JS = r"""
   const CSS = __CSS__;
   const HEADER = __HEADER__;
   const VIEWER = __VIEWER__;
-  const FRAME_CSS = 'html,body{overflow:hidden}#bar{position:static}' +
+  // min-height:0 so the height the frame reports is its content's, not the frame's own
+  // (which would hold a short graph at the frame's starting 320px)
+  const FRAME_CSS = 'html,body{overflow:hidden;min-height:0}#bar{position:static}' +
     '[data-controls="compact"] #brand,[data-controls="compact"] #bar .right a{display:none}' +
     '[data-controls="compact"] #bar{grid-template-columns:auto 1fr auto;padding:0 10px}';
   const FRAME_JS = `
-    const send = () => parent.postMessage({gitSimEmbed: document.documentElement.dataset.embedId, height: document.documentElement.scrollHeight}, '*');
+    // the body's height: the document's own scrollHeight is never less than the frame, so a frame could grow but never shrink
+    const send = () => parent.postMessage({gitSimEmbed: document.documentElement.dataset.embedId, height: document.body.scrollHeight}, '*');
     window.addEventListener('message', e => {
       const m = e.data || {};
       if (m.gitSimEmbedGraph !== document.documentElement.dataset.embedId) return;
