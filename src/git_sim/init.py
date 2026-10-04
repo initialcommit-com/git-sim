@@ -153,43 +153,57 @@ class Init(Cards, GitSimBaseCommand):
         # hanging off its name, so they read as what is inside it.
         px0 = left
         pw = W - 2 * pad
+        has_remotes = already and os.path.isdir(os.path.join(cwd, ".git", "refs", "remotes"))
+        # (name, description, children): refs/ shows the folders inside it
         rows = [
-            ("config", "this repository's own settings: your name, its remotes, and more"),
+            ("config", "This repo's own settings, including your name, email, its remotes, and more.", []),
             (
                 "objects/",
-                "the object database: every file, folder, and commit is stored here. Empty for now"
-                if commits == 0
-                else "the object database: every file, folder, and commit of the history so far",
+                "Git's object database: all of Git's objects (blobs, trees, commits) representing your code changes live here."
+                + (" Empty for now." if commits == 0 else ""),
+                [],
             ),
-            ("refs/", "heads/ holds the branches and tags/ the tags, one small file per name"),
-            ("hooks/, info/", "scripts Git can run on events, and local ignore rules"),
+            (
+                "refs/",
+                'In Git, branches and tags are "refs", which are glorified labels Git uses as pointers to commits.',
+                [
+                    ("heads/", "your branches"),
+                    ("tags/", "your tags"),
+                    ("remotes/", "remote-tracking branches" + ("" if has_remotes else ", added on your first fetch")),
+                ],
+            ),
+            ("hooks/, info/", "Scripts Git can automatically run on events, and local ignore rules.", []),
         ]
         tree_x = px0 + 0.62  # the tree's trunk, under the ".git/" name
         name_x = tree_x + 0.5
+        sub_tree_x = name_x + 0.3  # refs/'s own trunk, under its name
+        sub_name_x = sub_tree_x + 0.5
         desc_x = px0 + 4.2
         desc_w = pw - (desc_x - px0) - 0.4
-        # HEAD -> branch first: the row that says where you are
+        # HEAD -> branch first
         head_name = self.mono("HEAD", size=20, bold=True, color=theme.head)
-        head_mobs = []
         if branch:
             unborn = commits == 0
             shown = branch if len(branch) <= 24 else branch[:22] + "..."
             target = self.pill(shown, theme.branch, opacity=0.4 if unborn else 1.0)
-            what = (
-                "the branch you're on, which has no commits yet"
-                if unborn
-                else f"the branch you're on, {commits} commit{'s' if commits != 1 else ''} so far"
-            )
-            head_mobs.append(target)
         else:
             target = None
-            what = "detached: on a commit, not a branch"
-        built = [(head_name, None, 0.6)]
-        for name, desc in rows:
+        what = "A pointer (ref) to the currently checked-out branch (or commit)."
+        # its text starts with the other descriptions, unless a long branch
+        # name needs the room: HEAD, the arrow, the branch, then the text
+        head_text_x = max(desc_x, name_x + head_name.width + 1.15 + (target.width + 0.3 if target is not None else 0))
+        head_para = self.paragraph(what, size=18, max_width=px0 + pw - 0.4 - head_text_x, color=self.mutedColor)
+        # (label, description, height, level): level 2 is inside refs/
+        built = [(head_name, None, max(0.6, head_para.height + 0.28), 1)]
+        for name, desc, children in rows:
             label = self.mono(name, size=20, bold=True)
             para = self.paragraph(desc, size=18, max_width=desc_w, color=self.mutedColor)
-            built.append((label, para, max(label.height, para.height) + 0.28))
-        ph = 1.15 + sum(h for _, _, h in built) + 0.25
+            built.append((label, para, max(label.height, para.height) + 0.28, 1))
+            for child, child_desc in children:
+                label = self.mono(child, size=18, bold=True)
+                para = self.paragraph(child_desc, size=17, max_width=desc_w, color=self.mutedColor)
+                built.append((label, para, max(label.height, para.height) + 0.18, 2))
+        ph = 1.15 + sum(h for _, _, h, _ in built) + 0.25
         panel = self.panel(pw, ph, corner=0.26, stroke=theme.head, stroke_width=3, opacity=theme.panel_opacity * 1.6)
         panel.move_to((px0 + pw / 2, y - ph / 2, 0))
         py = y - 0.5
@@ -210,12 +224,18 @@ class Init(Cards, GitSimBaseCommand):
 
         py -= 0.55
         trunk_top = title.get_bottom()[1] - 0.12
-        branch_ys = []
-        for label, para, h in built:
+        branch_ys, sub_ys, sub_top = [], [], None
+        for label, para, h, level in built:
             py -= h / 2
-            branch_ys.append(py)
-            panel_mobs.append(self.put(label, name_x, py))
-            if para is None:  # the HEAD row: an arrow to the branch, then what that means
+            x = name_x if level == 1 else sub_name_x
+            if level == 1:
+                branch_ys.append(py)
+            else:
+                sub_ys.append(py)
+            panel_mobs.append(self.put(label, x, py))
+            if level == 1 and label.text == "refs/":
+                sub_top = label.get_bottom()[1] - 0.08
+            if para is None:  # the HEAD row: an arrow to the branch, then what HEAD is
                 arrow = m.Arrow(
                     start=(label.get_right()[0] + 0.2, py, 0),
                     end=(label.get_right()[0] + 0.95, py, 0),
@@ -224,22 +244,23 @@ class Init(Cards, GitSimBaseCommand):
                     buff=0,
                 )
                 panel_mobs.append(arrow)
-                row_x = arrow.get_end()[0] + 0.2
                 if target is not None:
-                    target.move_to((row_x + target.width / 2, py, 0))
+                    target.move_to((arrow.get_end()[0] + 0.2 + target.width / 2, py, 0))
                     panel_mobs.append(target)
-                    row_x = target.get_right()[0] + 0.3
-                panel_mobs.append(
-                    self.put(self.paragraph(what, size=18, max_width=px0 + pw - 0.4 - row_x, color=self.mutedColor), row_x, py)
-                )
+                panel_mobs.append(self.put(head_para, head_text_x, py))
             else:
                 panel_mobs.append(self.put(para, desc_x, py))
             py -= h / 2
-        # the tree: a trunk down from .git/ and a branch to each entry
+        # the tree: a trunk down from .git/ and a branch to each entry, and
+        # refs/'s own trunk to the folders inside it
         line = dict(color=self.mutedColor, stroke_width=2)
         panel_mobs.append(m.Line((tree_x, trunk_top, 0), (tree_x, branch_ys[-1], 0), **line))
         for by in branch_ys:
             panel_mobs.append(m.Line((tree_x, by, 0), (name_x - 0.12, by, 0), **line))
+        if sub_ys and sub_top is not None:
+            panel_mobs.append(m.Line((sub_tree_x, sub_top, 0), (sub_tree_x, sub_ys[-1], 0), **line))
+            for by in sub_ys:
+                panel_mobs.append(m.Line((sub_tree_x, by, 0), (sub_name_x - 0.12, by, 0), **line))
 
         # The folder card itself, sized to hold everything above.
         bottom = panel.get_bottom()[1] - pad
