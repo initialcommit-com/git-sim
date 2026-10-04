@@ -586,6 +586,8 @@ CASES: List[Case] = [
     Case("add-all", "messy", ["add"], all_of(title("git add"), lambda m, r: not files_in(m, "staging", "after"))),
     Case("add-two", "messy", ["add", "scratch.txt", "notes-2.txt"], all_of(arrives("scratch.txt", "staging"), arrives("notes-2.txt", "staging"))),
     Case("add-missing", "messy", ["add", "nope.txt"], error="git-sim error"),
+    Case("add-dot", "messy", ["add", "."], all_of(title("git add ."), arrives("scratch.txt", "staging"), arrives("README.md", "staging"))),
+    Case("add-A", "messy", ["add", "-A"], all_of(title("git add -A"), arrives("scratch.txt", "staging"), arrives("README.md", "staging"))),
     Case("add-clean-tree", "history", ["add"], title("git add")),
     # branch
     Case("branch-new", "classic", ["branch", "topic"], all_of(title("git branch topic"), ref_after("topic", "branch"))),

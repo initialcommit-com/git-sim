@@ -54,12 +54,15 @@ def _need(value, what: str):
 def add(
     files: List[str] = typer.Argument(
         default=None,
-        help="The names of one or more files to add to Git's staging area",
-    )
+        help="The files to add to Git's staging area, or a folder to add everything in it ('.' for everything under the current folder)",
+    ),
+    all_: bool = typer.Option(
+        False, "-A", "--all", help="Add every change in the repository: new, modified and deleted files, wherever it's run from"
+    ),
 ):
     from git_sim.add import Add
 
-    scene = Add(files=files)
+    scene = Add(files=files, all=all_)
     handle_animations(scene=scene)
 
 
