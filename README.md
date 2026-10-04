@@ -549,33 +549,27 @@ Usage: `git-sim worktree [list|add [-b <new-branch>] <path> [<branch>]|remove [-
 
 </details>
 
-## Pre-flight
-
-```console
-$ git-sim preflight reset --hard HEAD~2
-```
-
-reports what a command that can lose work would do, computed from the repository rather than guessed: the risk level, the commits that would become unreachable, the files whose changes would be lost, and the command that undoes it. Nothing runs. The same check is what the [Claude Code hook and MCP server](docs/mcp.md) run before an AI agent is allowed to execute a destructive command, so the agent stops and asks you first. `--markdown` writes the report for a pull request comment (the [GitHub Action](docs/integrations.md) uses it), and the [VS Code extension](docs/vscode.md) shows it in an editor tab.
-
 ## Live mode
 
 ```console
 $ git-sim live
 ```
 
-opens the live page in the git-sim viewer at initialcommit.com and follows the repository in the current folder (or `-C <path>`). As with simulations, the site only serves the page: the graphs come from a small server git-sim runs on your machine, whose address and session key travel in the link's `#fragment`, which browsers never send, so nothing about the repository reaches the site. Chrome and Edge ask once whether the site may talk to your computer; `--open-in local` (or `git_sim_open_in=local`) opens the same page served by git-sim itself, which needs no permission. After every change, whoever made it (a command in a terminal, an IDE's Source Control button, an AI agent), the graph plays the change the way a simulation does: the new commit fades in, labels slide over, a dropped branch fades out, a staged file crosses to its new column. The changes stay in a strip above the graph, so you can click back to any of them, step with `[` and `]`, or **Replay all** to watch the session end to end. Each change is also saved as a standalone page under `git-sim media-dir` in `<repo>/live/`.
+[![git-sim live, a session of six commands with the merge selected](docs/img/live.png)](docs/live.md)
 
-What changed is read from git itself (the refs, HEAD, `git status`, the stash list and the HEAD reflog, compared between polls), so the graph names the command that ran: `git commit`, `git reset HEAD~1`, `git checkout -b topic`, `git rebase`, `git stash`, `git add a.txt`, ... The global options apply to every drawing: `--all` for every branch, `-n` for depth, `--dark-mode`. Options of `live` itself:
+Live mode follows your repo as it changes and plays each change on the graph the moment it happens, whoever made it: you in a terminal, your editor's Git buttons, or an AI agent. It names the command that ran (`git commit`, `git rebase`, `git stash`, and so on) and keeps every change in a strip above the graph, so you can step back to any of them, replay the whole session, save it as a single HTML page, or record it as a video.
 
-`--no-zones`: draw the commit graph alone, without the untracked / modified / staged table.  
-`--interval <seconds>`: how often to check the repository (default 1; each check runs a few quick git commands).  
-`--port <n>`: the port for the page (default: any free port).  
-`--json`: no browser and no server; print one JSON line per change, naming the graph and page written. This is what the [VS Code extension](docs/vscode.md) uses for its live tab and sidebar view.  
-`--sessions`: list the repository's recorded sessions; `--replay` opens the latest one (or `--session <folder>`).
+The page opens in the git-sim viewer, and the graphs come from a small server git-sim runs on your machine, reachable only from `127.0.0.1` and with a session key. Its address travels in the link's `#fragment`, so nothing about your repo reaches the site, and `--open-in local` serves the page from git-sim itself instead.
 
-**Save session** in the page writes the whole session as one HTML file that opens anywhere, and **Record video** records the replay as an MP4 or WebM to post; git-sim also keeps every session as `session.html` under the media folder. See [docs/live.md](docs/live.md).
+Useful options: `-C <path>` for another repo, `--no-zones` for the commit graph alone, `--interval <seconds>` to check more or less often, and `--replay` to reopen the last session. See [docs/live.md](docs/live.md) for the rest.
 
-Nothing in the repository is modified. The local server listens on `127.0.0.1` only, answers cross-origin requests from the viewer's origin alone, and requires the session key on every request, so another web page you visit cannot read your graph off localhost.
+## Pre-flight
+
+[![git-sim preflight reporting what a hard reset would lose](docs/img/preflight.png)](docs/mcp.md)
+
+Pre-flight shows what a command that can lose work would do before you run it, worked out from your repo rather than guessed: how risky it is, which commits would become unreachable, which changes would be lost for good, and the command that undoes it, all without touching your repo.
+
+AI agents get the same check: the [pre-flight hook and MCP server](docs/mcp.md) run it before an agent executes a destructive Git command, so the agent stops and asks you first (`git-sim wire-agents` sets this up). `--markdown` formats the report for a pull request comment, which the [GitHub Action](docs/integrations.md) uses, and the [VS Code extension](docs/vscode.md) shows it in an editor tab.
 
 ## Options
 
