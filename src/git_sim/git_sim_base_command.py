@@ -1176,10 +1176,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
         if self.check_all_dark():
             self.zone_title_offset = 2.0 if platform.system() == "Windows" else 2.0
 
-        # The table spans the frame, its outer columns 8 wide, down to the frame's
-        # bottom edge. A compact table (live drawings: compact_zones) is sized to
-        # its content instead: three columns 5 wide, centred under the graph, and
-        # only as tall as its rows, so it doesn't dwarf a short history.
+        # The table spans the frame, its outer columns 8 wide. A compact table
+        # (live drawings: compact_zones) is three columns 5 wide, centred under
+        # the graph. Either way its column rules end just below its last row, so
+        # a table of one or two files isn't mostly empty rules.
         compact = getattr(self, "compact_zones", False)
         frame = self.camera.frame
         cx, cy = frame.get_center()[0], frame.get_center()[1]
@@ -1367,8 +1367,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.secondColumnFiles = m.VGroup()
             self.thirdColumnFiles = m.VGroup()
             return
-        if compact:
-            # the column rules end just below the last row
+        if compact or n_rows < 8:
+            # the column rules end just below the last row (a long list in a
+            # full-size table reaches the frame's edge and is extended below)
             bottom = rule_y - 0.5 * max(n_rows, 1) - 0.4
             for old, x in ((vert1, v1x), (vert2, v2x)):
                 new = column_rule(x, bottom)
@@ -1376,6 +1377,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 self.toFadeOut.remove(old)
                 self.add(new)
                 self.toFadeOut.add(new)
+                if old is vert1:
+                    vert1 = new
+                else:
+                    vert2 = new
         for row in range(1, n_rows, 2):
             stripe = m.Rectangle(
                 width=right - left,
