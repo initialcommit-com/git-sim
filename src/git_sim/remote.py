@@ -270,34 +270,41 @@ class Remote(Cards, GitSimBaseCommand):
         before, after = [], []
         y = fy0 - 0.6
 
-        def plain(text, x, size=19, bold=False, color=None):
+        def make(text, x, size=19, bold=False, color=None, kv=None):
+            """A file line: plain text, or with kv a "name = value" line in
+            the name and value colors."""
+            if kv:
+                return self.setting_line(*kv, x, y, size=size, bold=bold)
+            return self.put(self.mono(text, size=size, bold=bold, color=color), x, y)
+
+        def plain(text, x, size=19, bold=False, color=None, kv=None):
             nonlocal y
-            line = self.put(self.mono(text, size=size, bold=bold, color=color), x, y)
+            line = make(text, x, size, bold, color, kv)
             before.append(line)
             y -= line_h
             return line
 
-        def struck(text, x, color=None):
+        def struck(text, x, color=None, kv=None):
             """A line that is there before and struck through after."""
             nonlocal y
-            old = self.put(self.mono(text, size=19, color=color), x, y)
+            old = make(text, x, color=color, kv=kv)
             strike = m.Line(
                 (old.get_left()[0] - 0.05, y, 0),
                 (old.get_right()[0] + 0.05, y, 0),
                 color=theme.commit,
                 stroke_width=4,
             )
-            band = self.band(fw - 0.6, line_h - 0.06, theme.commit, opacity=0.12)
+            band = self.band(fw - 0.8, line_h - 0.08, theme.commit, opacity=0.12)
             band.move_to((fx0 + fw / 2, y, 0))
             before.append(old)
             after.extend([band, strike])
             y -= line_h
 
-        def added(text, x, color=None):
+        def added(text, x, color=None, kv=None):
             """A line that only exists after the command."""
             nonlocal y
-            new = self.put(self.mono(text, size=19, bold=True, color=color), x, y)
-            band = self.band(fw - 0.6, line_h - 0.06, theme.branch)
+            new = make(text, x, bold=True, color=color, kv=kv)
+            band = self.band(fw - 0.8, line_h - 0.08, theme.branch)
             band.move_to((fx0 + fw / 2, y, 0))
             after.extend([band, new])
             y -= line_h
@@ -310,6 +317,15 @@ class Remote(Cards, GitSimBaseCommand):
             band.move_to((fx0 + fw / 2, y, 0))
             before.extend([band, line])
             y -= line_h
+
+        def bubble_from(top, phase="before"):
+            """The remote's section in a bubble, matched to the side card's
+            "section" row, behind everything in it."""
+            box = self.bubble(fw - 0.5, top, y + line_h / 2 + 0.02, fx0 + 0.25, self.section_color)
+            if phase == "before":
+                before.insert(0, box)
+            else:
+                after.insert(0, box)
 
         # Sections that are not remotes fold to one line each; the remotes are
         # the subject and stay in full.
@@ -341,46 +357,49 @@ class Remote(Cards, GitSimBaseCommand):
             rname = match.group(1)
             hit = rname == name
             header = f"[{section}]"
+            top = y + line_h / 2 - 0.02
             if hit and c == RemoteSubCommand.REMOVE:
-                struck(header, left, color=theme.head)
+                struck(header, left, color=self.section_color)
                 for k, v in pairs:
-                    struck(self.fit(f"{k} = {v}"), left + 0.4)
+                    # the url is the line the side card names; the rest stay plain
+                    if k == "url":
+                        struck(None, left + 0.4, kv=self.fit_pair(k, v))
+                    else:
+                        struck(self.fit(f"{k} = {v}"), left + 0.4)
+                bubble_from(top)
                 continue
             if hit and c == RemoteSubCommand.RENAME:
-                struck(header, left, color=theme.head)
-                added(f'[remote "{self.url_or_path}"]', left, color=theme.head)
+                struck(header, left, color=self.section_color)
+                added(f'[remote "{self.url_or_path}"]', left, color=self.section_color)
             else:
-                plain(header, left, bold=True, color=theme.head)
+                plain(header, left, bold=True, color=self.section_color)
             for k, v in pairs:
-                text = self.fit(f"{k} = {v}")
+                kv = self.fit_pair(k, v)
                 if hit and c == RemoteSubCommand.SET_URL and k == "url":
                     if v == self.url_or_path:
-                        lit(text, left + 0.4, theme.branch)
+                        plain(None, left + 0.4, bold=True, kv=kv)
                     else:
-                        struck(text, left + 0.4)
-                        added(self.fit(f"url = {self.url_or_path}"), left + 0.4)
+                        struck(None, left + 0.4, kv=kv)
+                        added(None, left + 0.4, kv=self.fit_pair("url", self.url_or_path))
                 elif hit and c == RemoteSubCommand.RENAME and k == "fetch":
-                    struck(text, left + 0.4)
-                    added(
-                        self.fit(
-                            f"fetch = +refs/heads/*:refs/remotes/{self.url_or_path}/*"
-                        ),
-                        left + 0.4,
-                    )
-                elif hit and c == RemoteSubCommand.GET_URL and k == "url":
-                    lit(text, left + 0.4, theme.head)
-                elif hit and c == RemoteSubCommand.SHOW:
-                    lit(text, left + 0.4, theme.head)
+                    struck(self.fit(f"{k} = {v}"), left + 0.4)
+                    added(self.fit(f"fetch = +refs/heads/*:refs/remotes/{self.url_or_path}/*"), left + 0.4)
+                elif hit and k == "url" and c != RemoteSubCommand.RENAME:
+                    plain(None, left + 0.4, bold=True, kv=kv)
                 elif self.verbose and k in ("url", "pushurl"):
-                    lit(text, left + 0.4, theme.head)
+                    plain(None, left + 0.4, bold=True, kv=kv)
                 else:
-                    plain(text, left + 0.4)
+                    plain(self.fit(f"{k} = {v}"), left + 0.4)
+            if hit:
+                bubble_from(top)
         if c == RemoteSubCommand.ADD:
             if sections:
                 y -= 0.1
-            added(f'[remote "{name}"]', left, color=theme.head)
-            added(self.fit(f"url = {self.url_or_path}"), left + 0.4)
+            top = y + line_h / 2 - 0.02
+            added(f'[remote "{name}"]', left, color=self.section_color)
+            added(None, left + 0.4, kv=self.fit_pair("url", self.url_or_path))
             added(self.fit(f"fetch = +refs/heads/*:refs/remotes/{name}/*"), left + 0.4)
+            bubble_from(top, phase="after")
         if not remotes and c != RemoteSubCommand.ADD:
             plain("(no remotes yet)", left, size=18, color=self.mutedColor)
 
@@ -388,13 +407,38 @@ class Remote(Cards, GitSimBaseCommand):
         fcard = self.panel(fw, fy0 - fbottom, corner=0.3)
         fcard.move_to((fx0 + fw / 2, (fy0 + fbottom) / 2, 0))
 
-        # ---- the side card: the remote, its address, what the command means --------------
+        # ---- the side card: the remote, its URL, what the command does ------------------
+        # The header: the remote (and its new name, or what happened to it) on
+        # the left, the scope on the right, for the commands that change it.
+        changes = c not in (None, RemoteSubCommand.SHOW)
+        status = {
+            RemoteSubCommand.ADD: ("added", theme.branch),
+            RemoteSubCommand.REMOVE: ("removed", theme.commit),
+        }.get(c)
+        header_w = 0
+        if c is not None:
+            pill = self.pill(name, theme.remote)
+            header_w = self.mono("remote", size=16).width + 0.3 + pill.width
+            if c == RemoteSubCommand.RENAME:
+                new_pill = self.pill(self.url_or_path, theme.remote)
+                header_w += 0.8 + new_pill.width
+            if status:
+                status_text = self.mono(status[0], size=19, bold=True, color=status[1])
+                header_w += 0.3 + status_text.width
+            if changes:
+                scope_pill = self.pill("local", theme.purple)
         # show has a report to lay out, a name beside each line of it
-        sw = 8.4 if c == RemoteSubCommand.SHOW else 6.4
+        sw = max(8.4 if c == RemoteSubCommand.SHOW else 6.4, header_w + 0.9)
+        if changes:
+            # room for a URL on one line, up to a point: a long one wraps
+            urls = [remotes.get(name, {}).get("url", ""), self.url_or_path or ""]
+            url_w = max(self.mono(u, size=17, bold=True).width for u in urls) + 3.0
+            sw = max(sw, min(url_w, 9.6))
         sx0 = fx0 + fw + 0.6
         sin = sx0 + 0.45
+        sout = sx0 + sw - 0.45
         savail = sw - 0.9
-        sy = fy0 - 0.55
+        sy = fy0 - 0.6
         side, side_after = [], []
 
         def heading(text):
@@ -412,6 +456,25 @@ class Remote(Cards, GitSimBaseCommand):
             self.put(para, sin, sy - para.height / 2 + 0.14)
             (side if phase == "before" else side_after).append(para)
             sy -= para.height + 0.4
+
+        def box(lines, tint):
+            """Label/value rows in a tinted box: (label, value, color, phase)."""
+            nonlocal sy
+            out, sy = self.value_box(lines, sx0 + 0.3, sy, sw - 0.6, tint, size=17)
+            side.extend(out["before"])
+            side_after.extend(out["after"])
+            sy -= 0.45
+
+        def footer(text):
+            """The closing note, under a rule."""
+            nonlocal sy
+            sy += 0.05
+            side.append(self.divider(sin, sout, sy))
+            sy -= 0.35
+            para = self.paragraph(text, size=15, max_width=savail, color=self.mutedColor)
+            self.put(para, sin, sy - para.height / 2 + 0.12)
+            side.append(para)
+            sy -= para.height + 0.35
 
         def rows(lines, size=16):
             """(name, text, color) lines: the names in a column of their own,
@@ -441,148 +504,119 @@ class Remote(Cards, GitSimBaseCommand):
             sy -= 0.65
             if not remotes:
                 body(
-                    "None yet. git remote add <name> <url> gives another copy of this repository a name to fetch from and push to.",
+                    "None yet. Add one with git remote add <name> <url>.",
                     color=self.mutedColor,
                 )
             for rname, opts in remotes.items():
-                pill = self.pill(rname, theme.remote)
-                pill.move_to((sin + pill.width / 2, sy, 0))
-                side.append(pill)
-                sy -= 0.55
+                rpill = self.pill(rname, theme.remote)
+                rpill.move_to((sin + rpill.width / 2, sy, 0))
+                side.append(rpill)
+                sy -= 0.45
                 if self.verbose:
-                    # git remote -v: the address fetch reads from and the one push writes to
+                    # git remote -v: the URL fetch reads from and the one push writes to
                     fetch_url, push_url = self.urls(rname)
-                    rows(
-                        [
-                            ("fetch", self.mutedColor, short_url(fetch_url), None),
-                            ("push", self.mutedColor, short_url(push_url), None),
-                        ]
-                    )
+                    lines = [
+                        ("fetch", short_url(fetch_url), None, "before"),
+                        ("push", short_url(push_url), None, "before"),
+                    ]
                 else:
-                    body(opts.get("url", "?"), size=16)
+                    lines = [("url", opts.get("url", "?"), None, "before")]
                 tracking = self.tracking_branches(rname)
                 if tracking:
                     shown = ", ".join(tracking[:4]) + (
                         f" +{len(tracking) - 4} more" if len(tracking) > 4 else ""
                     )
-                    body(f"tracking branches: {shown}", color=self.mutedColor, size=15)
+                    lines.append(("tracking", shown, self.mutedColor, "before"))
                 else:
-                    body(
-                        "no remote-tracking branches yet: nothing fetched so far",
-                        color=self.mutedColor,
-                        size=15,
-                    )
-                sy -= 0.1
-            heading("what a remote is")
-            body(
-                "A name for another copy of this repository and its address. fetch and pull bring its commits here as remote-tracking branches (name/branch); push sends yours there.",
-                color=self.mutedColor,
-                size=16,
+                    lines.append(("tracking", "none: nothing fetched yet", self.mutedColor, "before"))
+                box(lines, theme.remote)
+            footer(
+                "A remote is a name for the URL of another repository. git fetch copies its branches here as remote-tracking branches (<remote>/<branch>), and git push sends your branches to it."
             )
         else:
-            shown_name = self.url_or_path if c == RemoteSubCommand.RENAME else name
-            pill = self.pill(name, theme.remote)
-            pill.move_to((sin + pill.width / 2, sy, 0))
-            side.append(pill)
+            side += [self.labeled("remote", pill, sin, sy), pill]
+            right = pill.get_right()[0]
             if c == RemoteSubCommand.RENAME:
                 arrow = m.Arrow(
-                    start=(pill.get_right()[0] + 0.05, sy, 0),
-                    end=(pill.get_right()[0] + 0.75, sy, 0),
+                    start=(right + 0.05, sy, 0),
+                    end=(right + 0.75, sy, 0),
                     color=self.arrowColor,
                     stroke_width=4,
                     buff=0,
                 )
-                new_pill = self.pill(self.url_or_path, theme.remote)
-                new_pill.move_to(
-                    (arrow.get_end()[0] + 0.05 + new_pill.width / 2, sy, 0)
-                )
+                new_pill.move_to((arrow.get_end()[0] + 0.05 + new_pill.width / 2, sy, 0))
                 side_after += [arrow, new_pill]
-            sy -= 0.65
+            if status:
+                self.put(status_text, right + 0.3, sy)
+                side_after.append(status_text)
+            sy -= 0.55
             opts = remotes.get(name, {})
             current_url = opts.get("url", "?")
+            # the remote's section in .git/config, as the file card shows it
+            section_row = ("section", f'[remote "{name}"]', self.section_color, "before")
+            name_row = ("name", "url", self.name_color, "before")
             if c == RemoteSubCommand.ADD:
-                body("added", color=theme.branch, bold=True, size=19, phase="after")
-                body(self.url_or_path, size=16)
-                heading("what it does")
+                box(
+                    [
+                        ("section", f'[remote "{name}"]', self.section_color, "after"),
+                        ("name", "url", self.name_color, "after"),
+                        ("value", self.url_or_path, self.value_color, "after"),
+                    ],
+                    self.section_color,
+                )
                 body(
-                    f"Nothing is downloaded yet. git fetch {name} brings its branches here as {name}/<branch>, and git push {name} <branch> sends yours to it. Only .git/config changed.",
-                    color=self.mutedColor,
-                    size=16,
+                    f"Adds the remote to .git/config. Nothing is fetched yet: git fetch {name} copies its branches here as {name}/<branch>."
                 )
             elif c == RemoteSubCommand.REMOVE:
-                body("removed", color=theme.commit, bold=True, size=19, phase="after")
-                body(current_url, size=16)
-                heading("what it does")
+                box([section_row, name_row, ("value", current_url, self.value_color, "before")], self.section_color)
                 tracking = self.tracking_branches(name)
                 gone = (
-                    f"Its {len(tracking)} remote-tracking branch{'es' if len(tracking) != 1 else ''} ({', '.join(tracking[:3])}{', ...' if len(tracking) > 3 else ''}) go with it. "
+                    f", its remote-tracking branch{'es' if len(tracking) != 1 else ''} ({', '.join(tracking[:3])}{', ...' if len(tracking) > 3 else ''}),"
                     if tracking
                     else ""
                 )
                 body(
-                    gone
-                    + "Your local branches and every commit stay; the other copy of the repository is untouched. Add it back with git remote add.",
-                    color=self.mutedColor,
-                    size=16,
+                    f"Deletes the remote{gone} and the upstream settings that point to it. Local branches, commits, and the remote repository aren't affected."
                 )
             elif c == RemoteSubCommand.RENAME:
-                body(
-                    f"renamed to {self.url_or_path}",
-                    color=theme.branch,
-                    bold=True,
-                    size=19,
-                    phase="after",
+                box(
+                    [
+                        section_row,
+                        ("new section", f'[remote "{self.url_or_path}"]', self.section_color, "after"),
+                    ],
+                    self.section_color,
                 )
-                body(current_url, size=16)
-                heading("what it does")
                 tracking = self.tracking_branches(name)
                 moved = (
-                    f"Its remote-tracking branches move with it: {tracking[0]} becomes {self.url_or_path}/{tracking[0].split('/', 1)[-1]}"
-                    + (
-                        f", and {len(tracking) - 1} more likewise. "
-                        if len(tracking) > 1
-                        else ". "
-                    )
+                    f", its remote-tracking branches ({tracking[0]} becomes {self.url_or_path}/{tracking[0].split('/', 1)[-1]}"
+                    + (f", and {len(tracking) - 1} more" if len(tracking) > 1 else "")
+                    + "),"
                     if tracking
                     else ""
                 )
                 body(
-                    moved
-                    + "Branches that tracked the old name follow it. The address and the commits are unchanged.",
-                    color=self.mutedColor,
-                    size=16,
+                    f"Renames the remote{moved} and the upstream settings that point to it. The URL doesn't change."
                 )
             elif c == RemoteSubCommand.SET_URL:
                 if current_url == self.url_or_path:
-                    body(
-                        "already at this address",
-                        color=theme.branch,
-                        bold=True,
-                        size=19,
-                    )
+                    box([section_row, name_row, ("value", current_url, self.value_color, "before")], self.section_color)
+                    body(f"{name} already uses this URL, so nothing changes.")
                 else:
-                    body(f"was {current_url}", color=self.mutedColor, size=15)
-                    body(
-                        f"becomes {self.url_or_path}",
-                        color=theme.branch,
-                        bold=True,
-                        size=18,
-                        phase="after",
+                    box(
+                        [
+                            section_row,
+                            name_row,
+                            ("value", current_url, self.value_color, "before"),
+                            ("new value", self.url_or_path, self.value_color, "after"),
+                        ],
+                        self.section_color,
                     )
-                heading("what it does")
-                body(
-                    f"fetch, pull and push for {name} talk to the new address from now on. The remote-tracking branches and everything already fetched stay as they are.",
-                    color=self.mutedColor,
-                    size=16,
-                )
+                    body(
+                        f"Changes the URL that fetch, pull, and push use for {name}. Remote-tracking branches and fetched commits aren't affected."
+                    )
             elif c == RemoteSubCommand.GET_URL:
-                body(current_url, color=theme.head, bold=True, size=18)
-                heading("what it does")
-                body(
-                    f"Reads the address fetch, pull and push use for {name}, from .git/config. Nothing changes.",
-                    color=self.mutedColor,
-                    size=16,
-                )
+                box([section_row, name_row, ("value", current_url, self.value_color, "before")], self.section_color)
+                body(f"Prints the URL of {name} from .git/config. Nothing changes.")
             elif c == RemoteSubCommand.SHOW:
                 info = self.shown
                 muted = self.mutedColor
@@ -590,24 +624,24 @@ class Remote(Cards, GitSimBaseCommand):
                     [
                         ("Fetch URL", muted, short_url(info["fetch_url"]), None),
                         ("Push URL", muted, short_url(info["push_url"]), None),
-                        ("HEAD branch", muted, info["head_branch"] or "(none: nothing pushed yet)", theme.head if info["head_branch"] else muted),
+                        ("HEAD branch", muted, info["head_branch"] or "(none)", theme.head if info["head_branch"] else muted),
                     ]
                 )
                 heading("remote branches")
                 states = {
                     "tracked": lambda b: (f"tracked as {name}/{b}", None),
                     "new": lambda b: (f"new: the next fetch stores it as {name}/{b}", theme.branch),
-                    "stale": lambda b: (f"stale: deleted on {name}; git remote prune {name} drops {name}/{b}", theme.gold),
+                    "stale": lambda b: (f"stale: deleted on {name}. git remote prune {name} deletes {name}/{b}", theme.gold),
                 }
                 if info["branches"]:
                     rows([(b, None, *states[s](b)) for b, s in info["branches"]])
                 else:
-                    body(f"none: nothing was pushed to {name} yet", color=muted, size=16)
+                    body(f"none: {name} has no branches", color=muted, size=16)
                 heading("configured for git pull")
                 if info["pulls"]:
                     rows([(local, None, f"{verb} {target}", None) for local, verb, target in info["pulls"]])
                 else:
-                    body(f"no local branch pulls from {name}", color=muted, size=16)
+                    body(f"no local branch has an upstream branch on {name}", color=muted, size=16)
                 heading("configured for git push")
                 push_colors = {"up to date": None, "fast-forwardable": theme.head, "local out of date": theme.gold}
                 if info["pushes"]:
@@ -618,25 +652,27 @@ class Remote(Cards, GitSimBaseCommand):
                         ]
                     )
                 else:
-                    body(f"no local branch has a branch of its name on {name}", color=muted, size=16)
+                    body(f"no local branch has a branch of the same name on {name}", color=muted, size=16)
                 if not self.compact:
-                    heading("what it does")
-                    body(
-                        f"Asks {name} for its branches and compares them with the remote-tracking branches and the branch settings here. Nothing changes: git fetch brings the new ones, git remote prune {name} drops the stale ones.",
-                        color=muted,
-                        size=16,
+                    footer(
+                        f"Connects to {name} and compares its branches with your remote-tracking branches and upstream settings. Nothing changes."
                     )
-        if c not in (None, RemoteSubCommand.SHOW):
-            heading("scope")
-            scope_pill = self.pill("local", theme.purple)
-            scope_pill.move_to((sin + scope_pill.width / 2, sy, 0))
-            side.append(scope_pill)
+        if changes:
+            # the scope: its pill and what it means, together under a rule
+            sy += 0.05
+            side.append(self.divider(sin, sout, sy))
+            sy -= 0.45
+            side += [self.labeled("scope", scope_pill, sin, sy), scope_pill]
             sy -= 0.5
-            body(
-                "Remotes live in .git/config, so this applies to this repository only.",
-                color=self.mutedColor,
+            note = self.paragraph(
+                "Remotes are stored in .git/config, so this applies to this repository only.",
                 size=15,
+                max_width=savail,
+                color=self.mutedColor,
             )
+            self.put(note, sin, sy - note.height / 2 + 0.12)
+            side.append(note)
+            sy -= note.height + 0.35
 
         sbottom = min(sy, fbottom)
         scard = self.panel(

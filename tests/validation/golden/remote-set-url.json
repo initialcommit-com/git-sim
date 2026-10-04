@@ -9,7 +9,8 @@
  "files": [],
  "notes": [
   "url = git@example.com:x/y.git",
-  "becomes git@example.com:x/y.git"
+  "new value",
+  "git@example.com:x/y.git"
  ],
  "refs": {},
  "steps": 1,

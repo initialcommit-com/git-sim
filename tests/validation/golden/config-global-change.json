@@ -8,7 +8,9 @@
  },
  "files": [],
  "notes": [
-  "email = me@example.com"
+  "email = me@example.com",
+  "new value",
+  "me@example.com"
  ],
  "refs": {},
  "steps": 1,

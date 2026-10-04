@@ -222,3 +222,17 @@ def test_render_image_transparent_background(tmp_path):
     pixels = skia.Image.open(str(out)).toarray()
     assert pixels[1, 1, 3] == 0
     assert pixels[18, 32, 3] > 0
+
+
+def test_text_t2c_colors_runs_of_one_text():
+    from git_sim.render.text import segments
+
+    text = m.Text("editor = vim", color="#111111", t2c={"[0:6]": "#E16F24", "[9:12]": "#D6409F"})
+    assert text.runs == [(0, 6, "#E16F24"), (9, 12, "#D6409F")]
+    assert segments(text.text, text.runs, text.color) == [
+        ("editor", "#E16F24"),
+        (" = ", "#111111"),
+        ("vim", "#D6409F"),
+    ]
+    # substring keys color every occurrence; overlaps keep the first run
+    assert m.Text("a-a", t2c={"a": "#FF0000"}).runs == [(0, 1, "#FF0000"), (2, 3, "#FF0000")]

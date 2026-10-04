@@ -188,6 +188,7 @@ class Text(Mobject):
         font="",
         slant=NORMAL,
         weight=NORMAL,
+        t2c=None,
         **kwargs,
     ):
         color = WHITE if color is None else color
@@ -206,6 +207,9 @@ class Text(Mobject):
         self.strikethrough = False
         self.strikethrough_color = None
         self._font_scale = 1.0
+        # manim's t2c: parts of a one-line text in colors of their own, keyed
+        # by substring or by "[start:end]"; drawn as runs of one text
+        self.runs = _runs(text, t2c) if t2c and "\n" not in text else []
         self.layout = TextLayout(
             self.text, self.font, self.font_size, self.weight == BOLD
         )
@@ -282,6 +286,50 @@ class Text(Mobject):
                         self,  # so the SVG line carries the text's tags
                     )
         super().draw(painter)
+
+
+_SLICE = re.compile(r"^\[(-?\d*):(-?\d*)\]$")
+
+
+def _runs(text, t2c):
+    """[(start, end, color)] for manim's t2c: "[a:b]" keys are slices, other
+    keys color every occurrence of the substring. Sorted, not overlapping."""
+    runs = []
+    for key, color in t2c.items():
+        match = _SLICE.match(key)
+        if match:
+            start, end, _ = slice(
+                int(match.group(1)) if match.group(1) else None,
+                int(match.group(2)) if match.group(2) else None,
+            ).indices(len(text))
+            if start < end:
+                runs.append((start, end, color))
+            continue
+        at = text.find(key) if key else -1
+        while at >= 0:
+            runs.append((at, at + len(key), color))
+            at = text.find(key, at + len(key))
+    runs.sort()
+    out = []
+    for start, end, color in runs:
+        if out and start < out[-1][1]:
+            continue
+        out.append((start, end, color))
+    return out
+
+
+def segments(line, runs, color):
+    """The line cut into (text, color) pieces: the runs in their colors, the
+    rest in the text's own."""
+    pieces, at = [], 0
+    for start, end, run_color in runs:
+        if start > at:
+            pieces.append((line[at:start], color))
+        pieces.append((line[start:end], run_color))
+        at = end
+    if at < len(line):
+        pieces.append((line[at:], color))
+    return pieces
 
 
 _TAG = re.compile(r"<[^>]+>")

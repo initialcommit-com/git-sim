@@ -11,7 +11,13 @@
   "[remote \"upstream\"]",
   "url = http<path>",
   "fetch = +refs/heads/*:refs/remotes/upstream/*",
-  "added"
+  "added",
+  "section",
+  "[remote \"upstream\"]",
+  "name",
+  "url",
+  "value",
+  "http<path>"
  ],
  "refs": {},
  "steps": 1,

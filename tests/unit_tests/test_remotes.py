@@ -189,7 +189,7 @@ def test_remote_show_compact_keeps_the_report_but_not_the_explanation(repo):
     settings.compact = True
     small = svg_of(make())
     assert roles(full, "title") and not roles(small, "title")
-    assert "what it does" in full and "what it does" not in small
+    assert "Connects to" in full and "Connects to" not in small
     assert "tracked as origin/main" in small
 
 
@@ -259,7 +259,7 @@ def test_ls_remote_compact_drops_the_title_and_the_explanation(repo):
     settings.compact = True
     small = svg_of(LsRemote())
     assert roles(full, "title") and not roles(small, "title")
-    assert "Nothing is downloaded" in full and "Nothing is downloaded" not in small
+    assert "Lists the refs" in full and "Lists the refs" not in small
     assert "not fetched yet" in small
 
 

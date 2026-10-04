@@ -90,7 +90,7 @@ def test_config_global_writes_the_global_file(repo):
     # the old value is there throughout; the new line only after the command
     assert "editor = vim" in texts(scene, "before")
     assert "editor = code --wait" in texts(scene, "after")
-    assert any("every repository of yours" in t for t in shown)
+    assert any("all your repositories" in t for t in shown)
 
 
 def test_config_global_says_when_the_repository_overrides_it(repo):
@@ -110,7 +110,24 @@ def test_config_global_new_section_and_alias(repo):
     scene.construct()
     after = texts(scene, "after")
     assert "[alias]" in after and "co = checkout" in after
-    assert any("git co runs" in t for t in texts(scene))
+    assert any("git co run" in t for t in texts(scene))
+
+
+def test_config_subsection_keys_match_their_quoted_sections(repo):
+    from git_sim.config import Config
+
+    # branch.main.merge lives under [branch "main"] in the file
+    run_git(repo, "config", "branch.main.merge", "refs/heads/main")
+    scene = Config(l=False, settings=["branch.main.merge"])
+    scene.construct()
+    shown = texts(scene)
+    assert "refs/heads/main" in shown
+    assert not any(t.startswith("not set") for t in shown)
+
+    # a new subsection is written the way git writes it
+    scene = Config(l=False, settings=["branch.feature.remote", "origin"])
+    scene.construct()
+    assert '[branch "feature"]' in texts(scene, "after")
 
 
 def test_config_global_read_answers_from_the_global_file_only(repo):
@@ -119,11 +136,11 @@ def test_config_global_read_answers_from_the_global_file_only(repo):
     scene = Config(l=False, settings=["user.email"], glob=True)
     scene.construct()
     shown = texts(scene)
-    assert "= ada@example.com" in shown
+    assert "ada@example.com" in shown
     assert not texts(scene, "after")
     missing = Config(l=False, settings=["pull.rebase"], glob=True)
     missing.construct()
-    assert "= (not set)" in texts(missing)
+    assert "(not set)" in texts(missing)
 
 
 def test_config_list_global_shows_only_the_global_card(repo):
@@ -135,7 +152,7 @@ def test_config_list_global_shows_only_the_global_card(repo):
     shown = texts(scene)
     assert "~/.gitconfig" in shown and "editor = vim" in shown
     assert ".git/config" not in shown
-    assert not any(t.startswith("later scopes win") for t in shown)
+    assert not any(t.startswith("each scope overrides") for t in shown)
     full = Config(l=True, settings=None)
     full.construct()
     assert ".git/config" in texts(full) and "~/.gitconfig" in texts(full)

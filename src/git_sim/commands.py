@@ -289,16 +289,16 @@ def config(
         False,
         "-l",
         "--list",
-        help="List existing local repo config settings",
+        help="List the settings at every scope: system, global, and local",
     ),
     glob: bool = typer.Option(
         False,
         "--global",
-        help="Read or write your own settings file (~/.gitconfig), used by every repository of yours",
+        help="Read or write your global settings file (~/.gitconfig), which applies to all your repositories",
     ),
     settings: List[str] = typer.Argument(
         default=None,
-        help="The names and values of one or more config settings to set",
+        help="A setting's name, and a value to set it to",
     ),
 ):
     from git_sim.config import Config
@@ -649,7 +649,7 @@ def remote(
     ),
     url_or_path: str = typer.Argument(
         default=None,
-        help="The url or path to the remote",
+        help="The remote's URL or path, or its new name for rename",
     ),
     verbose: bool = typer.Option(
         False,

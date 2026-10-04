@@ -435,8 +435,8 @@ class LsRemote(Cards, GitSimBaseCommand):
         if not self.compact:
             y -= 0.2
             para = self.paragraph(
-                f"Asks {remote} which refs it has and where they point, the first thing every fetch does. "
-                + ("Your copies are what the last fetch stored. " if self.name else "")
+                f"Lists the refs on {remote} and the commits they point to. "
+                + ("Your copies are what your last fetch stored. " if self.name else "")
                 + "Nothing is downloaded and nothing here changes.",
                 size=16,
                 max_width=width - 1.1,

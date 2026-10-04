@@ -8,7 +8,9 @@
  },
  "files": [],
  "notes": [
-  "editor = code --wait"
+  "editor = code --wait",
+  "new value",
+  "code --wait"
  ],
  "refs": {},
  "steps": 1,

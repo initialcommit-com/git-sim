@@ -218,6 +218,17 @@ class Painter:
     def text(self, line, baseline, family, em_units, bold, mobject, ink=None):
         font = make_font(family, bold, em_units * self.scale)
         x, y = self.to_px(baseline)
+        runs = getattr(mobject, "runs", None)
+        if runs:
+            from git_sim.render.text import segments
+
+            # each part where it falls in the whole line, in its own color
+            offset = 0.0
+            for piece, piece_color in segments(line, runs, mobject.color):
+                paint = self._paint(piece_color, mobject.fill_opacity, self.skia.Paint.kFill_Style)
+                self.canvas.drawString(piece, x + offset, y, font, paint)
+                offset += font.measureText(piece)
+            return
         paint = self._paint(
             mobject.color, mobject.fill_opacity, self.skia.Paint.kFill_Style
         )

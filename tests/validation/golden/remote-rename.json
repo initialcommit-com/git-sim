@@ -11,7 +11,8 @@
   "[remote \"upstream\"]",
   "fetch = +refs/heads/*:refs/remotes/upstream/*",
   "upstream",
-  "renamed to upstream"
+  "new section",
+  "[remote \"upstream\"]"
  ],
  "refs": {},
  "steps": 1,

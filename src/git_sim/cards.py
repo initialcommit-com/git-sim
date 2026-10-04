@@ -18,13 +18,14 @@ class Cards:
     """Mixed into a scene (before GitSimBaseCommand) to get the helpers."""
 
     # ---- pieces -------------------------------------------------------------------
-    def mono(self, text, size=20, color=None, bold=False):
+    def mono(self, text, size=20, color=None, bold=False, t2c=None):
         return m.Text(
             text,
             font=self.font,
             font_size=size,
             color=color or self.fontColor,
             weight=m.BOLD if bold else m.NORMAL,
+            **({"t2c": t2c} if t2c else {}),
         )
 
     def panel(
@@ -96,6 +97,91 @@ class Cards:
             line.move_to((line.width / 2, -i * gap, 0))
             group.add(line)
         return group
+
+    # The parts of a settings file, one color each, the same in the file card
+    # and in the side card that spells them out: the section (and the bubble
+    # around it), a setting's name, and its value. Lane colors, so the viewer
+    # recolors them with the rest of the palette.
+    @property
+    def section_color(self):
+        return self.theme.head
+
+    @property
+    def name_color(self):
+        # purple: orange and pink sit too close to the red of removed lines
+        return self.theme.lane_colors[2]
+
+    @property
+    def value_color(self):
+        return self.theme.lane_colors[1]
+
+    def bubble(self, width, top, bottom, x0, color):
+        """A tinted, outlined box around a block of lines (a whole section),
+        from the top of its first line to the bottom of its last."""
+        box = m.RoundedRectangle(
+            corner_radius=0.18,
+            width=width,
+            height=top - bottom,
+            color=color,
+            fill_color=color,
+            fill_opacity=0.07,
+            stroke_width=2,
+        )
+        box.move_to((x0 + width / 2, (top + bottom) / 2, 0))
+        return box
+
+    def fit_pair(self, key, value):
+        """(key, value) cut to fit a line as "key = value" would be, by
+        the scene's own fit()."""
+        text = self.fit(f"{key} = {value}")
+        return key, text[len(key) + 3 :] if text.startswith(f"{key} = ") else ""
+
+    def setting_line(self, key, value, x, y, size=19, bold=False):
+        """key = value, the key and the value in their own colors and the
+        equals sign plain, placed with its left edge at x on line y."""
+        value = str(value)
+        t2c = {f"[0:{len(key)}]": self.name_color}
+        if value.strip():
+            t2c[f"[{len(key) + 3}:{len(key) + 3 + len(value)}]"] = self.value_color
+        # one text, so it reads and copies as the line it is
+        line = self.mono(f"{key} = {value}".rstrip(), size=size, bold=bold, t2c=t2c)
+        return self.put(line, x, y)
+
+    def divider(self, x0, x1, y):
+        """A thin rule across a card."""
+        return m.Line((x0, y, 0), (x1, y, 0), color=self.theme.rule, stroke_width=2)
+
+    def labeled(self, label, mob, x, y, gap=0.3):
+        """A muted label and, after it on the same line, the thing it names
+        (a pill, a name). Places both; returns the label."""
+        lab = self.mono(label, size=16, color=self.mutedColor)
+        lab.center_on_caps((x + lab.width / 2, y, 0))
+        if hasattr(mob, "center_on_caps"):
+            mob.center_on_caps((x + lab.width + gap + mob.width / 2, y, 0))
+        else:
+            mob.move_to((x + lab.width + gap + mob.width / 2, y, 0))
+        return lab
+
+    def value_box(self, rows, x, top, width, tint, size=18):
+        """Label/value rows in one tinted box, the values wrapped to fit:
+        rows are (label, value, color, phase). Returns ({phase: [mobs]},
+        bottom). The box itself arrives with its first row."""
+        pad, gap = 0.24, 0.2
+        labels = [self.mono(label, size=size - 2, color=self.mutedColor) for label, *_ in rows]
+        col = max(label.width for label in labels) + 0.35
+        out = {"before": [], "after": []}
+        y = top - pad
+        for label, (_, value, color, phase) in zip(labels, rows):
+            para = self.paragraph(value, size=size, max_width=width - 0.6 - col, color=color, bold=True)
+            first = para[0].height
+            self.put(label, x + 0.3, y - first / 2)
+            self.put(para, x + 0.3 + col, y - para.height / 2)
+            out[phase] += [label, para]
+            y -= para.height + gap
+        bottom = y + gap - pad
+        box = self.bubble(width, top, bottom, x, tint)
+        out[rows[0][3]].insert(0, box)
+        return out, bottom
 
     # ---- layout -------------------------------------------------------------------
     @staticmethod

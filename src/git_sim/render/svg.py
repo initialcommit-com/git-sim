@@ -198,7 +198,20 @@ class SvgPainter:
         if ink is not None and ink[1] > 0 and line.strip():
             attrs.append(f'textLength="{_fmt(ink[1] * self.scale)}"')
             attrs.append('lengthAdjust="spacingAndGlyphs"')
-        self._emit("text", attrs, mobject, content=html.escape(line))
+        runs = getattr(mobject, "runs", None)
+        if runs:
+            # one text, its colored parts as tspans: it reads and copies as one line
+            from git_sim.render.text import segments
+
+            content = "".join(
+                html.escape(piece)
+                if piece_color == mobject.color
+                else f'<tspan fill="{_hex(*parse_color(piece_color, 1.0)[:3])}">{html.escape(piece)}</tspan>'
+                for piece, piece_color in segments(line, runs, mobject.color)
+            )
+        else:
+            content = html.escape(line)
+        self._emit("text", attrs, mobject, content=content)
 
     def strike(self, start, end, thickness_units, color, opacity, mobject=None):
         # The line through struck text carries the text's own tags, so the
