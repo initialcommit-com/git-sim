@@ -104,6 +104,10 @@ Useful options: `-C <path>` for another repo, `--no-zones` for the commit graph 
 
 ## Pre-flight
 
+```console
+$ git-sim preflight reset --hard HEAD~2
+```
+
 [![git-sim preflight reporting what a hard reset would lose](docs/img/preflight.png)](docs/mcp.md)
 
 Pre-flight shows what a command that can lose work would do before you run it, worked out from your repo rather than guessed: how risky it is, which commits would become unreachable, which changes would be lost for good, and the command that undoes it, all without touching your repo.
