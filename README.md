@@ -5,166 +5,575 @@
 [![GitHub tag](https://img.shields.io/github/v/release/initialcommit-com/git-sim)](https://img.shields.io/github/v/release/initialcommit-com/git-sim)
 [![Downloads](https://static.pepy.tech/badge/git-sim)](https://pepy.tech/project/git-sim)
 [![Contributors](https://img.shields.io/github/contributors/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/graphs/contributors)
-[![Share](https://img.shields.io/twitter/url?label=Share&url=https%3A%2F%2Ftwitter.com%2Finitcommit)](https://twitter.com/intent/tweet?text=Check%20out%20%23gitsim%20%2D%20a%20tool%20to%20visualize%20%23Git%20operations%20in%20your%20local%20repos%20with%20a%20single%20terminal%20command,%20by%20%40initcommit!%20https%3A%2F%2Fgithub%2Ecom%2Finitialcommit%2Dcom%2Fgit%2Dsim)
+<a href="https://initialcommit.com"><img src="https://initialcommit.com/img/initialcommit/logo.png" alt="Initial Commit" height="20"></a>
 
-The visual layer for Git in your own repos: simulate, record, replay, and share Git command sequences - wherever you or your agents run them.
+**The visual layer for Git in your own repos:** simulate, record, replay, audit, and share entire Git workflows - wherever you or your agents run them.
 
-Run any Git command with `git-sim` in place of `git` and it plays out on a **before / after** graph of your real repository, without changing anything. The default output is an interactive page (drag the slider, press play, hover a commit); `--img-format` gives a static image and `--animate` a video. `git-sim preflight` reports the facts about a risky command, `git-sim live` follows the repository as it changes, and the same engine runs inside VS Code, Vim, Emacs, Jupyter, GitHub pull requests and AI coding agents such as Claude Code and Copilot.
+1. **Simulate any Git command before it runs**, as an interactive graph you can step through.<br/><sub>Terminal · Web · VS Code · Jupyter · Vim / Neovim / Emacs · GitHub PRs</sub>
+2. **Track your repo live** while recording every Git operation (human or agentic) as a visual command sequence you can replay.<br/><sub>Web · VS Code</sub>
+3. **Catch and review potentially destructive Git commands from AI agents** in real time, before they harm your work.<br/><sub>Claude Code · GitHub Copilot · Cursor · Codex · Gemini CLI · any MCP agent</sub>
+4. **Share any git-sim output** as a link, an embed, an image, a video, or a social post.<br/><sub>Shareable link · HTML embed · HTML page · PNG · SVG · MP4 · Social post</sub>
 
-Command syntax is based directly on Git's command-line syntax, so using git-sim is as familiar as possible.
+## Get started
 
-Example: `$ git-sim merge <branch>`
-<br/><br/>
-[![git-sim merge feature/pagination](docs/img/merge.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=merge)
-
-Every graph in this README is a real git-sim render of a sample repository. **Click one** to open it in the viewer at initialcommit.com and drag the Before / After slider.
-
-Check out the [git-sim release blog post](https://initialcommit.com/blog/git-sim) for the story behind it, and the [git-sim tool page](https://initialcommit.com/tools/git-sim) for the current picture.
-
-Learning Git? The [visual Git command reference](https://initialcommit.com/learn/git/visual-command-reference) walks through more than 60 commands with these graphs, one page each, and [Learn Git](https://initialcommit.com/learn/git) plays sixteen guided levels on them.
-
-## Support git-sim
-Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work on it (and other Git projects) full time!
-- [Sponsor Git-Sim on GitHub](https://github.com/sponsors/initialcommit-com)
-- [Support Git-Sim via Patreon](https://patreon.com/user?u=92322459)
-
-## Use cases
-- Visualize Git commands to understand their effects on your repo before actually running them
-- Help visual learners understand how Git commands work, and let AI coding agents show their work before they run a destructive command
-- Share visualizations (interactive HTML page, jpg/png/svg image or mp4/webm video) of your Git commands with your team, or the world; a live session can be saved as one page or recorded as a video
-- Prevent unexpected working directory and repository states by simulating before running
-- Save visualizations as a part of your team documentation to document workflow and prevent recurring issues
-- Create interactive Git graphs (html), static diagrams (jpg/png) or animated videos (mp4/webm) to speed up content creation
-- Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
-
-## Features
-- NEW in 0.4: the default output is a self-contained interactive HTML page, opened in the git-sim viewer at initialcommit.com (the graph rides inside the link's `#fragment`, so nothing about your repository reaches the server; `--open-in local` opens the saved file instead): hover a commit for its full message, author, date and ancestry, click to copy its sha, zoom, and drag a **Before / After** slider (or press play) to watch the command happen, step by step for `rebase -i` and cherry-pick ranges. One file, with PNG / SVG download and sharing built in. `--img-format jpg` (or `png`) gives the classic image, and `git_sim_img_format=jpg` in your environment makes that the default again
-- NEW: [MCP server and Claude Code hook](docs/mcp.md) so AI coding agents (Claude Code, Cursor, etc.) run deterministic pre-flight checks — facts, a text commit graph and a simulation image — before executing destructive git commands in your repo. Included in the default install.
-- NEW: `git-sim preflight <command>` runs that same check from the terminal, and the [VS Code extension](docs/vscode.md) puts simulations and pre-flight checks in an editor tab.
-- NEW: `git-sim live` follows your repository as it changes: every commit, branch, checkout, reset, rebase, stash or staged file plays as a before / after animation the moment it happens, in your browser or in a VS Code tab or sidebar view, with the session's changes kept for stepping back and replaying (see [Live mode](#live-mode)).
-- NEW: git-sim plugs in wherever Git is used: `git sim` in the terminal, a [VS Code extension](docs/vscode.md), [Vim, Neovim and Emacs](docs/integrations.md), [Jupyter](docs/integrations.md#jupyter), a [`gh` extension and a GitHub Action](docs/integrations.md) for pull requests, an [embeddable viewer](docs/embed.md) for blogs and docs (`--img-format svg` writes the graph it shows), and [AI agents](docs/mcp.md). See [docs/integrations.md](docs/integrations.md).
-- Run a one-liner git-sim command in the terminal to generate a custom Git command visualization from your repo: an interactive `.html` page by default, or a `.jpg` / `.png` image with `--img-format`
-- Supported commands: `add`, `branch`, `checkout`, `cherry-pick`, `clean`, `clone`, `commit`, `config`, `fetch`, `init`, `log`, `merge`, `mv`, `pull`, `push`, `rebase`, `reflog`, `remote`, `reset`, `restore`, `revert`, `rm`, `stash`, `status`, `submodule`, `switch`, `tag`, `worktree`, plus the read-and-investigate commands `show`, `diff`, `blame`, `bisect`, `check-ignore`, `shortlog`, `grep` and `describe`
-- Generate an animated video (.mp4) instead of a static image using the `--animate` flag (note: significant performance slowdown, it is recommended to use `--low-quality` to speed up testing and remove when ready to generate presentation-quality video)
-- Color commits by parameter, such as author with the `--color-by=author` option
-- Choose between light mode (default) and dark mode
-- Specify output formats of either html, jpg, png, mp4, or webm
-- Combine with bundled command [git-dummy](https://github.com/initialcommit-com/git-dummy) to generate a dummy Git repo and then simulate operations on it
-- Animation only: Add custom branded intro/outro sequences if desired
-- Animation only: Speed up or slow down animation speed as desired
-
-## Quickstart
-Note: If you prefer to install git-sim with Docker, skip steps (1) and (2) here and jump to the [Docker installation](#docker-installation) section below, then come back here to step (3).
-
-1) Install `git-sim`:
+1. Install:
 
 ```console
-$ pip3 install git-sim
+$ pip install git-sim
 ```
 
-This default ("core") install includes the deterministic pre-flight engine and text commit graph, the static image simulation (drawn with [skia](https://skia.org), no Manim needed), the [MCP server](docs/mcp.md) and the pre-flight hook for AI coding agents. See [Installation](#installation) for the other tiers.
+Or `pipx install git-sim`, or `uv tool install git-sim`. Python 3.10 or later.
 
-Using an AI coding agent? Wire git-sim into it with one command — it detects Claude Code, Codex CLI, Cursor, GitHub Copilot CLI, Gemini CLI and VS Code and writes the hook and MCP entries into each one's config, and gives Windsurf, Cline, Roo Code, Amazon Q Developer CLI and Claude Desktop the MCP server (see [docs/mcp.md](docs/mcp.md)):
+2. In a local Git repo, prefix any Git command with `git-sim` instead of `git`:
 
 ```console
-$ git-sim wire-agents
+$ git-sim merge dev
+$ git-sim reset HEAD^
+$ git-sim rebase main
 ```
 
-Prefer to stay in `git`? `git sim rebase main` already works (git runs any `git-<name>` program), and `git-sim aliases` adds `git preflight` and `git live`. Recipes for lazygit and tig are in [docs/shell.md](docs/shell.md).
+By default, git-sim opens an interactive web graph showing exactly how that command will change your repo: drag the **Before / After** slider or press play, and hover a commit for its details. Nothing in your repo changes. Run `git-sim -h` to list every command.
 
-2) Optional — for animated video output (`--animate`), install the `extras` tier, which adds Manim. Manim needs FFmpeg and other system packages; follow the Manim installation guide for your OS / environment first:
-    - [Install Manim on Windows](https://docs.manim.community/en/stable/installation/windows.html)
-    - [Install Manim on MacOS](https://docs.manim.community/en/stable/installation/macos.html)
-    - [Install Manim on Linux](https://docs.manim.community/en/stable/installation/linux.html)
-    - [Install Manim in Conda](https://docs.manim.community/en/stable/installation/conda.html)
+3. Check a risky command before it runs, watch your repo live, and connect your AI agents:
 
 ```console
-$ pip3 install "git-sim[extras]"
+$ git-sim preflight reset --hard HEAD~1   # how risky a command is, and what you could lose
+$ git-sim live                            # a live graph that records your repo as it changes
+$ git-sim wire-agents                     # add the pre-flight hook and MCP server to your AI agents
 ```
 
-Note: For MacOS, it is recommended to **NOT** use the system Python to install Git-Sim, and instead use [Homebrew](https://brew.sh) to install a version of Python to work with Git-Sim. Virtual environments should work too.
-
-3) Browse to the Git repository you want to simulate Git commands in:
+4. Install the VS Code extension:
 
 ```console
-$ cd path/to/git/repo
+$ code --install-extension initialcommit.git-sim
 ```
 
-4) Run the program:
+Or search for **git-sim** in the Extensions view (the Marketplace in VS Code, Open VSX in Cursor, Windsurf, and VSCodium). For Vim, Neovim, and Emacs, see [integrations/](integrations/), and for Jupyter, `gh`, and GitHub Actions, [docs/integrations.md](docs/integrations.md).
 
-```console
-$ git-sim [global options] <subcommand> [subcommand options]
-```
+No repo handy? The bundled [git-dummy](https://github.com/initialcommit-com/git-dummy) makes one: `git-dummy --name=dummy-repo --branches=3 --commits=10`.
 
-Optional: If you don't have an existing Git repo to simulate commands on, use the bundled [git-dummy](https://github.com/initialcommit-com/git-dummy) command to generate a dummy Git repo with the desired number of branches and commits to simulate operations on with git-sim:
+## Your repo stays on your machine
 
-```console
-$ git-dummy --name="dummy-repo" --branches=3 --commits=10
-$ cd dummy-repo
-$ git-sim [global options] <subcommand> [subcommand options]
-```
-
-Or if you want to do it all in a single command:
-
-```console
-$ git-dummy --no-subdir --branches=3 --commits=10 && git-sim [global options] <subcommand> [subcommand options]
-```
-
-5) Simulated output will be created as an interactive `.html` page (or a `.jpg` / `.png` image with `--img-format`). Output files are named using the subcommand executed combined with a timestamp, and are stored in a `git-sim_media/` folder with a subfolder per repository. By default that folder lives in your user cache area, outside any repository (`%LOCALAPPDATA%\git-sim_media` on Windows, `~/Library/Caches/git-sim_media` on macOS, `~/.cache/git-sim_media` on Linux); `git-sim media-dir` prints it. Move it with `--media-dir=path/to/output` or the `git_sim_media_dir` environment variable (`--media-dir .` puts it in the current folder, as older versions did). Note that when the `--animate` global flag is used, render times will be much longer and a `.mp4` video output file will be produced.
-
-6) For convenience, environment variables can be set for any global command-line option available in git-sim. All environment variables start with `git_sim_` followed by the name of the option.
-
-For example, the `--media-dir` option can be set as an environment variable like:
-
-```console
-$ export git_sim_media_dir=~/Desktop
-```
-
-Similarly, the `--speed` option can be set like:
-
-```console
-$ export git_sim_speed=2
-```
-
-Boolean flags can be set like:
-
-```console
-$ export git_sim_dark_mode=true
-```
-
-In general:
-
-```console
-$ export git_sim_option_name=option_value
-```
-
-Explicitly specifying options at the command-line takes precedence over the corresponding environment variable values.
-
-7) See global help for list of global options/flags and subcommands:
-
-```console
-$ git-sim -h
-```
-
-8) See subcommand help for list of options/flags for a specific subcommand:
-
-```console
-$ git-sim <subcommand> -h
-```
-
-## Requirements
-* Python 3.10 or greater
-* Pip (Package manager for Python)
-* Static images are drawn with [skia-python](https://pypi.org/project/skia-python/), installed automatically. On minimal Linux images it needs the system `libGL` and `fontconfig` libraries.
-* Animated output only: [Manim (Community version)](https://www.manim.community/), installed via `pip install "git-sim[extras]"`
+The interactive page opens in the git-sim viewer at initialcommit.com, but the graph travels compressed in the link's `#fragment`, which browsers never send to a server, so nothing about your code reaches the site. The page is also saved locally, and `--open-in local` (or `git_sim_open_in=local`) opens that file instead, offline.
 
 ## Commands
-Basic usage is similar to Git itself - `git-sim` takes a familiar set of subcommands including "add", "bisect", "blame", "branch", "check-ignore", "checkout", "cherry-pick", "clean", "clone", "commit", "config", "describe", "diff", "fetch", "grep", "init", "log", "ls-remote", "merge", "mv", "pull", "push", "rebase", "reflog", "remote", "reset", "restore", "revert", "rm", "shortlog", "show", "stash", "status", "submodule", "switch", "tag", "worktree" along with corresponding options.
 
+Command syntax follows Git's own. Click a command for its usage and options, and a graph to open it in the viewer and drag its slider:
+
+<details>
+<summary><b><code>git add</code></b>: stage files, folders, or everything</summary>
+
+Usage: `git-sim add <pathspec>...` | `git-sim add -A`
+
+- Specify one or more files or folders, relative to where you run it, as git reads them: a folder stages every change inside it, and `git-sim add .` stages everything under the current folder
+- `-A`/`--all` stages every change in the repository (modified, deleted and untracked files), wherever it's run from
+- Simulated output will show files being moved to the staging area
+- Note that simulated output will also show the most recent 5 commits on the active branch
+
+[![git-sim add scratch.txt README.md](docs/img/add.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=add)
+
+</details>
+<details>
+<summary><b><code>git bisect</code></b>: find the commit that introduced a bug</summary>
+
+Usage: `git-sim bisect start [<bad> [<good>...]]` | `git-sim bisect good|bad|old|new|skip [<commit>]` | `git-sim bisect reset [<commit>]`
+
+- `start <bad> <good>` draws the `bad` and `good-<sha>` marks, turns the commits still suspected purple, and moves `HEAD` to the commit git checks out to test next
+- The next commit comes from git itself (`git rev-list --bisect`, and git's own rule when commits were skipped), so the drawing matches what `git bisect` does
+- `good`, `bad` and `skip` continue the session in progress (read from `refs/bisect/*`), marking `HEAD` or the given commit; once one suspect is left it is drawn in gold as the first bad commit
+- `reset` removes the marks and returns `HEAD` to where the session started
+
+</details>
+<details>
+<summary><b><code>git blame</code></b>: who last changed each line, and in which commit</summary>
+
+Usage: `git-sim blame <file> [-L <start>,<end>]`
+
+- A code view of the file: each line has a colored gutter for the commit that last changed it, with that commit's short hash at the start of each run of lines
+- Each of those commits is painted the same color in the graph; lines edited but not committed yet are grey
+- `-L` limits it to a range of lines, as in git (`10,20` or `10,+5`)
+
+</details>
+<details>
+<summary><b><code>git branch</code></b>: create, delete, rename, list, and track branches</summary>
+
+Usage: `git-sim branch <new branch name> [<start-point>]` | `git-sim branch -d|-D <branch>` | `git-sim branch -m <branch> <new name>` | `git-sim branch [-a] [-v|-vv] [--merged|--no-merged [<commit>]]` | `git-sim branch -u <upstream> [<branch>]`
+
+- Specify `<new branch name>` as the name of the new branch to simulate creation of
+- Simulated output will show the newly created branch ref along with the most recent 5 commits on the active branch
+- `-d` deletes a branch that is merged into the active branch; git-sim refuses (like git) if it is not
+- `-D` force-deletes: commits that only the deleted branch reached are drawn in gold, with the `git branch <name> <sha>` command that brings them back
+- `-m` renames a branch, moving its label in place
+- Without a name, lists the branches: the graph with every branch drawn, and a card listing them with the current one marked. `-a`/`--all` adds the remote-tracking branches, `-v` each branch's last commit, `-vv` also its upstream and how far ahead or behind it is
+- `--merged [<commit>]` and `--no-merged [<commit>]` (default `HEAD`) highlight the branches git would list: those whose tips are, or aren't, in the commit's history
+- `-u <upstream>`/`--set-upstream-to=<upstream>` shows the `[branch "x"]` lines it writes to `.git/config`, and the branch's new `[upstream: ahead n, behind m]` on its label
+
+[![git-sim branch -D fix/order-totals](docs/img/branch-d.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=branch-d)
+
+</details>
+<details>
+<summary><b><code>git check-ignore</code></b>: which ignore rule decides a path</summary>
+
+Usage: `git-sim check-ignore [-v] <path>...`
+
+- Shows the ignore file with numbered lines and highlights the rule that decides each path; a rule from .git/info/exclude, a nested .gitignore or your core.excludesFile gets a card of its own
+- Beside it, each path's verdict: ignored by which line, un-ignored by a `!` line, matched by nothing, or tracked, which no ignore rule can undo
+- `-v` (`--verbose`) shows what `git check-ignore -v` prints: the source, line and pattern for each match
+
+</details>
+<details>
+<summary><b><code>git checkout</code></b>: switch branches, or create one</summary>
+
+Usage: `git-sim checkout [-b] <branch>`
+
+- Checks out `<branch>` into the working directory, i.e. moves `HEAD` to the specified `<branch>`
+- The `-b` flag creates a new branch with the specified name `<branch>` and checks it out, assuming it doesn't already exist
+
+[![git-sim checkout fix/order-totals](docs/img/checkout.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=checkout)
+
+</details>
+<details>
+<summary><b><code>git cherry-pick</code></b>: copy commits onto the active branch</summary>
+
+Usage: `git-sim cherry-pick <commit>|<A..B> [-n]` | `git-sim cherry-pick --continue|--abort|--skip`
+
+- Specify `<commit>` as a ref (branch name/tag) or commit ID to cherry-pick onto the active branch
+- A range `A..B` picks every commit reachable from `B` but not `A`, oldest first, as a chain of new commits
+- `-n`/`--no-commit` applies the changes to the index and working tree without creating a commit
+- Supports editing the cherry-picked commit message with: `$ git-sim cherry-pick <commit> -e "Edited commit message"`
+- `--continue`, `--abort` and `--skip` act on a cherry-pick stopped on a conflict: git-sim runs the real command in a copy of the repository (yours is never touched) and draws what it would do: new commits fade in, HEAD and the branch move, commits left behind turn gold, and a new conflict is listed
+
+[![git-sim cherry-pick fix/order-totals](docs/img/cherry-pick.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=cherry-pick)
+
+</details>
+<details>
+<summary><b><code>git clean</code></b>: delete untracked files</summary>
+
+Usage: `git-sim clean [-f] [-n] [-d] [-x]`
+
+- Simulated output will show untracked files being deleted, taken from git's own dry run (`git clean -n` with the same flags)
+- `-d` includes untracked directories, `-x` includes ignored files (build output, virtualenvs)
+- Without `-f` or `-n` the simulation notes that real git would refuse to run
+- Note that simulated output will also show the most recent 5 commits on the active branch
+
+[![git-sim clean -fd](docs/img/clean.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=clean)
+
+</details>
+<details>
+<summary><b><code>git clone</code></b>: copy a repository</summary>
+
+Usage: `git-sim clone [--depth <n>] [-b <branch>] <url> [<path>]`
+
+- Clone the remote repo from `<url>` (web URL or filesystem path) to a new folder in the current directory
+- Output will report if clone operation is successful and show log of local clone
+- `--depth <n>` makes a shallow clone: only the last `<n>` commits are drawn, and the oldest is marked `grafted`, cut off from parents that stay on the server
+- `-b`/`--branch <branch>` checks out that branch (or tag) instead of the one the remote's HEAD points at
+
+[![git-sim clone <url>](docs/img/clone.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=clone)
+
+</details>
+<details>
+<summary><b><code>git commit</code></b>: record staged changes as a new commit</summary>
+
+Usage: `git-sim commit -m "Commit message"`
+
+- Simulated output will show the new commit added to the tip of the active branch
+- Specify a commit message with the `-m` option
+- HEAD and the active branch will be moved to the new commit
+- Simulated output will show files in the staging area being included in the new commit
+- Supports amending the last commit with: `$ git-sim commit --amend -m "Amended commit message"`
+- `--amend --no-edit` keeps the current commit message
+- `-a` stages every modified tracked file first (untracked files are not included)
+
+[![git-sim commit -m "Ship the pagination fix"](docs/img/commit.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=commit)
+
+</details>
+<details>
+<summary><b><code>git config</code></b>: read and write settings, at any scope</summary>
+
+Usage: `git-sim config [--global|--system] <section.option> [<value>]` | `git-sim config --list [--global|--system]`
+
+- Draws the settings file beside a card that spells out the setting: its section, name, and value (or old and new value), colored to match the lines in the file, what the setting does, and which scope it lands in
+- Reading a setting answers from the scope Git would use (system, global or local) and says which one
+- Use `--list` or `-l` to show the system, global and local files side by side, in the order they override each other
+- Use `--global` to read or write your own settings file, ~/.gitconfig, which applies to all your repositories unless one sets its own value
+- Use `--system` to read or write the system file, which applies to every user and repository on the machine (writing it needs admin rights); git-sim asks Git where that file is
+
+[![git-sim config user.name "Ada Lovelace"](docs/img/config.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=config)
+
+</details>
+<details>
+<summary><b><code>git describe</code></b>: name a commit after its nearest tag</summary>
+
+Usage: `git-sim describe [--tags] [<commit>]`
+
+- Names a commit (default `HEAD`) after the nearest tag in its history, as `git describe` does: `v1.0-2-g8c02d5a` is 2 commits past `v1.0`, then `g` and the commit's own short id; a tagged commit is named by its tag alone
+- The graph runs back to the tag: the commits since it are highlighted, the tagged commit takes the tag's color, and the name is labeled on the described commit and taken apart in a card
+- Only annotated tags count unless `--tags` is given, as in git; with no tag to count from, git-sim says why (no tags at all, only lightweight ones, or none in that commit's history)
+
+</details>
+<details>
+<summary><b><code>git diff</code></b>: what changed between two points</summary>
+
+Usage: `git-sim diff [--staged] [--stat] [<commit> [<commit>]] [<path>...]` | `git-sim diff <A>..<B>` | `git-sim diff <A>...<B>`
+
+- Shows what the diff goes from and to: HEAD to the working directory ("Unstaged changes"; with something staged it starts from the staging area, which is what `git diff` really compares with), HEAD to the staging area (`--staged`, alias `--cached`: "Staged changes"), a commit to the working directory, or one commit to another
+- Commits are labeled `from` / `to` in the graph; `A...B` goes from their merge base, as git does
+- Plays in order: the "from" side alone (purple, as a chip under the graph and on its commit), then an arrow to the "to" side (teal), then the card
+- The card lists each changed file like `git diff --stat`: its status (M, A, D, R), path, lines added and removed, and a five-block bar; arguments that aren't revisions are paths to limit it to
+- `--stat` sums the card up in git's own words: "3 files changed, 10 insertions(+), 2 deletions(-)"
+
+</details>
+<details>
+<summary><b><code>git fetch</code></b>: download new commits from a remote</summary>
+
+Usage: `git-sim fetch [--prune] <remote> <branch>` | `git-sim fetch --all [--prune]`
+
+- Fetches the specified `<branch>` from the specified `<remote>` to the local repo
+- `--prune`/`-p` also removes remote-tracking branches whose branch is gone from the remote: their labels fade out; without it, a note names the ones that linger
+- `--all` fetches every remote: the remote-tracking labels each one moves or creates are drawn, with a line per remote saying what it brought (or that it had nothing new)
+
+[![git-sim fetch origin main](docs/img/fetch.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=fetch)
+
+</details>
+<details>
+<summary><b><code>git grep</code></b>: search tracked files</summary>
+
+Usage: `git-sim grep [-n] [-i] <pattern> [<revision>] [-- <path>...]`
+
+- Searches the tracked files (or the files of a commit, branch or tag) for a pattern, as `git grep` does; git itself finds the matches, so its regular expressions apply
+- A card groups the matching lines by file with each match highlighted; `-n`/`--line-number` adds line numbers and `-i`/`--ignore-case` ignores case
+- A searched revision is highlighted in the graph; drawn with `--compact` and no revision, the card stands alone
+
+</details>
+<details>
+<summary><b><code>git init</code></b>: create a repository</summary>
+
+Usage: `git-sim init`
+
+- Before: your project folder and its files; after: the files move up to make room for the new `.git/` folder, drawn as a tree of what's inside it (`HEAD`, `config`, `objects/`, `refs/` and its `heads/`, `tags/` and `remotes/`, `hooks/`, `info/`), each with what it's for
+- Running it in an existing repository shows that nothing changes, as git reinitializes it
+
+[![git-sim init](docs/img/init.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=init)
+
+</details>
+<details>
+<summary><b><code>git log</code></b>: browse and filter the history</summary>
+
+Usage: `git-sim log [-n <number>] [--all] [--oneline] [--graph] [-p] [--follow] [-S <text>] [--author <name>] [--since|--after <date>] [--until|--before <date>] [[--] <path>...]`
+
+- Simulated output will show the most recent 5 commits on the active branch by default
+- Use `-n <number>` to set number of commits to display from each branch head
+- Set `--all` to display all local branches in the log output
+- `--oneline` and `--graph` change how git prints the list; the drawing is already a graph, so they show in the title
+- Filters keep the graph and highlight the commits git would list: paths (`git-sim log -- app.py`), `-S <text>` (commits that added or removed the text), `--author`, `--since`/`--after` and `--until`/`--before`. A card says what matched ("3 commits changed app.py") and lists them newest first; with a filter, `-n` is how many commits git lists
+- `--follow <file>` carries a file's history back past its renames ("following its rename from main.py"); `-p` adds the newest listed commit's patch as a card
+
+[![git-sim log --all](docs/img/log.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=log)
+
+</details>
+<details>
+<summary><b><code>git ls-remote</code></b>: list a remote's refs</summary>
+
+Usage: `git-sim ls-remote [<remote>] [--heads] [--tags]`
+
+- Lists the refs on `<remote>` (default: the current branch's remote, else `origin`): its HEAD, branches and tags with their commits, beside your remote-tracking copies from the last fetch
+- Each ref that differs is marked: moved on since your last fetch, not fetched yet, deleted on the remote, or ahead here with commits a push would send; tags only you have are marked too
+- `--heads` (alias `--branches`) lists only branches, `--tags`/`-t` only tags
+- `<remote>` can also be a URL or path; there is then nothing here to compare with
+- Nothing is downloaded and nothing changes
+
+</details>
+<details>
+<summary><b><code>git merge</code></b>: combine a branch into the active branch</summary>
+
+Usage: `git-sim merge <branch> [-m "Commit message"] [--no-ff|--squash]` | `git-sim merge --continue|--abort`
+
+- Specify `<branch>` as the branch name to merge into the active branch
+- If desired, specify a commit message with the `-m` option
+- Simulated output will depict a fast-forward merge if possible
+- Otherwise, a three-way merge will be depicted
+- To force a merge commit when a fast-forward is possible, use `--no-ff`
+- If merge fails due to merge conflicts, the conflicting files are displayed
+- `--squash` stages the branch's changes as one set and commits nothing: HEAD doesn't move, and the branch is not recorded as merged
+- `--continue`, `--abort` act on a merge stopped on a conflict: git-sim runs the real command in a copy of the repository (yours is never touched) and draws what it would do: new commits fade in, HEAD and the branch move, commits left behind turn gold, and a new conflict is listed
+
+[![git-sim merge feature/pagination](docs/img/merge.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=merge)
+
+</details>
+<details>
+<summary><b><code>git mv</code></b>: move or rename a tracked file</summary>
+
+Usage: `git-sim mv <file> <new file>`
+
+- Specify `<file>` as file to update name/path
+- Specify `<new file>` as new name/path of file 
+- Simulated output will show the name/path of the file being updated 
+- Note that simulated output will also show the most recent 5 commits on the active branch
+
+[![git-sim mv config.yaml settings.yaml](docs/img/mv.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=mv)
+
+</details>
+<details>
+<summary><b><code>git pull</code></b>: fetch and integrate a remote branch</summary>
+
+Usage: `git-sim pull [--rebase] [<remote> <branch>]`
+
+- Pulls the specified `<branch>` from the specified `<remote>` to the local repo
+- If `<remote>` and `<branch>` are not specified, the active branch is pulled from the default remote
+- If merge conflicts occur, they are displayed in a table
+- `--rebase`/`-r` replays your local commits on top of what was fetched instead of merging: the copies fade in, and the originals are drawn below in gold
+
+[![git-sim pull origin main](docs/img/pull.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=pull)
+
+</details>
+<details>
+<summary><b><code>git push</code></b>: send commits, tags, or deletions to a remote</summary>
+
+Usage: `git-sim push [<remote> <branch>] [--force|--force-with-lease]` | `git-sim push <remote> --delete <branch|tag>` | `git-sim push <remote> <tag>` | `git-sim push --tags`
+
+- Pushes the specified `<branch>` to the specified `<remote>` and displays the local result
+- `--force` overwrites the remote branch: commits that only the remote had are drawn in gold, since nobody can reach them from the remote afterwards
+- `--force-with-lease` does the same only if the remote still matches your last fetch; otherwise the simulation shows the rejection
+- If `<remote>` and `<branch>` are not specified, the active branch is pushed to the default remote
+- `--delete`/`-d` deletes the branch on the remote: its remote-tracking label fades out, and commits no other remote branch reaches turn gold
+- `--tags` pushes every tag the remote doesn't have (and no branches): each gets an `on origin` label
+- `git-sim push <remote> <tag>` pushes one tag the same way (and says how many commits go with it); `--delete <tag>` deletes a tag on the remote, its `on origin` label turning into `deleted on origin`, while your own tag stays
+- If the push fails due to remote changes that don't exist in the local repo, a message is included telling the user to pull first, along with color coding which commits need to be pulled
+
+[![git-sim push origin main](docs/img/push.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=push)
+
+</details>
+<details>
+<summary><b><code>git rebase</code></b>: replay commits on a new base</summary>
+
+Usage: `git-sim rebase <new-base> [--onto <commit>] [-i [--todo <file>]]` | `git-sim rebase --continue|--abort|--skip`
+
+- Specify `<new-base>` as the branch name to rebase the active branch onto
+- `--onto <commit>` replays the commits after `<new-base>` on top of `<commit>` instead
+- `-i` replays each commit individually; `--todo <file>` takes a rebase todo list (`pick`, `reword`, `edit`, `squash`, `fixup`, `drop` + sha) so squashes fold into the previous copy and drops are shown in gold
+- `--continue`, `--abort` and `--skip` act on a rebase stopped on a conflict: git-sim runs the real command in a copy of the repository (yours is never touched) and draws what it would do: new commits fade in, HEAD and the branch move, commits left behind turn gold, and a new conflict is listed
+
+[![git-sim rebase feature/pagination](docs/img/rebase.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=rebase)
+
+</details>
+<details>
+<summary><b><code>git reflog</code></b>: where HEAD has been, and what you can recover</summary>
+
+Usage: `git-sim reflog [-n <number>]`
+
+- Draws the last `<number>` positions of HEAD (default 5) as purple `HEAD@{k}` labels
+- Commits that no branch or tag reaches any more are drawn in gold, with the `git reset --hard HEAD@{k}` command that brings them back
+
+[![git-sim reflog](docs/img/reflog.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=reflog)
+
+</details>
+<details>
+<summary><b><code>git remote</code></b>: add, rename, remove, and inspect remotes</summary>
+
+Usage: `git-sim remote [-v] [add|rename|remove|get-url|set-url|show] [<remote>] [<url>]`
+
+- Simulated output shows `.git/config` with the remote's section, beside a card naming the remote, its URL, and what the command does: a remote added, renamed, removed or pointed at a new URL
+- Running `git-sim remote` with no options will list all existing remotes and their details  
+- `-v`/`--verbose` lists each remote's fetch and push URLs, as `git remote -v` prints them
+- `show <remote>` asks the remote for its branches and reports like `git remote show`: its URLs and HEAD branch, each branch as tracked, new (not fetched yet) or stale (deleted there, still here), and the local branches configured for `git pull` and `git push`, whose settings light up in `.git/config`. Nothing changes
+
+[![git-sim remote](docs/img/remote.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=remote)
+
+</details>
+<details>
+<summary><b><code>git reset</code></b>: move the branch, and maybe discard changes</summary>
+
+Usage: `git-sim reset <reset-to> [--mixed|--soft|--hard]` | `git-sim reset [<commit>] <path>...`
+
+- Specify `<reset-to>` as any commit id, branch name, tag, or other ref to simulate reset to from the current HEAD (default: `HEAD`)
+- With paths, HEAD stays put and the named files are unstaged (their index entries return to the commit's version)
+- As with a normal git reset command, default reset mode is `--mixed`, but can be specified using `--soft`, `--hard`, or `--mixed`
+- Simulated output will show branch/HEAD resets and resulting state of the working directory, staging area, and whether any file changes would be deleted by running the actual command
+
+[![git-sim reset --hard HEAD~2](docs/img/reset-hard.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=reset-hard)
+
+</details>
+<details>
+<summary><b><code>git restore</code></b>: unstage files or discard their changes</summary>
+
+Usage: `git-sim restore [--staged] <file 1> <file 2> ... <file n>`
+
+- Specify one or more `<file>` as a *modified* working directory file, or staged file
+- Simulated output will show files being moved back to the working directory or discarded changes
+- Note that simulated output will also show the most recent 5 commits on the active branch
+
+[![git-sim restore --staged app.py](docs/img/restore-staged.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=restore-staged)
+
+</details>
+<details>
+<summary><b><code>git revert</code></b>: undo a commit with a new commit</summary>
+
+Usage: `git-sim revert <to-revert> [-m <parent-number>] [-n]`
+
+- Specify `<to-revert>` as any commit id, branch name, tag, or other ref to simulate revert for
+- Reverting a merge commit needs `-m <parent-number>` (as in git); the reverted files are those the merge brought in relative to that parent
+- `-n`/`--no-commit` stages the reverse changes without creating a commit
+- Simulated output will show the new commit which reverts the changes from `<to-revert>`
+- Simulated output will include the next 4 most recent commits on the active branch
+
+[![git-sim revert HEAD](docs/img/revert.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=revert)
+
+</details>
+<details>
+<summary><b><code>git rm</code></b>: delete tracked files</summary>
+
+Usage: `git-sim rm [--cached] <file 1> <file 2> ... <file n>`
+
+- Specify one or more `<file>` as a *tracked* file
+- Simulated output will show files being removed from Git tracking
+- `--cached` stops tracking the files but keeps them on disk: each turns untracked while its deletion is staged
+- Note that simulated output will also show the most recent 5 commits on the active branch
+
+[![git-sim rm utils.py](docs/img/rm.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=rm)
+
+</details>
+<details>
+<summary><b><code>git shortlog</code></b>: commits per author</summary>
+
+Usage: `git-sim shortlog [-s] [-n] [-e] [<revision>|<A>..<B>]` (short flags combine: `-sn`, `-sne`)
+
+- Counts the commits of a revision (default `HEAD`) or range per author, as `git shortlog` does: a card ranks the authors with their count and a bar each, by name or, with `-n`/`--numbered`, most commits first
+- Without `-s`/`--summary` each author's first commit subjects are listed under their name; `-e`/`--email` adds their addresses
+- The drawn commits take their author's color in the graph
+
+</details>
+<details>
+<summary><b><code>git show</code></b>: a commit and the files it changed</summary>
+
+Usage: `git-sim show [<commit>|<tag>|<commit>:<path>]`
+
+- Highlights the commit shown (default `HEAD`) and, in a card under the graph, lists the files it changed like `git show --stat`; an annotated tag's tagger and message are noted
+- For a merge commit the files are compared with its first parent (git prints a combined diff)
+- `<commit>:<path>` shows the start of one file (or a directory listing) as it was in that commit
+
+</details>
+<details>
+<summary><b><code>git stash</code></b>: set changes aside, and bring them back</summary>
+
+Usage: `git-sim stash [push] [-u] [-m <message>] <file>` | `git-sim stash pop|apply` | `git-sim stash list|show|drop|clear [<stash-index>]`
+
+- Specify one or more `<file>` as a *modified* working directory file, or staged file
+- If no `<file>` is specified, all available files will be included
+- `-u`/`--include-untracked` stashes untracked files too (without it, a note counts the ones left behind); `-m` names the entry, and a note shows it as `git stash list` will
+- `list`, `show`, `drop` and `clear` draw the stash as a stack of entries, newest (`stash@{0}`) on top: each card has the entry's message, its file and line counts, and the commit it was made on (short sha and message, not the history around it); `drop` fades the dropped entry out and slides the ones below it up a number, `clear` fades them all out, and `show` highlights the entry and lists its files like `git stash show --stat`
+- Simulated output will show files being moved in/out of the Git stash
+- Note that simulated output will also show the most recent 5 commits on the active branch
+
+[![git-sim stash](docs/img/stash.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=stash)
+
+</details>
+<details>
+<summary><b><code>git status</code></b>: the working directory and the staging area</summary>
+
+Usage: `git-sim status`
+
+- Simulated output will show the state of the working directory, staging area, and untracked files
+- Note that simulated output will also show the most recent 5 commits on the active branch
+
+[![git-sim status](docs/img/status.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=status)
+
+</details>
+<details>
+<summary><b><code>git submodule</code></b>: repositories inside a repository</summary>
+
+Usage: `git-sim submodule [status|add <url> [<path>]|init|update [--init]|deinit [--force] <path>]`
+
+- Draws the superproject's history plus a table with one row per submodule: its path, the pinned commit, and its state
+- `add` records a new pinned submodule; `update --init` initializes and checks out; `deinit` empties the submodule's working tree (refused without `--force` when it has local changes)
+
+</details>
+<details>
+<summary><b><code>git switch</code></b>: switch branches, or create one</summary>
+
+Usage: `git-sim switch [-c] <branch> [<start-point>]` | `git-sim switch -`
+
+- Switches the checked-out branch to `<branch>`, i.e. moves `HEAD` to the specified `<branch>`
+- The `-c` flag creates a new branch with the specified name `<branch>` and switches to it, assuming it doesn't already exist; with a `<start-point>` the branch starts there, and a remote-tracking start point (`origin/x`) becomes its upstream
+- `git-sim switch -` goes back to the previous branch (`@{-1}` in the reflog), labeled under its commit
+- A `<branch>` only a remote has (just `origin/<branch>` exists) is made locally at the same commit, tracking it, as git does
+
+[![git-sim switch -c feature/search](docs/img/switch-c.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=switch-c)
+
+</details>
+<details>
+<summary><b><code>git tag</code></b>: label a commit</summary>
+
+Usage: `git-sim tag <new tag name> [<commit>]` | `git-sim tag -a <name> -m "<message>" [<commit>]` | `git-sim tag -d <name>` | `git-sim tag -l ["<pattern>"]`
+
+- Specify `<new tag name>` as the name of the new tag to simulate creation of
+- Simulated output will show the newly created tag ref along with the most recent 5 commits on the active branch
+- `-a` with `-m` (or `-m` alone) makes an annotated tag: a card under the graph shows the tag object it writes, with the commit it points at, the tagger, the date and the message
+- `-l`/`--list` lists the tags in a card, highlighting the ones matching the pattern (a glob, such as `"v1.*"`)
+
+[![git-sim tag v1.1.0](docs/img/tag.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=tag)
+
+</details>
+<details>
+<summary><b><code>git worktree</code></b>: more than one working directory</summary>
+
+Usage: `git-sim worktree [list|add [-b <new-branch>] <path> [<branch>]|remove [--force] <path>|prune]`
+
+- Draws the commit graph plus a table with one row per worktree: its directory, branch and state (clean, N uncommitted changes, directory missing)
+- `remove` is refused (as in git) when the worktree has uncommitted changes unless `--force` is given, in which case the row is struck through and the deleted change count shown
+- `prune` strikes through worktree records whose directory no longer exists
+
+[![git-sim worktree add ../hotfix fix/order-totals](docs/img/worktree.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=worktree)
+
+</details>
+
+## Pre-flight
+
+```console
+$ git-sim preflight reset --hard HEAD~2
+```
+
+reports what a command that can lose work would do, computed from the repository rather than guessed: the risk level, the commits that would become unreachable, the files whose changes would be lost, and the command that undoes it. Nothing runs. The same check is what the [Claude Code hook and MCP server](docs/mcp.md) run before an AI agent is allowed to execute a destructive command, so the agent stops and asks you first. `--markdown` writes the report for a pull request comment (the [GitHub Action](docs/integrations.md) uses it), and the [VS Code extension](docs/vscode.md) shows it in an editor tab.
+
+## Live mode
+
+```console
+$ git-sim live
+```
+
+opens the live page in the git-sim viewer at initialcommit.com and follows the repository in the current folder (or `-C <path>`). As with simulations, the site only serves the page: the graphs come from a small server git-sim runs on your machine, whose address and session key travel in the link's `#fragment`, which browsers never send, so nothing about the repository reaches the site. Chrome and Edge ask once whether the site may talk to your computer; `--open-in local` (or `git_sim_open_in=local`) opens the same page served by git-sim itself, which needs no permission. After every change, whoever made it (a command in a terminal, an IDE's Source Control button, an AI agent), the graph plays the change the way a simulation does: the new commit fades in, labels slide over, a dropped branch fades out, a staged file crosses to its new column. The changes stay in a strip above the graph, so you can click back to any of them, step with `[` and `]`, or **Replay all** to watch the session end to end. Each change is also saved as a standalone page under `git-sim media-dir` in `<repo>/live/`.
+
+What changed is read from git itself (the refs, HEAD, `git status`, the stash list and the HEAD reflog, compared between polls), so the graph names the command that ran: `git commit`, `git reset HEAD~1`, `git checkout -b topic`, `git rebase`, `git stash`, `git add a.txt`, ... The global options apply to every drawing: `--all` for every branch, `-n` for depth, `--dark-mode`. Options of `live` itself:
+
+`--no-zones`: draw the commit graph alone, without the untracked / modified / staged table.  
+`--interval <seconds>`: how often to check the repository (default 1; each check runs a few quick git commands).  
+`--port <n>`: the port for the page (default: any free port).  
+`--json`: no browser and no server; print one JSON line per change, naming the graph and page written. This is what the [VS Code extension](docs/vscode.md) uses for its live tab and sidebar view.  
+`--sessions`: list the repository's recorded sessions; `--replay` opens the latest one (or `--session <folder>`).
+
+**Save session** in the page writes the whole session as one HTML file that opens anywhere, and **Record video** records the replay as an MP4 or WebM to post; git-sim also keeps every session as `session.html` under the media folder. See [docs/live.md](docs/live.md).
+
+Nothing in the repository is modified. The local server listens on `127.0.0.1` only, answers cross-origin requests from the viewer's origin alone, and requires the session key on every request, so another web page you visit cannot read your graph off localhost.
+
+## Options
 
 ```console
 $ git-sim [global options] <subcommand> [subcommand options]
 ```
+
+The ones you'll reach for most:
+
+`--img-format png` (or `jpg`, `svg`): a static image instead of the interactive page  
+`--animate`: an `.mp4` video instead (needs the `extras` install below)  
+`--dark-mode`: the dark color scheme  
+`--all`, `-n <number>`: every branch, and how many commits per branch  
+`--open-in local`: open the saved page instead of the hosted viewer  
+`--media-dir <path>`: where output is saved (`git-sim media-dir` prints the default)
+
+Every option can also be set with an environment variable named `git_sim_` plus the option, such as `git_sim_dark_mode=true` or `git_sim_img_format=png`. An option on the command line wins over the variable.
+
+<details>
+<summary>All global options</summary>
 
 The `[global options]` apply to the overarching `git-sim` simulation itself, including:
 
@@ -200,576 +609,16 @@ Animation-only global options (to be used in conjunction with `--animate`):
 `--outro-bottom-text`: Custom text to display below the logo during the outro.  
 `--font`: Font family used to display rendered text.
 
-The `[subcommand options]` are like regular Git options specific to the specified subcommand (see below for a full list).
-
-## Pre-flight
-
-```console
-$ git-sim preflight reset --hard HEAD~2
-```
-
-reports what a command that can lose work would do, computed from the repository rather than guessed: the risk level, the commits that would become unreachable, the files whose changes would be lost, and the command that undoes it. Nothing runs. The same check is what the [Claude Code hook and MCP server](docs/mcp.md) run before an AI agent is allowed to execute a destructive command, so the agent stops and asks you first. `--markdown` writes the report for a pull request comment (the [GitHub Action](docs/integrations.md) uses it), and the [VS Code extension](docs/vscode.md) shows it in an editor tab.
-
-## Live mode
-
-```console
-$ git-sim live
-```
-
-opens the live page in the git-sim viewer at initialcommit.com and follows the repository in the current folder (or `-C <path>`). As with simulations, the site only serves the page: the graphs come from a small server git-sim runs on your machine, whose address and session key travel in the link's `#fragment`, which browsers never send, so nothing about the repository reaches the site. Chrome and Edge ask once whether the site may talk to your computer; `--open-in local` (or `git_sim_open_in=local`) opens the same page served by git-sim itself, which needs no permission. After every change, whoever made it (a command in a terminal, an IDE's Source Control button, an AI agent), the graph plays the change the way a simulation does: the new commit fades in, labels slide over, a dropped branch fades out, a staged file crosses to its new column. The changes stay in a strip above the graph, so you can click back to any of them, step with `[` and `]`, or **Replay all** to watch the session end to end. Each change is also saved as a standalone page under `git-sim media-dir` in `<repo>/live/`.
-
-What changed is read from git itself (the refs, HEAD, `git status`, the stash list and the HEAD reflog, compared between polls), so the graph names the command that ran: `git commit`, `git reset HEAD~1`, `git checkout -b topic`, `git rebase`, `git stash`, `git add a.txt`, ... The global options apply to every drawing: `--all` for every branch, `-n` for depth, `--light-mode`. Options of `live` itself:
-
-`--no-zones`: draw the commit graph alone, without the untracked / modified / staged table.  
-`--interval <seconds>`: how often to check the repository (default 1; each check runs a few quick git commands).  
-`--port <n>`: the port for the page (default: any free port).  
-`--json`: no browser and no server; print one JSON line per change, naming the graph and page written. This is what the [VS Code extension](docs/vscode.md) uses for its live tab and sidebar view.  
-`--sessions`: list the repository's recorded sessions; `--replay` opens the latest one (or `--session <folder>`).
-
-**Save session** in the page writes the whole session as one HTML file that opens anywhere, and **Record video** records the replay as an MP4 or WebM to post; git-sim also keeps every session as `session.html` under the media folder. See [docs/live.md](docs/live.md).
-
-Nothing in the repository is modified. The local server listens on `127.0.0.1` only, answers cross-origin requests from the viewer's origin alone, and requires the session key on every request, so another web page you visit cannot read your graph off localhost.
-
-The following is a list of Git commands that can be simulated and their corresponding options/flags.
-
-### git add
-Usage: `git-sim add <file 1> <file 2> ... <file n>`
-
-- Specify one or more `<file>` as a *modified* working directory file, or an untracked file
-- Simulated output will show files being moved to the staging area
-- Note that simulated output will also show the most recent 5 commits on the active branch
-- In depth: [how git add works](https://initialcommit.com/learn/git/commands/git-add), played out step by step on a sample repository
-
-[![git-sim add scratch.txt README.md](docs/img/add.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=add)
-
-### git bisect
-Usage: `git-sim bisect start [<bad> [<good>...]]` | `git-sim bisect good|bad|old|new|skip [<commit>]` | `git-sim bisect reset [<commit>]`
-
-- `start <bad> <good>` draws the `bad` and `good-<sha>` marks, turns the commits still suspected purple, and moves `HEAD` to the commit git checks out to test next
-- The next commit comes from git itself (`git rev-list --bisect`, and git's own rule when commits were skipped), so the drawing matches what `git bisect` does
-- `good`, `bad` and `skip` continue the session in progress (read from `refs/bisect/*`), marking `HEAD` or the given commit; once one suspect is left it is drawn in gold as the first bad commit
-- `reset` removes the marks and returns `HEAD` to where the session started
-- In depth: [how git bisect works](https://initialcommit.com/learn/git/commands/git-bisect), played out step by step on a sample repository
-
-### git blame
-Usage: `git-sim blame <file> [-L <start>,<end>]`
-
-- A code view of the file: each line has a colored gutter for the commit that last changed it, with that commit's short hash at the start of each run of lines
-- Each of those commits is painted the same color in the graph; lines edited but not committed yet are grey
-- `-L` limits it to a range of lines, as in git (`10,20` or `10,+5`)
-- In depth: [how git blame works](https://initialcommit.com/learn/git/commands/git-blame), played out step by step on a sample repository
-
-### git branch
-Usage: `git-sim branch <new branch name> [<start-point>]` | `git-sim branch -d|-D <branch>` | `git-sim branch -m <branch> <new name>` | `git-sim branch [-a] [-v|-vv] [--merged|--no-merged [<commit>]]` | `git-sim branch -u <upstream> [<branch>]`
-
-- Specify `<new branch name>` as the name of the new branch to simulate creation of
-- Simulated output will show the newly create branch ref along with most recent 5 commits on the active branch
-- `-d` deletes a branch that is merged into the active branch; git-sim refuses (like git) if it is not
-- `-D` force-deletes: commits that only the deleted branch reached are drawn in gold, with the `git branch <name> <sha>` command that brings them back
-- `-m` renames a branch, moving its label in place
-- Without a name, lists the branches: the graph with every branch drawn, and a card listing them with the current one marked. `-a`/`--all` adds the remote-tracking branches, `-v` each branch's last commit, `-vv` also its upstream and how far ahead or behind it is
-- `--merged [<commit>]` and `--no-merged [<commit>]` (default `HEAD`) highlight the branches git would list: those whose tips are, or aren't, in the commit's history
-- `-u <upstream>`/`--set-upstream-to=<upstream>` shows the `[branch "x"]` lines it writes to `.git/config`, and the branch's new `[upstream: ahead n, behind m]` on its label
-- In depth: [how git branch works](https://initialcommit.com/learn/git/commands/git-branch), played out step by step on a sample repository
-
-[![git-sim branch -D fix/order-totals](docs/img/branch-d.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=branch-d)
-
-### git check-ignore
-Usage: `git-sim check-ignore [-v] <path>...`
-
-- Shows the ignore file with numbered lines and highlights the rule that decides each path; a rule from .git/info/exclude, a nested .gitignore or your core.excludesFile gets a card of its own
-- Beside it, each path's verdict: ignored by which line, un-ignored by a `!` line, matched by nothing, or tracked, which no ignore rule can undo
-- `-v` (`--verbose`) shows what `git check-ignore -v` prints: the source, line and pattern for each match
-
-### git checkout
-Usage: `git-sim checkout [-b] <branch>`
-
-- Checks out `<branch>` into the working directory, i.e. moves `HEAD` to the specified `<branch>`
-- The `-b` flag creates a new branch with the specified name `<branch>` and checks it out, assuming it doesn't already exist
-- In depth: [how git checkout works](https://initialcommit.com/learn/git/commands/git-checkout), played out step by step on a sample repository
-
-[![git-sim checkout fix/order-totals](docs/img/checkout.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=checkout)
-
-### git cherry-pick
-Usage: `git-sim cherry-pick <commit>|<A..B> [-n]` | `git-sim cherry-pick --continue|--abort|--skip`
-
-- Specify `<commit>` as a ref (branch name/tag) or commit ID to cherry-pick onto the active branch
-- A range `A..B` picks every commit reachable from `B` but not `A`, oldest first, as a chain of new commits
-- `-n`/`--no-commit` applies the changes to the index and working tree without creating a commit
-- Supports editing the cherry-picked commit message with: `$ git-sim cherry-pick <commit> -e "Edited commit message"`
-- `--continue`, `--abort` and `--skip` act on a cherry-pick stopped on a conflict: git-sim runs the real command in a copy of the repository (yours is never touched) and draws what it would do: new commits fade in, HEAD and the branch move, commits left behind turn gold, and a new conflict is listed
-- In depth: [how git cherry-pick works](https://initialcommit.com/learn/git/commands/git-cherry-pick), played out step by step on a sample repository
-
-[![git-sim cherry-pick fix/order-totals](docs/img/cherry-pick.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=cherry-pick)
-
-### git clean
-Usage: `git-sim clean [-f] [-n] [-d] [-x]`
-
-- Simulated output will show untracked files being deleted, taken from git's own dry run (`git clean -n` with the same flags)
-- `-d` includes untracked directories, `-x` includes ignored files (build output, virtualenvs)
-- Without `-f` or `-n` the simulation notes that real git would refuse to run
-- Note that simulated output will also show the most recent 5 commits on the active branch
-- In depth: [how git clean works](https://initialcommit.com/learn/git/commands/git-clean), played out step by step on a sample repository
-
-[![git-sim clean -fd](docs/img/clean.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=clean)
-
-### git clone
-Usage: `git-sim clone [--depth <n>] [-b <branch>] <url> [<path>]`
-
-- Clone the remote repo from `<url>` (web URL or filesystem path) to a new folder in the current directory
-- Output will report if clone operation is successful and show log of local clone
-- `--depth <n>` makes a shallow clone: only the last `<n>` commits are drawn, and the oldest is marked `grafted`, cut off from parents that stay on the server
-- `-b`/`--branch <branch>` checks out that branch (or tag) instead of the one the remote's HEAD points at
-- In depth: [how git clone works](https://initialcommit.com/learn/git/commands/git-clone), played out step by step on a sample repository
-
-[![git-sim clone <url>](docs/img/clone.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=clone)
-
-### git commit
-Usage: `git-sim commit -m "Commit message"`
-
-- Simulated output will show the new commit added to the tip of the active branch
-- Specify a commit message with the `-m` option
-- HEAD and the active branch will be moved to the new commit
-- Simulated output will show files in the staging area being included in the new commit
-- Supports amending the last commit with: `$ git-sim commit --amend -m "Amended commit message"`
-- `--amend --no-edit` keeps the current commit message
-- `-a` stages every modified tracked file first (untracked files are not included)
-- In depth: [how git commit works](https://initialcommit.com/learn/git/commands/git-commit), played out step by step on a sample repository
-
-[![git-sim commit -m "Ship the pagination fix"](docs/img/commit.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=commit)
-
-### git config
-Usage: `git-sim config [--list] [--global] <section.option> [<value>]`
-
-- Simulated output describes the specified configuration change
-- Use `--list` or `-l` to display all configuration
-- Use `--global` to read or write your own settings file, ~/.gitconfig, which applies to every repository of yours unless one sets its own value
-- In depth: [how git config works](https://initialcommit.com/learn/git/commands/git-config), played out step by step on a sample repository
-
-[![git-sim config user.name "Ada Lovelace"](docs/img/config.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=config)
-
-### git describe
-Usage: `git-sim describe [--tags] [<commit>]`
-
-- Names a commit (default `HEAD`) after the nearest tag in its history, as `git describe` does: `v1.0-2-g8c02d5a` is 2 commits past `v1.0`, then `g` and the commit's own short id; a tagged commit is named by its tag alone
-- The graph runs back to the tag: the commits since it are highlighted, the tagged commit takes the tag's color, and the name is labeled on the described commit and taken apart in a card
-- Only annotated tags count unless `--tags` is given, as in git; with no tag to count from, git-sim says why (no tags at all, only lightweight ones, or none in that commit's history)
-
-### git diff
-Usage: `git-sim diff [--staged] [--stat] [<commit> [<commit>]] [<path>...]` | `git-sim diff <A>..<B>` | `git-sim diff <A>...<B>`
-
-- Shows what the diff goes from and to: HEAD to the working directory ("Unstaged changes"; with something staged it starts from the staging area, which is what `git diff` really compares with), HEAD to the staging area (`--staged`, alias `--cached`: "Staged changes"), a commit to the working directory, or one commit to another
-- Commits are labeled `from` / `to` in the graph; `A...B` goes from their merge base, as git does
-- Plays in order: the "from" side alone (purple, as a chip under the graph and on its commit), then an arrow to the "to" side (teal), then the card
-- The card lists each changed file like `git diff --stat`: its status (M, A, D, R), path, lines added and removed, and a five-block bar; arguments that aren't revisions are paths to limit it to
-- `--stat` sums the card up in git's own words: "3 files changed, 10 insertions(+), 2 deletions(-)"
-- In depth: [how git diff works](https://initialcommit.com/learn/git/commands/git-diff), played out step by step on a sample repository
-
-### git fetch
-Usage: `git-sim fetch [--prune] <remote> <branch>` | `git-sim fetch --all [--prune]`
-
-- Fetches the specified `<branch>` from the specified `<remote>` to the local repo
-- `--prune`/`-p` also removes remote-tracking branches whose branch is gone from the remote: their labels fade out; without it, a note names the ones that linger
-- `--all` fetches every remote: the remote-tracking labels each one moves or creates are drawn, with a line per remote saying what it brought (or that it had nothing new)
-- In depth: [how git fetch works](https://initialcommit.com/learn/git/commands/git-fetch), played out step by step on a sample repository
-
-[![git-sim fetch origin main](docs/img/fetch.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=fetch)
-
-### git grep
-Usage: `git-sim grep [-n] [-i] <pattern> [<revision>] [-- <path>...]`
-
-- Searches the tracked files (or the files of a commit, branch or tag) for a pattern, as `git grep` does; git itself finds the matches, so its regular expressions apply
-- A card groups the matching lines by file with each match highlighted; `-n`/`--line-number` adds line numbers and `-i`/`--ignore-case` ignores case
-- A searched revision is highlighted in the graph; drawn with `--compact` and no revision, the card stands alone
-
-### git init
-Usage: `git-sim init`
-
-- Simulated output describes the initialized `.git/` directory and it's contents
-- In depth: [how git init works](https://initialcommit.com/learn/git/commands/git-init), played out step by step on a sample repository
-
-[![git-sim init](docs/img/init.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=init)
-
-### git log
-Usage: `git-sim log [-n <number>] [--all] [--oneline] [--graph] [-p] [--follow] [-S <text>] [--author <name>] [--since|--after <date>] [--until|--before <date>] [[--] <path>...]`
-
-- Simulated output will show the most recent 5 commits on the active branch by default
-- Use `-n <number>` to set number of commits to display from each branch head
-- Set `--all` to display all local branches in the log output
-- `--oneline` and `--graph` change how git prints the list; the drawing is already a graph, so they show in the title
-- Filters keep the graph and highlight the commits git would list: paths (`git-sim log -- app.py`), `-S <text>` (commits that added or removed the text), `--author`, `--since`/`--after` and `--until`/`--before`. A card says what matched ("3 commits changed app.py") and lists them newest first; with a filter, `-n` is how many commits git lists
-- `--follow <file>` carries a file's history back past its renames ("following its rename from main.py"); `-p` adds the newest listed commit's patch as a card
-- In depth: [how git log works](https://initialcommit.com/learn/git/commands/git-log), played out step by step on a sample repository
-
-[![git-sim log --all](docs/img/log.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=log)
-
-### git ls-remote
-Usage: `git-sim ls-remote [<remote>] [--heads] [--tags]`
-
-- Lists the refs on `<remote>` (default: the current branch's remote, else `origin`): its HEAD, branches and tags with their commits, beside your remote-tracking copies from the last fetch
-- Each ref that differs is marked: moved on since your last fetch, not fetched yet, deleted on the remote, or ahead here with commits a push would send; tags only you have are marked too
-- `--heads` (alias `--branches`) lists only branches, `--tags`/`-t` only tags
-- `<remote>` can also be a URL or path; there is then nothing here to compare with
-- Nothing is downloaded and nothing changes
-
-### git merge
-Usage: `git-sim merge <branch> [-m "Commit message"] [--no-ff|--squash]` | `git-sim merge --continue|--abort`
-
-- Specify `<branch>` as the branch name to merge into the active branch
-- If desired, specify a commit message with the `-m` option
-- Simulated output will depict a fast-forward merge if possible
-- Otherwise, a three-way merge will be depicted
-- To force a merge commit when a fast-forward is possible, use `--no-ff`
-- If merge fails due to merge conflicts, the conflicting files are displayed
-- `--squash` stages the branch's changes as one set and commits nothing: HEAD doesn't move, and the branch is not recorded as merged
-- `--continue`, `--abort` act on a merge stopped on a conflict: git-sim runs the real command in a copy of the repository (yours is never touched) and draws what it would do: new commits fade in, HEAD and the branch move, commits left behind turn gold, and a new conflict is listed
-- In depth: [how git merge works](https://initialcommit.com/learn/git/commands/git-merge), played out step by step on a sample repository
-
-[![git-sim merge feature/pagination](docs/img/merge.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=merge)
-
-### git mv
-Usage: `git-sim mv <file> <new file>`
-
-- Specify `<file>` as file to update name/path
-- Specify `<new file>` as new name/path of file 
-- Simulated output will show the name/path of the file being updated 
-- Note that simulated output will also show the most recent 5 commits on the active branch
-- In depth: [how git mv works](https://initialcommit.com/learn/git/commands/git-mv), played out step by step on a sample repository
-
-[![git-sim mv config.yaml settings.yaml](docs/img/mv.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=mv)
-
-### git pull
-Usage: `git-sim pull [--rebase] [<remote> <branch>]`
-
-- Pulls the specified `<branch>` from the specified `<remote>` to the local repo
-- If `<remote>` and `<branch>` are not specified, the active branch is pulled from the default remote
-- If merge conflicts occur, they are displayed in a table
-- `--rebase`/`-r` replays your local commits on top of what was fetched instead of merging: the copies fade in, and the originals are drawn below in gold
-- In depth: [how git pull works](https://initialcommit.com/learn/git/commands/git-pull), played out step by step on a sample repository
-
-[![git-sim pull origin main](docs/img/pull.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=pull)
-
-### git push
-Usage: `git-sim push [<remote> <branch>] [--force|--force-with-lease]` | `git-sim push <remote> --delete <branch|tag>` | `git-sim push <remote> <tag>` | `git-sim push --tags`
-
-- Pushes the specified `<branch>` to the specified `<remote>` and displays the local result
-- `--force` overwrites the remote branch: commits that only the remote had are drawn in gold, since nobody can reach them from the remote afterwards
-- `--force-with-lease` does the same only if the remote still matches your last fetch; otherwise the simulation shows the rejection
-- If `<remote>` and `<branch>` are not specified, the active branch is pushed to the default remote
-- `--delete`/`-d` deletes the branch on the remote: its remote-tracking label fades out, and commits no other remote branch reaches turn gold
-- `--tags` pushes every tag the remote doesn't have (and no branches): each gets an `on origin` label
-- `git-sim push <remote> <tag>` pushes one tag the same way (and says how many commits go with it); `--delete <tag>` deletes a tag on the remote, its `on origin` label turning into `deleted on origin`, while your own tag stays
-- If the push fails due to remote changes that don't exist in the local repo, a message is included telling the user to pull first, along with color coding which commits need to be pulled
-- In depth: [how git push works](https://initialcommit.com/learn/git/commands/git-push), played out step by step on a sample repository
-
-[![git-sim push origin main](docs/img/push.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=push)
-
-### git rebase
-Usage: `git-sim rebase <new-base> [--onto <commit>] [-i [--todo <file>]]` | `git-sim rebase --continue|--abort|--skip`
-
-- Specify `<new-base>` as the branch name to rebase the active branch onto
-- `--onto <commit>` replays the commits after `<new-base>` on top of `<commit>` instead
-- `-i` replays each commit individually; `--todo <file>` takes a rebase todo list (`pick`, `reword`, `edit`, `squash`, `fixup`, `drop` + sha) so squashes fold into the previous copy and drops are shown in gold
-- `--continue`, `--abort` and `--skip` act on a rebase stopped on a conflict: git-sim runs the real command in a copy of the repository (yours is never touched) and draws what it would do: new commits fade in, HEAD and the branch move, commits left behind turn gold, and a new conflict is listed
-- In depth: [how git rebase works](https://initialcommit.com/learn/git/commands/git-rebase), played out step by step on a sample repository
-
-[![git-sim rebase feature/pagination](docs/img/rebase.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=rebase)
-
-### git reflog
-Usage: `git-sim reflog [-n <number>]`
-
-- Draws the last `<number>` positions of HEAD (default 5) as purple `HEAD@{k}` labels
-- Commits that no branch or tag reaches any more are drawn in gold, with the `git reset --hard HEAD@{k}` command that brings them back
-- In depth: [how git reflog works](https://initialcommit.com/learn/git/commands/git-reflog), played out step by step on a sample repository
-
-[![git-sim reflog](docs/img/reflog.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=reflog)
-
-### git remote
-Usage: `git-sim remote [-v] [add|rename|remove|get-url|set-url|show] [<remote>] [<url>]`
-
-- Simulated output will show remotes being added, renamed, removed, modified as indicated
-- Running `git-sim remote` with no options will list all existing remotes and their details  
-- `-v`/`--verbose` lists each remote's fetch and push URLs, as `git remote -v` prints them
-- `show <remote>` asks the remote for its branches and reports like `git remote show`: its URLs and HEAD branch, each branch as tracked, new (not fetched yet) or stale (deleted there, still here), and the local branches configured for `git pull` and `git push`, whose settings light up in `.git/config`. Nothing changes
-- In depth: [how git remote add works](https://initialcommit.com/learn/git/commands/git-remote-add), played out step by step on a sample repository
-
-[![git-sim remote](docs/img/remote.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=remote)
-
-### git reset
-Usage: `git-sim reset <reset-to> [--mixed|--soft|--hard]` | `git-sim reset [<commit>] <path>...`
-
-- Specify `<reset-to>` as any commit id, branch name, tag, or other ref to simulate reset to from the current HEAD (default: `HEAD`)
-- With paths, HEAD stays put and the named files are unstaged (their index entries return to the commit's version)
-- As with a normal git reset command, default reset mode is `--mixed`, but can be specified using `--soft`, `--hard`, or `--mixed`
-- Simulated output will show branch/HEAD resets and resulting state of the working directory, staging area, and whether any file changes would be deleted by running the actual command
-- In depth: git reset [--soft](https://initialcommit.com/learn/git/commands/git-reset-soft), [--mixed](https://initialcommit.com/learn/git/commands/git-reset) and [--hard](https://initialcommit.com/learn/git/commands/git-reset-hard), each played out step by step on a sample repository
-
-[![git-sim reset --hard HEAD~2](docs/img/reset-hard.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=reset-hard)
-
-### git restore
-Usage: `git-sim restore [--staged] <file 1> <file 2> ... <file n>`
-
-- Specify one or more `<file>` as a *modified* working directory file, or staged file
-- Simulated output will show files being moved back to the working directory or discarded changes
-- Note that simulated output will also show the most recent 5 commits on the active branch
-- In depth: [how git restore works](https://initialcommit.com/learn/git/commands/git-restore), played out step by step on a sample repository
-
-[![git-sim restore --staged app.py](docs/img/restore-staged.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=restore-staged)
-
-### git revert
-Usage: `git-sim revert <to-revert> [-m <parent-number>] [-n]`
-
-- Specify `<to-revert>` as any commit id, branch name, tag, or other ref to simulate revert for
-- Reverting a merge commit needs `-m <parent-number>` (as in git); the reverted files are those the merge brought in relative to that parent
-- `-n`/`--no-commit` stages the reverse changes without creating a commit
-- Simulated output will show the new commit which reverts the changes from `<to-revert>`
-- Simulated output will include the next 4 most recent commits on the active branch
-- In depth: [how git revert works](https://initialcommit.com/learn/git/commands/git-revert), played out step by step on a sample repository
-
-[![git-sim revert HEAD](docs/img/revert.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=revert)
-
-### git rm
-Usage: `git-sim rm [--cached] <file 1> <file 2> ... <file n>`
-
-- Specify one or more `<file>` as a *tracked* file
-- Simulated output will show files being removed from Git tracking
-- `--cached` stops tracking the files but keeps them on disk: each turns untracked while its deletion is staged
-- Note that simulated output will also show the most recent 5 commits on the active branch
-- In depth: [how git rm works](https://initialcommit.com/learn/git/commands/git-rm), played out step by step on a sample repository
-
-[![git-sim rm utils.py](docs/img/rm.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=rm)
-
-### git shortlog
-Usage: `git-sim shortlog [-s] [-n] [-e] [<revision>|<A>..<B>]` (short flags combine: `-sn`, `-sne`)
-
-- Counts the commits of a revision (default `HEAD`) or range per author, as `git shortlog` does: a card ranks the authors with their count and a bar each, by name or, with `-n`/`--numbered`, most commits first
-- Without `-s`/`--summary` each author's first commit subjects are listed under their name; `-e`/`--email` adds their addresses
-- The drawn commits take their author's color in the graph
-
-### git show
-Usage: `git-sim show [<commit>|<tag>|<commit>:<path>]`
-
-- Highlights the commit shown (default `HEAD`) and, in a card under the graph, lists the files it changed like `git show --stat`; an annotated tag's tagger and message are noted
-- For a merge commit the files are compared with its first parent (git prints a combined diff)
-- `<commit>:<path>` shows the start of one file (or a directory listing) as it was in that commit
-- In depth: [how git show works](https://initialcommit.com/learn/git/commands/git-show), played out step by step on a sample repository
-
-### git stash
-Usage: `git-sim stash [push] [-u] [-m <message>] <file>` | `git-sim stash pop|apply` | `git-sim stash list|show|drop|clear [<stash-index>]`
-
-- Specify one or more `<file>` as a *modified* working directory file, or staged file
-- If no `<file>` is specified, all available files will be included
-- `-u`/`--include-untracked` stashes untracked files too (without it, a note counts the ones left behind); `-m` names the entry, and a note shows it as `git stash list` will
-- `list`, `show`, `drop` and `clear` draw the stash as a stack of entries, newest (`stash@{0}`) on top: each card has the entry's message, its file and line counts, and the commit it was made on (short sha and message, not the history around it); `drop` fades the dropped entry out and slides the ones below it up a number, `clear` fades them all out, and `show` highlights the entry and lists its files like `git stash show --stat`
-- Simulated output will show files being moved in/out of the Git stash
-- Note that simulated output will also show the most recent 5 commits on the active branch
-- In depth: [how git stash works](https://initialcommit.com/learn/git/commands/git-stash), played out step by step on a sample repository
-
-[![git-sim stash](docs/img/stash.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=stash)
-
-### git status
-Usage: `git-sim status`
-
-- Simulated output will show the state of the working directory, staging area, and untracked files
-- Note that simulated output will also show the most recent 5 commits on the active branch
-- In depth: [how git status works](https://initialcommit.com/learn/git/commands/git-status), played out step by step on a sample repository
-
-[![git-sim status](docs/img/status.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=status)
-
-### git submodule
-Usage: `git-sim submodule [status|add <url> [<path>]|init|update [--init]|deinit [--force] <path>]`
-
-- Draws the superproject's history plus a table with one row per submodule: its path, the pinned commit, and its state
-- `add` records a new pinned submodule; `update --init` initializes and checks out; `deinit` empties the submodule's working tree (refused without `--force` when it has local changes)
-- In depth: [how git submodule works](https://initialcommit.com/blog/git-submodule), played out step by step on a sample repository
-
-### git switch
-Usage: `git-sim switch [-c] <branch> [<start-point>]` | `git-sim switch -`
-
-- Switches the checked-out branch to `<branch>`, i.e. moves `HEAD` to the specified `<branch>`
-- The `-c` flag creates a new branch with the specified name `<branch>` and switches to it, assuming it doesn't already exist; with a `<start-point>` the branch starts there, and a remote-tracking start point (`origin/x`) becomes its upstream
-- `git-sim switch -` goes back to the previous branch (`@{-1}` in the reflog), labeled under its commit
-- A `<branch>` only a remote has (just `origin/<branch>` exists) is made locally at the same commit, tracking it, as git does
-- In depth: [how git switch works](https://initialcommit.com/learn/git/commands/git-switch), played out step by step on a sample repository
-
-[![git-sim switch -c feature/search](docs/img/switch-c.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=switch-c)
-
-### git tag
-Usage: `git-sim tag <new tag name> [<commit>]` | `git-sim tag -a <name> -m "<message>" [<commit>]` | `git-sim tag -d <name>` | `git-sim tag -l ["<pattern>"]`
-
-- Specify `<new tag name>` as the name of the new tag to simulate creation of
-- Simulated output will show the newly create tag ref along with most recent 5 commits on the active branch
-- `-a` with `-m` (or `-m` alone) makes an annotated tag: a card under the graph shows the tag object it writes, with the commit it points at, the tagger, the date and the message
-- `-l`/`--list` lists the tags in a card, highlighting the ones matching the pattern (a glob, such as `"v1.*"`)
-- In depth: [how git tag works](https://initialcommit.com/learn/git/commands/git-tag), played out step by step on a sample repository
-
-[![git-sim tag v1.1.0](docs/img/tag.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=tag)
-
-### git worktree
-Usage: `git-sim worktree [list|add [-b <new-branch>] <path> [<branch>]|remove [--force] <path>|prune]`
-
-- Draws the commit graph plus a table with one row per worktree: its directory, branch and state (clean, N uncommitted changes, directory missing)
-- `remove` is refused (as in git) when the worktree has uncommitted changes unless `--force` is given, in which case the row is struck through and the deleted change count shown
-- `prune` strikes through worktree records whose directory no longer exists
-- In depth: [how git worktree add works](https://initialcommit.com/learn/git/commands/git-worktree-add), played out step by step on a sample repository
-
-[![git-sim worktree add ../hotfix fix/order-totals](docs/img/worktree.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=worktree)
-
-## Animated examples
-Every simulation is animated: the default output is an interactive page whose **Before / After** slider (or play button) walks the command through, step by step for `rebase -i` and cherry-pick ranges. Click any of these to try it; `--animate` renders the same thing as an `.mp4` or `.webm` (see [Installation](#installation) for the `extras` tier that adds it).
-
-<table><tr>
-<td width="50%"><a href="https://initialcommit.com/tools/git-sim/viewer?demo=reset-hard"><img alt="git-sim reset --hard HEAD~2" src="docs/img/reset-hard.svg"></a><br/><code>$ git-sim reset --hard HEAD~2</code></td>
-<td width="50%"><a href="https://initialcommit.com/tools/git-sim/viewer?demo=merge"><img alt="git-sim merge feature/pagination" src="docs/img/merge.svg"></a><br/><code>$ git-sim merge feature/pagination</code></td>
-</tr><tr>
-<td width="50%"><a href="https://initialcommit.com/tools/git-sim/viewer?demo=rebase"><img alt="git-sim rebase feature/pagination" src="docs/img/rebase.svg"></a><br/><code>$ git-sim rebase feature/pagination</code></td>
-<td width="50%"><a href="https://initialcommit.com/tools/git-sim/viewer?demo=cherry-pick"><img alt="git-sim cherry-pick fix/order-totals" src="docs/img/cherry-pick.svg"></a><br/><code>$ git-sim cherry-pick fix/order-totals</code></td>
-</tr></table>
-
-## Basic command examples
-Simulate the output of the git log command:
-
-```console
-$ cd path/to/git/repo
-$ git-sim log
-```
-
-Simulate the output of the git status command:
-
-```console
-$ git-sim status
-```
-
-Simulate adding a file to the Git staging area:
-
-```console
-$ git-sim add filename.ext
-```
-
-Simulate restoring a file from the Git staging area:
-
-```console
-$ git-sim restore filename.ext
-```
-
-Simulate creating a new commit based on currently staged changes:
-
-```console
-$ git-sim commit -m "Commit message"
-```
-
-Simulate stashing all working directory and staged changes:
-
-```console
-$ git-sim stash
-```
-
-Simulate creating a new Git branch:
-
-```console
-$ git-sim branch new-branch-name
-```
-
-Simulate creating a new Git tag:
-
-```console
-$ git-sim tag new-tag-name
-```
-
-Simulate a hard reset of the current branch HEAD to the previous commit:
-
-```console
-$ git-sim reset HEAD^ --hard
-```
-
-Simulate reverting the changes in an older commit:
-
-```console
-$ git-sim revert HEAD~7
-```
-
-Simulate merging a branch into the active branch:
-
-```console
-$ git-sim merge feature1
-```
-
-Simulate rebasing the active branch onto a new base:
-
-```console
-$ git-sim rebase main
-```
-
-Simulate cherry-picking a commit from another branch onto the active branch:
-
-```console
-$ git-sim cherry-pick 0ae641
-```
-
-## Command examples with extra options/flags
-The default output is a self-contained interactive HTML page, saved under `git-sim_media/` in your user cache area (see `git-sim media-dir`) and opened in the git-sim viewer at initialcommit.com. Drag the Before / After slider (or press play) to watch the command happen, hover commits for details, ctrl + wheel to zoom. The graph travels compressed in the link's `#fragment`, which browsers never send to a server, and the link git-sim opens carries nothing else about you or your repository (the command rides in the fragment too), so the server learns nothing about your code. The hosted page notes that git-sim opened it and the name of the local copy. The Share button builds a link meant for posting: that one also puts the command and a short text graph (`git log --oneline`, up to 12 lines) in the query string so the link gets a preview card. `#before`, `#after` or `#step=N` in a link pins the state, and `git_sim_viewer_url` points links at your own copy of the viewer:
-
-```console
-$ git-sim rebase -i main --todo todo.txt
-```
-
-Open the saved page in the browser directly instead of the hosted viewer (works offline; set `git_sim_open_in=local` to make it the default):
-
-```console
-$ git-sim --open-in local rebase -i main --todo todo.txt
-```
-
-Write a plain image instead (the page's Share menu can also save a PNG or SVG of the graph as shown):
-
-```console
-$ git-sim --img-format jpg status
-```
-
-Use the dark theme (near-black background, light text) instead of the default light one:
-
-```console
-$ git-sim --dark-mode status
-```
-
-Animate the simulated output as a .mp4 video file:
-
-```console
-$ git-sim --animate add filename.ext
-```
-
-Add an intro and outro with custom text and logo (must include `--animate`):
-
-```console
-$ git-sim --animate --show-intro --show-outro --outro-top-text="My Git Repo" --outro-bottom-text="Thanks for watching!" --logo=path/to/logo.png status
-```
-
-Customize the output image/video directory location:
-
-```console
-$ git-sim --media-dir=path/to/output status
-```
-
-Optionally, set the environment variable `git_sim_media_dir` to set a global default media directory, to be used if no `--media-dir` is provided. Simulated output images/videos will be placed in this location, in subfolders named with the corresponding repo's name.
-
-```console
-$ export git_sim_media_dir=path/to/media/directory
-$ git-sim status
-```
-Note: `--media-dir` takes precedence over the environment variable. If you set the environment variable and still provide the argument, you'll find the media in the path provided by `--media-dir`.
-
-Generate output video in low quality to speed up rendering time (useful for repeated testing, must include `--animate`):
-
-```console
-$ git-sim --animate --low-quality status
-```
+</details>
 
 ## Installation
+
 git-sim ships in tiers, so an AI agent's machine or a CI runner installs only what it needs:
 
 | Tier | Install | Includes |
 |---|---|---|
 | **core** (default) | `pip3 install git-sim` | pre-flight engine, text commit graph, static image simulation (skia), MCP server (`git-sim-mcp`), Claude Code hook (`git-sim-hook`) |
-| **extras** | `pip3 install "git-sim[extras]"` | everything in core, plus animated video output (`--animate`) via Manim (install Manim's own system dependencies first — see **Quickstart**) |
+| **extras** | `pip3 install "git-sim[extras]"` | everything in core, plus animated video output (`--animate`) via Manim (install Manim's own system dependencies first — see below) |
 | **min** | see below | pre-flight engine, text commit graph and MCP server only — no image rendering, for headless machines |
 
 pip extras can only add packages, so the `min` tier is the core package installed without its rendering dependencies (`skia-python`, `numpy`):
@@ -781,7 +630,12 @@ $ pip3 install gitpython "mcp>=2.0" typer pydantic-settings fonttools git-dummy
 
 Older docs mention `pip install git-sim[mcp]`; that still works and is the same as core.
 
-## Docker installation
+Animated video (`--animate`) uses Manim, which needs FFmpeg and other system packages: install them first with the Manim guide for [Windows](https://docs.manim.community/en/stable/installation/windows.html), [macOS](https://docs.manim.community/en/stable/installation/macos.html), [Linux](https://docs.manim.community/en/stable/installation/linux.html), or [Conda](https://docs.manim.community/en/stable/installation/conda.html). On macOS, use a Homebrew Python or a virtual environment rather than the system Python.
+
+Static images are drawn with [skia-python](https://pypi.org/project/skia-python/), installed automatically. On minimal Linux images it needs the system `libGL` and `fontconfig` libraries.
+
+<details>
+<summary>Docker</summary>
 
 1) Clone down the git-sim repository:
 
@@ -799,7 +653,7 @@ $ docker build -t git-sim .
     - Windows: `docker run --rm -v %cd%:/usr/src/git-sim git-sim [global options] <subcommand> [subcommand options]`
     - MacOS / Linux: `docker run --rm -v $(pwd):/usr/src/git-sim git-sim [global options] <subcommand> [subcommand options]`
     
-Optional: On MacOS / Linux / or GitBash in Windows, create an alias for the long docker command so your can run it as a normal `git-sim` command. To do so add the following line to your `.bashrc` or equivalent, then restart your terminal:
+Optional: On MacOS / Linux / or GitBash in Windows, create an alias for the long docker command so you can run it as a normal `git-sim` command. To do so add the following line to your `.bashrc` or equivalent, then restart your terminal:
 
 ```bash
 git-sim() { docker run --rm -v $(pwd):/usr/src/git-sim git-sim "$@"; }
@@ -807,8 +661,14 @@ git-sim() { docker run --rm -v $(pwd):/usr/src/git-sim git-sim "$@"; }
 
 This will enable you to run git-sim subcommands as [described above](#commands).
 
-## Learn More
-Learn more about this tool on the [git-sim project page](https://initialcommit.com/tools/git-sim).
+</details>
+
+## Support git-sim
+
+Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work on it (and other Git projects) full time!
+- [Sponsor Git-Sim on GitHub](https://github.com/sponsors/initialcommit-com)
+- [Support Git-Sim via Patreon](https://patreon.com/user?u=92322459)
 
 ## Authors
+
 **Jacob Stopak** - on behalf of [Initial Commit](https://initialcommit.com)
