@@ -1,30 +1,42 @@
 # git-sim
 ![git-sim-logo-with-tagline-1440x376p45](https://user-images.githubusercontent.com/49353917/232990611-58d0693f-69c0-45c8-b51d-cd540793d18c.gif)
 
-[![GitHub license](https://img.shields.io/github/license/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/blob/main/LICENSE)
-[![GitHub tag](https://img.shields.io/github/v/release/initialcommit-com/git-sim)](https://img.shields.io/github/v/release/initialcommit-com/git-sim)
-[![Downloads](https://static.pepy.tech/badge/git-sim)](https://pepy.tech/project/git-sim)
-[![Contributors](https://img.shields.io/github/contributors/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/graphs/contributors)
-<a href="https://initialcommit.com"><img src="https://initialcommit.com/img/initialcommit/logo.png" alt="Initial Commit" height="20"></a>
+<a href="https://initialcommit.com/tools/git-sim"><img src="https://initialcommit.com/img/initialcommit/logo.png" alt="Initial Commit" height="20"></a> [![GitHub license](https://img.shields.io/github/license/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/blob/main/LICENSE) [![GitHub tag](https://img.shields.io/github/v/release/initialcommit-com/git-sim)](https://img.shields.io/github/v/release/initialcommit-com/git-sim) [![Downloads](https://static.pepy.tech/badge/git-sim)](https://pepy.tech/project/git-sim) [![Contributors](https://img.shields.io/github/contributors/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/graphs/contributors)
 
-**The visual layer for Git in your own repos:** simulate, record, replay, audit, and share entire Git workflows - wherever you or your agents run them.
+**The visual layer for Git in your own repos:** simulate, record, replay, audit, and share entire Git workflows, wherever you or your agents run them.
 
-1. **Simulate any Git command before it runs**, as an interactive graph you can step through.<br/><sub>Terminal · Web · VS Code · Jupyter · Vim / Neovim / Emacs · GitHub PRs</sub>
-2. **Track your repo live** while recording every Git operation (human or agentic) as a visual command sequence you can replay.<br/><sub>Web · VS Code</sub>
-3. **Catch and review potentially destructive Git commands from AI agents** in real time, before they harm your work.<br/><sub>Claude Code · GitHub Copilot · Cursor · Codex · Gemini CLI · any MCP agent</sub>
-4. **Share any git-sim output** as a link, an embed, an image, a video, or a social post.<br/><sub>Shareable link · HTML embed · HTML page · PNG · SVG · MP4 · Social post</sub>
+- **Simulate any Git command before it runs**, as an interactive graph you can step through. In the terminal, on the web, and in VS Code, Jupyter, Vim / Neovim / Emacs, and GitHub pull requests.
+- **Track your repo live** while recording every Git operation, human or agentic, as a visual command sequence you can replay. On the web and in VS Code.
+- **Catch and review risky Git commands from AI agents** in real time, before they harm your work. Claude Code, GitHub Copilot, Cursor, Codex, Gemini CLI, and any MCP agent.
+- **Share any git-sim output** as a link, an embed, an HTML page, a PNG or SVG image, an MP4 video, or a social post.
+
+Every graph below is a real git-sim simulation. Click one to open it in the viewer, then drag its **Before / After** slider or press play:
+
+<table><tr>
+<td width="50%"><a href="https://initialcommit.com/tools/git-sim/viewer?demo=pull"><img alt="git-sim pull origin main" src="docs/img/pull.svg"></a><br/><code>$ git-sim pull origin main</code></td>
+<td width="50%"><a href="https://initialcommit.com/tools/git-sim/viewer?demo=merge"><img alt="git-sim merge feature/pagination" src="docs/img/merge.svg"></a><br/><code>$ git-sim merge feature/pagination</code></td>
+</tr><tr>
+<td width="50%"><a href="https://initialcommit.com/tools/git-sim/viewer?demo=rebase"><img alt="git-sim rebase feature/pagination" src="docs/img/rebase.svg"></a><br/><code>$ git-sim rebase feature/pagination</code></td>
+<td width="50%"><a href="https://initialcommit.com/tools/git-sim/viewer?demo=cherry-pick"><img alt="git-sim cherry-pick fix/order-totals" src="docs/img/cherry-pick.svg"></a><br/><code>$ git-sim cherry-pick fix/order-totals</code></td>
+</tr></table>
+
+## Requirements
+
+- Python 3.10 or later, and Git
+- Minimal Linux images also need the `libGL` and `fontconfig` system libraries
+- Animated video (`--animate`) also needs Manim: see [Installation](#installation)
 
 ## Get started
 
-1. Install:
+**1. Install git-sim**
 
 ```console
 $ pip install git-sim
 ```
 
-Or `pipx install git-sim`, or `uv tool install git-sim`. Python 3.10 or later.
+Or `pipx install git-sim`, or `uv tool install git-sim`.
 
-2. In a local Git repo, prefix any Git command with `git-sim` instead of `git`:
+**2. Simulate a command:** in a local Git repo, prefix any Git command with `git-sim` instead of `git`
 
 ```console
 $ git-sim merge dev
@@ -32,23 +44,33 @@ $ git-sim reset HEAD^
 $ git-sim rebase main
 ```
 
-By default, git-sim opens an interactive web graph showing exactly how that command will change your repo: drag the **Before / After** slider or press play, and hover a commit for its details. Nothing in your repo changes. Run `git-sim -h` to list every command.
+git-sim opens an interactive graph of exactly how the command would change your repo, and changes nothing. Run `git-sim -h` to list every command.
 
-3. Check a risky command before it runs, watch your repo live, and connect your AI agents:
+**3. Watch your repo live:** a graph that follows your repo as it changes, and records every command you (or your agents) run
 
 ```console
-$ git-sim preflight reset --hard HEAD~1   # how risky a command is, and what you could lose
-$ git-sim live                            # a live graph that records your repo as it changes
-$ git-sim wire-agents                     # add the pre-flight hook and MCP server to your AI agents
+$ git-sim live
 ```
 
-4. Install the VS Code extension:
+**4. Check a risky command before it runs:** how risky it is, and what you could lose
+
+```console
+$ git-sim preflight reset --hard HEAD~1
+```
+
+**5. Connect your AI agents:** add the pre-flight hook and MCP server to the agents on your machine
+
+```console
+$ git-sim wire-agents
+```
+
+**6. Add the VS Code extension**
 
 ```console
 $ code --install-extension initialcommit.git-sim
 ```
 
-Or search for **git-sim** in the Extensions view (the Marketplace in VS Code, Open VSX in Cursor, Windsurf, and VSCodium). For Vim, Neovim, and Emacs, see [integrations/](integrations/), and for Jupyter, `gh`, and GitHub Actions, [docs/integrations.md](docs/integrations.md).
+Or search for **git-sim** in the Extensions view (the Marketplace in VS Code, Open VSX in Cursor, Windsurf, and VSCodium). For Vim, Neovim, and Emacs, see [integrations/](integrations/). For Jupyter, `gh`, and GitHub Actions, see [docs/integrations.md](docs/integrations.md).
 
 No repo handy? The bundled [git-dummy](https://github.com/initialcommit-com/git-dummy) makes one: `git-dummy --name=dummy-repo --branches=3 --commits=10`.
 
@@ -631,8 +653,6 @@ $ pip3 install gitpython "mcp>=2.0" typer pydantic-settings fonttools git-dummy
 Older docs mention `pip install git-sim[mcp]`; that still works and is the same as core.
 
 Animated video (`--animate`) uses Manim, which needs FFmpeg and other system packages: install them first with the Manim guide for [Windows](https://docs.manim.community/en/stable/installation/windows.html), [macOS](https://docs.manim.community/en/stable/installation/macos.html), [Linux](https://docs.manim.community/en/stable/installation/linux.html), or [Conda](https://docs.manim.community/en/stable/installation/conda.html). On macOS, use a Homebrew Python or a virtual environment rather than the system Python.
-
-Static images are drawn with [skia-python](https://pypi.org/project/skia-python/), installed automatically. On minimal Linux images it needs the system `libGL` and `fontconfig` libraries.
 
 <details>
 <summary>Docker</summary>
