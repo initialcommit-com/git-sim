@@ -660,6 +660,11 @@ CASES: List[Case] = [
     Case("config-global-get", "history", ["config", "--global", "user.email"], texts("~/.gitconfig", "validation@example.com")),
     Case("config-global-list", "history", ["config", "--list", "--global"], all_of(title("git config --list --global"), texts("~/.gitconfig", "[user]"))),
     Case("config-global-none", "history", ["config", "--global"], error="git-sim error"),
+    # --system: the suite's private system file (GIT_CONFIG_SYSTEM), read only when named
+    Case("config-system-get", "history", ["config", "--system", "core.editor"], all_of(title("git config --system core.editor"), texts("system-gitconfig", "system", "editor = vi"))),
+    Case("config-system-set", "history", ["config", "--system", "core.editor", "nano"], texts("editor = vi", "editor = nano", "admin rights")),
+    Case("config-system-list", "history", ["config", "--list", "--system"], all_of(title("git config --list --system"), texts("system-gitconfig", "every user on this machine"))),
+    Case("config-system-and-global", "history", ["config", "--system", "--global", "core.editor"], error="only one config file at a time"),
     # fetch
     Case("fetch", "behind", ["fetch", "origin", "main"], all_of(title("git fetch"), after_commits(2), relabelled("origin/main"))),
     Case("fetch-default", "behind", ["fetch"], after_commits(2)),

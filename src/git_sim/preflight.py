@@ -325,7 +325,13 @@ def _read_only_summary(subcommand: str, args: List[str], report: PreflightReport
         if "--unset" in flags or "--unset-all" in flags:
             return f"removes the setting '{words[0] if words else ''}' from the config file; no history or files change."
         if len(words) >= 2 and not ({"--get", "--get-all", "--get-regexp"} & set(flags)):
-            where = "the global config" if "--global" in flags else ".git/config"
+            where = (
+                "the global config"
+                if "--global" in flags
+                else "the system config (every user on this machine)"
+                if "--system" in flags
+                else ".git/config"
+            )
             return f"writes '{words[0]}' to {where}; no history or files change."
     elif subcommand == "remote":
         action = words[0] if words else ""

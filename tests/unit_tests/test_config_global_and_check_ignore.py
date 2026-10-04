@@ -130,6 +130,59 @@ def test_config_subsection_keys_match_their_quoted_sections(repo):
     assert '[branch "feature"]' in texts(scene, "after")
 
 
+@pytest.fixture
+def system_file(repo, tmp_path, monkeypatch):
+    """A system config of its own, where git var and git config --system look."""
+    path = tmp_path / "system-gitconfig"
+    path.write_text("[core]\n\teditor = emacs\n[diff \"astextplain\"]\n\ttextconv = astextplain\n")
+    monkeypatch.setenv("GIT_CONFIG_SYSTEM", str(path))
+    return path
+
+
+def test_config_system_reads_the_system_file_where_git_keeps_it(repo, system_file):
+    from git_sim.config import Config
+
+    scene = Config(l=False, settings=["core.editor"], system=True)
+    assert scene.cmd == "git config --system core.editor"
+    assert scene.system_file() == str(system_file).replace("\\", "/")
+    scene.construct()
+    shown = texts(scene)
+    assert "system" in shown and "emacs" in shown
+    assert "editor = emacs" in shown
+    assert any(t.startswith("Read from the system config") for t in shown)
+    # --system names the file outright, so GIT_CONFIG_NOSYSTEM doesn't hide it
+    assert "(no system settings yet)" not in shown
+
+
+def test_config_system_write_says_which_later_scope_wins(repo, system_file):
+    from git_sim.config import Config
+
+    scene = Config(l=False, settings=["core.editor", "nano"], system=True)
+    scene.construct()
+    assert "editor = nano" in texts(scene, "after")
+    assert any("admin rights" in t for t in texts(scene))
+    assert any("~/.gitconfig sets it to vim" in t for t in texts(scene)), "the global value that wins here is named"
+
+
+def test_config_system_list_shows_only_the_system_file(repo, system_file):
+    from git_sim.config import Config
+
+    scene = Config(l=True, settings=[], system=True)
+    assert scene.cmd == "git config --list --system"
+    scene.construct()
+    shown = texts(scene)
+    assert "every user on this machine" in shown
+    assert "you, in all your repositories" not in shown
+    assert '[diff "astextplain"]' in shown
+
+
+def test_config_global_and_system_together_is_an_error(repo):
+    from git_sim.config import Config
+
+    with pytest.raises(SystemExit):
+        Config(l=False, settings=["core.editor"], glob=True, system=True)
+
+
 def test_config_global_read_answers_from_the_global_file_only(repo):
     from git_sim.config import Config
 

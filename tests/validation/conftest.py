@@ -207,6 +207,8 @@ def git_config(tmp_path_factory) -> pathlib.Path:
         "[user]\n\tname = Validation\n\temail = validation@example.com\n[init]\n\tdefaultBranch = main\n[core]\n\tautocrlf = false\n",
         encoding="utf-8",
     )
+    # and a system file beside it, for --system: never the machine's own
+    (config.parent / "system-gitconfig").write_text("[core]\n\teditor = vi\n", encoding="utf-8")
     return config
 
 
@@ -253,6 +255,8 @@ class GitSim:
         env = {k: v for k, v in os.environ.items() if not k.lower().startswith("git_sim_") and not k.startswith("GIT_")}
         env["GIT_CONFIG_GLOBAL"] = str(self.config)
         env["GIT_CONFIG_NOSYSTEM"] = "1"
+        # read only when --system names it (NOSYSTEM keeps it out of the rest)
+        env["GIT_CONFIG_SYSTEM"] = str(self.config.parent / "system-gitconfig")
         env["PYTHONIOENCODING"] = "utf-8"
         env["PYTHONUTF8"] = "1"
         return env

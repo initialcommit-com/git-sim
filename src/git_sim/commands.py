@@ -296,6 +296,11 @@ def config(
         "--global",
         help="Read or write your global settings file (~/.gitconfig), which applies to all your repositories",
     ),
+    system: bool = typer.Option(
+        False,
+        "--system",
+        help="Read or write the system settings file, which applies to every user and repository on the machine",
+    ),
     settings: List[str] = typer.Argument(
         default=None,
         help="A setting's name, and a value to set it to",
@@ -303,7 +308,7 @@ def config(
 ):
     from git_sim.config import Config
 
-    scene = Config(l=l, settings=settings, glob=glob)
+    scene = Config(l=l, settings=settings, glob=glob, system=system)
     handle_animations(scene=scene)
 
 

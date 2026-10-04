@@ -5,7 +5,9 @@ the old value struck through and the new one beneath it), beside a card that
 says what the setting changes and which scope it lands in. Reading a value
 highlights the line and shows the answer. With --global the card is your own
 file, ~/.gitconfig, instead. --list lays the three scopes out side by side,
-system, global and local, so the precedence is visible.
+system, global and local, so the precedence is visible. --system reads or
+writes the system file, the one for every user on the machine, wherever git
+says it lives.
 """
 
 import os
@@ -76,17 +78,24 @@ def what_it_does(key, glob=False):
 
 
 class Config(Cards, GitSimBaseCommand):
-    def __init__(self, l: bool, settings: List[str], glob: bool = False):
+    def __init__(self, l: bool, settings: List[str], glob: bool = False, system: bool = False):
         super().__init__()
+        if glob and system:
+            # git's own answer to both at once
+            print("git-sim error: only one config file at a time")
+            sys.exit(1)
         self.l = l
         self.glob = glob  # --global: your own ~/.gitconfig, not .git/config
+        self.system = system  # --system: the file for every user on the machine
+        # the one file a --global or --system command reads or writes
+        self.target = "global" if glob else "system" if system else None
         self.settings = settings or []  # newer typer passes None for an omitted list
 
         for i, setting in enumerate(self.settings):
             if " " in setting:
                 self.settings[i] = f'"{setting}"'
 
-        scope = " --global" if self.glob else ""
+        scope = f" --{self.target}" if self.target else ""
         if self.l:
             self.cmd += f"{type(self).__name__.lower()} --list{scope}"
         else:
@@ -120,13 +129,17 @@ class Config(Cards, GitSimBaseCommand):
         """[(section, [(key, value), ...]), ...] for one scope, read from the
         file itself so the keys keep their case; [] if there is no file."""
         out = []
-        if level == "system" and self.system_skipped():
+        if level == "system" and self.system_skipped() and not self.system:
             return out
         try:
             if level == "global":
                 # GitPython's global reader always opens ~/.gitconfig; git
                 # itself may be pointed elsewhere (GIT_CONFIG_GLOBAL).
                 reader = GitConfigParser(self.global_file(), read_only=True)
+            elif level == "system":
+                # and its system reader guesses /etc/gitconfig, which is not
+                # where Git for Windows (or Homebrew's git) keeps it
+                reader = GitConfigParser(self.system_file(), read_only=True)
             else:
                 reader = self.repo.config_reader(config_level=level)
             for section in reader.sections():
@@ -149,7 +162,7 @@ class Config(Cards, GitSimBaseCommand):
         """The same shape, but asked of git itself for one scope (--system,
         --global, --local), with the file it came from. Git is the authority on
         where each scope lives on this machine."""
-        if scope == "system" and self.system_skipped():
+        if scope == "system" and self.system_skipped() and not self.system:
             return [], None
         try:
             run = subprocess.run(
@@ -201,6 +214,28 @@ class Config(Cards, GitSimBaseCommand):
             )
         return self._global_file
 
+    def system_file(self):
+        """The file git reads and writes for --system: as git var reports it
+        (git 2.42 and later), else the origin of the system settings, else
+        GIT_CONFIG_SYSTEM, else /etc/gitconfig."""
+        if not hasattr(self, "_system_file"):
+            path = None
+            try:
+                run = subprocess.run(
+                    ["git", "var", "GIT_CONFIG_SYSTEM"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    cwd=self.repo.working_dir,
+                )
+                path = run.stdout.strip().splitlines()[0] if run.returncode == 0 and run.stdout.strip() else None
+            except OSError:
+                pass
+            if not path:
+                _, path = self.git_entries("system")
+            self._system_file = (path or os.environ.get("GIT_CONFIG_SYSTEM") or "/etc/gitconfig").replace("\\", "/")
+        return self._system_file
+
     @staticmethod
     def section_key(section):
         """A section as a key names it: [branch "main"] in the file is
@@ -224,10 +259,16 @@ class Config(Cards, GitSimBaseCommand):
     def scope_paths(self):
         home = os.path.expanduser("~")
         return {
-            "system": "/etc/gitconfig",
+            "system": self.system_file(),
             "global": os.path.join(home, ".gitconfig").replace("\\", "/"),
             "repository": ".git/config",
         }
+
+    def scope_color(self, scope):
+        """Each scope's pill and card color: local purple, global gold, and a
+        neutral gray for system (teal is taken by setting values)."""
+        theme = self.theme
+        return {"local": theme.purple, "global": theme.gold, "system": theme.arrow}.get(scope, theme.rule)
 
     # ---- one setting -------------------------------------------------------------
     def draw_setting(self):
@@ -256,8 +297,8 @@ class Config(Cards, GitSimBaseCommand):
             return found
 
         # The file the command reads or writes: .git/config, or with --global
-        # your own ~/.gitconfig.
-        local = self.entries("global" if self.glob else "repository")
+        # your own ~/.gitconfig, or with --system the machine's file.
+        local = self.entries(self.target or "repository")
         # Git reads a value through all three scopes; what it would answer.
         current, found_in = None, None
         for level in ("system", "global", "repository"):
@@ -265,8 +306,9 @@ class Config(Cards, GitSimBaseCommand):
             if value is not None:
                 current, found_in = value, level
         local_value = value_in(self.entries("repository"))
-        if self.glob:
-            # --global asks that one file, whatever this repository says
+        global_value = value_in(self.entries("global"))
+        if self.target:
+            # --global and --system ask that one file, whatever the others say
             current = value_in(local)
             local_has = current is not None
         else:
@@ -277,12 +319,19 @@ class Config(Cards, GitSimBaseCommand):
         fw = 9.2
         fx0, fy0 = -7.4, 3.0
         inner_left = fx0 + 0.55
-        tab, tab_label = self.tab("~/.gitconfig" if self.glob else ".git/config")
+        file_label = {
+            "global": "~/.gitconfig",
+            "system": self.shorten_path(self.system_file(), keep=3),
+        }.get(self.target, ".git/config")
+        tab, tab_label = self.tab(file_label)
         tab.move_to((fx0 + 0.35 + tab.width / 2, fy0 + tab.height / 2 + 0.04, 0))
         tab_label.move_to(tab.get_center())
         caption = self.put(
             self.mono(
-                "your settings, for all your repositories" if self.glob else "this repository's settings",
+                {
+                    "global": "your settings, for all your repositories",
+                    "system": "settings for every user on this machine",
+                }.get(self.target, "this repository's settings"),
                 size=18,
                 color=self.mutedColor,
             ),
@@ -370,7 +419,9 @@ class Config(Cards, GitSimBaseCommand):
             y -= line_h
             after += [self.bubble(fw - 0.5, section_top, y + line_h / 2 + 0.02, fx0 + 0.25, self.section_color), header, nb, new]
         if not local and not writing:
-            empty = "(no global settings yet)" if self.glob else "(no settings of its own yet)"
+            empty = {"global": "(no global settings yet)", "system": "(no system settings yet)"}.get(
+                self.target, "(no settings of its own yet)"
+            )
             before.append(self.put(self.mono(empty, size=18, color=self.mutedColor), inner_left, y))
             y -= line_h
         if not writing and not local_has and not section_seen:
@@ -386,11 +437,11 @@ class Config(Cards, GitSimBaseCommand):
         # ---- the side card: the setting, its value, what it does, its scope ----------
         # The scope the answer comes from: the file written, or for a read the
         # last scope that sets it (none: no pill).
-        if writing or self.glob:
-            scope = "global" if self.glob else "local"
+        if writing or self.target:
+            scope = self.target or "local"
         else:
             scope = {"repository": "local", "global": "global", "system": "system"}.get(found_in)
-        scope_color = {"global": theme.gold, "local": theme.purple, "system": theme.remote}.get(scope, theme.rule)
+        scope_color = self.scope_color(scope)
 
         title = self.mono(key, size=22, bold=True)
         scope_pill = self.pill(scope, scope_color) if scope else None
@@ -413,14 +464,15 @@ class Config(Cards, GitSimBaseCommand):
         if writing:
             if local_has:
                 was = current
-            elif current is not None and not self.glob:
+            elif current is not None and not self.target:
                 was = f"{current} (from {found_in})"
             else:
                 was = "(not set)"
             if local_has and current == new_value:
                 rows.append(("value", new_value, self.value_color, "before"))
             else:
-                rows += [("value", was, self.value_color, "before"), ("new value", new_value, self.value_color, "after")]
+                was_color = self.mutedColor if was == "(not set)" else self.value_color
+                rows += [("value", was, was_color, "before"), ("new value", new_value, self.value_color, "after")]
         else:
             answer = current if current is not None else "(not set)"
             rows.append(("value", answer, self.value_color if current is not None else self.mutedColor, "before"))
@@ -434,7 +486,20 @@ class Config(Cards, GitSimBaseCommand):
         side.append(body)
         sy -= body.height + 0.35
 
-        if self.glob:
+        if self.system:
+            if writing:
+                scope_text = "Written to the system config, so it applies to every user and repository on this machine. Writing it needs admin rights."
+            elif local_has:
+                scope_text = "Read from the system config, which applies to every user and repository on this machine."
+            else:
+                scope_text = "Not set in the system config. A user's ~/.gitconfig or a repository's .git/config can still set it."
+            # the later scopes win: this repository's file, then yours
+            shown = new_value if writing else current
+            if local_value is not None and local_value != shown:
+                scope_text += f" This repository sets it to {local_value} in .git/config, and that value wins here."
+            elif global_value is not None and global_value != shown:
+                scope_text += f" Your ~/.gitconfig sets it to {global_value}, and that value wins here."
+        elif self.glob:
             if writing:
                 scope_text = "Written to ~/.gitconfig, so it applies to all your repositories except ones that set it in their own .git/config."
             elif local_has:
@@ -480,9 +545,9 @@ class Config(Cards, GitSimBaseCommand):
         theme = self.theme
         paths = self.scope_paths()
         levels = [("system", "every user on this machine"), ("global", "you, in all your repositories"), ("local", "this repository only")]
-        if self.glob:
-            # --list --global: only your own file
-            levels = levels[1:2]
+        if self.target:
+            # --list --global or --list --system: only that file
+            levels = [level for level in levels if level[0] == self.target]
         cw, gap = 6.2, 0.45
         x = -(len(levels) * cw + (len(levels) - 1) * gap) / 2
         top = 3.0
@@ -496,9 +561,10 @@ class Config(Cards, GitSimBaseCommand):
             elif level == "global":
                 label = "~/.gitconfig"
             else:
-                label = self.shorten_path(origin, keep=2) if origin else paths["system"]
+                label = self.shorten_path(origin or paths["system"], keep=3)
             if len(label) > 30:
-                label = label[:27] + "..."
+                # a path keeps its end: the file name is the part that matters
+                label = "..." + label[-27:]
             tab, tab_label = self.tab(label, size=19)
             tab.move_to((x + 0.3 + tab.width / 2, top + tab.height / 2 + 0.04, 0))
             tab_label.move_to(tab.get_center())
@@ -515,7 +581,8 @@ class Config(Cards, GitSimBaseCommand):
             for sec, pairs in entries:
                 if used >= budget:
                     break
-                lines.append(self.put(self.mono(f"[{sec}]", size=17, bold=True, color=theme.head), x + 0.45, y))
+                # git lists diff.astextplain; the file, and the other cards, write [diff "astextplain"]
+                lines.append(self.put(self.mono(self.section_header(sec), size=17, bold=True, color=theme.head), x + 0.45, y))
                 y -= line_h
                 used += 1
                 for k, v in pairs:
@@ -537,7 +604,7 @@ class Config(Cards, GitSimBaseCommand):
         bottom = lowest - 0.2
         mobs = []
         for x, tab, tab_label, lines, level in cards:
-            stroke = theme.purple if level == "local" else theme.gold if self.glob else theme.rule
+            stroke = self.scope_color(level) if (level == "local" or self.target) else theme.rule
             card = self.panel(cw, top - bottom, corner=0.3, stroke=stroke)
             card.move_to((x + cw / 2, (top + bottom) / 2, 0))
             mobs += [card, tab, tab_label, *lines]

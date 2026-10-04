@@ -1,0 +1,18 @@
+{
+ "commits": {},
+ "edges": {
+  "after": 0,
+  "before": 0,
+  "origin": 0,
+  "removed": 0
+ },
+ "files": [],
+ "notes": [
+  "editor = nano",
+  "new value",
+  "nano"
+ ],
+ "refs": {},
+ "steps": 1,
+ "title": "git config --system core.editor nano"
+}
