@@ -1,7 +1,7 @@
-# git-sim
+# <a href="https://initialcommit.com/tools/git-sim"><img src="https://initialcommit.com/img/initialcommit/logo.png" alt="Initial Commit" height="32"></a> git-sim
 ![git-sim-logo-with-tagline-1440x376p45](https://user-images.githubusercontent.com/49353917/232990611-58d0693f-69c0-45c8-b51d-cd540793d18c.gif)
 
-<a href="https://initialcommit.com/tools/git-sim"><img src="https://initialcommit.com/img/initialcommit/logo.png" alt="Initial Commit" height="20"></a> [![GitHub license](https://img.shields.io/github/license/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/blob/main/LICENSE) [![GitHub tag](https://img.shields.io/github/v/release/initialcommit-com/git-sim)](https://img.shields.io/github/v/release/initialcommit-com/git-sim) [![Downloads](https://static.pepy.tech/badge/git-sim)](https://pepy.tech/project/git-sim) [![Contributors](https://img.shields.io/github/contributors/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/graphs/contributors)
+[![GitHub license](https://img.shields.io/github/license/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/blob/main/LICENSE) [![GitHub tag](https://img.shields.io/github/v/release/initialcommit-com/git-sim)](https://img.shields.io/github/v/release/initialcommit-com/git-sim) [![Downloads](https://static.pepy.tech/badge/git-sim)](https://pepy.tech/project/git-sim) [![Contributors](https://img.shields.io/github/contributors/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/graphs/contributors)
 
 **The visual layer for Git in your own repos:** simulate, record, replay, audit, and share entire Git workflows, wherever you or your agents run them.
 
@@ -40,7 +40,7 @@ Or `pipx install git-sim`, or `uv tool install git-sim`.
 
 ```console
 $ git-sim merge dev
-$ git-sim reset HEAD^
+$ git-sim reset --hard HEAD^
 $ git-sim rebase main
 ```
 
@@ -52,19 +52,7 @@ git-sim opens an interactive graph of exactly how the command would change your 
 $ git-sim live
 ```
 
-**4. Check a risky command before it runs:** how risky it is, and what you could lose
-
-```console
-$ git-sim preflight reset --hard HEAD~1
-```
-
-**5. Connect your AI agents:** add the pre-flight hook and MCP server to the agents on your machine
-
-```console
-$ git-sim wire-agents
-```
-
-**6. Add the VS Code extension**
+**4. Install the git-sim VS Code extension**
 
 ```console
 $ code --install-extension initialcommit.git-sim
@@ -72,13 +60,57 @@ $ code --install-extension initialcommit.git-sim
 
 Or search for **git-sim** in the Extensions view (the Marketplace in VS Code, Open VSX in Cursor, Windsurf, and VSCodium). For Vim, Neovim, and Emacs, see [integrations/](integrations/). For Jupyter, `gh`, and GitHub Actions, see [docs/integrations.md](docs/integrations.md).
 
+**5. Check a risky command before it runs:** how risky it is, and what you could lose
+
+```console
+$ git-sim preflight reset --hard HEAD~1
+```
+
+**6. Connect your AI agents:** add the pre-flight hook and MCP server to the agents on your machine
+
+```console
+$ git-sim wire-agents
+```
+
 No repo handy? The bundled [git-dummy](https://github.com/initialcommit-com/git-dummy) makes one: `git-dummy --name=dummy-repo --branches=3 --commits=10`.
 
-## Your repo stays on your machine
+## Your Git repo data stays on your machine
 
-The interactive page opens in the git-sim viewer at initialcommit.com, but the graph travels compressed in the link's `#fragment`, which browsers never send to a server, so nothing about your code reaches the site. The page is also saved locally, and `--open-in local` (or `git_sim_open_in=local`) opens that file instead, offline.
+The interactive page opens in the git-sim viewer at initialcommit.com, but the graph travels compressed in the link's `#fragment`, which browsers never send to a server, so nothing about your code reaches the site.
 
-## Commands
+For example, `git-sim branch feature` opens a link like this one, shortened here (the full link is about 2,000 characters):
+
+```text
+https://initialcommit.com/tools/git-sim/viewer#d=eNrNWdtu2zgQ_RVBxaK7QEzzTqmIDbjJusWifdkC-06LlK1GlgxJiZP9-h3q4lvcpqqdrf1gmJSGnDOXw-H4unyYe4kZ-...&t=git+branch+feature&m=light&p=git-sim-branch_10-04-26_19-02-11.html
+```
+
+Everything after the `#` stays in your browser: `d` is the compressed graph, `t` the command, `m` the color theme, and `p` the name of the copy saved on your machine. All the site receives is `https://initialcommit.com/tools/git-sim/viewer`.
+
+The page is also saved locally, and `--open-in local` (or `git_sim_open_in=local`) opens that file instead, offline.
+
+## Live mode
+
+```console
+$ git-sim live
+```
+
+[![git-sim live, a session of six commands with the merge selected](docs/img/live.png)](docs/live.md)
+
+Live mode follows your repo as it changes and plays each change on the graph the moment it happens, whoever made it: you in a terminal, your editor's Git buttons, or an AI agent. It names the command that ran (`git commit`, `git rebase`, `git stash`, and so on) and keeps every change in a strip above the graph, so you can step back to any of them, replay the whole session, save it as a single HTML page, or record it as a video.
+
+The page opens in the git-sim viewer, and the graphs come from a small server git-sim runs on your machine, reachable only from `127.0.0.1` and with a session key. Its address travels in the link's `#fragment`, so nothing about your repo reaches the site, and `--open-in local` serves the page from git-sim itself instead.
+
+Useful options: `-C <path>` for another repo, `--no-zones` for the commit graph alone, `--interval <seconds>` to check more or less often, and `--replay` to reopen the last session. See [docs/live.md](docs/live.md) for the rest.
+
+## Pre-flight
+
+[![git-sim preflight reporting what a hard reset would lose](docs/img/preflight.png)](docs/mcp.md)
+
+Pre-flight shows what a command that can lose work would do before you run it, worked out from your repo rather than guessed: how risky it is, which commits would become unreachable, which changes would be lost for good, and the command that undoes it, all without touching your repo.
+
+AI agents get the same check: the [pre-flight hook and MCP server](docs/mcp.md) run it before an agent executes a destructive Git command, so the agent stops and asks you first (`git-sim wire-agents` sets this up). `--markdown` formats the report for a pull request comment, which the [GitHub Action](docs/integrations.md) uses, and the [VS Code extension](docs/vscode.md) shows it in an editor tab.
+
+## Supported Git commands
 
 Command syntax follows Git's own. Click a command for its usage and options, and a graph to open it in the viewer and drag its slider:
 
@@ -549,28 +581,6 @@ Usage: `git-sim worktree [list|add [-b <new-branch>] <path> [<branch>]|remove [-
 
 </details>
 
-## Live mode
-
-```console
-$ git-sim live
-```
-
-[![git-sim live, a session of six commands with the merge selected](docs/img/live.png)](docs/live.md)
-
-Live mode follows your repo as it changes and plays each change on the graph the moment it happens, whoever made it: you in a terminal, your editor's Git buttons, or an AI agent. It names the command that ran (`git commit`, `git rebase`, `git stash`, and so on) and keeps every change in a strip above the graph, so you can step back to any of them, replay the whole session, save it as a single HTML page, or record it as a video.
-
-The page opens in the git-sim viewer, and the graphs come from a small server git-sim runs on your machine, reachable only from `127.0.0.1` and with a session key. Its address travels in the link's `#fragment`, so nothing about your repo reaches the site, and `--open-in local` serves the page from git-sim itself instead.
-
-Useful options: `-C <path>` for another repo, `--no-zones` for the commit graph alone, `--interval <seconds>` to check more or less often, and `--replay` to reopen the last session. See [docs/live.md](docs/live.md) for the rest.
-
-## Pre-flight
-
-[![git-sim preflight reporting what a hard reset would lose](docs/img/preflight.png)](docs/mcp.md)
-
-Pre-flight shows what a command that can lose work would do before you run it, worked out from your repo rather than guessed: how risky it is, which commits would become unreachable, which changes would be lost for good, and the command that undoes it, all without touching your repo.
-
-AI agents get the same check: the [pre-flight hook and MCP server](docs/mcp.md) run it before an agent executes a destructive Git command, so the agent stops and asks you first (`git-sim wire-agents` sets this up). `--markdown` formats the report for a pull request comment, which the [GitHub Action](docs/integrations.md) uses, and the [VS Code extension](docs/vscode.md) shows it in an editor tab.
-
 ## Options
 
 ```console
@@ -673,7 +683,7 @@ Optional: On MacOS / Linux / or GitBash in Windows, create an alias for the long
 git-sim() { docker run --rm -v $(pwd):/usr/src/git-sim git-sim "$@"; }
 ```
 
-This will enable you to run git-sim subcommands as [described above](#commands).
+This will enable you to run git-sim subcommands as [described above](#supported-git-commands).
 
 </details>
 
