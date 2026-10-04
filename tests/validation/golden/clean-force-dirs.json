@@ -91,6 +91,6 @@
    "phase": "before"
   }
  },
- "steps": 1,
+ "steps": 2,
  "title": "git clean -f -d"
 }

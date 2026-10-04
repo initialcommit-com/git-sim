@@ -417,8 +417,9 @@ def default_steps(mobjects):
     (step 1), removed things fade (2), then labels move and commits recolor
     (3), with empty steps skipped. Notes appear with the last step, and so
     does anything new tagged ``with_recolor`` (git show's card appears as the
-    shown commit turns blue). A simulation that set any step itself (rebase,
-    fetch, ...) is left alone."""
+    shown commit turns blue); anything tagged ``late`` gets a step after all
+    of them. A simulation that set any step itself (rebase, fetch, ...) is
+    left alone."""
 
     def family(mobs):
         for mob in mobs:
@@ -428,10 +429,12 @@ def default_steps(mobjects):
     tagged = [mob for mob in family(mobjects) if getattr(mob, "meta", None)]
     if any(mob.meta.get("step") for mob in tagged):
         return
-    arrive, fade, move, notes = [], [], [], []
+    arrive, fade, move, notes, late = [], [], [], [], []
     for mob in tagged:
         meta = mob.meta
-        if meta.get("phase") == "after":
+        if meta.get("late"):
+            late.append(mob)
+        elif meta.get("phase") == "after":
             last = meta.get("role") == "note" or meta.get("with_recolor")
             (notes if last else arrive).append(mob)
         elif meta.get("phase") == "removed":
@@ -446,6 +449,12 @@ def default_steps(mobjects):
                 mob.meta["step"] = step
     for mob in notes:
         mob.meta["step"] = step or 1
+    # what follows everything else (a strike through a file that had to
+    # arrive first) is a step of its own
+    if late:
+        step += 1
+        for mob in late:
+            mob.meta["step"] = step
 
 
 class MovingCameraScene(Scene):

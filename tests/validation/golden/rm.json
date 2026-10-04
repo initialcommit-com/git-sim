@@ -94,6 +94,6 @@
    "phase": "before"
   }
  },
- "steps": 1,
+ "steps": 2,
  "title": "git rm utils.py"
 }

@@ -1407,6 +1407,9 @@ class GitSimBaseCommand(m.MovingCameraScene):
         secondColumnFilesDict = {}
         thirdColumnFilesDict = {}
 
+        # where the moves land: a struck entry there (rm's "Removed files",
+        # clean's "Deleted files") is struck only once it has arrived
+        self._zone_move_dests = {(move[2], move[0]) for move in moves}
         self.create_zone_text(
             firstColumnFileNames,
             secondColumnFileNames,
@@ -1507,6 +1510,18 @@ class GitSimBaseCommand(m.MovingCameraScene):
             else:
                 self.add(arrow)
             self.toFadeOut.add(arrow)
+
+        # The strikes through entries that a move brings in, drawn after the
+        # move: their own last step, so the file slides over, then is struck.
+        for text in getattr(self, "_zone_late_strikes", []):
+            strike = self.strike_line(text)
+            self.tag(strike, phase="after", late=True)
+            if settings.animate:
+                self.play(m.Create(strike), run_time=0.4 / settings.speed)
+            else:
+                self.add(strike)
+            self.toFadeOut.add(strike)
+        self._zone_late_strikes = []
 
         self.toFadeOut.add(firstColumnFiles, secondColumnFiles, thirdColumnFiles)
 
@@ -2061,18 +2076,24 @@ class GitSimBaseCommand(m.MovingCameraScene):
             ),
         )
         rows = getattr(self, "_zone_rows", {})
+        dests = getattr(self, "_zone_move_dests", set())
+        self._zone_late_strikes = []
         for col, names, title, group, lookup in columns:
             for i, f in enumerate(names):
                 label = self.zone_label(col, f)
                 struck = self.zone_struck(col, f)
-                text = self.zone_text(label, struck)
+                # an entry a move brings in arrives plain; its strike follows
+                late = struck and (col, f) in dests
+                text = self.zone_text(label, struck and not late)
                 row = rows.get((col, f), i)
                 text.move_to(
                     (title.get_center()[0], horizontal2.get_center()[1], 0)
                 ).shift(m.DOWN * 0.5 * (row + 1))
                 group.add(text)
                 lookup[f] = text
-                if struck:
+                if late:
+                    self._zone_late_strikes.append(text)
+                elif struck:
                     self.zone_twin(text, label)
 
     def zone_text(self, label, struck=False, bold=False):
@@ -2094,6 +2115,25 @@ class GitSimBaseCommand(m.MovingCameraScene):
             font_size=24,
             color=self.fontColor,
             weight=m.BOLD if bold else m.NORMAL,
+        )
+
+    def strike_line(self, text):
+        """A line through ``text`` where its own strikethrough would be: the
+        font's strikeout position and thickness, across the ink."""
+        layout = getattr(text, "layout", None)
+        if layout is not None and layout.bbox is not None:
+            from git_sim.render.constants import STROKE_WIDTH_TO_UNITS
+
+            scale = text._font_scale
+            y = text.baseline_y() + layout.strike_position * scale
+            width = layout.strike_thickness * scale / STROKE_WIDTH_TO_UNITS
+        else:  # manim's text: through the middle of the ink
+            y, width = text.get_center()[1], 2
+        return m.Line(
+            (text.get_left()[0], y, 0),
+            (text.get_right()[0], y, 0),
+            color=self.fontColor,
+            stroke_width=width,
         )
 
     def zone_twin(self, text, before_label, bold=False, name=None):
