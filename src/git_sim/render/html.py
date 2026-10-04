@@ -103,7 +103,7 @@ html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-f
 #helpMenu h3,#shareMenu h3{margin:0 0 8px;font:700 12px/1 var(--font);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
 #helpMenu ul{list-style:none;margin:0;padding:0}
 #helpMenu li{display:flex;gap:10px;padding:5px 0;font:13px/1.4 var(--font);color:var(--text)}
-#helpMenu kbd{flex:0 0 108px;color:var(--muted);font:600 12px/1.4 var(--font)}
+#helpMenu kbd{flex:0 0 108px;padding:0;border:0;border-radius:0;background:none;box-shadow:none;color:var(--accent);font:700 12px/1.4 var(--font)}
 #share{border:1px solid var(--accent);background:transparent;color:var(--accent);font:700 12px/1 var(--font);padding:8px 14px;border-radius:999px;cursor:pointer;margin-left:6px}
 #share:hover,#share.on{background:var(--accent);color:var(--bg)}
 #shareMenu .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
@@ -983,17 +983,16 @@ window.GitSimViewer = Object.assign(makeViewer(document), {instance: makeViewer}
 VIEWER_JS = VIEWER_JS.replace("__PALETTES__", _palettes_json())
 
 _HELP_ITEMS = (
-    (
-        "slider / ▶",
-        "Drag the slider, or press play, to watch the command happen. Before and After jump to either end.",
-    ),
+    ("slider", "Drag it to move the graph from before the command to after it."),
+    ("▶ / ❚❚", "Play or pause the command, start to finish, on a loop."),
+    ("Before · After", "Jump straight to either end."),
     (
         "← → · space",
         "Step through a multi-step command; space toggles Before / After.",
     ),
     (
         "A",
-        "Play or pause the loop (the page opens playing). Any manual input takes over.",
+        "Play or pause from the keyboard (the page opens playing). Any manual input takes over.",
     ),
     (
         "hover",
