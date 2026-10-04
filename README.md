@@ -1,7 +1,7 @@
-# <a href="https://initialcommit.com/tools/git-sim"><img src="https://initialcommit.com/img/initialcommit/logo.png" alt="Initial Commit" height="32"></a> git-sim
+# git-sim
 ![git-sim-logo-with-tagline-1440x376p45](https://user-images.githubusercontent.com/49353917/232990611-58d0693f-69c0-45c8-b51d-cd540793d18c.gif)
 
-[![GitHub license](https://img.shields.io/github/license/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/blob/main/LICENSE) [![GitHub tag](https://img.shields.io/github/v/release/initialcommit-com/git-sim)](https://img.shields.io/github/v/release/initialcommit-com/git-sim) [![Downloads](https://static.pepy.tech/badge/git-sim)](https://pepy.tech/project/git-sim) [![Contributors](https://img.shields.io/github/contributors/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/graphs/contributors)
+<a href="https://initialcommit.com/tools/git-sim"><img src="https://initialcommit.com/img/initialcommit/logo.png" alt="Initial Commit" height="20"></a> [![GitHub license](https://img.shields.io/github/license/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/blob/main/LICENSE) [![GitHub tag](https://img.shields.io/github/v/release/initialcommit-com/git-sim)](https://img.shields.io/github/v/release/initialcommit-com/git-sim) [![Downloads](https://static.pepy.tech/badge/git-sim)](https://pepy.tech/project/git-sim) [![Contributors](https://img.shields.io/github/contributors/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/graphs/contributors)
 
 **The visual layer for Git in your own repos:** simulate, record, replay, audit, and share entire Git workflows, wherever you or your agents run them.
 
@@ -10,7 +10,7 @@
 - **Catch and review risky Git commands from AI agents** in real time, before they harm your work. Claude Code, GitHub Copilot, Cursor, Codex, Gemini CLI, and any MCP agent.
 - **Share any git-sim output** as a link, an embed, an HTML page, a PNG or SVG image, an MP4 video, or a social post.
 
-Every graph below is a real git-sim simulation. Click one to open it in the viewer, then drag its **Before / After** slider or press play:
+Every graph below is a real git-sim simulation. Click one to open it in the viewer.
 
 <table><tr>
 <td width="50%"><a href="https://initialcommit.com/tools/git-sim/viewer?demo=pull"><img alt="git-sim pull origin main" src="docs/img/pull.svg"></a><br/><code>$ git-sim pull origin main</code></td>
