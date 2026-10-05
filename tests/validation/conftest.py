@@ -102,7 +102,7 @@ SHAPES: Dict[str, tuple] = {
             "checkout -q main",
             "tag v0.9 HEAD~1",
             "config remote.origin.pushurl ../remote_moved.push.git",
-            "remote add upstream ../remote_moved.origin.git",
+            "remote add upstream ../remote_moved.git",
         ],
     ),
     # tags the remote already has: v0.9 here too, the annotated v0.8 there only

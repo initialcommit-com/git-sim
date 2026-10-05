@@ -2,10 +2,11 @@
 
     python scripts/readme_graphs.py [--docs <dir>] [--site <initialcommit repo>] [slug ...]
 
-Builds two sample repositories with git-dummy 0.2.0 or later: "orders"
-(branches, a tag, a remote we are ahead of, a dirty working tree, a stash,
-some reflog) for most commands, and "orders-behind" (a remote that moved on)
-for fetch and pull. Each command is rendered as an SVG twice: light for the
+Builds two sample repositories from git-dummy's scenarios (0.2.0 or later),
+so a reader can build the same ones with `git-dummy --scenario orders`:
+"orders" (branches, a tag, a remote we are ahead of, a dirty working tree, a
+stash, some reflog) for most commands, and "orders-behind" (a remote that
+moved on) for fetch and pull. Each command is rendered as an SVG twice: light for the
 README, made to play by itself on a loop (scripts/animate_svg.py), and with
 --site, dark for the tool page's ?demo= links. Without slugs, every command
 is rendered.
@@ -83,24 +84,13 @@ def main():
     os.environ["git_sim_auto_open"] = "false"
     work = tempfile.mkdtemp(prefix="gs-readme-")
 
-    # On Windows the remotes are addressed through a substituted drive letter,
-    # so nothing a render quotes (pull's merge message) carries a temp path.
-    drive = None
-    if os.name == "nt":
-        drive = next(d for d in "RSTUVW" if not os.path.exists(f"{d}:\\"))
-        subprocess.run(["subst", f"{drive}:", work], check=True, capture_output=True)
+    # git-dummy's "orders" scenarios (0.2.0): the remotes are added by relative
+    # paths (../orders.git), so nothing a render quotes, such as pull's merge
+    # message, carries a temp path.
     try:
-        common = dict(git_dir=work, style="realistic", seed=42, commits=6, constant_sha=False)
-        a = build(name="orders", branches=3, diverge_at=4, branch_names=["feature/pagination", "fix/order-totals"],
-                  tags=["v1.0.0"], remote=True, ahead=1, modified=1, staged=1, untracked=1, stashes=1, reflog=2, **common)
-        b = build(name="orders-behind", remote=True, behind=2, **common)
+        a = build(scenario="orders", git_dir=work)
+        b = build(scenario="orders-behind", git_dir=work)
         repos = {"orders": a["path"], "orders-behind": b["path"], "work": work}
-
-        def origin(name):
-            return f"{drive}:\\{name}.origin.git" if drive else os.path.join(work, f"{name}.origin.git")
-
-        for name in ("orders", "orders-behind"):
-            subprocess.run(["git", "-C", repos[name], "remote", "set-url", "origin", origin(name)], check=True)
 
         # git init's folder: a project with a few files, which move up to make room for .git/
         project = os.path.join(work, "my-project")
@@ -127,10 +117,10 @@ def main():
                 raise SystemExit(f"FAIL {' '.join(args)}: {(r.stdout + r.stderr).strip()[-300:]}")
             return path
 
+        # the site's sources only: its build copies them to wherever it serves from
         site_dirs = []
         if opts.site:
-            site_dirs = [os.path.join(opts.site, *p, "static", "js", "tools")
-                         for p in (("src", "main", "resources"), ("target", "classes"))]
+            site_dirs = [os.path.join(opts.site, "src", "main", "resources", "static", "js", "tools")]
             site_dirs = [d for d in site_dirs if os.path.isdir(d)]
         os.makedirs(opts.docs, exist_ok=True)
         for slug in slugs:
@@ -149,11 +139,10 @@ def main():
                     shutil.copy(dark, os.path.join(d, "git-sim-demo.svg"))
                     shutil.copy(light, os.path.join(d, "git-sim-demo-light.svg"))
             if slug == "remote":
-                subprocess.run(["git", "-C", cwd, "remote", "set-url", "origin", origin("orders")], check=True)
+                subprocess.run(["git", "-C", cwd, "remote", "set-url", "origin", "../orders.git"], check=True)
             print(f"ok  {slug:<15} {' '.join(args)}  ({note})")
     finally:
-        if drive:
-            subprocess.run(["subst", f"{drive}:", "/d"], capture_output=True)
+        shutil.rmtree(work, ignore_errors=True)
 
 
 if __name__ == "__main__":

@@ -72,7 +72,7 @@ $ git-sim preflight reset --hard HEAD~1
 $ git-sim wire-agents
 ```
 
-No repo handy? The bundled [git-dummy](https://github.com/initialcommit-com/git-dummy) makes one: `git-dummy --name=dummy-repo --branches=3 --commits=10`.
+No repo handy? The bundled [git-dummy](https://github.com/initialcommit-com/git-dummy) makes one: `git-dummy --scenario orders` builds the sample repo the graphs in this README are drawn on (`--scenario orders-behind` for fetch and pull), so you can run the same commands in it.
 
 ## Your Git repo data stays on your machine
 

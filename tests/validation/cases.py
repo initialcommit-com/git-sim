@@ -788,7 +788,7 @@ CASES: List[Case] = [
     Case("remote-none", "classic", ["remote"], texts("no remotes")),
     Case("remote-add-existing", "ahead", ["remote", "add", "origin", "x"], error="git-sim error"),
     Case("remote-remove-missing", "ahead", ["remote", "remove", "nope"], error="git-sim error"),
-    Case("remote-verbose", "remote-moved", ["remote", "-v"], all_of(title("git remote -v"), texts("../remote_moved.push.git", "../remote_moved.origin.git"))),
+    Case("remote-verbose", "remote-moved", ["remote", "-v"], all_of(title("git remote -v"), texts("../remote_moved.push.git", "../remote_moved.git"))),
     Case("remote-verbose-long", "ahead", ["remote", "--verbose"], all_of(title("git remote -v"), texts("push", "fetch"))),
     Case("remote-show", "remote-moved", ["remote", "show", "origin"], all_of(title("git remote show origin"), texts("new: the next fetch stores it as origin/fresh", "stale: deleted on origin", "tracked as origin/main", "merges with main", "pushes to feature (fast-forwardable)", "pushes to main (local out of date)"))),
     Case("remote-show-fresh", "ahead", ["remote", "show", "origin"], texts("tracked as origin/main", "pushes to main (fast-forwardable)")),

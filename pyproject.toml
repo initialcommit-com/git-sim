@@ -33,7 +33,9 @@ classifiers = [
 # The default ("core") install: pre-flight engine, text graph, static image
 # simulation (skia), MCP server and Claude Code hook. No Manim.
 dependencies = [
-    "git-dummy",
+    # bundled so a reader can make a repo to try git-sim on (git-dummy --scenario orders);
+    # 0.2.0 for its scenarios and the build() API the tests and scripts use
+    "git-dummy>=0.2.0",
     "gitpython",
     "mcp>=2.0",
     "numpy",
