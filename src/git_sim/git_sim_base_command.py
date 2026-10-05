@@ -390,6 +390,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.camera.frame.save_state()
 
     def show_outro(self):
+        # the last thing every scene does: everything is drawn by now
+        self.fit_edges_around_labels()
         if settings.animate and settings.show_outro:
             self.play(m.Restore(self.camera.frame))
 
@@ -1872,6 +1874,200 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.tag(dot, t=round(min(max(along, 0.0), 1.0), 3))
         self.draw_arrow(True, arrow)
         self.bring_to_back(arrow)
+
+    # ---- arrows around text ---------------------------------------------------------------
+    # Arrows are laid out commit centre to commit centre, before the labels
+    # around each commit exist. Once everything is drawn, this fits them
+    # around the text: an id and its ref labels above a commit, its message
+    # below.
+    LABEL_PAD = 0.08  # the clearance an arrow keeps from a label's ink
+
+    def _family(self):
+        seen, out = set(), []
+        stack = list(self.mobjects)
+        while stack:
+            mob = stack.pop()
+            if id(mob) in seen:
+                continue
+            seen.add(id(mob))
+            out.append(mob)
+            stack.extend(getattr(mob, "submobjects", None) or [])
+        return out
+
+    def label_boxes(self):
+        """(left, bottom, right, top, role) of every commit id and commit
+        message ("commit-label") and ref label ("ref") drawn, in scene units."""
+        boxes = []
+        for mob in self._family():
+            meta = getattr(mob, "meta", None) or {}
+            if meta.get("role") not in ("commit-label", "ref"):
+                continue
+            if getattr(mob, "text", None) is not None and not str(mob.text).strip():
+                continue  # an empty placeholder
+            try:
+                left, right = float(mob.get_left()[0]), float(mob.get_right()[0])
+                bottom, top = float(mob.get_bottom()[1]), float(mob.get_top()[1])
+            except Exception:
+                continue
+            if right - left > 1e-3 and top - bottom > 1e-3:
+                boxes.append((left, bottom, right, top, meta.get("role")))
+        return boxes
+
+    def fit_edges_around_labels(self):
+        """Keep every arrow's ends, and its path where it can, off the text."""
+        if settings.animate:
+            return  # manim's own arrows, already on screen
+        boxes = self.label_boxes()
+        if not boxes:
+            return
+        lane_arrow = getattr(m, "LaneArrow", None)
+        for mob in self._family():
+            if lane_arrow is not None and isinstance(mob, lane_arrow):
+                self._fit_lane_arrow(mob, boxes)
+            elif isinstance(mob, DottedLine):
+                self._fit_dotted_line(mob, boxes)
+        # Arrows go beneath everything else: where one must cross a ref
+        # label (a solid pill), it passes behind it.
+        edges = [mob for mob in self.mobjects if (getattr(mob, "meta", None) or {}).get("role") == "edge"]
+        if edges:
+            self.bring_to_back(*edges)
+
+    def _fit_lane_arrow(self, arrow, boxes):
+        child, parent = arrow.anchor_start, arrow.anchor_end
+        dx, dy = float(parent[0] - child[0]), float(parent[1] - child[1])
+        pad = self.LABEL_PAD
+        if abs(dx) < 0.5 and abs(dy) > 0.5:
+            # Straight up or down: start past the labels stacked on the child
+            # (its id and refs, or its message) and stop short of the
+            # parent's, so neither end sits on text.
+            sy = 1.0 if dy > 0 else -1.0
+            x, half, span = float(child[0]), 0.2, abs(dy)  # 0.2: the head's half width
+            start = end = arrow.RIM
+            for left, bottom, right, top, _ in boxes:
+                if right < x - half or left > x + half:
+                    continue
+                lo, hi = sorted(((bottom - child[1]) * sy, (top - child[1]) * sy))
+                if hi <= 0 or lo >= span:
+                    continue
+                if lo + hi < span:  # nearer the child
+                    start = max(start, hi + pad)
+                else:
+                    end = max(end, span - lo + pad)
+            if span - start - end >= 0.6:
+                arrow.vertical_ends = (start, end)
+            return
+        if dy < -0.5:
+            # Down to a lower lane: the child's own message hangs right below
+            # it (centred under it; a neighbour's message is not in the way).
+            sx = 1.0 if dx >= 0 else -1.0
+            reach = None
+            for left, bottom, right, top, role in boxes:
+                if role != "commit-label":
+                    continue
+                below = child[1] - 1.8 < bottom and top < child[1]
+                centred = abs((left + right) / 2 - child[0]) < 0.3
+                if below and centred:
+                    edge = (right - child[0]) if sx > 0 else (child[0] - left)
+                    reach = max(reach or 0.0, float(edge))
+            if reach is not None:
+                arrow.exit_clear = reach
+        # Where the curve or its head meets text, look for a route that
+        # doesn't: nearest the usual one first. Failing that, a curve rising
+        # to its parent comes up under the parent's message instead.
+        if self._head_on_text(arrow, boxes) or self._curve_on_text(arrow, boxes):
+            arrow.route = self._clear_route(arrow, boxes)
+            if arrow.route is None and dy > 0.5:
+                bottom = None
+                for left, b_, right, top, role in boxes:
+                    if abs((left + right) / 2 - parent[0]) < 0.3 and parent[1] - 1.8 < b_ and top < parent[1]:
+                        bottom = b_ if bottom is None else min(bottom, b_)
+                if bottom is not None:
+                    arrow.under_message = float(parent[1] - bottom) + pad + 0.05
+                    if self._head_on_text(arrow, boxes) or self._curve_on_text(arrow, boxes):
+                        arrow.under_message = None
+
+    def _clear_route(self, arrow, boxes):
+        """The first lane-arrow route, in order of how little it departs
+        from the usual one, whose curve and head stay clear of every label:
+        it may leave the child at another angle, run further along its lane
+        before turning, curl in wider, or land at another angle and distance."""
+        child, parent = arrow.anchor_start, arrow.anchor_end
+        dx, dy = float(parent[0] - child[0]), float(parent[1] - child[1])
+        sx, sy = (1.0 if dx >= 0 else -1.0), (1.0 if dy >= 0 else -1.0)
+        k = arrow.lanes_crossed()
+        usual = 30.0 if k == 1 else min(50.0 + 10.0 * (k - 2), 75.0)
+        usual_reach = min(0.9 + 0.4 * (k - 1), 2.5)
+        landings = []
+        for landing in ((usual, usual_reach), (usual, 0.75), (30.0, 0.75), (20.0, 0.7), (12.0, 0.68),
+                        (45.0, 0.8), (60.0, 0.85), (5.0, 0.68)):
+            if landing not in landings:
+                landings.append(landing)
+        rim = arrow.RIM
+        for degrees, reach in landings:
+            phi = numpy.radians(degrees)
+            approach = numpy.array([sx * numpy.cos(phi), sy * numpy.sin(phi), 0.0])
+            p3 = parent - approach * reach
+            for exit_degrees in (35.0, 20.0, 5.0):
+                out = numpy.radians(exit_degrees)
+                p0 = child + numpy.array([sx * rim * numpy.cos(out), sy * rim * numpy.sin(out), 0.0])
+                for run in (0.3, 0.8, 1.3, 1.8):
+                    p1 = p0 + numpy.array([sx * run, 0.0, 0.0])
+                    for curl in (0.7, 1.2, 1.8):
+                        p2 = p3 - approach * curl
+                        arrow.route = (p0, p1, p2, p3)
+                        if not self._head_on_text(arrow, boxes) and not self._curve_on_text(arrow, boxes):
+                            return arrow.route
+        arrow.route = None
+        return None
+
+    def _curve_on_text(self, arrow, boxes):
+        """Whether the curve crosses bare text (an id or a message). It may
+        pass behind a ref label: arrows are drawn beneath the pills."""
+        pad = 0.04
+        text = [box for box in boxes if box[4] == "commit-label"]
+        for x, y in arrow.sample()[:, :2]:
+            if any(l - pad <= x <= r + pad and b - pad <= y <= t + pad for l, b, r, t, _ in text):
+                return True
+        return False
+
+    def _head_on_text(self, arrow, boxes):
+        pad = self.LABEL_PAD
+        for _, poly in arrow._tip_polygons():
+            for x, y in numpy.asarray(poly)[:, :2]:
+                if any(l - pad <= x <= r + pad and b - pad <= y <= t + pad for l, b, r, t, _ in boxes):
+                    return True
+        return False
+
+    def _fit_dotted_line(self, line, boxes):
+        pad = self.LABEL_PAD
+
+        def on_text(point, r=0.0):
+            x, y = float(point[0]), float(point[1])
+            return any(
+                left - pad - r <= x <= right + pad + r and bottom - pad - r <= y <= top + pad + r
+                for left, bottom, right, top, _ in boxes
+            )
+
+        def head_on_text():
+            for _, poly in line._tip_polygons():
+                pts = numpy.asarray(poly)
+                if any(on_text(p) for p in pts) or on_text(pts.mean(axis=0)):
+                    return True
+            return False
+
+        def drop(dot):
+            line.dots.remove(dot)
+            line.remove(dot)
+
+        # the head backs off along the line until it is clear of the text
+        while len(line.dots) > 3 and (head_on_text() or on_text(line.dots[-1].get_center(), 0.06)):
+            drop(line.dots[-1])
+        while len(line.dots) > 3 and on_text(line.dots[0].get_center(), 0.06):
+            drop(line.dots[0])
+        # on the way, the trail passes behind a label rather than over it
+        for dot in list(line.dots[1:-1]):
+            if on_text(dot.get_center(), 0.06):
+                drop(dot)
 
     def create_dark_commit(self):
         return "dark"

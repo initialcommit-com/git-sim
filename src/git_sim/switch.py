@@ -249,8 +249,13 @@ class Switch(GitSimBaseCommand):
         if target.hexsha not in self.drawnCommits:
             # A row of its own, a little further down than usual: HEAD, the
             # new branch and the remote-tracking label stack up on it, which
-            # would reach the messages under the row above.
-            self.parse_commits(target, shift=(4 if self.compact else 5) * m.DOWN)
+            # would reach the messages under the row above. Below the lowest
+            # row drawn so far, which HEAD's history may already have taken
+            # (a merge's other parent has a row of its own).
+            gap = 4 if self.compact else 5
+            top = self.drawnCommits[head_commit.hexsha].get_center()[1] if head_commit.hexsha in self.drawnCommits else 0.0
+            lowest = min((c.get_center()[1] for c in self.drawnCommits.values()), default=top)
+            self.parse_commits(target, shift=(top - lowest + gap) * m.DOWN)
         drawn = target.hexsha in self.drawnCommits
         if drawn and self.track and self.track not in self.drawnRefs:
             self.draw_ref(target, self.stack_top(target.hexsha), text=self.track, color=self.theme.remote, kind="remote", phase="before")

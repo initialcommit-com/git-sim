@@ -32,3 +32,4 @@ class LiveScene(GitSimBaseCommand):
             self.setup_and_draw_zones()
         if settings.show_command_as_title:
             self.show_command_as_title()
+        self.fit_edges_around_labels()

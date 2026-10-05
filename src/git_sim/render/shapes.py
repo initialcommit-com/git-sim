@@ -335,6 +335,21 @@ class LaneArrow(Arrow):
         self.anchor_start = to_point(start).astype(float).copy()
         self.anchor_end = to_point(end).astype(float).copy()
         self.lane_pitch = float(lane_pitch or self.LANE_PITCH)
+        # Set once the labels are drawn (GitSimBaseCommand.fit_edges_around_labels):
+        # how far from each centre a straight up-or-down arrow starts and ends,
+        # past the child's id and ref labels and the parent's message; and how
+        # far sideways a curve leaving downward runs before it descends, past
+        # the child's own message.
+        self.vertical_ends = None
+        self.exit_clear = None
+        # another landing (angle, distance from the parent), where the usual one meets text
+        self.landing_degrees = None
+        self.landing_reach = None
+        # no room beside the parent: come up under its message instead and
+        # stop this far below its centre, pointing straight up at it
+        self.under_message = None
+        # a whole route (p0, p1, p2, p3) found to keep clear of the labels
+        self.route = None
 
     def _follow_points_function(self, func):
         """Move the curve's anchors with the arrow: a group that shifts the
@@ -366,12 +381,25 @@ class LaneArrow(Arrow):
         the lane ends before curling in."""
         k = self.lanes_crossed()
         angle = 30.0 if k == 1 else min(50.0 + 10.0 * (k - 2), 75.0)
-        return np.radians(angle), min(0.9 + 0.4 * (k - 1), 2.5)
+        reach = min(0.9 + 0.4 * (k - 1), 2.5)
+        if self.landing_degrees is not None:
+            angle = self.landing_degrees
+        if self.landing_reach is not None:
+            reach = self.landing_reach
+        return np.radians(angle), reach
+
+    def sample(self, n=48):
+        """Points along the curve as drawn, for testing what it crosses."""
+        p0, p1, p2, p3 = self._controls()
+        ts = np.linspace(0.0, 1.0, n)[:, None]
+        return ((1 - ts) ** 3) * p0 + 3 * ((1 - ts) ** 2) * ts * p1 + 3 * (1 - ts) * ts ** 2 * p2 + ts ** 3 * p3
 
     def arrival_angle(self):
         return self.landing()[0]
 
     def _controls(self):
+        if self.route is not None:
+            return tuple(np.array(p, dtype=float) for p in self.route)
         child, parent = self.anchor_start, self.anchor_end
         d = parent - child
         dx, dy = float(d[0]), float(d[1])
@@ -379,18 +407,33 @@ class LaneArrow(Arrow):
         sy = 1.0 if dy >= 0 else -1.0  # the parent is above (+) or below
         rim = self.RIM
         if abs(dx) < 0.5:  # straight above or below: leave and arrive vertically
-            p0 = child + np.array([0.0, sy * rim, 0.0])
-            p3 = parent - np.array([0.0, sy * rim, 0.0])
-            pull = np.array([0.0, sy * 0.35 * abs(dy), 0.0])
+            start, end = self.vertical_ends or (rim, rim)
+            p0 = child + np.array([0.0, sy * start, 0.0])
+            p3 = parent - np.array([0.0, sy * end, 0.0])
+            pull = np.array([0.0, sy * 0.35 * abs(float(p3[1] - p0[1])), 0.0])
             return p0, p0 + pull, p3 - pull, p3
-        # Leave the child at a shallow angle toward the parent's side.
-        out = self.EXIT_ANGLE
-        p0 = child + np.array([sx * rim * np.cos(out), sy * rim * np.sin(out), 0.0])
         # Land on the parent pointing at its centre.
         phi, reach = self.landing()
         approach = np.array([sx * np.cos(phi), sy * np.sin(phi), 0.0])
         p3 = parent - approach * reach
         p2 = p3 - approach * 0.7  # a short final curl; the body climbs beside
+        if self.under_message is not None and sy > 0:
+            p3 = parent - np.array([0.0, self.under_message, 0.0])
+            p2 = p3 - np.array([0.0, 0.9, 0.0])
+        if self.exit_clear is not None and sy < 0:
+            # Going down to a lower lane: the child's own message hangs below
+            # it, so leave nearly level and run past the message's edge before
+            # descending, in the gap beside the next commit.
+            out = np.radians(20.0)
+            p0 = child + np.array([sx * rim * np.cos(out), sy * rim * np.sin(out), 0.0])
+            clear = float(child[0]) + sx * (self.exit_clear + 0.6)
+            p1 = np.array([clear, float(p0[1]), 0.0])
+            if (float(p2[0]) - clear) * sx < -0.3:
+                p2 = np.array([clear - sx * 0.3, float(p2[1]), 0.0])
+            return p0, p1, p2, p3
+        # Leave the child at a shallow angle toward the parent's side.
+        out = self.EXIT_ANGLE
+        p0 = child + np.array([sx * rim * np.cos(out), sy * rim * np.sin(out), 0.0])
         # Run along the lane toward where the climb begins, never past it, so
         # the curve does not double back.
         run = max(0.3, 0.6 * (float(p2[0]) - float(p0[0])) * sx)

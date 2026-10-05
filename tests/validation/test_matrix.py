@@ -9,6 +9,7 @@ import pytest
 
 import oracle as o
 from cases import CASES, TODO_FILE
+from overlaps import check as edges_over_labels
 
 
 def _placeholders(case, shapes, tmp_path):
@@ -39,6 +40,9 @@ def test_case(case, shapes, gitsim, golden, tmp_path, request):
         run.failed(case.error)
         return
     run.ok()
+    if run.path.suffix == ".svg":
+        # no arrow, arrowhead or trail sits on a commit id, message or ref label
+        assert not edges_over_labels(run.path), f"edges over labels: {edges_over_labels(run.path)}"
     if case.check is not None:
         case.check(run.model, shape.path)
     golden(case.id, run.model)
