@@ -89,6 +89,7 @@ class Pull(GitSimBaseCommand):
             # so the pull is always told: merge, or rebase with --rebase.
             args = [a for a in (self.remote, self.branch) if a]
             self.repo.git.pull("--rebase" if self.rebase else "--no-rebase", *args)
+            self.name_remote_as_configured(orig_remotes)
             head_commit = self.get_commit()
             self.parse_commits(head_commit)
             self.tag_changes_since(known, moved)
@@ -146,6 +147,29 @@ class Pull(GitSimBaseCommand):
 
         # Delete the local clone
         shutil.rmtree(new_dir, onerror=self.del_rw)
+
+    def name_remote_as_configured(self, orig_remotes):
+        """git names the remote in a pull's merge message by its URL as
+        configured ("Merge branch 'main' of ../origin"). The throwaway clone
+        fetched from the absolute path (remote_url), which git wrote into the
+        message instead, so the configured URL goes back in."""
+        head = self.repo.head.commit
+        if len(head.parents) < 2:
+            return
+        message = head.message
+        for remote in orig_remotes:
+            try:
+                configured = remote.repo.git.remote("get-url", remote.name)
+            except git.exc.GitCommandError:
+                continue
+            absolute = self.remote_url(remote)
+            if absolute == configured:
+                continue
+            # git drops a trailing .git from the URL in the message
+            strip = lambda url: url[: -len(".git")] if url.endswith(".git") else url
+            message = message.replace(strip(absolute), strip(configured))
+        if message != head.message:
+            self.repo.git.commit("--amend", "--no-verify", "-m", message.rstrip("\n"))
 
     def show_replayed(self, orig_head, head_commit):
         """pull --rebase: your local commits are copied onto the fetched
