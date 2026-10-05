@@ -693,9 +693,8 @@ This will enable you to run git-sim subcommands as [described above](#supported-
 
 ## Support git-sim
 
-⭐ [Star the repo](https://github.com/initialcommit-com/git-sim)
-
 Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work on it (and other Git projects) full time!
+- ⭐ [Star the repo](#)
 - [Sponsor Git-Sim on GitHub](https://github.com/sponsors/initialcommit-com)
 - [Support Git-Sim via Patreon](https://patreon.com/user?u=92322459)
 
