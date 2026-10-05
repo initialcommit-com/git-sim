@@ -145,8 +145,9 @@ def main():
             dark = render(args, cwd, dark=True) if site_dirs else None
             for d in site_dirs:
                 shutil.copy(dark, os.path.join(d, f"git-sim-demo-{slug}.svg"))
-                if slug == "rebase":  # the tool page's default graph
+                if slug == "rebase":  # the tool page's default graph, and its light twin
                     shutil.copy(dark, os.path.join(d, "git-sim-demo.svg"))
+                    shutil.copy(light, os.path.join(d, "git-sim-demo-light.svg"))
             if slug == "remote":
                 subprocess.run(["git", "-C", cwd, "remote", "set-url", "origin", origin("orders")], check=True)
             print(f"ok  {slug:<15} {' '.join(args)}  ({note})")
