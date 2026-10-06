@@ -328,6 +328,11 @@ def test_changes_without_a_reflog_entry_are_read_from_the_diff():
         describe_change(state(refs=base, status=(" M a.txt",)), state(refs=base))[0]
         == "git restore a.txt"
     )
+    # an untracked file that's gone was deleted, not restored
+    assert (
+        describe_change(state(refs=base, status=("?? new.txt",)), state(refs=base))[0]
+        == "deleted new.txt"
+    )
     assert (
         describe_change(state(refs=base), state(refs=base))[0] == "repository changed"
     )

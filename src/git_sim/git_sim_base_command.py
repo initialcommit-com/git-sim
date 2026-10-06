@@ -2631,8 +2631,10 @@ class GitSimBaseCommand(m.MovingCameraScene):
                 color=self.fontColor,
             )
             room = self.camera.frame.get_width() * 0.86
+            title_scale = 1.0
             if titleText.width > room:
-                titleText.scale(max(room / titleText.width, self.TITLE_MIN_SCALE))
+                title_scale = max(room / titleText.width, self.TITLE_MIN_SCALE)
+                titleText.scale(title_scale)
             top = 0
             for element in self.toFadeOut:
                 element_top = element.get_top()[1]
@@ -2650,6 +2652,17 @@ class GitSimBaseCommand(m.MovingCameraScene):
                     0,
                 )
             )
+            # A live drawing's title says what changed ("new file x", "git
+            # restore x"), and its ink is taller or shorter with the letters it
+            # has: placed by its own height, a title without descenders sits
+            # lower, and the graph under it jumps from one change to the next.
+            # Live titles go where a full-height line (ascenders and
+            # descenders) would, on its baseline.
+            if getattr(self, "compact_zones", False):
+                line = m.Text("Hgjy", font=self.font, font_size=36).scale(title_scale)
+                line.move_to((self.camera.frame.get_x(), top + line.height * 2, 0))
+                if hasattr(line, "baseline_y") and hasattr(titleText, "baseline_y"):
+                    titleText.shift(m.UP * (line.baseline_y() - titleText.baseline_y()))
             ul = m.Underline(
                 titleText,
                 color=self.theme.accent,

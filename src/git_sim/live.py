@@ -330,6 +330,13 @@ def describe_change(before: RepoState, after: RepoState) -> Tuple[str, str]:
             f"deleted {_names(deleted_now)}",
             "deleted from the working directory: " + ", ".join(deleted_now),
         )
+    # an untracked file that is gone was deleted (rm, git clean), not restored
+    gone_untracked = [p for p, (x, y) in be.items() if x == "?" and p not in ae]
+    if gone_untracked:
+        return (
+            f"deleted {_names(gone_untracked)}",
+            "untracked, deleted from the working directory: " + ", ".join(gone_untracked),
+        )
     reverted = [p for p in be if p not in ae]
     if reverted:
         return f"git restore {_names(reverted)}", "clean again: " + ", ".join(reverted)
