@@ -157,7 +157,7 @@ its own format:
 | Amazon Q Developer CLI | no hook API | `~/.aws/amazonq/mcp.json` (project: `.amazonq/mcp.json`) |
 | Claude Desktop | no hook API | `claude_desktop_config.json` in the app's config folder |
 
-Agents without a hook API get the MCP server alone: they can call `git_preflight` and `git_simulate` themselves, and their system prompts can ask them to. Keep a [live graph](live.md) open beside any of them to see what they do as they do it.
+Agents without a hook API get the MCP server alone: they can call `git_preflight` and `git_simulate` themselves, and their system prompts can ask them to. Keep a [live graph](../README.md#live-mode) open beside any of them to see what they do as they do it.
 
 Where people type `git` themselves, `git sim <command>` already works (git runs any `git-<name>` program), and `git-sim aliases` adds `git preflight` and `git live` to your global git config; see [shell.md](shell.md).
 

@@ -7,7 +7,7 @@ below is a thin layer over it.
 | Place | What | Where it lives |
 | --- | --- | --- |
 | Terminal | `git-sim`, `git sim`, `git preflight`, `git live`; lazygit and tig bindings | [shell.md](shell.md) |
-| Browser | the viewer and the live page at initialcommit.com; the graph never leaves your machine | [live.md](live.md) |
+| Browser | the viewer and the live page at initialcommit.com; the graph never leaves your machine | [Live mode](../README.md#live-mode) |
 | VS Code, Cursor, Windsurf, VSCodium | the extension: simulate, pre-flight, live tab and sidebar view, walkthrough | [vscode.md](vscode.md) |
 | Neovim | `:GitSim`, `:GitSimPreflight`, `:GitSimLive` | [integrations/nvim](../integrations/nvim) |
 | Vim 8.1+ | the same commands in Vimscript | [integrations/vim](../integrations/vim) |

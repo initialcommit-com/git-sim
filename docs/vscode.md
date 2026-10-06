@@ -30,8 +30,8 @@ as a before / after animation and keeps it in a strip, so the session can be
 stepped through or replayed. The same graph is a view in the sidebar (the
 git-sim icon in the Activity Bar) that can be dragged next to a chat or the
 terminal. It runs `git-sim live --json` in the repository; see
-[live.md](live.md) for how the engine works and how `git-sim live` serves the
-same page in a browser.
+[Live mode](../README.md#live-mode) in the README for how it keeps up with the
+repository and how `git-sim live` serves the same page in a browser.
 
 ## The `preflight` command
 

@@ -108,7 +108,7 @@ To enter git-sim's live mode, browse into any local Git repo and run:
 $ git-sim live
 ```
 
-[![git-sim live, a session of six commands with the merge selected](docs/img/live.png)](docs/live.md)
+[![git-sim live following a repository as six Git commands run: each change plays the moment it happens and joins the bar above the graph](docs/img/live.webp)](https://initialcommit.com/tools/git-sim#live)
 
 Run git-sim live to record every Git operation executed by you or your AI agents in real-time as an visual, interactive session you can replay and share.
 
@@ -116,7 +116,24 @@ It names, animates, and tracks every change to your Git repo, so you can step ba
 
 The page opens in the git-sim viewer which connects to a lightweight web server `git-sim live` runs on your machine, reachable only from `127.0.0.1` and with a session key. Its address travels in the link's `#fragment`, so nothing about your repo leaves your machine, and `--open-in local` serves the page from git-sim itself instead if you prefer not to invoke initialcommit.com's git-sim viewer and run purely local.
 
-Useful options: `-C <path>` for another repo, `--no-zones` for the commit graph alone (no working directory table), `--interval <seconds>` to check more or less often, and `--replay` to reopen the last session.
+**On the page:** each change joins the bar above the graph with its command and time (**Hide details** slims it down). Click a change to see it again, step through them with the player's arrows or `[` and `]`, or press **Play** to replay the session from the change on screen. **Follow the repository** returns to the latest change, and **Clear** starts over from the current state. **Save session** writes the whole session as one HTML file that opens anywhere, and **Record** plays it back as an MP4 or WebM video to post on social media. Each change is also saved as its own interactive page under `git-sim media-dir`.
+
+**Inside VS Code:** the extension shows the same live graph in its **Live graph** tab and sidebar view (see [docs/vscode.md](docs/vscode.md)).
+
+**How it keeps up:** live mode reads what Git reports between checks, rather than watching `.git`, and waits for the repo to settle, so a rebase or a pull shows as one change. It names each change from the reflog when it can (`git commit`, `git reset <commit>`, `git checkout -b <branch>`), and otherwise from what changed (a branch created, a file staged, a stash popped). Chrome and Edge ask once for permission to reach the local server. If a browser refuses, the page offers the local copy.
+
+**Useful options:**
+
+`-C <path>`: follow another repo  
+`--no-zones`: the commit graph alone, without the working directory table  
+`--interval <seconds>`: how often to check (default 1)  
+`--sessions`, `--replay`: list this repo's recorded sessions, or reopen the latest (`--session <folder>` for another)  
+`--once`: draw the current state and exit  
+`--json`: print one JSON line per change instead of opening a page, for editors  
+`--port <number>`: the local server's port  
+`-d`: open nothing, and just print the addresses
+
+Global options like `--all`, `-n`, and `--dark-mode` apply to every drawing. Live mode shows up to three branch labels per commit, unless `--max-branches-per-commit` says otherwise. Set `GIT_SIM_LIVE_DEBUG=1` to log each detected change.
 
 ## Pre-flight
 
