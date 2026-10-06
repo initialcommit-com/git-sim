@@ -439,6 +439,257 @@ LIVE_JS = r"""
 """
 
 
+# ---- the player: the hosted viewer's layout for a live session, on git-sim's own page ----
+# The strip above (#live) keeps recording and drives the graph, unseen. The page
+# shows which change is on screen in the header (Live, the repository, Change n / N),
+# a bar of the changes above the graph (with each one's number, time and command
+# unless the reader hid them), and a player under it: back, Play / Pause from the
+# change on screen, Record, forward, and Follow, Save session and Clear. The same
+# design as initialcommit.com's viewer page (templates/pages/tools/git-sim-viewer-page.html
+# in the site repository). The VS Code views keep the compact strip.
+PLAYER_CSS = """
+html[data-player] #live{display:none!important}
+html[data-player] #controls{display:none!important}
+.vp-head{display:flex;align-items:center;justify-content:center;gap:12px;min-width:0}
+.vp-kicker{display:flex;align-items:center;gap:8px;min-width:0;margin:0;font:700 12px/1 var(--font);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.vp-kicker b{min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--text);font-size:14px;letter-spacing:.02em;text-transform:none}
+.vp-kicker i{flex:none;width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.vp-kicker i.on{background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.18)}
+.vp-kicker i.off,.vp-kicker i.rec{background:#ef4444}
+.vp-step-n{flex:none;padding:7px 13px;border-radius:999px;background:var(--accent);color:var(--bg);font:800 12px/1 var(--font);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.vp-step{max-width:1240px;margin:0 auto;padding:20px 18px 0}
+.vp-step[hidden]{display:none}
+.vp-step-top{display:flex;justify-content:flex-end;margin:0 0 12px}
+.vp-labels{padding:6px 12px;border:1px solid var(--rule);border-radius:999px;background:transparent;color:var(--muted);font:600 12px/1 var(--font);cursor:pointer}
+.vp-labels:hover{color:var(--text);border-color:var(--text)}
+.vp-step-bar{display:flex;gap:6px;margin-bottom:26px}
+.vp-step-bar button{flex:1;height:8px;padding:0;border:0;border-radius:999px;background:var(--rule);cursor:pointer;transition:background .2s,transform .2s}
+.vp-step-bar button.done{background:color-mix(in srgb,var(--accent) 55%,var(--rule))}
+.vp-step-bar button.cur{background:var(--accent);transform:scaleY(1.4)}
+.vp-step-bar button:hover{background:var(--accent)}
+.vp-step-bar:not(.labeled) button>span{display:none}
+.vp-step-bar.labeled{gap:8px;overflow-x:auto;scrollbar-width:thin;padding:2px 2px 6px}
+.vp-step-bar.labeled button{flex:1 0 auto;display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:112px;max-width:260px;height:auto;padding:7px 11px 9px;border-radius:10px;border-top:4px solid var(--rule);background:var(--panel);text-align:left;transform:none}
+.vp-step-bar.labeled button.done{background:var(--panel);border-top-color:color-mix(in srgb,var(--accent) 55%,var(--rule))}
+.vp-step-bar.labeled button.cur{background:color-mix(in srgb,var(--accent) 12%,var(--panel));border-top-color:var(--accent);box-shadow:0 0 0 1.5px var(--accent) inset;transform:none}
+.vp-step-bar.labeled button:hover{background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
+.vp-step-bar .seg-meta{font:600 11px/1 var(--font);letter-spacing:.02em;color:var(--muted);white-space:nowrap}
+.vp-step-bar .seg-cmd{max-width:100%;font:600 12.5px/1.25 var(--font);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vp-controls{display:flex;justify-content:center;padding:4px 18px 28px}
+.vp-player{display:flex;flex-direction:column;align-items:center;gap:12px}
+.vp-player-main{display:flex;align-items:center;gap:14px}
+.vp-player button{font-family:var(--font);cursor:pointer}
+.vp-player .vp-skip{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;border:1.5px solid var(--rule);background:var(--panel);color:var(--text);font-size:17px;line-height:1;transition:border-color .15s,color .15s}
+.vp-player .vp-skip:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.vp-player .vp-skip:disabled{opacity:.35;cursor:default}
+.vp-player .vp-play{display:inline-flex;align-items:center;gap:10px;height:56px;padding:0 26px 0 22px;border-radius:999px;border:0;background:var(--accent);color:var(--bg);font-weight:700;font-size:16px;box-shadow:0 12px 24px -12px var(--accent);transition:transform .15s,filter .15s}
+.vp-player .vp-play:hover{transform:translateY(-2px);filter:brightness(1.06)}
+.vp-player .vp-play span{display:inline-flex}
+.vp-player .vp-rec{display:inline-flex;align-items:center;gap:10px;height:56px;padding:0 24px 0 20px;border-radius:999px;border:2px solid #ef4444;background:transparent;color:#ef4444;font-size:16px;font-weight:700;transition:transform .15s,background .15s,color .15s}
+.vp-player .vp-rec i{width:16px;height:16px;border-radius:50%;background:#ef4444;transition:border-radius .2s}
+.vp-player .vp-rec:hover:not(:disabled){transform:translateY(-2px);background:rgba(239,68,68,.12)}
+.vp-player .vp-rec.on{background:#ef4444;color:#fff}
+.vp-player .vp-rec.on i{background:#fff;border-radius:3px;animation:vp-rec 1s ease-in-out infinite}
+.vp-player .vp-rec:disabled{opacity:.35;cursor:default}
+@keyframes vp-rec{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.vp-player .vp-rec.on i{animation:none}}
+.vp-player-more{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px}
+.vp-player-more button{border:0;background:none;padding:4px 2px;color:var(--muted);font-size:13px;font-weight:600}
+.vp-player-more button:hover{color:var(--text)}
+.vp-player-more button.on{color:var(--accent)}
+.vp-player-more button[hidden]{display:none}
+@media (max-width:820px){.vp-kicker{display:none}}
+@media (max-width:560px){.vp-player-main{gap:8px}.vp-player .vp-play,.vp-player .vp-rec{height:46px;padding:0 16px;font-size:15px}.vp-player .vp-rec b{display:none}.vp-player .vp-skip{width:38px;height:38px}}
+"""
+
+
+def player_markup():
+    """The step bar (above the graph) and the player (under it)."""
+    return (
+        '<div class="vp-step" id="vpStep" aria-live="polite" hidden>'
+        '<div class="vp-step-top"><button type="button" class="vp-labels" id="vpLabels" aria-pressed="true" '
+        'title="show or hide each change\'s command and time">Hide details</button></div>'
+        '<div class="vp-step-bar" id="vpStepBar"></div>'
+        "</div>",
+        '<div class="vp-controls" id="vpControls"><div class="vp-player" id="vpPlayer">'
+        '<div class="vp-player-main">'
+        '<button type="button" class="vp-skip" id="vpPrev" title="previous change ([)" aria-label="Previous change">'
+        '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 5h2v14H6zM20 5v14L9 12z" fill="currentColor"/></svg></button>'
+        '<button type="button" class="vp-play" id="vpPlay"><span id="vpPlayIcon"></span><b id="vpPlayText">Play</b></button>'
+        '<button type="button" class="vp-rec" data-proxy="record" title="record the whole run as a video (V; Esc stops)"><i></i><b>Record</b></button>'
+        '<button type="button" class="vp-skip" id="vpNext" title="next change (])" aria-label="Next change">'
+        '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5v14l11-7z" fill="currentColor"/></svg></button>'
+        "</div>"
+        '<div class="vp-player-more">'
+        '<button type="button" data-proxy="follow">Follow the repository</button>'
+        '<button type="button" data-proxy="save">Save session</button>'
+        '<button type="button" data-proxy="clear">Clear</button>'
+        "</div></div></div>",
+    )
+
+
+PLAYER_JS = r"""
+// git-sim live, the player: the hosted viewer's layout for a session (see PLAYER_CSS).
+(function(){
+  const root = document.documentElement;
+  if (!root.dataset.player) return;
+  const $ = id => document.getElementById(id);
+  const chips = $('chips'), box = $('vpStep');
+  if (!chips || !box) return;
+  const session = (() => { try { return JSON.parse(($('git-sim-session') || {}).textContent || 'null'); } catch (e) { return null; } })();
+  const demo = !!(session && session.title);   // a recorded demo has steps; a live session has changes
+  const noun = demo ? 'Step' : 'Change';
+  const icon = {
+    play: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M7 4v16l13-8z" fill="currentColor"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 4h4v16H6zM14 4h4v16h-4z" fill="currentColor"/></svg>',
+  };
+  // The header says what is on screen: the session's state, and which change.
+  const head = document.createElement('div');
+  head.className = 'vp-head';
+  head.innerHTML = '<p class="vp-kicker"><i id="vpDot"></i><span id="vpKicker"></span><b id="vpName"></b></p><span class="vp-step-n" id="vpStepN"></span>';
+  const controls = $('controls');
+  if (controls) controls.after(head); else $('bar').appendChild(head);
+  $('vpPlayIcon').innerHTML = icon.play;
+
+  const labelOf = chip => { const c = chip.cloneNode(true); c.querySelectorAll('b, small').forEach(n => n.remove()); return c.textContent.trim(); };
+  const timeOf = chip => { const t = chip.querySelector('small'); return t ? t.textContent.trim() : ''; };
+  // the changes, without a live session's starting snapshot
+  const steps = () => Array.from(chips.querySelectorAll('.chip')).filter(c => c.dataset.i !== '0');
+  let paused = false;
+  const running = () => !!(window.GitSimLive && GitSimLive.playing);
+  const playing = () => running() && !paused;
+  // to a change: a run that was playing carries on from there
+  function go(k){
+    const s = steps()[k];
+    if (!s) return;
+    const wasPlaying = playing();
+    paused = false;
+    GitSimLive.stop();
+    if (wasPlaying) GitSimLive.play(+s.dataset.i); else s.click();
+    syncPlay();
+  }
+  function show(){
+    const all = steps(), cur = chips.querySelector('.chip.cur');
+    const at = all.indexOf(cur);  // -1: a live session's starting snapshot
+    box.hidden = !cur || !all.length;
+    $('vpStepN').textContent = !cur ? '' : at < 0 ? 'Watching' : noun + ' ' + (at + 1) + ' / ' + all.length;
+    $('vpStepN').hidden = !cur;
+    const bar = $('vpStepBar');
+    if (bar.children.length !== all.length) {
+      bar.innerHTML = '';
+      all.forEach((chip, k) => {
+        const seg = document.createElement('button'), label = labelOf(chip), time = timeOf(chip);
+        seg.type = 'button'; seg.title = label + (time ? '\n' + time : '');
+        seg.setAttribute('aria-label', noun + ' ' + (k + 1) + ': ' + label + (time ? ', ' + time : ''));
+        const meta = document.createElement('span'), cmd = document.createElement('span');
+        meta.className = 'seg-meta'; meta.textContent = noun + ' ' + (k + 1) + (time ? ' · ' + time : '');
+        cmd.className = 'seg-cmd'; cmd.textContent = label;
+        seg.append(meta, cmd);
+        seg.addEventListener('click', () => go(k));
+        bar.appendChild(seg);
+      });
+    }
+    Array.from(bar.children).forEach((seg, k) => { seg.classList.toggle('done', k < at); seg.classList.toggle('cur', k === at); });
+    // with details on, keep the change on screen in view (scrolling the row only, not the page)
+    const curSeg = bar.children[at];
+    if (curSeg && bar.classList.contains('labeled')) {
+      const sr = curSeg.getBoundingClientRect(), br = bar.getBoundingClientRect();
+      if (sr.left < br.left) bar.scrollLeft += sr.left - br.left - 8;
+      else if (sr.right > br.right) bar.scrollLeft += sr.right - br.right + 8;
+    }
+    $('vpPrev').disabled = at <= 0;
+    $('vpNext').disabled = at >= all.length - 1;
+  }
+  new MutationObserver(show).observe(chips, {childList: true, subtree: true, attributes: true, attributeFilter: ['class']});
+
+  // Details: each change's command and time in the bar, on unless the reader turned them off
+  const DETAILS = 'git-sim:step-details';
+  let details = (() => { try { return localStorage.getItem(DETAILS) !== '0'; } catch (e) { return true; } })();
+  function applyDetails(){
+    $('vpStepBar').classList.toggle('labeled', details);
+    $('vpLabels').setAttribute('aria-pressed', details ? 'true' : 'false');
+    $('vpLabels').textContent = details ? 'Hide details' : 'Show details';
+  }
+  $('vpLabels').addEventListener('click', () => {
+    details = !details;
+    try { localStorage.setItem(DETAILS, details ? '1' : '0'); } catch (e) {}
+    applyDetails(); show();
+  });
+  applyDetails();
+
+  // Play / Pause: the run from the change on screen; Pause holds it where it is.
+  function syncPlay(){
+    const on = playing();
+    $('vpPlayIcon').innerHTML = on ? icon.pause : icon.play;
+    $('vpPlayText').textContent = on ? 'Pause' : 'Play';
+  }
+  function togglePlay(){
+    if (paused && running()) { paused = false; GitSimViewer.resumeOnce(); }
+    else if (running()) { paused = true; GitSimViewer.pauseOnce(); }
+    else { paused = false; GitSimLive.play(); }
+    syncPlay();
+  }
+  $('vpPlay').addEventListener('click', togglePlay);
+  // a click doesn't leave the focus on a player button, so space stays the viewer's
+  document.querySelectorAll('.vp-player button').forEach(b => b.addEventListener('mousedown', e => e.preventDefault()));
+  $('vpPrev').addEventListener('click', () => { const all = steps(); go(all.indexOf(chips.querySelector('.chip.cur')) - 1); });
+  $('vpNext').addEventListener('click', () => { const all = steps(); go(all.indexOf(chips.querySelector('.chip.cur')) + 1); });
+  // the strip's own tools, as the player's buttons
+  document.querySelectorAll('.vp-player [data-proxy]').forEach(b => {
+    const real = $(b.dataset.proxy);
+    if (!real) { b.hidden = true; return; }
+    b.addEventListener('click', () => real.click());
+    const sync = () => {
+      b.classList.toggle('on', real.classList.contains('on') || real.classList.contains('rec'));
+      b.disabled = real.disabled; b.hidden = !!real.hidden;
+      if (b.classList.contains('vp-rec')) b.querySelector('b').textContent = real.classList.contains('rec') ? 'Stop' : 'Record';
+    };
+    new MutationObserver(sync).observe(real, {attributes: true}); sync();
+  });
+  // the dot and the words in the header: the session's state, as the strip says it
+  const status = $('liveStatus'), dot = $('liveDot');
+  function syncStatus(){
+    syncPlay();
+    $('vpKicker').textContent = demo ? 'Workflow' : session ? 'Recorded' : 'Live';
+    $('vpName').textContent = demo ? session.title : status ? status.textContent.replace(/^(live|recorded)\s*·\s*/, '') : '';
+    $('vpDot').className = dot ? dot.className : '';
+  }
+  if (status) new MutationObserver(syncStatus).observe(status, {childList: true, characterData: true, subtree: true});
+  if (dot) new MutationObserver(syncStatus).observe(dot, {attributes: true});
+  const replayBtn = $('replay');
+  if (replayBtn) new MutationObserver(syncPlay).observe(replayBtn, {attributes: true});
+  syncStatus();
+  show();
+
+  // A graph never draws its commits bigger than about 60px across: stretched to
+  // the full width, a short chain of commits reads as zoomed in. (Graphs are drawn
+  // at different scales, so the cap comes from a commit's own size.) It is also
+  // kept short enough that the player under it stays on screen, though a commit
+  // never gets under about 34px across. As on initialcommit.com's viewer page.
+  const stage = $('stage');
+  function cap(){
+    const svg = stage.querySelector('svg');
+    const vb = svg && svg.viewBox && svg.viewBox.baseVal;
+    const commit = svg && svg.querySelector('[data-role="commit"]');
+    if (!vb || !vb.width || !commit) { if (svg) svg.style.maxWidth = ''; return; }
+    const size = commit.getBBox().width;
+    if (!size) return;
+    let width = vb.width * 60 / size;
+    const room = window.innerHeight - (stage.getBoundingClientRect().top + window.scrollY) - 150;
+    if (room > 120) width = Math.max(Math.min(width, room * vb.width / vb.height), vb.width * 34 / size);
+    svg.style.maxWidth = Math.round(width) + 'px';
+    // the viewer's own fit may give the graph a height for the full width: hold it to this width's
+    svg.style.maxHeight = Math.round(width * vb.height / vb.width) + 'px';
+    svg.style.marginLeft = svg.style.marginRight = 'auto';
+  }
+  new MutationObserver(cap).observe(stage, {childList: true});
+  window.addEventListener('resize', cap);
+  if (window.ResizeObserver) new ResizeObserver(() => cap()).observe(stage);
+  cap();
+})();
+"""
+
+
 def strip_markup(fragment_attr=""):
     """The strip of recorded changes and its controls. Shared verbatim by the
     standalone page and the hosted page (through export_viewer_assets, which
@@ -463,12 +714,24 @@ EMPTY_NOTE = (
     "([ and ] move between changes).</p>"
 )
 
+PLAYER_EMPTY_NOTE = (
+    '<p id="empty"><b>Watching the repository.</b> Commit, branch, stage a file, switch, reset, rebase: '
+    "each change plays here as it happens, and stays in the bar above so you can step back through it "
+    "([ and ] move between changes).</p>"
+)
+
 
 def build_live_html(
-    *, theme=None, repo="", viewer_url=DEFAULT_VIEWER_URL, key="", session=None
+    *, theme=None, repo="", viewer_url=DEFAULT_VIEWER_URL, key="", session=None, player=True
 ):
     """The page ``git-sim live`` serves and the VS Code extension embeds.
     ``key`` is the session key the page presents to the local server.
+
+    With ``player`` (the default) the page has the hosted viewer's layout: the
+    session's state and the change on screen in the header, a bar of the
+    changes above the graph, and a player under it, with the strip hidden but
+    still driving it. Without it (the VS Code views, which are narrow) the
+    strip shows instead.
 
     With ``session`` ({"repo", "started", "items": [{index, label, detail,
     time, svg}]}) the page is a recorded session instead: every graph inline,
@@ -501,24 +764,29 @@ def build_live_html(
             "%Y-%m-%d %H:%M", time.localtime(session.get("started") or time.time())
         )
         title = f"git-sim live session — {html.escape(repo or session.get('repo', ''))} — {when}"
+    above, below = player_markup() if player else ("", "")
+    player_attr = ' data-player="1"' if player else ""
     return (
         "<!DOCTYPE html>\n"
         f'<html lang="en" data-theme="{theme.name}" data-live="1" data-live-local="1"'
-        f'{recorded_attr}><head><meta charset="utf-8">'
+        f'{recorded_attr}{player_attr}><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         f"<title>{title}</title>"
         '<meta name="generator" content="git-sim">'
-        f"<style>{VIEWER_CSS}{LIVE_CSS}</style></head><body>"
+        f"<style>{VIEWER_CSS}{LIVE_CSS}{PLAYER_CSS if player else ''}</style></head><body>"
         f"{header_markup()}"
         f"{strip_markup()}"
+        f"{above}"
         '<div id="stage"></div>'
-        f"{EMPTY_NOTE if session is None else ''}"
+        f"{below}"
+        f"{(PLAYER_EMPTY_NOTE if player else EMPTY_NOTE) if session is None else ''}"
         '<div id="tip"></div>'
         '<div id="toast"></div>'
         f'<script type="application/json" id="git-sim-meta">{meta}</script>'
         f"{recorded}"
         f"<script>{VIEWER_JS}</script>"
         f"<script>{LIVE_JS}</script>"
+        f"{'<script>' + PLAYER_JS + '</script>' if player else ''}"
         "</body></html>"
     )
 

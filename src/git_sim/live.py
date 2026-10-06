@@ -953,10 +953,12 @@ def live(
         from git_sim.render.live_html import build_live_html
 
         root = _repo_root(os.path.abspath(repo))
+        # for the VS Code views, which are narrow: the compact strip, not the player
         page = build_live_html(
             theme=theme_for(settings.light),
             repo=os.path.basename(root) if root else "",
             viewer_url=settings.viewer_url,
+            player=False,
         )
         # As UTF-8 bytes: the page has characters a Windows console pipe's
         # default code page cannot write.
