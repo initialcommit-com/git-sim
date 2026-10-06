@@ -102,17 +102,21 @@ The page is also saved locally, and `--open-in local` (or `git_sim_open_in=local
 
 ## Live mode
 
+To enter git-sim's live mode, browse into any local Git repo and run:
+
 ```console
 $ git-sim live
 ```
 
 [![git-sim live, a session of six commands with the merge selected](docs/img/live.png)](docs/live.md)
 
-Live mode follows your repo as it changes and plays each change on the graph the moment it happens, whoever made it: you in a terminal, your editor's Git buttons, or an AI agent. It names the command that ran (`git commit`, `git rebase`, `git stash`, and so on) and keeps every change in a strip above the graph, so you can step back to any of them, replay the whole session, save it as a single HTML page, or record it as a video.
+Run git-sim live to record every Git operation executed by you or your AI agents in real-time as an visual, interactive session you can replay and share.
 
-The page opens in the git-sim viewer, and the graphs come from a small server git-sim runs on your machine, reachable only from `127.0.0.1` and with a session key. Its address travels in the link's `#fragment`, so nothing about your repo reaches the site, and `--open-in local` serves the page from git-sim itself instead.
+It names, animates, and tracks every change to your Git repo, so you can step back through any of them, replay the whole session, save it as a single HTML page, or download it as a video.
 
-Useful options: `-C <path>` for another repo, `--no-zones` for the commit graph alone, `--interval <seconds>` to check more or less often, and `--replay` to reopen the last session. See [docs/live.md](docs/live.md) for the rest.
+The page opens in the git-sim viewer which connects to a lightweight web server `git-sim live` runs on your machine, reachable only from `127.0.0.1` and with a session key. Its address travels in the link's `#fragment`, so nothing about your repo leaves your machine, and `--open-in local` serves the page from git-sim itself instead if you prefer not to invoke initialcommit.com's git-sim viewer and run purely local.
+
+Useful options: `-C <path>` for another repo, `--no-zones` for the commit graph alone (no working directory table), `--interval <seconds>` to check more or less often, and `--replay` to reopen the last session.
 
 ## Pre-flight
 
