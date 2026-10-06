@@ -88,17 +88,17 @@ No Git repo handy to visualize? The bundled [git-dummy](https://github.com/initi
 
 ## Your Git repo data stays on your machine
 
-The interactive page opens in the git-sim viewer at initialcommit.com, but the graph travels compressed in the link's `#fragment`, which browsers never send to a server, so nothing about your code reaches the site.
+By default, when you run git-sim it generates an interactive Git graph which opens in the [git-sim viewer at initialcommit.com](https://initialcommit.com/tools/git-sim/viewer), but the graph's data is compressed and placed in the link's `#fragment`, which browsers never send to a server, so nothing about your code leaves your local machine.
 
-For example, `git-sim branch feature` opens a link like this one, shortened here (the full link is about 2,000 characters):
+For example, `git-sim branch feature` opens a link like the one below, shortened here (the full link is about 2,000 characters):
 
 ```text
 https://initialcommit.com/tools/git-sim/viewer#d=eNrNWdtu2zgQ_RVBxaK7QEzzTqmIDbjJusWifdkC-06LlK1GlgxJiZP9-h3q4lvcpqqdrf1gmJSGnDOXw-H4unyYe4kZ-...&t=git+branch+feature&m=light&p=git-sim-branch_10-04-26_19-02-11.html
 ```
 
-Everything after the `#` stays in your browser: `d` is the compressed graph, `t` the command, `m` the color theme, and `p` the name of the copy saved on your machine. All the site receives is `https://initialcommit.com/tools/git-sim/viewer`.
+Everything after the `#` stays in your local browser: `d` is the compressed graph, `t` is the command, `m` is the color theme, and `p` is the name of the graph file saved on your machine. All the site receives is `https://initialcommit.com/tools/git-sim/viewer`.
 
-The page is also saved locally, and `--open-in local` (or `git_sim_open_in=local`) opens that file instead, offline.
+The page is also saved locally, and `--open-in local` (or `git_sim_open_in=local`) opens that file offline instead, without invoking the git-sim viewer on initialcommit.com at all.
 
 ## Live mode
 
