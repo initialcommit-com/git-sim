@@ -44,7 +44,9 @@ $ git-sim reset --hard HEAD^
 $ git-sim rebase main
 ```
 
-git-sim opens an interactive graph of exactly how the command would change your repo, and changes nothing. Run `git-sim -h` to list every command.
+git-sim creates visual dry-runs. It generates an interactive graph of exactly how any Git command will impact your repo, without actually running the real Git command so nothing changes in your repo.
+
+Run `git-sim -h` to list every command.
 
 **3. Watch your repo live:** a graph that follows your repo as it changes, and records every command you (or your agents) run
 
@@ -58,21 +60,31 @@ $ git-sim live
 $ code --install-extension initialcommit.git-sim
 ```
 
-Or search for **git-sim** in the Extensions view (the Marketplace in VS Code, Open VSX in Cursor, Windsurf, and VSCodium). For Vim, Neovim, and Emacs, see [integrations/](integrations/). For Jupyter, `gh`, and GitHub Actions, see [docs/integrations.md](docs/integrations.md).
+Or search for **git-sim** in the Extensions view (the Marketplace in VS Code, Open VSX in Cursor, Windsurf, and VSCodium).
 
-**5. Check a risky command before it runs:** how risky it is, and what you could lose
+**5. Vim, Neovim, and Emacs integration**
+
+For Vim, Neovim, and Emacs, see [integrations/](integrations/).
+
+**6. Jupyter integration**
+
+For Jupyter, `gh`, and GitHub Actions, see [docs/integrations.md](docs/integrations.md).
+
+**7. Check a risky command before it runs:** how risky it is, and what you could lose
 
 ```console
 $ git-sim preflight reset --hard HEAD~1
 ```
 
-**6. Connect your AI agents:** add the pre-flight hook and MCP server to the agents on your machine
+**8. Connect your AI agents:** add the pre-flight hook and MCP server to the agents on your machine
 
 ```console
 $ git-sim wire-agents
 ```
 
-No repo handy? The bundled [git-dummy](https://github.com/initialcommit-com/git-dummy) makes one: `git-dummy --scenario orders` builds the sample repo the graphs in this README are drawn on (`--scenario orders-behind` for fetch and pull), so you can run the same commands in it.
+No Git repo handy to visualize? The bundled [git-dummy](https://github.com/initialcommit-com/git-dummy) creates Git repos in whatever structure you want to play with:
+
+`git-dummy --scenario orders` builds the sample repo the graphs in this README are drawn on (`--scenario orders-behind` for fetch and pull), so you can run the same commands in it.
 
 ## Your Git repo data stays on your machine
 
