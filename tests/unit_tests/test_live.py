@@ -433,6 +433,28 @@ def test_the_live_assets_are_exported_for_the_site(tmp_path):
     ).strip() == LIVE_JS.strip()
 
 
+def test_the_shown_path_leaves_out_the_home_folder_and_names(monkeypatch, tmp_path):
+    from git_sim import live
+
+    home = tmp_path / "home" / "ada"
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    monkeypatch.setenv("USERNAME", "ada")
+    monkeypatch.setenv("USER", "ada")
+    monkeypatch.setenv("COMPUTERNAME", "ADAS-LAPTOP")
+    monkeypatch.setattr(live.socket, "gethostname", lambda: "adas-laptop.local")
+    assert live.display_path(str(home / "code" / "app")) == "~/code/app"
+    assert live.display_path(str(home)) == "~"
+    # elsewhere: someone's home folder, and the names wherever they appear
+    shown = live.display_path(str(tmp_path / "work" / "ada-notes" / "adas-laptop-backup"))
+    assert "ada" not in shown.lower() and shown.endswith("/work/…-notes/…-backup")
+    if os.name == "nt":
+        assert live.display_path(r"\\SERVER\share\app") == "//…/share/app"
+        assert live.display_path(r"C:\Users\bo\app") == "C:/Users/…/app"
+    else:
+        assert live.display_path("/home/bo/app") == "/home/…/app"
+
+
 def test_the_local_server_requires_the_key_and_answers_the_site(repo, tmp_path):
     import urllib.error
     import urllib.request
@@ -490,6 +512,11 @@ def test_the_local_server_requires_the_key_and_answers_the_site(repo, tmp_path):
                 'attachment; filename="repo-live-'
             )
             assert b'id="git-sim-session"' in r.read()
+        # the name and path the hosted page shows: refused without the key
+        with pytest.raises(urllib.error.HTTPError):
+            urllib.request.urlopen(base + "/info")
+        with urllib.request.urlopen(base + f"/info?k={session.key}") as r:
+            assert json.loads(r.read()) == {"repo": "repo", "where": session.where}
     finally:
         session.stop.set()
         server.shutdown()

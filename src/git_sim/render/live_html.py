@@ -97,9 +97,12 @@ LIVE_JS = r"""
   const items = [];            // {index, label, detail, time, page?, svg?}
   const svgs = new Map();      // index -> svg text
   let current = -1, follow = true, replaying = false, connected = false, recording = false;
+  let downNote = '';  // what the status says while disconnected, after Watch tried to reconnect
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const clock = t => { const d = new Date(t * 1000); return d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'}); };
   const repoName = () => (recorded && recorded.repo) || info.repo || '';
+  // the repository's path, home folder and account names already left out by git-sim
+  const whereOf = () => (recorded && recorded.where) || info.where || '';
   const fileStem = () => ((repoName() || 'git-sim') + '-live-' + new Date((recorded && recorded.started ? recorded.started * 1000 : Date.now())).toISOString().slice(0, 19).replace(/[:T]/g, '-')).replace(/[^a-z0-9-]+/gi, '-');
   // A failure while drawing is said in the strip rather than lost in a console.
   let lastError = '';
@@ -115,11 +118,16 @@ LIVE_JS = r"""
     else if (recording) status.textContent = recording;
     else if (recorded && recorded.title) status.textContent = `${recorded.title} · ${changes} step${changes === 1 ? '' : 's'}`;
     else if (recorded) status.textContent = `recorded${repo} · ${changes} change${changes === 1 ? '' : 's'}` + (recorded.started ? ' · ' + new Date(recorded.started * 1000).toLocaleString([], {dateStyle: 'medium', timeStyle: 'short'}) : '');
-    else if (!connected) status.textContent = 'disconnected' + repo;
+    else if (!connected) status.textContent = (downNote || 'disconnected') + repo;
     else if (replaying) status.textContent = `replaying ${current} / ${changes}`;
     else if (follow) status.textContent = 'live' + repo;
     else status.textContent = `paused at ${current} of ${changes}` + repo;
-    followBtn.classList.toggle('on', follow && !recorded);
+    // the state in one word, and where, for the player's header
+    status.dataset.state = recorded ? '' : !connected ? 'disconnected' : replaying ? 'replaying' : follow ? 'watching' : 'paused';
+    status.dataset.where = whereOf();
+    // lit only while it really is watching: not when git-sim live is gone
+    followBtn.classList.toggle('on', follow && !recorded && connected);
+    followBtn.title = !recorded && !connected ? 'reconnect to git-sim live and jump to each change as it happens (L)' : 'jump to each change as it happens (L)';
     replayBtn.classList.toggle('on', replaying);
     const busy = !!recording;
     replayBtn.disabled = busy || items.filter(i => i.index !== 0).length < (recorded ? 1 : 2);
@@ -229,6 +237,8 @@ LIVE_JS = r"""
     get playing(){ return replaying; },
   };
   followBtn.addEventListener('click', () => {
+    // disconnected: try git-sim live again now, rather than waiting for the next retry
+    if (!connected && !recorded && window.GitSimLiveReconnect) { follow = true; window.GitSimLiveReconnect(); setStatus(); return; }
     follow = !follow; replaying = false;
     if (follow && items.length) show(items[items.length - 1].index, false);
     setStatus();
@@ -420,19 +430,58 @@ LIVE_JS = r"""
     status.textContent = 'not connected: run git-sim live';
     if (saveBtn) saveBtn.hidden = true;
   } else {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
-    fetch(api('/history'), {signal: controller.signal})
-      .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-      .then(items => { clearTimeout(timer); handle({type: 'history', items}); connect(); })
-      .catch(() => { clearTimeout(timer); unreachable(); });
-    let source = null;
-    function connect(){
-      source = new EventSource(api('/events'));
-      source.onopen = () => { connected = true; setStatus(); };
-      source.onmessage = e => { try { handle(JSON.parse(e.data)); } catch (err) {} };
-      source.onerror = () => { connected = false; setStatus(); };  // EventSource reconnects on its own
+    let source = null, dropped = false;
+    // The history, and then the stream of changes. After git-sim live was
+    // stopped and started again (on the same port and key: it keeps them per
+    // repository), the history is a new session's: the page starts over from it.
+    function load(fresh){
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 6000);
+      return fetch(api('/history'), {signal: controller.signal})
+        .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+        .then(list => {
+          clearTimeout(timer);
+          if (fresh) {
+            items.length = 0; chips.innerHTML = ''; svgs.clear(); current = -1;
+            replaying = false; follow = true; lastError = '';
+            const empty = $('empty'); if (empty) empty.remove();
+          }
+          handle({type: 'history', items: list});
+          const last = items[items.length - 1];
+          if (fresh && last) show(last.index, false);
+          // the repository's name and path (the hosted page has neither in it)
+          fetch(api('/info')).then(r => r.ok ? r.json() : null).then(i => {
+            if (i) { info.repo = i.repo || info.repo; info.where = i.where || info.where; setStatus(); }
+          }).catch(() => {});
+          return true;
+        })
+        .catch(() => { clearTimeout(timer); return false; });
     }
+    function connect(){
+      if (source) source.close();
+      source = new EventSource(api('/events'));
+      source.onopen = () => {
+        connected = true; downNote = ''; setStatus();
+        // back after a drop: catch up on the session (a new one if git-sim live restarted)
+        if (dropped) { dropped = false; load(true); }
+      };
+      source.onmessage = e => { try { handle(JSON.parse(e.data)); } catch (err) {} };
+      // EventSource retries on its own (every 1.5s, the server's "retry")
+      source.onerror = () => { if (connected) dropped = true; connected = false; setStatus(); };
+    }
+    // Watch, clicked while disconnected: try now
+    window.GitSimLiveReconnect = () => {
+      status.textContent = 'reconnecting';
+      load(true).then(ok => {
+        if (ok) { dropped = false; downNote = ''; connect(); return; }
+        // the page keeps trying on its own, and catches up once it's back
+        downNote = 'not running: start git-sim live again';
+        unreachable();
+        if (!source) { dropped = true; connect(); }
+      });
+    };
+    // not running yet: keep trying in the background, and load the history once it is
+    load(false).then(ok => { if (ok) connect(); else { unreachable(); dropped = true; connect(); } });
   }
   setStatus();
 })();
@@ -457,6 +506,8 @@ html[data-player] #controls{display:none!important}
 .vp-kicker i.on{background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.18)}
 .vp-kicker i.off,.vp-kicker i.rec{background:#ef4444}
 .vp-step-n{flex:none;padding:7px 13px;border-radius:999px;background:var(--accent);color:var(--bg);font:800 12px/1 var(--font);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.vp-step-n[data-state="paused"]{background:transparent;color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.vp-step-n[data-state="disconnected"]{background:var(--muted);color:var(--bg)}
 .vp-step{max-width:1240px;margin:0 auto;padding:20px 18px 0}
 .vp-step[hidden]{display:none}
 .vp-step-top{display:flex;justify-content:flex-end;margin:0 0 12px}
@@ -495,13 +546,19 @@ html[data-player] #controls{display:none!important}
 .vp-player .vp-rec:disabled{opacity:.35;cursor:default}
 @keyframes vp-rec{50%{opacity:.45}}
 @media (prefers-reduced-motion:reduce){.vp-player .vp-rec.on i{animation:none}}
-.vp-player-more{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px}
-.vp-player-more button{border:0;background:none;padding:4px 2px;color:var(--muted);font-size:13px;font-weight:600}
-.vp-player-more button:hover{color:var(--text)}
-.vp-player-more button.on{color:var(--accent)}
-.vp-player-more button[hidden]{display:none}
+.vp-player-main{flex-wrap:wrap;justify-content:center}
+.vp-player .vp-tool{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px 0 14px;border-radius:999px;border:1.5px solid var(--rule);background:var(--panel);color:var(--text);font-size:14px;font-weight:600;white-space:nowrap;transition:border-color .15s,color .15s,background .15s}
+.vp-player .vp-tool svg{flex:none}
+.vp-player .vp-tool:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.vp-player .vp-tool.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel));color:var(--accent)}
+.vp-player .vp-tool:disabled{opacity:.35;cursor:default}
+.vp-player .vp-tool[hidden]{display:none}
+.vp-player .vp-sep{width:1.5px;height:28px;background:var(--rule)}
+.vp-player-main:not(:has(.vp-tool:not([hidden]))) .vp-sep{display:none}
 @media (max-width:820px){.vp-kicker{display:none}}
-@media (max-width:560px){.vp-player-main{gap:8px}.vp-player .vp-play,.vp-player .vp-rec{height:46px;padding:0 16px;font-size:15px}.vp-player .vp-rec b{display:none}.vp-player .vp-skip{width:38px;height:38px}}
+@media (max-width:1100px){.vp-player .vp-tool b{display:none}.vp-player .vp-tool{width:44px;padding:0;justify-content:center}}
+@media (max-width:560px){.vp-player-main{gap:8px}.vp-player .vp-sep{display:none}.vp-player .vp-tool{width:38px;height:38px}.vp-player .vp-play,.vp-player .vp-rec{height:46px;padding:0 16px;font-size:15px}.vp-player .vp-rec b{display:none}.vp-player .vp-skip{width:38px;height:38px}}
+@media (max-width:440px){.vp-player-main{gap:5px}.vp-player .vp-skip,.vp-player .vp-tool{width:34px;height:34px}.vp-player .vp-play{padding:0 14px 0 12px;gap:6px}.vp-player .vp-rec{padding:0 14px}}
 """
 
 
@@ -521,11 +578,16 @@ def player_markup():
         '<button type="button" class="vp-rec" data-proxy="record" title="record the whole run as a video (V; Esc stops)"><i></i><b>Record</b></button>'
         '<button type="button" class="vp-skip" id="vpNext" title="next change (])" aria-label="Next change">'
         '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5v14l11-7z" fill="currentColor"/></svg></button>'
-        "</div>"
-        '<div class="vp-player-more">'
-        '<button type="button" data-proxy="follow">Follow the repository</button>'
-        '<button type="button" data-proxy="save">Save session</button>'
-        '<button type="button" data-proxy="clear">Clear</button>'
+        '<span class="vp-sep" aria-hidden="true"></span>'
+        '<button type="button" class="vp-tool" data-proxy="follow" aria-label="Watch the repo">'
+        '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5C6.5 5 2.7 9.4 1.5 12c1.2 2.6 5 7 10.5 7s9.3-4.4 10.5-7C21.3 9.4 17.5 5 12 5zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9zm0-2.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" fill="currentColor"/></svg>'
+        "<b>Watch the repo</b></button>"
+        '<button type="button" class="vp-tool" data-proxy="save" aria-label="Save session">'
+        '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M11 3h2v9.2l3.3-3.3 1.4 1.4L12 16l-5.7-5.7 1.4-1.4 3.3 3.3zM4 18h16v2H4z" fill="currentColor"/></svg>'
+        "<b>Save session</b></button>"
+        '<button type="button" class="vp-tool" data-proxy="clear" aria-label="Clear">'
+        '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4zM6 9h12l-1 12H7zm4 2v8h1.5v-8zm2.5 0v8H14v-8z" fill="currentColor"/></svg>'
+        "<b>Clear</b></button>"
         "</div></div></div>",
     )
 
@@ -570,13 +632,28 @@ PLAYER_JS = r"""
     if (wasPlaying) GitSimLive.play(+s.dataset.i); else s.click();
     syncPlay();
   }
+  // The pill: a live session's state (watching, paused, disconnected), or a
+  // recorded one's change on screen
+  const STATES = {watching: 'Watching', paused: 'Paused', disconnected: 'Disconnected', replaying: 'Replaying'};
+  function pill(){
+    const n = $('vpStepN');
+    if (!session) {
+      const st = $('liveStatus');
+      let s = (st && st.dataset.state) || '';
+      if (s === 'replaying' && paused) s = 'paused';
+      n.textContent = STATES[s] || ''; n.dataset.state = s; n.hidden = !STATES[s];
+      return;
+    }
+    const all = steps(), cur = chips.querySelector('.chip.cur'), at = all.indexOf(cur);
+    n.textContent = !cur ? '' : at < 0 ? 'Watching' : noun + ' ' + (at + 1) + ' / ' + all.length;
+    n.hidden = !cur;
+  }
   function show(){
     const all = steps(), cur = chips.querySelector('.chip.cur');
     const at = all.indexOf(cur);  // -1: a live session's starting snapshot
     // the bar keeps its room from the start, so the first change doesn't push the graph down
     box.hidden = false;
-    $('vpStepN').textContent = !cur ? '' : at < 0 ? 'Watching' : noun + ' ' + (at + 1) + ' / ' + all.length;
-    $('vpStepN').hidden = !cur;
+    pill();
     const bar = $('vpStepBar');
     if (bar.dataset.n !== String(all.length)) {
       bar.dataset.n = all.length;
@@ -626,6 +703,7 @@ PLAYER_JS = r"""
     const on = playing();
     $('vpPlayIcon').innerHTML = on ? icon.pause : icon.play;
     $('vpPlayText').textContent = on ? 'Pause' : 'Play';
+    pill();
   }
   function togglePlay(){
     if (paused && running()) { paused = false; GitSimViewer.resumeOnce(); }
@@ -646,19 +724,24 @@ PLAYER_JS = r"""
     const sync = () => {
       b.classList.toggle('on', real.classList.contains('on') || real.classList.contains('rec'));
       b.disabled = real.disabled; b.hidden = !!real.hidden;
+      if (b.classList.contains('vp-tool') && real.title) b.title = real.title;
       if (b.classList.contains('vp-rec')) b.querySelector('b').textContent = real.classList.contains('rec') ? 'Stop' : 'Record';
     };
     new MutationObserver(sync).observe(real, {attributes: true}); sync();
   });
   // the dot and the words in the header: the session's state, as the strip says it
   const status = $('liveStatus'), dot = $('liveDot');
+  // a long path keeps its start and its last two folders
+  const shorten = p => { const parts = p.split('/'); return p.length > 56 && parts.length > 4 ? parts[0] + '/…/' + parts.slice(-2).join('/') : p; };
   function syncStatus(){
-    syncPlay();
+    syncPlay(); pill();
     $('vpKicker').textContent = demo ? 'Workflow' : session ? 'Recorded' : 'Live';
-    $('vpName').textContent = demo ? session.title : status ? status.textContent.replace(/^(live|recorded)\s*·\s*/, '') : '';
+    const where = (!session && status && status.dataset.where) || '';
+    $('vpName').textContent = demo ? session.title : where ? shorten(where) : status ? status.textContent.replace(/^(live|recorded)\s*·\s*/, '') : '';
+    $('vpName').title = where;
     $('vpDot').className = dot ? dot.className : '';
   }
-  if (status) new MutationObserver(syncStatus).observe(status, {childList: true, characterData: true, subtree: true});
+  if (status) new MutationObserver(syncStatus).observe(status, {childList: true, characterData: true, subtree: true, attributes: true});
   if (dot) new MutationObserver(syncStatus).observe(dot, {attributes: true});
   const replayBtn = $('replay');
   if (replayBtn) new MutationObserver(syncPlay).observe(replayBtn, {attributes: true});
@@ -704,7 +787,7 @@ def strip_markup(fragment_attr=""):
         '<div id="chips"></div>'
         '<div class="tools">'
         '<button id="replay" title="play every recorded change in order (R)"><span class="ico">&#8635;</span><span class="txt">Replay all</span></button>'
-        '<button id="follow" class="on" title="jump to each change as it happens (L)"><span class="ico">&#9679;</span><span class="txt">Follow</span></button>'
+        '<button id="follow" class="on" title="jump to each change as it happens (L)"><span class="ico">&#9679;</span><span class="txt">Watch</span></button>'
         '<button id="save" title="save the whole session as one page: every change, this strip, nothing to install (S)"><span class="ico">&#8681;</span><span class="txt">Save session</span></button>'
         '<button id="record" title="record the replay as a video to post (V; Esc stops)"><span class="ico">&#9210;</span><span class="txt">Record video</span></button>'
         '<button id="clear" title="forget the recorded changes and start from the current state"><span class="ico">&#10005;</span><span class="txt">Clear</span></button>'
@@ -726,10 +809,18 @@ PLAYER_EMPTY_NOTE = (
 
 
 def build_live_html(
-    *, theme=None, repo="", viewer_url=DEFAULT_VIEWER_URL, key="", session=None, player=True
+    *,
+    theme=None,
+    repo="",
+    where="",
+    viewer_url=DEFAULT_VIEWER_URL,
+    key="",
+    session=None,
+    player=True,
 ):
     """The page ``git-sim live`` serves and the VS Code extension embeds.
-    ``key`` is the session key the page presents to the local server.
+    ``key`` is the session key the page presents to the local server, and
+    ``where`` the repository's path as the header shows it (live.display_path).
 
     With ``player`` (the default) the page has the hosted viewer's layout: the
     session's state and the change on screen in the header, a bar of the
@@ -749,6 +840,7 @@ def build_live_html(
             "title": "git-sim live",
             "theme": theme.name,
             "repo": repo,
+            "where": where,
             "viewer_url": viewer_url,
             "live": True,
             "key": key,

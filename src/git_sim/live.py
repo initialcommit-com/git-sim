@@ -34,6 +34,7 @@ import queue
 import re
 import secrets
 import shutil
+import socket
 import stat
 import subprocess
 import sys
@@ -54,6 +55,39 @@ HISTORY_LIMIT = 300
 REFLOG_DEPTH = 40
 SESSION_PAGE = "session.html"  # the whole session as one page, kept current
 SESSION_META = "session.json"  # what a listing of sessions needs
+
+
+def display_path(path: str) -> str:
+    """The repository's path as the page shows it, which may end up in a
+    screenshot or a shared session: the home folder as ~, and the account's
+    and the machine's names left out wherever else they appear."""
+    full = os.path.abspath(path)
+    shown = full
+    try:
+        rel = os.path.relpath(full, os.path.expanduser("~"))
+        if not rel.startswith("..") and not os.path.isabs(rel):
+            shown = "~" if rel == "." else "~/" + rel
+    except ValueError:  # on another drive
+        pass
+    shown = shown.replace("\\", "/")
+    # a network share's machine (//host/share), and anyone's home folder
+    shown = re.sub(r"^//[^/]+", "//…", shown)
+    shown = re.sub(r"(?i)(^|/)(home|users)/[^/]+", r"\1\2/…", shown)
+    names = set()
+    for get in (
+        lambda: os.environ.get("USERNAME"),
+        lambda: os.environ.get("USER"),
+        lambda: os.environ.get("COMPUTERNAME"),
+        lambda: socket.gethostname().split(".")[0],
+    ):
+        try:
+            names.add(get() or "")
+        except Exception:
+            pass
+    for name in sorted(names, key=len, reverse=True):
+        if len(name) >= 3:
+            shown = re.sub(re.escape(name), "…", shown, flags=re.IGNORECASE)
+    return shown
 
 
 # ------------------------------------------------------------------ reading
@@ -437,6 +471,7 @@ class LiveSession:
     ):
         self.repo = repo
         self.name = os.path.basename(repo)
+        self.where = display_path(repo)
         self.out_dir = out_dir
         self.zones = zones
         self.poll = poll
@@ -471,9 +506,10 @@ class LiveSession:
             item.pop("page", None)
             item["svg"] = svg
             items.append(item)
+        # (a saved session may be shared: its path is the one the page shows)
         return {
             "repo": self.name,
-            "path": self.repo,
+            "where": self.where,
             "started": self.started,
             "items": items,
         }
@@ -750,6 +786,7 @@ class LiveHandler(http.server.BaseHTTPRequestHandler):
             page = build_live_html(
                 theme=theme_for(settings.light),
                 repo=session.name,
+                where=session.where,
                 viewer_url=settings.viewer_url,
                 key=session.key,
             )
@@ -762,6 +799,10 @@ class LiveHandler(http.server.BaseHTTPRequestHandler):
             return self._send(
                 json.dumps(session.history()).encode("utf-8"), "application/json"
             )
+        if path == "/info":
+            # what the hosted page names the session by
+            info = {"repo": session.name, "where": session.where}
+            return self._send(json.dumps(info).encode("utf-8"), "application/json")
         if path == "/" + SESSION_PAGE:
             # The whole session as one page, offered as a download.
             body = session.session_page().encode("utf-8")
@@ -829,11 +870,51 @@ class LiveHandler(http.server.BaseHTTPRequestHandler):
 
 class LiveServer(http.server.ThreadingHTTPServer):
     daemon_threads = True
-    allow_reuse_address = True
+    # On Windows, SO_REUSEADDR lets a second server bind a port another one is
+    # listening on; the port is taken exclusively there instead, so a second
+    # git-sim live finds it busy (and picks another) rather than sharing it.
+    allow_reuse_address = os.name != "nt"
 
     def __init__(self, address, session: LiveSession):
         super().__init__(address, LiveHandler)
         self.session = session
+
+    def server_bind(self):
+        if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
+SERVER_FILE = "server.json"
+
+
+def _serve(session: "LiveSession", port: int, sessions_dir: str) -> LiveServer:
+    """The live server, on the port and with the key this repository's last
+    one had (kept in <sessions dir>/server.json), so a page still open from
+    before git-sim live was restarted reconnects by itself. With --port, that
+    port; without, any free one when the last is taken."""
+    saved = {}
+    try:
+        with open(os.path.join(sessions_dir, SERVER_FILE), encoding="utf-8") as f:
+            saved = json.load(f)
+    except (OSError, ValueError):
+        pass
+    server = None
+    if not port and saved.get("port") and saved.get("key"):
+        try:
+            server = LiveServer(("127.0.0.1", int(saved["port"])), session)
+            session.key = saved["key"]
+        except (OSError, ValueError):
+            server = None
+    if server is None:
+        server = LiveServer(("127.0.0.1", port), session)
+    try:
+        os.makedirs(sessions_dir, exist_ok=True)
+        with open(os.path.join(sessions_dir, SERVER_FILE), "w", encoding="utf-8") as f:
+            json.dump({"port": server.server_address[1], "key": session.key}, f)
+    except OSError:
+        pass
+    return server
 
 
 # ----------------------------------------------------------------- sessions
@@ -1086,7 +1167,7 @@ def live(
     # Browser mode: draw the current state, serve, watch.
     _say(f"git-sim live: drawing {root} ...")
     session.start()
-    server = LiveServer(("127.0.0.1", port), session)
+    server = _serve(session, port, _sessions_dir(root))
     base = f"http://127.0.0.1:{server.server_address[1]}"
     local_url = f"{base}/#k={session.key}"
     watcher = threading.Thread(
