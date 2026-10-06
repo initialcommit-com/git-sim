@@ -328,6 +328,23 @@ def test_changes_without_a_reflog_entry_are_read_from_the_diff():
         describe_change(state(refs=base, status=(" M a.txt",)), state(refs=base))[0]
         == "git restore a.txt"
     )
+    # a push: the remote-tracking branch's own reflog says so
+    local = {"refs/heads/main": "2", "refs/remotes/origin/main": "1"}
+    pushed = {**local, "refs/remotes/origin/main": "2"}
+    assert (
+        describe_change(state(refs=local), state(refs=pushed, remote_updates={"origin/main": "update by push"}))[0]
+        == "git push origin main"
+    )
+    # ... also for a branch pushed the first time
+    assert (
+        describe_change(state(refs=local), state(refs={**local, "refs/remotes/origin/topic": "2"}, remote_updates={"origin/topic": "update by push"}))[0]
+        == "git push origin topic"
+    )
+    # the same move made by a fetch is a fetch
+    assert (
+        describe_change(state(refs=local), state(refs=pushed, remote_updates={"origin/main": "fetch: fast-forward"}))[0]
+        == "git fetch"
+    )
     # an untracked file that's gone was deleted, not restored
     assert (
         describe_change(state(refs=base, status=("?? new.txt",)), state(refs=base))[0]

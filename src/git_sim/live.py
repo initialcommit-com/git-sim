@@ -81,6 +81,9 @@ class RepoState:
     status: Tuple[str, ...] = ()  # git status --porcelain lines
     stash: Tuple[str, ...] = ()  # stash shas, newest first
     reflog: Tuple[str, ...] = ()  # HEAD reflog subjects, newest first
+    # remote-tracking branch -> its latest reflog subject ("update by push",
+    # "fetch: fast-forward"), read only for the ones that changed
+    remote_updates: Dict[str, str] = field(default_factory=dict)
 
     @property
     def signature(self) -> str:
@@ -160,6 +163,16 @@ def read_state(repo: str) -> RepoState:
         ).splitlines()
     )
     return state
+
+
+def read_remote_updates(repo: str, names: List[str]) -> Dict[str, str]:
+    """Each remote-tracking branch's latest reflog subject: "update by push"
+    after a push, "fetch: ..." or "pull: ..." after a fetch. Empty for one
+    without a reflog (core.logAllRefUpdates off)."""
+    return {
+        n: _git(repo, "reflog", "show", "-n1", "--format=%gs", f"refs/remotes/{n}", ok_codes=(0, 128)).strip()
+        for n in names
+    }
 
 
 # --------------------------------------------------------------- describing
@@ -279,7 +292,19 @@ def describe_change(before: RepoState, after: RepoState) -> Tuple[str, str]:
         return f"git tag {added[0]}", f"tagged {', '.join(added)}"
     if gone:
         return f"git tag -d {gone[0]}", f"deleted tag {', '.join(gone)}"
-    if before.remotes() != after.remotes():
+    br, ar = before.remotes(), after.remotes()
+    if br != ar:
+        # A push leaves nothing in HEAD's reflog either, but the
+        # remote-tracking branch's own reflog says "update by push" (read
+        # into remote_updates when they change: read_remote_updates).
+        changed = sorted(n for n in ar if br.get(n) != ar[n])
+        if changed and all(after.remote_updates.get(n, "").startswith("update by push") for n in changed):
+            remote, _, branch = changed[0].partition("/")
+            more = f" +{len(changed) - 1}" if len(changed) > 1 else ""
+            return (
+                f"git push {remote} {branch}{more}",
+                "pushed: " + ", ".join(changed),
+            )
         return "git fetch", "remote-tracking branches changed"
 
     be, ae = before.entries(), after.entries()
@@ -603,6 +628,10 @@ class LiveSession:
         if self.state is not None and current.signature == self.state.signature:
             return None
         previous_state, self.state = self.state, current
+        # what moved the remote-tracking branches: a push or a fetch
+        if previous_state and previous_state.remotes() != current.remotes():
+            was, now = previous_state.remotes(), current.remotes()
+            current.remote_updates = read_remote_updates(self.repo, [n for n in now if was.get(n) != now[n]])
         label, detail = (
             describe_change(previous_state, current)
             if previous_state
