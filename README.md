@@ -3,7 +3,7 @@
 
 <a href="https://initialcommit.com/tools/git-sim"><img src="https://initialcommit.com/img/initialcommit/logo.png" alt="Initial Commit" height="20"></a> [![GitHub license](https://img.shields.io/github/license/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/blob/main/LICENSE) [![GitHub tag](https://img.shields.io/github/v/release/initialcommit-com/git-sim)](https://img.shields.io/github/v/release/initialcommit-com/git-sim) [![Downloads](https://static.pepy.tech/badge/git-sim)](https://pepy.tech/project/git-sim) [![Contributors](https://img.shields.io/github/contributors/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/graphs/contributors)
 
-**The visual layer for Git in your own repos:** simulate, record, replay, audit, and share entire Git workflows, wherever you or your agents run them.
+**The visual layer for Git in your own repos:** simulate, record, replay, audit, and share individual Git commands or entire Git workflows, wherever you or your agents run them.
 
 - **Simulate any Git command before it runs**, as an interactive graph you can step through. In the terminal, on the web, and in VS Code, Jupyter, Vim / Neovim / Emacs, and GitHub pull requests.
 - **Track your repo live** while recording every Git operation, human or agentic, as a visual command sequence you can replay. On the web and in VS Code.
