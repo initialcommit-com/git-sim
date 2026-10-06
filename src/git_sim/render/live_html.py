@@ -468,8 +468,10 @@ html[data-player] #controls{display:none!important}
 .vp-step-bar button.cur{background:var(--accent);transform:scaleY(1.4)}
 .vp-step-bar button:hover{background:var(--accent)}
 .vp-step-bar:not(.labeled) button>span{display:none}
-.vp-step-bar.labeled{gap:8px;overflow-x:auto;scrollbar-width:thin;padding:2px 2px 6px}
-.vp-step-bar.labeled button{flex:1 0 auto;display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:112px;max-width:260px;height:auto;padding:7px 11px 9px;border-radius:10px;border-top:4px solid var(--rule);background:var(--panel);text-align:left;transform:none}
+.vp-step-bar.labeled{gap:8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;padding:2px 2px 6px}
+.vp-step-bar.labeled button{flex:1 0 auto;display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:112px;max-width:260px;height:auto;padding:7px 11px 9px;border-radius:10px;border-top:4px solid var(--rule);background:var(--panel);text-align:left;transform:none;transition:background .2s}
+.vp-step-wait{flex:1;display:flex;align-items:center;height:52px;padding:0 14px;border:1.5px dashed var(--rule);border-radius:10px;color:var(--muted);font:600 12px/1 var(--font)}
+.vp-step-bar:not(.labeled) .vp-step-wait{height:8px;padding:0;border:0;border-radius:999px;background:var(--rule);font-size:0}
 .vp-step-bar.labeled button.done{background:var(--panel);border-top-color:color-mix(in srgb,var(--accent) 55%,var(--rule))}
 .vp-step-bar.labeled button.cur{background:color-mix(in srgb,var(--accent) 12%,var(--panel));border-top-color:var(--accent);box-shadow:0 0 0 1.5px var(--accent) inset;transform:none}
 .vp-step-bar.labeled button:hover{background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
@@ -506,7 +508,7 @@ html[data-player] #controls{display:none!important}
 def player_markup():
     """The step bar (above the graph) and the player (under it)."""
     return (
-        '<div class="vp-step" id="vpStep" aria-live="polite" hidden>'
+        '<div class="vp-step" id="vpStep" aria-live="polite">'
         '<div class="vp-step-top"><button type="button" class="vp-labels" id="vpLabels" aria-pressed="true" '
         'title="show or hide each change\'s command and time">Hide details</button></div>'
         '<div class="vp-step-bar" id="vpStepBar"></div>'
@@ -571,12 +573,14 @@ PLAYER_JS = r"""
   function show(){
     const all = steps(), cur = chips.querySelector('.chip.cur');
     const at = all.indexOf(cur);  // -1: a live session's starting snapshot
-    box.hidden = !cur || !all.length;
+    // the bar keeps its room from the start, so the first change doesn't push the graph down
+    box.hidden = false;
     $('vpStepN').textContent = !cur ? '' : at < 0 ? 'Watching' : noun + ' ' + (at + 1) + ' / ' + all.length;
     $('vpStepN').hidden = !cur;
     const bar = $('vpStepBar');
-    if (bar.children.length !== all.length) {
-      bar.innerHTML = '';
+    if (bar.dataset.n !== String(all.length)) {
+      bar.dataset.n = all.length;
+      bar.innerHTML = all.length ? '' : '<span class="vp-step-wait">Waiting for the first change</span>';
       all.forEach((chip, k) => {
         const seg = document.createElement('button'), label = labelOf(chip), time = timeOf(chip);
         seg.type = 'button'; seg.title = label + (time ? '\n' + time : '');

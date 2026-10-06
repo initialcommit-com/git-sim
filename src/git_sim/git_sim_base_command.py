@@ -2139,12 +2139,26 @@ class GitSimBaseCommand(m.MovingCameraScene):
         self.toFadeOut.add(refRec)
         self.prevRef = refRec
 
-    def trim_path(self, path, max_chars=33):
+    def zone_max_chars(self):
+        """How many characters of a path fit a table column: 33 in the full
+        table, whose outer columns are 8 wide; in a compact table (live
+        drawings: compact_zones), as many as the 5-wide columns hold, with a
+        little room either side, measured in the table's own font."""
+        if not getattr(self, "compact_zones", False):
+            return 33
+        if not hasattr(self, "_zone_char_width"):
+            self._zone_char_width = self.zone_text("M" * 20).width / 20
+        return max(12, int((5.0 - 0.6) / self._zone_char_width))
+
+    def trim_path(self, path, max_chars=None):
         """A path short enough for a table cell that still reads as a path:
         the file name is kept whole and directories are dropped from the
         middle (a/b/c/d/name.ext -> a/.../d/name.ext), keeping the first and
         as many of the last as fit. Only a file name that is too long by
-        itself loses the middle of its stem (VeryLong...Name.ext)."""
+        itself loses the middle of its stem (VeryLong...Name.ext). Without
+        max_chars, as many as fit the table's column (zone_max_chars)."""
+        if max_chars is None:
+            max_chars = self.zone_max_chars()
         if len(path) <= max_chars:
             return path
         parts = path.replace("\\", "/").split("/")

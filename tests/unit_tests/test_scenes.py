@@ -274,7 +274,8 @@ def test_zone_rows_keep_arrows_straight_and_off_other_text():
 def test_trim_path_keeps_the_file_name_readable():
     from git_sim.git_sim_base_command import GitSimBaseCommand
 
-    trim = lambda p: GitSimBaseCommand.trim_path(None, p)
+    # the full table's width (a scene works it out from its table: zone_max_chars)
+    trim = lambda p: GitSimBaseCommand.trim_path(None, p, 33)
     assert trim("short/name.txt") == "short/name.txt"
     assert (
         trim("src/main/resources/static/js/learn/lesson.js")
