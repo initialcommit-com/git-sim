@@ -118,6 +118,14 @@ class RepoState:
     # remote-tracking branch -> its latest reflog subject ("update by push",
     # "fetch: fast-forward"), read only for the ones that changed
     remote_updates: Dict[str, str] = field(default_factory=dict)
+    # a merge, rebase, cherry-pick or revert stopped on a conflict: "merge c1",
+    # "rebase", "cherry-pick 1a2b3c4", "revert 1a2b3c4"; "" when none is
+    operation: str = ""
+    # when FETCH_HEAD was last written: every fetch (and pull) writes it, a
+    # push never does
+    fetched: int = 0
+    annotated: Tuple[str, ...] = ()  # tags that are tag objects (git tag -a)
+    renames: Dict[str, str] = field(default_factory=dict)  # staged: new path -> old
 
     @property
     def signature(self) -> str:
@@ -129,6 +137,7 @@ class RepoState:
         for line in sorted(self.status):
             h.update(line.encode("utf-8", "replace"))
         h.update("|".join(self.stash).encode())
+        h.update(self.operation.encode())
         return h.hexdigest()
 
     def heads(self) -> Dict[str, str]:
@@ -146,10 +155,12 @@ class RepoState:
         }
 
     def remotes(self) -> Dict[str, str]:
+        # without origin/HEAD: it points at another remote-tracking branch, so
+        # it moves with that one, but its reflog never says what moved it
         return {
             n[len("refs/remotes/") :]: s
             for n, s in self.refs.items()
-            if n.startswith("refs/remotes/")
+            if n.startswith("refs/remotes/") and not n.endswith("/HEAD")
         }
 
     def entries(self) -> Dict[str, Tuple[str, str]]:
@@ -161,8 +172,52 @@ class RepoState:
             path = line[3:]
             if " -> " in path:
                 path = path.split(" -> ", 1)[1]
+            # git rm --cached lists a path twice (D, and ??): the index's line counts
+            if path in out and line[:2] == "??":
+                continue
             out[path] = (line[0], line[1])
         return out
+
+    def untracked(self) -> List[str]:
+        return [line[3:] for line in self.status if line[:2] == "??"]
+
+
+def _conflicted(xy: Tuple[str, str]) -> bool:
+    """A path the index holds more than one side of: both modified, added,
+    deleted (UU, AA, DD, AU, ...)."""
+    return "U" in xy or xy in (("A", "A"), ("D", "D"))
+
+
+def _read_file(path: str) -> str:
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
+def read_operation(git_dir: str) -> str:
+    """The command a conflict stopped part way, from the files it leaves in
+    the .git folder until it's finished or aborted."""
+    if not git_dir:
+        return ""
+    if os.path.isdir(os.path.join(git_dir, "rebase-merge")) or os.path.isdir(
+        os.path.join(git_dir, "rebase-apply")
+    ):
+        return "rebase"
+    if _read_file(os.path.join(git_dir, "MERGE_HEAD")):
+        # "Merge branch 'c1'", "Merge remote-tracking branch 'origin/main'"
+        msg = _read_file(os.path.join(git_dir, "MERGE_MSG")).splitlines()
+        m = re.match(r"^Merge (?:remote-tracking )?(?:branch|tag|commit) '([^']+)'", msg[0] if msg else "")
+        return "merge" + (f" {m.group(1)}" if m else "")
+    for name, kind in (("CHERRY_PICK_HEAD", "cherry-pick"), ("REVERT_HEAD", "revert")):
+        sha = _read_file(os.path.join(git_dir, name))
+        if sha:
+            return f"{kind} {sha[:7]}"
+    return ""
+
+
+_GIT_DIRS: Dict[str, str] = {}  # repository -> its .git folder, asked once
 
 
 def read_state(repo: str) -> RepoState:
@@ -172,18 +227,34 @@ def read_state(repo: str) -> RepoState:
         repo, "rev-parse", "-q", "--verify", "HEAD", ok_codes=(0, 1)
     ).strip()
     refs = {}
+    annotated = []
     for line in _git(
-        repo, "for-each-ref", "--format=%(refname)%00%(objectname)"
+        repo, "for-each-ref", "--format=%(refname)%00%(objectname)%00%(objecttype)"
     ).splitlines():
-        if "\x00" in line:
-            name, sha = line.split("\x00", 1)
-            refs[name] = sha
+        parts = line.split("\x00")
+        if len(parts) >= 2:
+            refs[parts[0]] = parts[1]
+            if len(parts) > 2 and parts[2] == "tag" and parts[0].startswith("refs/tags/"):
+                annotated.append(parts[0][len("refs/tags/") :])
     state.refs = refs
+    state.annotated = tuple(annotated)
     state.status = tuple(
         line
         for line in _git(repo, "status", "--porcelain").splitlines()
         if line.strip()
     )
+    for line in state.status:
+        if line[:1] == "R" and " -> " in line[3:]:
+            old, new = line[3:].split(" -> ", 1)
+            state.renames[new] = old
+    git_dir = _GIT_DIRS.get(repo) or _git(repo, "rev-parse", "--absolute-git-dir").strip()
+    if git_dir:
+        _GIT_DIRS[repo] = git_dir
+    state.operation = read_operation(git_dir)
+    try:
+        state.fetched = os.stat(os.path.join(git_dir, "FETCH_HEAD")).st_mtime_ns if git_dir else 0
+    except OSError:
+        state.fetched = 0
     state.stash = tuple(_git(repo, "stash", "list", "--format=%H").split())
     state.reflog = tuple(
         _git(
@@ -226,7 +297,7 @@ REFLOG_RULES = (
     (re.compile(r"^reset: moving to (.+)$"), lambda m: f"git reset {m.group(1)}"),
     (
         re.compile(r"^checkout: moving from \S+ to (.+)$"),
-        lambda m: f"git checkout {m.group(1)}",
+        lambda m: f"git switch {m.group(1)}",
     ),
     (re.compile(r"^merge (.+?):"), lambda m: f"git merge {m.group(1)}"),
     (re.compile(r"^rebase"), lambda m: "git rebase"),
@@ -235,16 +306,25 @@ REFLOG_RULES = (
     (re.compile(r"^pull"), lambda m: "git pull"),
     (re.compile(r"^am:"), lambda m: "git am"),
     (re.compile(r"^clone"), lambda m: "git clone"),
+    (
+        re.compile(r"^Branch: renamed \S+ to refs/heads/(.+)$"),
+        lambda m: f"git branch -m {m.group(1)}",
+    ),
     (re.compile(r"^Branch: renamed"), lambda m: "git branch -m"),
     (re.compile(r"^(\S+?):"), lambda m: f"git {m.group(1)}"),
 )
+
+
+def _short_shas(text: str) -> str:
+    """A full commit id, as Git prints one: its first 7 characters."""
+    return re.sub(r"\b[0-9a-f]{40}\b", lambda m: m.group(0)[:7], text)
 
 
 def command_from_reflog(subject: str) -> str:
     for pattern, make in REFLOG_RULES:
         m = pattern.match(subject)
         if m:
-            return make(m)
+            return _short_shas(make(m))
     return "git " + subject.split()[0] if subject.split() else "git"
 
 
@@ -254,109 +334,243 @@ def _names(paths: List[str], limit: int = 2) -> str:
     return " ".join(shown) + (f" +{more}" if more > 0 else "")
 
 
+def _more(items: list) -> str:
+    return f" +{len(items) - 1}" if len(items) > 1 else ""
+
+
 def _reset_mode(before: RepoState, after: RepoState) -> str:
     """" --soft", "" (mixed, the default) or " --hard", from what a reset
-    that moved HEAD left behind in the index and the working tree."""
+    left behind in the index and the working tree."""
     was = before.entries()
     new = {p: s for p, s in after.entries().items() if was.get(p) != s}
     if any(i not in " ?" for i, _ in new.values()):
         return " --soft"
-    if any(w not in " ?" for _, w in new.values()):
+    # mixed: what was undone is in the working tree, as edits, or untracked
+    # (files the undone commits added)
+    if any(w != " " for _, w in new.values()):
         return ""
     return " --hard"
 
 
-def describe_change(before: RepoState, after: RepoState) -> Tuple[str, str]:
+def _rebase_label(entries: List[str], before: RepoState, after: RepoState) -> str:
+    """git rebase <upstream> from its "rebase (start): checkout <upstream>"
+    entry; without one, the end of a rebase a conflict stopped."""
+    for e in reversed(entries):  # oldest first
+        m = re.match(r"^rebase(?: \(-i\)| -i)? \(start\): checkout (.+)$", e)
+        if m:
+            return _short_shas(f"git rebase {m.group(1)}")
+    if any(re.match(r"^rebase(?: -i)? \(abort\)", e) for e in entries):
+        return "git rebase --abort"
+    if before.operation == "rebase":
+        return "git rebase --continue"
+    return "git rebase"
+
+
+def _git_ok(repo: str, *args: str) -> bool:
+    proc = subprocess.run(
+        ["git", "-C", repo, *args],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+    )
+    return proc.returncode == 0
+
+
+def _stash_applied(repo: str, before: RepoState, after: RepoState) -> bool:
+    """Whether the files that just changed are the newest stash's, as it has
+    them: git stash apply (or a pop that stopped on a conflict)."""
+    be, ae = before.entries(), after.entries()
+    newly = [p for p, xy in ae.items() if be.get(p) != xy]
+    if not newly:
+        return False
+    listed = _git(
+        repo, "stash", "show", "--name-only", "--include-untracked", "stash@{0}"
+    ) or _git(repo, "stash", "show", "--name-only", "stash@{0}")
+    files = {f for f in listed.splitlines() if f}
+    if not files or not set(newly) <= files:
+        return False
+    tracked = [p for p in newly if ae[p][0] != "?"]
+    # the same content, not just the same files edited again
+    return not tracked or _git_ok(repo, "diff", "--quiet", "stash@{0}", "--", *tracked)
+
+
+def describe_change(
+    before: RepoState, after: RepoState, repo: Optional[str] = None
+) -> Tuple[str, str]:
     """(label, detail): the command that most likely produced ``after`` from
-    ``before``, short enough for a title, and a longer line for a tooltip."""
+    ``before``, short enough for a title, and a longer line for a tooltip.
+    With ``repo``, a few names that the states alone can't settle are asked
+    of Git: git branch -d or -D, git stash apply, git remote remove."""
     entries = new_reflog_entries(before.reflog, after.reflog)
+    be, ae = before.entries(), after.entries()
+    stuck = sorted(p for p, xy in ae.items() if _conflicted(xy))
+
+    # A merge, cherry-pick or revert that stopped on a conflict has made no
+    # commit, so the reflog says nothing; the files it leaves in .git do.
+    op_was, op_now = before.operation, after.operation
+    if op_now and op_now != op_was and op_now != "rebase":
+        fetched = after.fetched != before.fetched
+        label = "git pull" if op_now.startswith("merge") and fetched else f"git {op_now}"
+        return label, "stopped on a conflict" + (f": {', '.join(stuck)}" if stuck else "")
+    # ...and given up: put back as it was, with no commit made
+    if op_was and not op_now and op_was != "rebase" and all(
+        e.startswith("reset:") for e in entries
+    ):
+        return f"git {op_was.split()[0]} --abort", f"{op_was}: aborted"
+
     # git stash resets the working tree to HEAD, which HEAD's reflog records
     # as "reset: moving to HEAD": the new stash entry says what really ran.
-    if len(after.stash) > len(before.stash) and all(
-        e == "reset: moving to HEAD" for e in entries
-    ):
-        return "git stash", "stashed the working directory and index"
+    stashed = len(after.stash) > len(before.stash)
+    stash_label = "git stash" + (
+        " -u" if any(p not in ae for p in before.untracked()) else ""
+    )
+    if stashed and all(e == "reset: moving to HEAD" for e in entries):
+        return stash_label, "stashed the working directory and index"
     if entries:
         if any(e.startswith("rebase") for e in entries):
-            label = "git rebase"
+            label = _rebase_label(entries, before, after)
+        elif any(e.startswith("pull") for e in entries):
+            rebased = any(
+                re.search(r"--rebase|\((?:start|finish|pick)\)", e)
+                for e in entries
+                if e.startswith("pull")
+            )
+            label = "git pull --rebase" if rebased else "git pull"
         else:
             label = command_from_reflog(entries[0])
-        # checkout -b: the branch moved to did not exist before
-        m = re.match(r"^git checkout (.+)$", label)
-        if m and m.group(1) in after.heads() and m.group(1) not in before.heads():
-            label = f"git checkout -b {m.group(1)}"
+        # git switch and git checkout log the same entry; it's named as the
+        # newer git switch: -c for a branch that did not exist before (but not
+        # one made from the remote-tracking branch of the same name), --detach
+        # for a commit that isn't a branch
+        m = re.match(r"^git switch (.+)$", label)
+        if m:
+            name = m.group(1)
+            if not after.head:
+                label = f"git switch --detach {name}"
+            elif name in after.heads() and name not in before.heads():
+                dwim = any(
+                    r.split("/", 1)[-1] == name and sha == after.heads()[name]
+                    for r, sha in after.remotes().items()
+                )
+                label = f"git switch {name}" if dwim else f"git switch -c {name}"
         # reset: the reflog doesn't say which kind; where the undone changes
         # went does (staged: --soft, in the working tree: mixed, gone: --hard)
         m = re.match(r"^git reset (.+)$", label)
-        if m and before.head_sha != after.head_sha:
-            label = f"git reset{_reset_mode(before, after)} {m.group(1)}"
-        return label, entries[0]
+        if m and (before.head_sha != after.head_sha or before.status != after.status):
+            target = "" if m.group(1) == "HEAD" else " " + m.group(1)
+            label = f"git reset{_reset_mode(before, after)}{target}"
+        # commit -a: edits that weren't staged went into the commit too
+        if label == "git commit" and any(
+            x == " " and y in "MD" and p not in ae for p, (x, y) in be.items()
+        ):
+            label = "git commit -a"
+        detail = entries[0]
+        if stuck and op_now:
+            detail = "stopped on a conflict: " + ", ".join(stuck)
+        return label, detail
 
-    if len(after.stash) > len(before.stash):
-        return "git stash", "stashed the working directory and index"
+    if stashed:
+        return stash_label, "stashed the working directory and index"
     if len(after.stash) < len(before.stash):
         gained = len(after.status) > len(before.status)
         return ("git stash pop" if gained else "git stash drop"), "stash list shrank"
+    if repo and after.stash and after.stash == before.stash and _stash_applied(repo, before, after):
+        return "git stash apply", "applied stash@{0}"
 
     bh, ah = before.heads(), after.heads()
     added = sorted(set(ah) - set(bh))
     gone = sorted(set(bh) - set(ah))
     if added and gone and len(added) == len(gone) == 1 and bh[gone[0]] == ah[added[0]]:
-        return f"git branch -m {added[0]}", f"renamed {gone[0]} to {added[0]}"
+        return f"git branch -m {gone[0]} {added[0]}", f"renamed {gone[0]} to {added[0]}"
     if added:
         return (
-            f"git branch {added[0]}"
-            + (f" +{len(added) - 1}" if len(added) > 1 else ""),
+            f"git branch {added[0]}" + _more(added),
             f"created {', '.join(added)}",
         )
     if gone:
+        # -d refuses a branch whose commits nothing else has: that took -D
+        flag = "-d"
+        if repo and _git(repo, "rev-list", "-n1", bh[gone[0]], "--not", "HEAD", "--remotes"):
+            flag = "-D"
         return (
-            f"git branch -d {gone[0]}"
-            + (f" +{len(gone) - 1}" if len(gone) > 1 else ""),
+            f"git branch {flag} {gone[0]}" + _more(gone),
             f"deleted {', '.join(gone)}",
         )
     moved = sorted(n for n in ah if n in bh and ah[n] != bh[n])
     if moved:
-        return f"git branch -f {moved[0]}", f"{', '.join(moved)} now at another commit"
+        sha = ah[moved[0]]
+        to = next(
+            (n for n, s in sorted(ah.items()) if s == sha and n != moved[0]),
+            None,
+        ) or next((n for n, s in sorted(after.tags().items()) if s == sha), None)
+        if to is None and sha != after.head_sha:
+            to = sha[:7]
+        return (
+            f"git branch -f {moved[0]}" + (f" {to}" if to else ""),
+            f"{', '.join(moved)} now at another commit",
+        )
 
     bt, at = before.tags(), after.tags()
     added = sorted(set(at) - set(bt))
     gone = sorted(set(bt) - set(at))
     if added:
-        return f"git tag {added[0]}", f"tagged {', '.join(added)}"
+        flag = "-a " if added[0] in after.annotated else ""
+        return f"git tag {flag}{added[0]}", f"tagged {', '.join(added)}"
     if gone:
         return f"git tag -d {gone[0]}", f"deleted tag {', '.join(gone)}"
     br, ar = before.remotes(), after.remotes()
     if br != ar:
-        # A push leaves nothing in HEAD's reflog either, but the
-        # remote-tracking branch's own reflog says "update by push" (read
-        # into remote_updates when they change: read_remote_updates).
         changed = sorted(n for n in ar if br.get(n) != ar[n])
-        if changed and all(after.remote_updates.get(n, "").startswith("update by push") for n in changed):
+        deleted = sorted(n for n in br if n not in ar)
+        # Every fetch (and pull) writes FETCH_HEAD, and its remote-tracking
+        # branches' reflogs say "fetch: ..."; a push never writes FETCH_HEAD,
+        # and says "update by push" (read into remote_updates when they change).
+        if after.fetched != before.fetched or any(
+            re.match(r"^(fetch|pull)\b", after.remote_updates.get(n, "")) for n in changed
+        ):
+            return "git fetch" + (" --prune" if deleted and not changed else ""), (
+                "remote-tracking branches changed"
+            )
+        if deleted and not changed and repo:
+            gone_remotes = sorted({n.split("/", 1)[0] for n in deleted})
+            configured = set(_git(repo, "remote").split())
+            if not any(r in configured for r in gone_remotes):
+                return f"git remote remove {gone_remotes[0]}", "removed " + ", ".join(gone_remotes)
+        if changed:
             remote, _, branch = changed[0].partition("/")
-            more = f" +{len(changed) - 1}" if len(changed) > 1 else ""
             return (
-                f"git push {remote} {branch}{more}",
+                f"git push {remote} {branch}" + _more(changed),
                 "pushed: " + ", ".join(changed),
             )
-        return "git fetch", "remote-tracking branches changed"
+        remote, _, branch = deleted[0].partition("/")
+        return (
+            f"git push {remote} --delete {branch}" + _more(deleted),
+            "deleted on the remote: " + ", ".join(deleted),
+        )
 
-    be, ae = before.entries(), after.entries()
+    # a path that was in conflict counts as not staged: git add resolves it
+    def was_unstaged(p: str) -> bool:
+        xy = be.get(p, (" ", " "))
+        return xy[0] in " ?!" or _conflicted(xy)
+
     staged_now = [
         p
         for p, (x, y) in ae.items()
-        if x not in " ?!" and be.get(p, (" ", " "))[0] in " ?!"
+        if x not in " ?!" and not _conflicted((x, y)) and was_unstaged(p)
     ]
     if staged_now:
         kinds = {ae[p][0] for p in staged_now}
         if kinds == {"D"}:
+            cached = " --cached" if all(p in after.untracked() for p in staged_now) else ""
             return (
-                f"git rm {_names(staged_now)}",
+                f"git rm{cached} {_names(staged_now)}",
                 "removed from the index: " + ", ".join(staged_now),
             )
         if kinds == {"R"}:
-            return f"git mv {_names(staged_now)}", "renamed in the index: " + ", ".join(
-                staged_now
+            new = staged_now[0]
+            old = after.renames.get(new, "")
+            moved_names = f"{os.path.basename(old)} {os.path.basename(new)}" if old else _names([new])
+            return f"git mv {moved_names}" + _more(staged_now), "renamed in the index: " + ", ".join(
+                f"{after.renames.get(p, '?')} -> {p}" for p in staged_now
             )
         return f"git add {_names(staged_now)}", "staged: " + ", ".join(staged_now)
     unstaged = [
@@ -364,6 +578,10 @@ def describe_change(before: RepoState, after: RepoState) -> Tuple[str, str]:
         for p, (x, y) in be.items()
         if x not in " ?!" and ae.get(p, (" ", " "))[0] in " ?!"
     ]
+    # a file git rm --cached took out of the index, added back
+    readded = [p for p in unstaged if be[p][0] == "D" and p in before.untracked() and p not in ae]
+    if readded and len(readded) == len(unstaged):
+        return f"git add {_names(readded)}", "staged again: " + ", ".join(readded)
     if unstaged:
         return f"git restore --staged {_names(unstaged)}", "unstaged: " + ", ".join(
             unstaged
@@ -400,7 +618,7 @@ def describe_change(before: RepoState, after: RepoState) -> Tuple[str, str]:
     if reverted:
         return f"git restore {_names(reverted)}", "clean again: " + ", ".join(reverted)
     if before.head != after.head or before.head_sha != after.head_sha:
-        return "git checkout", "HEAD moved"
+        return "git switch", "HEAD moved"
     return "repository changed", "something changed that has no name here"
 
 
@@ -669,7 +887,7 @@ class LiveSession:
             was, now = previous_state.remotes(), current.remotes()
             current.remote_updates = read_remote_updates(self.repo, [n for n in now if was.get(n) != now[n]])
         label, detail = (
-            describe_change(previous_state, current)
+            describe_change(previous_state, current, self.repo)
             if previous_state
             else ("git-sim live", "")
         )

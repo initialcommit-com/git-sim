@@ -222,7 +222,7 @@ def test_reflog_subjects_become_commands():
         "commit (amend): add a thing": "git commit --amend",
         "commit (initial): root": "git commit",
         "reset: moving to HEAD~1": "git reset HEAD~1",
-        "checkout: moving from main to feature": "git checkout feature",
+        "checkout: moving from main to feature": "git switch feature",
         "merge feature: Merge made by the 'ort' strategy.": "git merge feature",
         "rebase (finish): returning to refs/heads/feature": "git rebase",
         "cherry-pick: fix": "git cherry-pick",
@@ -232,17 +232,23 @@ def test_reflog_subjects_become_commands():
     }
     for subject, expected in cases.items():
         before = state(refs=heads, reflog=("commit: earlier",))
-        after = state(refs=heads, reflog=(subject, "commit: earlier"))
+        after = state(head="refs/heads/main", refs=heads, reflog=(subject, "commit: earlier"))
         assert describe_change(before, after)[0] == expected, subject
 
 
-def test_checkout_of_a_branch_that_did_not_exist_is_checkout_b():
-    before = state(refs={"refs/heads/main": "1"}, reflog=("commit: a",))
+def test_a_checkout_is_named_as_the_git_switch_that_does_the_same():
+    # (git switch and git checkout log the same entry)
+    before = state(head="refs/heads/main", refs={"refs/heads/main": "1"}, reflog=("commit: a",))
     after = state(
+        head="refs/heads/topic",
         refs={"refs/heads/main": "1", "refs/heads/topic": "1"},
         reflog=("checkout: moving from main to topic", "commit: a"),
     )
-    assert describe_change(before, after)[0] == "git checkout -b topic"
+    # a branch that did not exist before: -c
+    assert describe_change(before, after)[0] == "git switch -c topic"
+    # a commit that isn't a branch: --detach
+    detached = state(refs=before.refs, reflog=("checkout: moving from main to HEAD~1", "commit: a"))
+    assert describe_change(before, detached)[0] == "git switch --detach HEAD~1"
 
 
 def test_a_stash_is_named_a_stash_not_the_reset_it_logs():
@@ -276,7 +282,7 @@ def test_changes_without_a_reflog_entry_are_read_from_the_diff():
             state(refs={**base, "refs/heads/old": "2"}),
             state(refs={**base, "refs/heads/new": "2"}),
         )[0]
-        == "git branch -m new"
+        == "git branch -m old new"
     )
     assert (
         describe_change(state(refs=base), state(refs={**base, "refs/tags/v1": "1"}))[0]
@@ -284,7 +290,8 @@ def test_changes_without_a_reflog_entry_are_read_from_the_diff():
     )
     assert (
         describe_change(
-            state(refs=base), state(refs={**base, "refs/remotes/origin/main": "1"})
+            state(refs=base),
+            state(refs={**base, "refs/remotes/origin/main": "1"}, fetched=1),
         )[0]
         == "git fetch"
     )
@@ -353,6 +360,145 @@ def test_changes_without_a_reflog_entry_are_read_from_the_diff():
     assert (
         describe_change(state(refs=base), state(refs=base))[0] == "repository changed"
     )
+
+
+def test_pushes_and_fetches_are_told_apart():
+    local = {"refs/heads/main": "2", "refs/remotes/origin/main": "1"}
+    pushed = {**local, "refs/remotes/origin/main": "2"}
+    # origin/HEAD follows origin/main, but nothing in its reflog says push:
+    # it's left out, or every push after a fetch would be named a fetch
+    with_head = {**local, "refs/remotes/origin/HEAD": "1"}
+    assert (
+        describe_change(
+            state(refs=with_head),
+            state(refs={**pushed, "refs/remotes/origin/HEAD": "2"}, remote_updates={"origin/main": "update by push"}),
+        )[0]
+        == "git push origin main"
+    )
+    # a fetch writes FETCH_HEAD; a push never does
+    assert describe_change(state(refs=local, fetched=1), state(refs=pushed, fetched=1))[0] == "git push origin main"
+    assert describe_change(state(refs=local, fetched=1), state(refs=pushed, fetched=2))[0] == "git fetch"
+    # a remote branch gone: deleted by a push, or pruned by a fetch
+    gone = {"refs/heads/main": "2"}
+    assert describe_change(state(refs=local), state(refs=gone))[0] == "git push origin --delete main"
+    assert describe_change(state(refs=local), state(refs=gone, fetched=1))[0] == "git fetch --prune"
+
+
+def test_a_conflict_names_the_command_that_stopped_on_it():
+    before = state(head_sha="1", status=())
+    stuck = dict(head_sha="1", status=("UU a.txt",))
+    assert describe_change(before, state(**stuck, operation="merge c1")) == (
+        "git merge c1",
+        "stopped on a conflict: a.txt",
+    )
+    # a merge that a pull started: FETCH_HEAD moved too
+    assert describe_change(before, state(**stuck, operation="merge main", fetched=1))[0] == "git pull"
+    assert describe_change(before, state(**stuck, operation="cherry-pick 1a2b3c4"))[0] == "git cherry-pick 1a2b3c4"
+    # resolved with git add, not "repository changed"
+    resolving = state(**stuck, operation="merge c1")
+    assert describe_change(resolving, state(head_sha="1", status=("M  a.txt",), operation="merge c1"))[0] == "git add a.txt"
+    # given up: the reset it logs is an abort
+    assert (
+        describe_change(resolving, state(head_sha="1", reflog=("reset: moving to HEAD",)))[0]
+        == "git merge --abort"
+    )
+    # a rebase names its upstream, and its end after a conflict
+    start = ("rebase (start): checkout c1",)
+    assert describe_change(before, state(head_sha="2", reflog=start, status=("UU a.txt",), operation="rebase"))[0] == "git rebase c1"
+    rebasing = state(head_sha="2", reflog=start, operation="rebase")
+    assert describe_change(rebasing, state(head_sha="3", reflog=("rebase (finish): returning to refs/heads/main",) + start))[0] == "git rebase --continue"
+    assert describe_change(rebasing, state(head_sha="1", reflog=("rebase (abort): returning to refs/heads/main",) + start))[0] == "git rebase --abort"
+
+
+def test_more_commands_are_named_as_typed():
+    base = {"refs/heads/main": "1"}
+    # commit -a: the commit took edits that weren't staged
+    assert (
+        describe_change(
+            state(refs=base, status=(" M a.txt",)), state(refs=base, reflog=("commit: x",))
+        )[0]
+        == "git commit -a"
+    )
+    # a reset that didn't move HEAD: --hard dropped the changes, mixed unstaged them
+    reflog = dict(reflog=("reset: moving to HEAD",))
+    assert describe_change(state(head_sha="1", status=(" M a.txt",)), state(head_sha="1", **reflog))[0] == "git reset --hard"
+    assert describe_change(state(head_sha="1", status=("M  a.txt",)), state(head_sha="1", status=(" M a.txt",), **reflog))[0] == "git reset"
+    # a mixed reset undoing a commit that added a file leaves it untracked
+    assert (
+        describe_change(
+            state(head_sha="2"), state(head_sha="1", status=("?? m.txt",), reflog=("reset: moving to HEAD~1",))
+        )[0]
+        == "git reset HEAD~1"
+    )
+    # git mv names both paths; git rm --cached keeps the file
+    assert describe_change(state(), state(status=("R  b.txt -> c.txt",), renames={"c.txt": "b.txt"}))[0] == "git mv b.txt c.txt"
+    cached = state(status=("D  b.txt", "?? b.txt"))
+    assert describe_change(state(), cached)[0] == "git rm --cached b.txt"
+    assert describe_change(cached, state())[0] == "git add b.txt"
+    # annotated tags, untracked files in a stash, a renamed current branch
+    assert describe_change(state(refs=base), state(refs={**base, "refs/tags/v2": "9"}, annotated=("v2",)))[0] == "git tag -a v2"
+    assert describe_change(state(status=("?? u.txt",)), state(stash=("s",)))[0] == "git stash -u"
+    assert (
+        describe_change(state(), state(reflog=("Branch: renamed refs/heads/t2 to refs/heads/t3",)))[0]
+        == "git branch -m t3"
+    )
+    # a branch git switch made from origin/x is no switch -c; a full id is shortened
+    tracked = {"refs/heads/main": "1", "refs/remotes/origin/x": "5"}
+    assert (
+        describe_change(
+            state(refs=tracked),
+            state(head="refs/heads/x", refs={**tracked, "refs/heads/x": "5"}, reflog=("checkout: moving from main to x",)),
+        )[0]
+        == "git switch x"
+    )
+    sha = "e578fd5f4cf2ed3d7f1bdf324d0c86d43f1f4239"
+    assert (
+        describe_change(state(), state(reflog=(f"checkout: moving from main to {sha}",)))[0]
+        == "git switch --detach e578fd5"
+    )
+
+
+def test_names_that_need_the_repository(repo):
+    """git branch -D, git stash apply and a stopped merge, on a real repository."""
+    def git(*a):
+        return subprocess.run(["git", "-C", str(repo), *a], check=True, capture_output=True, text=True).stdout
+
+    # -D: the branch's commits are nowhere else
+    git("branch", "spare", "feature")
+    before = read_state(str(repo))
+    git("branch", "-D", "spare")
+    # (feature is behind main: merged, so -d would have done)
+    assert describe_change(before, read_state(str(repo)), str(repo))[0] == "git branch -d spare"
+    git("switch", "-q", "-c", "lonely")
+    (repo / "lonely.txt").write_text("x\n")
+    git("add", "."); git("commit", "-q", "-m", "Lonely")
+    git("switch", "-q", "main")
+    before = read_state(str(repo))
+    git("branch", "-D", "lonely")
+    assert describe_change(before, read_state(str(repo)), str(repo))[0] == "git branch -D lonely"
+    # stash apply: the stash's own change back, not just "edited"
+    (repo / "file1.txt").write_text("stashed\n")
+    git("stash", "-q")
+    before = read_state(str(repo))
+    git("stash", "apply", "-q")
+    assert describe_change(before, read_state(str(repo)), str(repo))[0] == "git stash apply"
+    git("restore", ".")
+    before = read_state(str(repo))
+    (repo / "file1.txt").write_text("something else\n")
+    assert describe_change(before, read_state(str(repo)), str(repo))[0] == "edited file1.txt"
+    git("restore", ".")
+    # a merge that stopped on a conflict
+    git("switch", "-q", "-c", "side")
+    (repo / "file1.txt").write_text("side\n")
+    git("commit", "-qam", "Side")
+    git("switch", "-q", "main")
+    (repo / "file1.txt").write_text("main\n")
+    git("commit", "-qam", "Main")
+    before = read_state(str(repo))
+    subprocess.run(["git", "-C", str(repo), "merge", "side"], capture_output=True)
+    after = read_state(str(repo))
+    assert after.operation == "merge side"
+    assert describe_change(before, after, str(repo)) == ("git merge side", "stopped on a conflict: file1.txt")
 
 
 # ------------------------------------------------------------- a real repo

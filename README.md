@@ -120,7 +120,7 @@ The page opens in the git-sim viewer which connects to a lightweight web server 
 
 **Inside VS Code:** the extension shows the same live graph in its **Live graph** tab and sidebar view (see [docs/vscode.md](docs/vscode.md)).
 
-**How it keeps up:** live mode reads what Git reports between checks, rather than watching `.git`, and waits for the repo to settle, so a rebase or a pull shows as one change. It names each change from the reflog when it can (`git commit`, `git reset <commit>`, `git checkout -b <branch>`), and otherwise from what changed (a branch created, a file staged, a stash popped). Chrome and Edge ask once for permission to reach the local server. If a browser refuses, the page offers the local copy.
+**How it keeps up:** live mode reads what Git reports between checks, rather than watching `.git`, and waits for the repo to settle, so a rebase or a pull shows as one change. It names each change from the reflog when it can (`git commit`, `git reset <commit>`, `git switch -c <branch>`), and otherwise from what changed (a branch created, a file staged, a stash popped). Chrome and Edge ask once for permission to reach the local server. If a browser refuses, the page offers the local copy.
 
 **Useful options:**
 
