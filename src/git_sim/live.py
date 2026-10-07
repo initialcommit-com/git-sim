@@ -1110,7 +1110,8 @@ def _serve(session: "LiveSession", port: int, sessions_dir: str) -> LiveServer:
     """The live server, on the port and with the key this repository's last
     one had (kept in <sessions dir>/server.json), so a page still open from
     before git-sim live was restarted reconnects by itself. With --port, that
-    port; without, any free one when the last is taken."""
+    port (and the last key, when it's the same port); without, any free one
+    when the last is taken."""
     saved = {}
     try:
         with open(os.path.join(sessions_dir, SERVER_FILE), encoding="utf-8") as f:
@@ -1118,7 +1119,7 @@ def _serve(session: "LiveSession", port: int, sessions_dir: str) -> LiveServer:
     except (OSError, ValueError):
         pass
     server = None
-    if not port and saved.get("port") and saved.get("key"):
+    if saved.get("port") and saved.get("key") and (not port or port == saved["port"]):
         try:
             server = LiveServer(("127.0.0.1", int(saved["port"])), session)
             session.key = saved["key"]
@@ -1409,6 +1410,8 @@ def live(
         _say(f"  (the same page served locally: {local_url})")
     _say(f"  changes are saved under {out_dir}")
     _say("  Ctrl+C to stop")
+    # A new tab each time; a page left open from before (same port and key)
+    # reconnects as well
     if settings.auto_open:
         try:
             from git_sim.render.scene import open_url

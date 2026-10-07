@@ -123,7 +123,8 @@ LIVE_JS = r"""
     else if (follow) status.textContent = 'live' + repo;
     else status.textContent = `paused at ${current} of ${changes}` + repo;
     // the state in one word, and where, for the player's header
-    status.dataset.state = recorded ? '' : !connected ? 'disconnected' : replaying ? 'replaying' : follow ? 'watching' : 'paused';
+    status.dataset.state = recorded ? '' : !connected ? 'disconnected' : recording ? 'recording' : replaying ? 'replaying' : follow ? 'watching' : 'paused';
+    status.dataset.down = downNote ? '1' : '';  // Watch tried, and git-sim live isn't running
     status.dataset.where = whereOf();
     // lit only while it really is watching: not when git-sim live is gone
     followBtn.classList.toggle('on', follow && !recorded && connected);
@@ -502,18 +503,51 @@ html[data-player] #controls{display:none!important}
 .vp-head{display:flex;align-items:center;justify-content:center;gap:12px;min-width:0}
 .vp-kicker{display:flex;align-items:center;gap:8px;min-width:0;margin:0;font:700 12px/1 var(--font);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
 .vp-kicker b{min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--text);font-size:14px;letter-spacing:.02em;text-transform:none}
-.vp-kicker i{flex:none;width:9px;height:9px;border-radius:50%;background:var(--muted)}
-.vp-kicker i.on{background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.18)}
-.vp-kicker i.off,.vp-kicker i.rec{background:#ef4444}
+.vp-kicker i{display:none}
 .vp-step-n{flex:none;padding:7px 13px;border-radius:999px;background:var(--accent);color:var(--bg);font:800 12px/1 var(--font);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
-.vp-step-n[data-state="paused"]{background:transparent;color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
+/* a live session's state: the one place it's shown */
+.vp-step-n[data-state]{display:inline-flex;align-items:center;gap:7px}
+.vp-step-n[data-state]::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.vp-step-n[data-state="watching"]{background:#16a34a;color:#fff}
+.vp-step-n[data-state="watching"]::before{box-shadow:0 0 0 3px rgba(255,255,255,.3);animation:vp-live 1.6s ease-in-out infinite}
+.vp-step-n[data-state="paused"]{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1.5px var(--rule)}
+.vp-step-n[data-state="replaying"]{background:var(--accent);color:var(--bg)}
+.vp-step-n[data-state="recording"]{background:#ef4444;color:#fff}
+.vp-step-n[data-state="recording"]::before{border-radius:2px;animation:vp-rec 1s ease-in-out infinite}
 .vp-step-n[data-state="disconnected"]{background:var(--muted);color:var(--bg)}
+@keyframes vp-live{50%{opacity:.5}}
+@media (prefers-reduced-motion:reduce){.vp-step-n[data-state]::before{animation:none!important}}
 .vp-step{max-width:1240px;margin:0 auto;padding:20px 18px 0}
 .vp-step[hidden]{display:none}
 .vp-step-top{display:flex;justify-content:flex-end;margin:0 0 12px}
 .vp-labels{padding:6px 12px;border:1px solid var(--rule);border-radius:999px;background:transparent;color:var(--muted);font:600 12px/1 var(--font);cursor:pointer}
 .vp-labels:hover{color:var(--text);border-color:var(--text)}
 .vp-step-bar{display:flex;gap:6px;margin-bottom:26px}
+.vp-step-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:26px}
+.vp-step-row .vp-step-bar{flex:1;min-width:0;margin-bottom:0}
+.vp-step.compact .vp-step-row{align-items:center}
+/* Watch the repo: a switch, first in the bar, that turns following each change on and off
+   (green when on, as the Watching pill); while git-sim live is gone, it reconnects */
+.vp-watch{flex:none;display:flex;align-items:center;gap:10px;min-width:192px;min-height:52px;margin:2px 0 6px;padding:8px 14px 8px 12px;border:1.5px solid var(--rule);border-radius:10px;background:var(--panel);color:var(--text);text-align:left;font-family:var(--font);cursor:pointer;transition:border-color .15s,background .15s,transform .15s,box-shadow .15s}
+.vp-watch[hidden]{display:none}
+.vp-watch:hover:not(:disabled){border-color:#22c55e;transform:translateY(-1px);box-shadow:0 6px 14px -8px rgba(0,0,0,.35)}
+.vp-watch:focus-visible{outline:2px solid #22c55e;outline-offset:2px}
+.vp-watch:disabled{opacity:.4;cursor:default}
+.vp-watch.on{border-color:#22c55e;background:color-mix(in srgb,#22c55e 9%,var(--panel))}
+.vp-switch{position:relative;flex:none;width:32px;height:18px;border-radius:999px;background:var(--rule);transition:background .2s}
+.vp-switch i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:transform .2s}
+.vp-watch.on .vp-switch{background:#22c55e}
+.vp-watch.on .vp-switch i{transform:translateX(14px)}
+.vp-watch .vp-re{display:none;flex:none;color:var(--accent)}
+.vp-watch.down .vp-switch{display:none}
+.vp-watch.down .vp-re{display:block}
+.vp-watch.down:hover:not(:disabled){border-color:var(--accent)}
+.vp-watch-text{display:flex;flex-direction:column;gap:4px}
+.vp-watch-text b{font:600 12.5px/1.2 var(--font);white-space:nowrap}
+.vp-watch-text small{font:600 11px/1 var(--font);letter-spacing:.02em;color:var(--muted);white-space:nowrap}
+.vp-step.compact .vp-watch{min-width:158px;min-height:0;margin:0;padding:5px 12px 5px 8px;border-radius:999px}
+.vp-step.compact .vp-watch-text small{display:none}
+@media (max-width:560px){.vp-watch-text small,.vp-watch .vp-long{display:none}.vp-watch,.vp-step.compact .vp-watch{min-width:0;padding:8px 10px}}
 .vp-step-bar button{flex:1;height:8px;padding:0;border:0;border-radius:999px;background:var(--rule);cursor:pointer;transition:background .2s,transform .2s}
 .vp-step-bar button.done{background:color-mix(in srgb,var(--accent) 55%,var(--rule))}
 .vp-step-bar button.cur{background:var(--accent);transform:scaleY(1.4)}
@@ -568,8 +602,14 @@ def player_markup():
         '<div class="vp-step" id="vpStep" aria-live="polite">'
         '<div class="vp-step-top"><button type="button" class="vp-labels" id="vpLabels" aria-pressed="true" '
         'title="show or hide each change\'s command and time">Hide details</button></div>'
+        '<div class="vp-step-row">'
+        '<button type="button" class="vp-watch" data-proxy="follow" aria-pressed="true">'
+        '<span class="vp-switch" aria-hidden="true"><i></i></span>'
+        '<svg class="vp-re" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.8-4.3L13 11h7V4z" fill="currentColor"/></svg>'
+        '<span class="vp-watch-text"><b id="vpWatchLabel">Watching</b><small id="vpWatchHint">Click to pause</small></span>'
+        "</button>"
         '<div class="vp-step-bar" id="vpStepBar"></div>'
-        "</div>",
+        "</div></div>",
         '<div class="vp-controls" id="vpControls"><div class="vp-player" id="vpPlayer">'
         '<div class="vp-player-main">'
         '<button type="button" class="vp-skip" id="vpPrev" title="previous change ([)" aria-label="Previous change">'
@@ -579,9 +619,6 @@ def player_markup():
         '<button type="button" class="vp-skip" id="vpNext" title="next change (])" aria-label="Next change">'
         '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5v14l11-7z" fill="currentColor"/></svg></button>'
         '<span class="vp-sep" aria-hidden="true"></span>'
-        '<button type="button" class="vp-tool" data-proxy="follow" aria-label="Watch the repo">'
-        '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5C6.5 5 2.7 9.4 1.5 12c1.2 2.6 5 7 10.5 7s9.3-4.4 10.5-7C21.3 9.4 17.5 5 12 5zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9zm0-2.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" fill="currentColor"/></svg>'
-        "<b>Watch the repo</b></button>"
         '<button type="button" class="vp-tool" data-proxy="save" aria-label="Save session">'
         '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M11 3h2v9.2l3.3-3.3 1.4 1.4L12 16l-5.7-5.7 1.4-1.4 3.3 3.3zM4 18h16v2H4z" fill="currentColor"/></svg>'
         "<b>Save session</b></button>"
@@ -634,7 +671,7 @@ PLAYER_JS = r"""
   }
   // The pill: a live session's state (watching, paused, disconnected), or a
   // recorded one's change on screen
-  const STATES = {watching: 'Watching', paused: 'Paused', disconnected: 'Disconnected', replaying: 'Replaying'};
+  const STATES = {watching: 'Watching', paused: 'Paused', replaying: 'Replaying', recording: 'Recording', disconnected: 'Disconnected'};
   function pill(){
     const n = $('vpStepN');
     if (!session) {
@@ -688,6 +725,7 @@ PLAYER_JS = r"""
   let details = (() => { try { return localStorage.getItem(DETAILS) !== '0'; } catch (e) { return true; } })();
   function applyDetails(){
     $('vpStepBar').classList.toggle('labeled', details);
+    box.classList.toggle('compact', !details);
     $('vpLabels').setAttribute('aria-pressed', details ? 'true' : 'false');
     $('vpLabels').textContent = details ? 'Hide details' : 'Show details';
   }
@@ -713,18 +751,18 @@ PLAYER_JS = r"""
   }
   $('vpPlay').addEventListener('click', togglePlay);
   // a click doesn't leave the focus on a player button, so space stays the viewer's
-  document.querySelectorAll('.vp-player button').forEach(b => b.addEventListener('mousedown', e => e.preventDefault()));
+  document.querySelectorAll('.vp-player button, .vp-watch').forEach(b => b.addEventListener('mousedown', e => e.preventDefault()));
   $('vpPrev').addEventListener('click', () => { const all = steps(); go(all.indexOf(chips.querySelector('.chip.cur')) - 1); });
   $('vpNext').addEventListener('click', () => { const all = steps(); go(all.indexOf(chips.querySelector('.chip.cur')) + 1); });
   // the strip's own tools, as the player's buttons
-  document.querySelectorAll('.vp-player [data-proxy]').forEach(b => {
+  document.querySelectorAll('.vp-player [data-proxy], .vp-watch[data-proxy]').forEach(b => {
     const real = $(b.dataset.proxy);
     if (!real) { b.hidden = true; return; }
     b.addEventListener('click', () => real.click());
     const sync = () => {
       b.classList.toggle('on', real.classList.contains('on') || real.classList.contains('rec'));
       b.disabled = real.disabled; b.hidden = !!real.hidden;
-      if (b.classList.contains('vp-tool') && real.title) b.title = real.title;
+      if ((b.classList.contains('vp-tool') || b.classList.contains('vp-watch')) && real.title) b.title = real.title;
       if (b.classList.contains('vp-rec')) b.querySelector('b').textContent = real.classList.contains('rec') ? 'Stop' : 'Record';
     };
     new MutationObserver(sync).observe(real, {attributes: true}); sync();
@@ -733,8 +771,21 @@ PLAYER_JS = r"""
   const status = $('liveStatus'), dot = $('liveDot');
   // a long path keeps its start and its last two folders
   const shorten = p => { const parts = p.split('/'); return p.length > 56 && parts.length > 4 ? parts[0] + '/…/' + parts.slice(-2).join('/') : p; };
+  // Watch the repo says what clicking it does: pause while watching, watch
+  // otherwise, and reconnect while git-sim live is gone
+  function syncWatch(){
+    const w = document.querySelector('.vp-watch');
+    if (!w || !status) return;
+    const st = status.dataset.state || '', down = st === 'disconnected', on = st === 'watching';
+    w.classList.toggle('down', down);
+    w.setAttribute('aria-pressed', on ? 'true' : 'false');
+    $('vpWatchLabel').innerHTML = down ? 'Reconnect' : on ? 'Watching' : 'Watch<span class="vp-long"> the repo</span>';
+    $('vpWatchHint').textContent = down
+      ? (status.dataset.down ? 'Still not running' : 'git-sim live stopped')
+      : on ? 'Click to pause' : 'Follow each change';
+  }
   function syncStatus(){
-    syncPlay(); pill();
+    syncPlay(); pill(); syncWatch();
     $('vpKicker').textContent = demo ? 'Workflow' : session ? 'Recorded' : 'Live';
     const where = (!session && status && status.dataset.where) || '';
     $('vpName').textContent = demo ? session.title : where ? shorten(where) : status ? status.textContent.replace(/^(live|recorded)\s*·\s*/, '') : '';
