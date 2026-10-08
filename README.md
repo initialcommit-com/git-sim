@@ -153,6 +153,7 @@ Command syntax follows Git's own. Click a command for its usage and options, and
 
 <details>
 <summary><b><code>git add</code></b>: stage files, folders, or everything</summary>
+<br>
 
 Usage: `git-sim add <pathspec>...` | `git-sim add -A`
 
@@ -166,6 +167,7 @@ Usage: `git-sim add <pathspec>...` | `git-sim add -A`
 </details>
 <details>
 <summary><b><code>git bisect</code></b>: find the commit that introduced a bug</summary>
+<br>
 
 Usage: `git-sim bisect start [<bad> [<good>...]]` | `git-sim bisect good|bad|old|new|skip [<commit>]` | `git-sim bisect reset [<commit>]`
 
@@ -177,6 +179,7 @@ Usage: `git-sim bisect start [<bad> [<good>...]]` | `git-sim bisect good|bad|old
 </details>
 <details>
 <summary><b><code>git blame</code></b>: who last changed each line, and in which commit</summary>
+<br>
 
 Usage: `git-sim blame <file> [-L <start>,<end>]`
 
@@ -187,6 +190,7 @@ Usage: `git-sim blame <file> [-L <start>,<end>]`
 </details>
 <details>
 <summary><b><code>git branch</code></b>: create, delete, rename, list, and track branches</summary>
+<br>
 
 Usage: `git-sim branch <new branch name> [<start-point>]` | `git-sim branch -d|-D <branch>` | `git-sim branch -m <branch> <new name>` | `git-sim branch [-a] [-v|-vv] [--merged|--no-merged [<commit>]]` | `git-sim branch -u <upstream> [<branch>]`
 
@@ -204,6 +208,7 @@ Usage: `git-sim branch <new branch name> [<start-point>]` | `git-sim branch -d|-
 </details>
 <details>
 <summary><b><code>git check-ignore</code></b>: which ignore rule decides a path</summary>
+<br>
 
 Usage: `git-sim check-ignore [-v] <path>...`
 
@@ -214,6 +219,7 @@ Usage: `git-sim check-ignore [-v] <path>...`
 </details>
 <details>
 <summary><b><code>git checkout</code></b>: switch branches, or create one</summary>
+<br>
 
 Usage: `git-sim checkout [-b] <branch>`
 
@@ -225,6 +231,7 @@ Usage: `git-sim checkout [-b] <branch>`
 </details>
 <details>
 <summary><b><code>git cherry-pick</code></b>: copy commits onto the active branch</summary>
+<br>
 
 Usage: `git-sim cherry-pick <commit>|<A..B> [-n]` | `git-sim cherry-pick --continue|--abort|--skip`
 
@@ -239,6 +246,7 @@ Usage: `git-sim cherry-pick <commit>|<A..B> [-n]` | `git-sim cherry-pick --conti
 </details>
 <details>
 <summary><b><code>git clean</code></b>: delete untracked files</summary>
+<br>
 
 Usage: `git-sim clean [-f] [-n] [-d] [-x]`
 
@@ -252,6 +260,7 @@ Usage: `git-sim clean [-f] [-n] [-d] [-x]`
 </details>
 <details>
 <summary><b><code>git clone</code></b>: copy a repository</summary>
+<br>
 
 Usage: `git-sim clone [--depth <n>] [-b <branch>] <url> [<path>]`
 
@@ -265,6 +274,7 @@ Usage: `git-sim clone [--depth <n>] [-b <branch>] <url> [<path>]`
 </details>
 <details>
 <summary><b><code>git commit</code></b>: record staged changes as a new commit</summary>
+<br>
 
 Usage: `git-sim commit -m "Commit message"`
 
@@ -281,6 +291,7 @@ Usage: `git-sim commit -m "Commit message"`
 </details>
 <details>
 <summary><b><code>git config</code></b>: read and write settings, at any scope</summary>
+<br>
 
 Usage: `git-sim config [--global|--system] <section.option> [<value>]` | `git-sim config --list [--global|--system]`
 
@@ -295,6 +306,7 @@ Usage: `git-sim config [--global|--system] <section.option> [<value>]` | `git-si
 </details>
 <details>
 <summary><b><code>git describe</code></b>: name a commit after its nearest tag</summary>
+<br>
 
 Usage: `git-sim describe [--tags] [<commit>]`
 
@@ -305,6 +317,7 @@ Usage: `git-sim describe [--tags] [<commit>]`
 </details>
 <details>
 <summary><b><code>git diff</code></b>: what changed between two points</summary>
+<br>
 
 Usage: `git-sim diff [--staged] [--stat] [<commit> [<commit>]] [<path>...]` | `git-sim diff <A>..<B>` | `git-sim diff <A>...<B>`
 
@@ -317,6 +330,7 @@ Usage: `git-sim diff [--staged] [--stat] [<commit> [<commit>]] [<path>...]` | `g
 </details>
 <details>
 <summary><b><code>git fetch</code></b>: download new commits from a remote</summary>
+<br>
 
 Usage: `git-sim fetch [--prune] <remote> <branch>` | `git-sim fetch --all [--prune]`
 
@@ -329,6 +343,7 @@ Usage: `git-sim fetch [--prune] <remote> <branch>` | `git-sim fetch --all [--pru
 </details>
 <details>
 <summary><b><code>git grep</code></b>: search tracked files</summary>
+<br>
 
 Usage: `git-sim grep [-n] [-i] <pattern> [<revision>] [-- <path>...]`
 
@@ -339,6 +354,7 @@ Usage: `git-sim grep [-n] [-i] <pattern> [<revision>] [-- <path>...]`
 </details>
 <details>
 <summary><b><code>git init</code></b>: create a repository</summary>
+<br>
 
 Usage: `git-sim init`
 
@@ -350,6 +366,7 @@ Usage: `git-sim init`
 </details>
 <details>
 <summary><b><code>git log</code></b>: browse and filter the history</summary>
+<br>
 
 Usage: `git-sim log [-n <number>] [--all] [--oneline] [--graph] [-p] [--follow] [-S <text>] [--author <name>] [--since|--after <date>] [--until|--before <date>] [[--] <path>...]`
 
@@ -365,6 +382,7 @@ Usage: `git-sim log [-n <number>] [--all] [--oneline] [--graph] [-p] [--follow] 
 </details>
 <details>
 <summary><b><code>git ls-remote</code></b>: list a remote's refs</summary>
+<br>
 
 Usage: `git-sim ls-remote [<remote>] [--heads] [--tags]`
 
@@ -377,6 +395,7 @@ Usage: `git-sim ls-remote [<remote>] [--heads] [--tags]`
 </details>
 <details>
 <summary><b><code>git merge</code></b>: combine a branch into the active branch</summary>
+<br>
 
 Usage: `git-sim merge <branch> [-m "Commit message"] [--no-ff|--squash]` | `git-sim merge --continue|--abort`
 
@@ -394,6 +413,7 @@ Usage: `git-sim merge <branch> [-m "Commit message"] [--no-ff|--squash]` | `git-
 </details>
 <details>
 <summary><b><code>git mv</code></b>: move or rename a tracked file</summary>
+<br>
 
 Usage: `git-sim mv <file> <new file>`
 
@@ -407,6 +427,7 @@ Usage: `git-sim mv <file> <new file>`
 </details>
 <details>
 <summary><b><code>git pull</code></b>: fetch and integrate a remote branch</summary>
+<br>
 
 Usage: `git-sim pull [--rebase] [<remote> <branch>]`
 
@@ -420,6 +441,7 @@ Usage: `git-sim pull [--rebase] [<remote> <branch>]`
 </details>
 <details>
 <summary><b><code>git push</code></b>: send commits, tags, or deletions to a remote</summary>
+<br>
 
 Usage: `git-sim push [<remote> <branch>] [--force|--force-with-lease]` | `git-sim push <remote> --delete <branch|tag>` | `git-sim push <remote> <tag>` | `git-sim push --tags`
 
@@ -437,6 +459,7 @@ Usage: `git-sim push [<remote> <branch>] [--force|--force-with-lease]` | `git-si
 </details>
 <details>
 <summary><b><code>git rebase</code></b>: replay commits on a new base</summary>
+<br>
 
 Usage: `git-sim rebase <new-base> [--onto <commit>] [-i [--todo <file>]]` | `git-sim rebase --continue|--abort|--skip`
 
@@ -450,6 +473,7 @@ Usage: `git-sim rebase <new-base> [--onto <commit>] [-i [--todo <file>]]` | `git
 </details>
 <details>
 <summary><b><code>git reflog</code></b>: where HEAD has been, and what you can recover</summary>
+<br>
 
 Usage: `git-sim reflog [-n <number>]`
 
@@ -461,6 +485,7 @@ Usage: `git-sim reflog [-n <number>]`
 </details>
 <details>
 <summary><b><code>git remote</code></b>: add, rename, remove, and inspect remotes</summary>
+<br>
 
 Usage: `git-sim remote [-v] [add|rename|remove|get-url|set-url|show] [<remote>] [<url>]`
 
@@ -474,6 +499,7 @@ Usage: `git-sim remote [-v] [add|rename|remove|get-url|set-url|show] [<remote>] 
 </details>
 <details>
 <summary><b><code>git reset</code></b>: move the branch, and maybe discard changes</summary>
+<br>
 
 Usage: `git-sim reset <reset-to> [--mixed|--soft|--hard]` | `git-sim reset [<commit>] <path>...`
 
@@ -487,6 +513,7 @@ Usage: `git-sim reset <reset-to> [--mixed|--soft|--hard]` | `git-sim reset [<com
 </details>
 <details>
 <summary><b><code>git restore</code></b>: unstage files or discard their changes</summary>
+<br>
 
 Usage: `git-sim restore [--staged] <file 1> <file 2> ... <file n>`
 
@@ -499,6 +526,7 @@ Usage: `git-sim restore [--staged] <file 1> <file 2> ... <file n>`
 </details>
 <details>
 <summary><b><code>git revert</code></b>: undo a commit with a new commit</summary>
+<br>
 
 Usage: `git-sim revert <to-revert> [-m <parent-number>] [-n]`
 
@@ -513,6 +541,7 @@ Usage: `git-sim revert <to-revert> [-m <parent-number>] [-n]`
 </details>
 <details>
 <summary><b><code>git rm</code></b>: delete tracked files</summary>
+<br>
 
 Usage: `git-sim rm [--cached] <file 1> <file 2> ... <file n>`
 
@@ -526,6 +555,7 @@ Usage: `git-sim rm [--cached] <file 1> <file 2> ... <file n>`
 </details>
 <details>
 <summary><b><code>git shortlog</code></b>: commits per author</summary>
+<br>
 
 Usage: `git-sim shortlog [-s] [-n] [-e] [<revision>|<A>..<B>]` (short flags combine: `-sn`, `-sne`)
 
@@ -536,6 +566,7 @@ Usage: `git-sim shortlog [-s] [-n] [-e] [<revision>|<A>..<B>]` (short flags comb
 </details>
 <details>
 <summary><b><code>git show</code></b>: a commit and the files it changed</summary>
+<br>
 
 Usage: `git-sim show [<commit>|<tag>|<commit>:<path>]`
 
@@ -546,6 +577,7 @@ Usage: `git-sim show [<commit>|<tag>|<commit>:<path>]`
 </details>
 <details>
 <summary><b><code>git stash</code></b>: set changes aside, and bring them back</summary>
+<br>
 
 Usage: `git-sim stash [push] [-u] [-m <message>] <file>` | `git-sim stash pop|apply` | `git-sim stash list|show|drop|clear [<stash-index>]`
 
@@ -561,6 +593,7 @@ Usage: `git-sim stash [push] [-u] [-m <message>] <file>` | `git-sim stash pop|ap
 </details>
 <details>
 <summary><b><code>git status</code></b>: the working directory and the staging area</summary>
+<br>
 
 Usage: `git-sim status`
 
@@ -572,6 +605,7 @@ Usage: `git-sim status`
 </details>
 <details>
 <summary><b><code>git submodule</code></b>: repositories inside a repository</summary>
+<br>
 
 Usage: `git-sim submodule [status|add <url> [<path>]|init|update [--init]|deinit [--force] <path>]`
 
@@ -581,6 +615,7 @@ Usage: `git-sim submodule [status|add <url> [<path>]|init|update [--init]|deinit
 </details>
 <details>
 <summary><b><code>git switch</code></b>: switch branches, or create one</summary>
+<br>
 
 Usage: `git-sim switch [-c] <branch> [<start-point>]` | `git-sim switch -`
 
@@ -594,6 +629,7 @@ Usage: `git-sim switch [-c] <branch> [<start-point>]` | `git-sim switch -`
 </details>
 <details>
 <summary><b><code>git tag</code></b>: label a commit</summary>
+<br>
 
 Usage: `git-sim tag <new tag name> [<commit>]` | `git-sim tag -a <name> -m "<message>" [<commit>]` | `git-sim tag -d <name>` | `git-sim tag -l ["<pattern>"]`
 
@@ -607,6 +643,7 @@ Usage: `git-sim tag <new tag name> [<commit>]` | `git-sim tag -a <name> -m "<mes
 </details>
 <details>
 <summary><b><code>git worktree</code></b>: more than one working directory</summary>
+<br>
 
 Usage: `git-sim worktree [list|add [-b <new-branch>] <path> [<branch>]|remove [--force] <path>|prune]`
 
