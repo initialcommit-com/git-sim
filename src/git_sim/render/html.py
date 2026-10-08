@@ -110,6 +110,12 @@ html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-f
 #shareMenu .grid button,#shareMenu .grid a{display:block;text-align:center;border:1px solid var(--rule);background:var(--panel);color:var(--text);text-decoration:none;font:600 12px/1 var(--font);padding:9px 10px;border-radius:8px;cursor:pointer}
 #shareMenu .grid button:hover,#shareMenu .grid a:hover{border-color:var(--accent);color:var(--accent)}
 #localNote{display:none;margin:0;color:var(--muted);font:12px/1.45 var(--font)}
+#publicPanel{margin:-4px 0 12px;padding:10px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--panel)}
+#publicPanel[hidden],#publicPanel [hidden]{display:none}
+#publicPanel p{margin:0 0 10px;color:var(--muted);font:12px/1.45 var(--font)}
+#publicPanel .grid{margin-bottom:0}
+#publicUrl{display:block;width:100%;box-sizing:border-box;margin:0 0 8px;padding:7px 9px;border:1px solid var(--rule);border-radius:6px;background:var(--bg);color:var(--text);font:12px/1.2 var(--font)}
+#publicDelete{color:var(--accent)}
 #toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,12px);opacity:0;transition:opacity .25s,transform .25s;background:var(--text);color:var(--bg);padding:9px 16px;border-radius:999px;font:600 13px/1 var(--font);z-index:5;pointer-events:none}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 #brand{color:var(--muted);text-decoration:none;font:600 13px/1 var(--font);letter-spacing:.04em}
@@ -344,8 +350,10 @@ function makeViewer(root){
     const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
     const svgEl = doc.documentElement;
     if (svgEl.nodeName !== 'svg') throw new Error('not an svg');
-    $('script', svgEl).forEach(el => el.remove());
-    svgEl.querySelectorAll('*').forEach(el => { Array.from(el.attributes).forEach(a => { if (/^on/i.test(a.name) || (a.name === 'href' && !a.value.startsWith('data:image/'))) el.removeAttribute(a.name); }); });
+    // A graph from a link is anyone's: nothing in it may run or reach out
+    // (git-sim draws none of these, so a real graph loses nothing)
+    $('script, foreignObject, animate, animateMotion, animateTransform, set, style, iframe, object, embed', svgEl).forEach(el => el.remove());
+    svgEl.querySelectorAll('*').forEach(el => { Array.from(el.attributes).forEach(a => { if (/^on/i.test(a.name) || (/(^|:)href$/i.test(a.name) && !a.value.startsWith('data:image/')) || /javascript:/i.test(a.value)) el.removeAttribute(a.name); }); });
     // An id inside a graph (its shadow filters) is looked up across the whole
     // document: with several graphs on a page, url(#shadow1) finds the first
     // graph's, and when that graph is hidden (display: none) the discs and
@@ -858,6 +866,8 @@ function makeViewer(root){
   // (for the preview card), the whole graph compressed in the fragment.
   async function shareUrl(){
     const s = stateHash();
+    // a public link's page: its own short address
+    if (info.public_url) return info.public_url + (s ? '#s=' + s : '');
     if (params.d) {  // already on the hosted viewer: keep the graph, update the state
       const p = new URLSearchParams(location.hash.replace(/^#/, ''));
       if (s) p.set('s', s); else p.delete('s');
@@ -955,6 +965,74 @@ function makeViewer(root){
     }).catch(() => { if (w) w.close(); say('could not share'); });
   });
   if (!navigator.share) $('[data-action="native"]', shareMenu).forEach(el => el.remove());
+
+  // A public link: the graph kept on initialcommit.com under a short address,
+  // with a share card drawn here from the graph itself, so a posted link shows
+  // the real thing. Only when asked: it says first what goes up. Not where it
+  // can't reach the site (an editor's view, a page with no hosted viewer).
+  const shareEndpoint = (() => { try { return info.viewer_url ? new URL('share', info.viewer_url).href : ''; } catch (e) { return ''; } })();
+  const publicPanel = byId('publicPanel');
+  if (editor || info.public_url || !shareEndpoint || !canPack || !window.fetch) {
+    $('[data-action="public"]', shareMenu).forEach(el => el.remove());
+  } else if (publicPanel) {
+    const ask = byId('publicAsk'), done = byId('publicDone'), go = byId('publicGo');
+    actions.public = () => { publicPanel.hidden = false; ask.hidden = false; done.hidden = true; };
+    byId('publicCancel').onclick = () => { publicPanel.hidden = true; };
+    go.onclick = async () => {
+      go.disabled = true; go.textContent = 'Uploading…';
+      try {
+        const card = await shareCard().catch(() => '');
+        const body = JSON.stringify({title, theme: pristineTheme, state: stateHash(), summary: info.summary || '', graph: await deflate(pristine), card});
+        // a plain text body: a simple request, with no preflight, from any page
+        const r = await fetch(shareEndpoint, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=UTF-8'}, body});
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.url) throw new Error(j.error || 'the public link could not be made');
+        byId('publicUrl').value = j.url;
+        byId('publicDelete').href = j.delete_url;
+        ask.hidden = true; done.hidden = false;
+        try { await copyText(j.url); say('public link copied'); } catch (e) { say('public link made'); }
+      } catch (e) {
+        say(e && e.message ? e.message : 'the public link could not be made');
+      } finally {
+        go.disabled = false; go.textContent = 'Create link';
+      }
+    };
+    byId('publicUrl').onclick = e => e.target.select();
+  }
+  // The share card: 1200 x 630, the graph as generated (its "after") on its own
+  // background, and a footer saying what it is.
+  async function shareCard(){
+    const W = 1200, H = 630, FOOT = 76;
+    const doc = new DOMParser().parseFromString(pristine, 'image/svg+xml');
+    const el = doc.documentElement;
+    const vb = (el.getAttribute('viewBox') || '0 0 1600 900').split(/[\s,]+/).map(Number);
+    const bgRect = el.querySelector('[data-role="background"]');
+    const light = pristineTheme === 'light';
+    const bg = (bgRect && bgRect.getAttribute('fill')) || (light ? '#ffffff' : '#0d1117');
+    const box = {x: 48, y: 30, w: W - 96, h: H - FOOT - 54};
+    const scale = Math.min(box.w / vb[2], box.h / vb[3], 2);
+    const gw = Math.round(vb[2] * scale), gh = Math.round(vb[3] * scale);
+    el.setAttribute('width', gw); el.setAttribute('height', gh);
+    const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(el)], {type: 'image/svg+xml;charset=utf-8'}));
+    try {
+      const img = await new Promise((ok, fail) => { const i = new Image(); i.onload = () => ok(i); i.onerror = fail; i.src = url; });
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const g = canvas.getContext('2d');
+      g.fillStyle = bg; g.fillRect(0, 0, W, H);
+      g.drawImage(img, box.x + (box.w - gw) / 2, box.y + (box.h - gh) / 2, gw, gh);
+      g.fillStyle = light ? 'rgba(0,0,0,.05)' : 'rgba(255,255,255,.05)';
+      g.fillRect(0, H - FOOT, W, FOOT);
+      const mono = 'ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace';
+      g.textBaseline = 'middle';
+      g.font = '700 26px ' + mono; g.fillStyle = light ? '#1f2328' : '#e6edf3';
+      g.fillText('git-sim', 48, H - FOOT / 2);
+      const after = 48 + g.measureText('git-sim').width + 18;
+      g.font = '500 21px ' + mono; g.fillStyle = light ? '#57606a' : '#8b949e';
+      g.fillText('interactive simulation  ·  initialcommit.com/tools/git-sim', after, H - FOOT / 2);
+      return canvas.toDataURL('image/png');
+    } finally { URL.revokeObjectURL(url); }
+  }
   const localNote = byId('localNote');
   if (localNote && location.protocol === 'file:' && !(info.viewer_url && canPack)) localNote.style.display = 'block';
 
@@ -1040,6 +1118,14 @@ def header_markup(fragment_attr=""):
         '<h3>Copy</h3><div class="grid">'
         '<button data-action="link" title="a link that opens this graph in the git-sim viewer at the current slider position. The graph itself stays in the link\'s #fragment; the command and a short text graph (git log --oneline, up to 12 lines) go in the query string so the link gets a preview card when posted">Copy link</button>'
         '<button data-action="image" title="a PNG of the graph as shown right now, on your clipboard">Copy image</button>'
+        '<button data-action="public" title="a short link to this graph, kept on initialcommit.com, that shows the graph itself when posted">Public link…</button>'
+        "</div>"
+        '<div id="publicPanel" hidden>'
+        '<div id="publicAsk"><p>A public link uploads this graph to initialcommit.com: its commit messages and short hashes, '
+        "branch and tag names, and file names. Anyone with the link can open it, and posts show the graph itself.</p>"
+        '<div class="grid"><button id="publicGo">Create link</button><button id="publicCancel">Cancel</button></div></div>'
+        '<div id="publicDone" hidden><p>Public link copied:</p><input id="publicUrl" readonly aria-label="the public link">'
+        '<p><a id="publicDelete" target="_blank" rel="noopener">Delete link</a>: keep it to remove the public link later.</p></div>'
         "</div>"
         '<h3>Save</h3><div class="grid">'
         '<button data-action="png" title="a PNG of the graph as shown right now">Download PNG</button>'

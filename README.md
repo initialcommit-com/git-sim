@@ -88,7 +88,7 @@ No Git repo handy to visualize? The bundled [git-dummy](https://github.com/initi
 
 ## Your Git repo data stays on your machine
 
-By default, when you run git-sim it generates an interactive Git graph which opens in the [git-sim viewer at initialcommit.com](https://initialcommit.com/tools/git-sim/viewer), but the graph's data is compressed and placed in the link's `#fragment`, which browsers never send to a server, so nothing about your code leaves your local machine.
+By default, when you run git-sim it generates an interactive Git graph which opens in the [git-sim viewer at initialcommit.com](https://initialcommit.com/tools/git-sim/viewer), but the graph's data is compressed and placed in the link's `#fragment`, which browsers never send to a server, so nothing about your code leaves your local machine. The one exception is a public link, which you create on purpose with **Share** → **Public link…**: it keeps that graph on initialcommit.com, so the link is short and shows the graph itself when posted, and gives you a link to delete it.
 
 For example, `git-sim branch feature` opens a link like the one below, shortened here (the full link is about 2,000 characters):
 
