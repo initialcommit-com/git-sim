@@ -113,9 +113,28 @@ html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-f
 #publicPanel{margin:-4px 0 12px;padding:10px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--panel)}
 #publicPanel[hidden],#publicPanel [hidden]{display:none}
 #publicPanel p{margin:0 0 10px;color:var(--muted);font:12px/1.45 var(--font)}
-#publicPanel .grid{margin-bottom:0}
-#publicUrl{display:block;width:100%;box-sizing:border-box;margin:0 0 8px;padding:7px 9px;border:1px solid var(--rule);border-radius:6px;background:var(--bg);color:var(--text);font:12px/1.2 var(--font)}
-#publicDelete{color:var(--accent)}
+.pub-actions{display:flex;gap:6px}
+.pub-actions button{flex:1;border:1px solid var(--rule);background:var(--bg);color:var(--text);font:600 12px/1.25 var(--font);padding:9px 10px;border-radius:8px;cursor:pointer}
+.pub-actions #publicGo{flex:2;border-color:var(--accent);background:var(--accent);color:var(--bg)}
+.pub-actions button:hover{border-color:var(--accent)}
+.pub-actions button:disabled{opacity:.6;cursor:default}
+#publicPanel .pub-alt{margin:10px 0 0}
+#publicPanel .pub-alt a{margin:0;padding:0;font:inherit;color:var(--accent);text-decoration:underline}
+#publicPanel .pub-head{display:flex;align-items:center;gap:7px;margin:0 0 12px;color:var(--text);font:600 12.5px/1.3 var(--font)}
+#publicPanel .pub-head svg{flex:none;color:#16a34a}
+.pub-row{margin:0 0 12px}
+.pub-row:last-child{margin-bottom:0}
+.pub-label{display:block;margin:0 0 5px;color:var(--muted);font:700 10.5px/1 var(--font);letter-spacing:.07em;text-transform:uppercase}
+.pub-field{display:flex;align-items:stretch;border:1px solid var(--rule);border-radius:7px;background:var(--bg);overflow:hidden;transition:border-color .15s}
+.pub-field:focus-within{border-color:var(--accent)}
+/* the whole link, wrapped onto as many lines as it takes; a click selects all of it */
+.pub-value{flex:1;min-width:0;padding:7px 9px;color:var(--text);font:11.5px/1.45 var(--font);overflow-wrap:anywhere;word-break:break-all;-webkit-user-select:all;user-select:all;cursor:text;outline:none}
+.pub-copy{flex:none;display:inline-flex;align-items:center;justify-content:center;width:34px;padding:0;border:0;border-left:1px solid var(--rule);background:transparent;color:var(--muted);cursor:pointer;transition:color .15s,background .15s}
+.pub-copy:hover{color:var(--accent);background:var(--panel)}
+.pub-copy .ok,.pub-copy.done .cp{display:none}
+.pub-copy.done .ok{display:block}
+.pub-copy.done{color:#16a34a}
+.pub-row small{display:block;margin-top:5px;color:var(--muted);font:11.5px/1.4 var(--font)}
 #toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,12px);opacity:0;transition:opacity .25s,transform .25s;background:var(--text);color:var(--bg);padding:9px 16px;border-radius:999px;font:600 13px/1 var(--font);z-index:5;pointer-events:none}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 #brand{color:var(--muted);text-decoration:none;font:600 13px/1 var(--font);letter-spacing:.04em}
@@ -859,7 +878,6 @@ function makeViewer(root){
   // The state a copied link pins. While the loop is playing nothing is pinned,
   // so whoever opens the link sees it play from "before" too.
   const stateHash = () => playing ? '' : progress <= 0.001 ? 'before' : progress >= maxStep - 0.001 ? 'after' : 'step=' + Math.round(progress);
-  const shareText = () => `${title} — created with git-sim`;
   const fileName = () => (title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'git-sim');
   const canPack = typeof CompressionStream !== 'undefined';
   // A link to the hosted viewer: command + short text graph in the query
@@ -930,55 +948,120 @@ function makeViewer(root){
     png: async () => { await download(await toPng(2), fileName() + '.png'); if (!editor) say('PNG downloaded'); },
     svg: async () => { await download(new Blob([pristine], {type: 'image/svg+xml'}), fileName() + '.svg'); if (!editor) say('SVG downloaded'); },
     html: async () => { await download(new Blob(['<!DOCTYPE html>\n' + document.documentElement.outerHTML], {type: 'text/html'}), fileName() + '.html'); if (!editor) say('page downloaded'); },
-    native: async () => { await navigator.share({title, text: shareText(), url: await shareUrl()}); },
   };
   const enc = encodeURIComponent;
+  // What a post says by default: the command, and what the link opens
+  const postText = () => `What ${title} does to a Git repo, step by step (simulated with git-sim)`;
   const intents = {
-    x: u => `https://twitter.com/intent/tweet?text=${enc(shareText())}&url=${enc(u)}`,
-    bluesky: u => `https://bsky.app/intent/compose?text=${enc(shareText() + ' ' + u)}`,
-    linkedin: u => `https://www.linkedin.com/sharing/share-offsite/?url=${enc(u)}`,
-    reddit: u => `https://www.reddit.com/submit?url=${enc(u)}&title=${enc(shareText())}`,
-    hn: u => `https://news.ycombinator.com/submitlink?u=${enc(u)}&t=${enc(shareText())}`,
-    email: u => `mailto:?subject=${enc(shareText())}&body=${enc(u)}`,
+    x: u => `https://twitter.com/intent/tweet?text=${enc(postText())}&url=${enc(u)}`,
+    bluesky: u => `https://bsky.app/intent/compose?text=${enc(postText() + ' ' + u)}`,
+    // LinkedIn's composer, which takes the text (its share-offsite page takes only a link)
+    linkedin: u => `https://www.linkedin.com/feed/?shareActive=true&text=${enc(postText() + '\n\n' + u)}`,
+    reddit: u => `https://www.reddit.com/submit?url=${enc(u)}&title=${enc(postText())}`,
+    hn: u => `https://news.ycombinator.com/submitlink?u=${enc(u)}&t=${enc(postText())}`,
+    email: u => `mailto:?subject=${enc(title + ', simulated with git-sim')}&body=${enc(postText() + ':\n\n' + u)}`,
   };
-  const shortOnly = {x: 4096, bluesky: 280};  // platforms that refuse long URLs
+  const postNames = {x: 'X', bluesky: 'Bluesky', linkedin: 'LinkedIn', reddit: 'Reddit', hn: 'Hacker News', email: 'Email', native: 'Share…'};
+  // platforms that refuse long URLs (an email link much past 2000 characters
+  // doesn't open the mail app at all)
+  const shortOnly = {x: 4096, bluesky: 280, linkedin: 3000, email: 2000};
+  // A window for the post, opened while the click still counts (one opened
+  // after an upload or a wait is blocked as a popup). The share sheet and an
+  // editor need none, and neither does email: a mailto link opens the mail
+  // app from this page, and from a fresh tab it is often blocked. LinkedIn
+  // opens its own tab once the post text is on the clipboard (see post).
+  const postWindow = intent => (editor || intent === 'native' || intent === 'email' || intent === 'linkedin') ? null : window.open('', '_blank');
+  // Post a link: the share sheet, the editor's browser, the mail app, or the
+  // window opened for it. Returns the address it opened, or '' when it didn't.
+  async function post(intent, u, w){
+    if (intent === 'native') { await navigator.share({title, text: postText(), url: u}); showShare(false); return ''; }
+    const limit = shortOnly[intent];
+    if (limit && u.length > limit) {
+      if (w) w.close();
+      say(intent === 'email' ? 'this graph makes a link too long for an email: make a public link, or copy the image instead'
+        : `this graph makes a link too long for ${postNames[intent]}; copy the image and post that instead`);
+      return '';
+    }
+    const target = intents[intent](u);
+    if (intent === 'linkedin') {
+      // LinkedIn takes no text from a link: the post is put on the clipboard
+      // to paste (while this page still has the focus, before LinkedIn's tab
+      // takes it), and the tab opened after
+      let copied = true;
+      try { await copyText(postText() + '\n\n' + u); } catch (e) { copied = false; }
+      if (editor) editor.postMessage({type: 'openExternal', url: target});
+      else { const tab = window.open(target, '_blank'); if (tab) tab.opener = null; }
+      say(copied ? 'post text copied: paste it into LinkedIn' : 'LinkedIn opened: copy the link to paste in');
+    }
+    else if (editor) editor.postMessage({type: 'openExternal', url: target});
+    else if (intent === 'email') location.href = target;
+    else if (w) { w.opener = null; w.location = target; }
+    showShare(false);
+    return target;
+  }
+  // The private link: the graph inside the link itself, uploaded nowhere
+  function postPrivate(intent){
+    const w = postWindow(intent);
+    shareUrl().then(u => post(intent, u, w)).catch(() => { if (w) w.close(); say('could not share'); });
+  }
+  let askBeforePost = null;  // set below where a public link can be made: posts ask about it first
   on(shareMenu, 'click', e => {
     const b = e.target.closest('[data-action],[data-intent]');
     if (!b) return;
     e.preventDefault();
-    if (b.dataset.action) { Promise.resolve().then(() => actions[b.dataset.action]()).catch(() => say('could not share')); return; }
-    if (editor) {  // the editor opens the post in the browser
-      shareUrl().then(u => {
-        const limit = shortOnly[b.dataset.intent];
-        if (limit && u.length > limit) { say(`this graph makes a link too long for ${b.textContent}; save the image and post that instead`); return; }
-        editor.postMessage({type: 'openExternal', url: intents[b.dataset.intent](u)});
-        showShare(false);
-      }).catch(() => say('could not share'));
-      return;
-    }
-    const w = window.open('', '_blank');  // open synchronously so the popup is not blocked
-    shareUrl().then(u => {
-      const limit = shortOnly[b.dataset.intent];
-      if (limit && u.length > limit) { if (w) w.close(); say(`this graph makes a link too long for ${b.textContent}; copy the image and post that instead`); return; }
-      if (w) { w.opener = null; w.location = intents[b.dataset.intent](u); }
-      showShare(false);
-    }).catch(() => { if (w) w.close(); say('could not share'); });
+    const intent = b.dataset.intent || (b.dataset.action === 'native' ? 'native' : '');
+    if (intent) { (askBeforePost || postPrivate)(intent); return; }
+    Promise.resolve().then(() => actions[b.dataset.action]()).catch(() => say('could not share'));
   });
   if (!navigator.share) $('[data-action="native"]', shareMenu).forEach(el => el.remove());
 
   // A public link: the graph kept on initialcommit.com under a short address,
   // with a share card drawn here from the graph itself, so a posted link shows
-  // the real thing. Only when asked: it says first what goes up. Not where it
-  // can't reach the site (an editor's view, a page with no hosted viewer).
+  // the real thing. Only when asked: it says first what goes up, both from
+  // "Public link…" and from a post button, which can post the private link
+  // instead. Not where it can't reach the site (an editor's view, a page with
+  // no hosted viewer); on a public link's page, posts use that link.
   const shareEndpoint = (() => { try { return info.viewer_url ? new URL('share', info.viewer_url).href : ''; } catch (e) { return ''; } })();
   const publicPanel = byId('publicPanel');
   if (editor || info.public_url || !shareEndpoint || !canPack || !window.fetch) {
     $('[data-action="public"]', shareMenu).forEach(el => el.remove());
   } else if (publicPanel) {
-    const ask = byId('publicAsk'), done = byId('publicDone'), go = byId('publicGo');
-    actions.public = () => { publicPanel.hidden = false; ask.hidden = false; done.hidden = true; };
-    byId('publicCancel').onclick = () => { publicPanel.hidden = true; };
+    const ask = byId('publicAsk'), done = byId('publicDone'), go = byId('publicGo'), alt = byId('publicAlt');
+    let made = null;     // the public link made on this page: {url, del}
+    let pending = '';    // the post waiting on it
+    const show = () => { publicPanel.hidden = false; publicPanel.scrollIntoView({block: 'nearest'}); };
+    const showDone = head => {
+      byId('publicOpened').hidden = true;
+      byId('publicUrl').textContent = made.url;
+      byId('publicDel').textContent = made.del;
+      byId('publicHead').textContent = head;
+      ask.hidden = true; done.hidden = false; show();
+    };
+    const openAsk = intent => {
+      pending = intent || '';
+      go.textContent = !pending ? 'Create link' : pending === 'native' ? 'Create link and share'
+        : pending === 'email' ? 'Create link and write the email' : `Create link and post to ${postNames[pending]}`;
+      alt.hidden = !pending;
+      ask.hidden = false; done.hidden = true; show();
+    };
+    actions.public = () => { if (made) showDone('Your public link'); else openAsk(''); };
+    // a post asks first, once: after the link is made, posts use it
+    askBeforePost = intent => {
+      if (!made) { openAsk(intent); return; }
+      const w = postWindow(intent);
+      post(intent, made.url, w).catch(() => { if (w) w.close(); say('could not share'); });
+    };
+    byId('publicCancel').onclick = () => { publicPanel.hidden = true; pending = ''; };
+    byId('publicPrivate').onclick = e => {
+      e.preventDefault();
+      const intent = pending;
+      publicPanel.hidden = true; pending = '';
+      if (intent) postPrivate(intent);
+    };
     go.onclick = async () => {
+      const intent = pending;
+      const w = intent ? postWindow(intent) : null;
+      const label = go.textContent;
       go.disabled = true; go.textContent = 'Uploading…';
       try {
         const card = await shareCard().catch(() => '');
@@ -987,17 +1070,53 @@ function makeViewer(root){
         const r = await fetch(shareEndpoint, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=UTF-8'}, body});
         const j = await r.json().catch(() => ({}));
         if (!r.ok || !j.url) throw new Error(j.error || 'the public link could not be made');
-        byId('publicUrl').value = j.url;
-        byId('publicDelete').href = j.delete_url;
-        ask.hidden = true; done.hidden = false;
-        try { await copyText(j.url); say('public link copied'); } catch (e) { say('public link made'); }
+        made = {url: j.url, del: j.delete_url};
+        pending = '';
+        if (intent) {
+          showDone(intent === 'native' ? 'Public link created' : intent === 'email' ? 'Public link created, email opened'
+            : `Public link created and opened in ${postNames[intent]}`);
+          // the share sheet may refuse after the upload's wait: the link is here to copy instead
+          let opened = '';
+          try { opened = await post(intent, made.url, w); } catch (e) { say('the public link is ready: copy it to share'); }
+          // stay open on the links (the delete link above all), with the post
+          // one click away should the browser have stopped it opening
+          showShare(true);
+          const again = byId('publicOpen');
+          byId('publicOpened').hidden = !opened;
+          if (opened) {
+            again.href = opened;
+            again.textContent = intent === 'email' ? 'Open the email' : `Open ${postNames[intent]}`;
+            if (intent === 'email') again.removeAttribute('target'); else again.target = '_blank';
+          }
+        } else {
+          let copied = true;
+          try { await copyText(made.url); } catch (e) { copied = false; }
+          showDone(copied ? 'Public link created and copied' : 'Public link created');
+          say(copied ? 'public link copied' : 'public link made');
+        }
       } catch (e) {
+        if (w) w.close();
         say(e && e.message ? e.message : 'the public link could not be made');
       } finally {
-        go.disabled = false; go.textContent = 'Create link';
+        go.disabled = false; go.textContent = label;
       }
     };
-    byId('publicUrl').onclick = e => e.target.select();
+    // each link's button copies it (a click on the link itself selects all of it)
+    $('.pub-copy', publicPanel).forEach(b => {
+      b.onclick = async () => {
+        const field = byId(b.dataset.copy);
+        try {
+          await copyText(field.textContent);
+          b.classList.add('done');
+          setTimeout(() => b.classList.remove('done'), 1500);
+          say(b.dataset.copy === 'publicDel' ? 'delete link copied' : 'public link copied');
+        } catch (e) {
+          const range = document.createRange(); range.selectNodeContents(field);
+          const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+          say('selected: copy it from there');
+        }
+      };
+    });
   }
   // The share card: 1200 x 630, the graph as generated (its "after") on its own
   // background, and a footer saying what it is.
@@ -1088,6 +1207,14 @@ _HELP_ITEMS = (
     ),
 )
 
+# The public link panel's copy button: two sheets, and a check once copied
+_COPY_ICONS = (
+    '<svg class="cp" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">'
+    '<path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11z" fill="currentColor"/></svg>'
+    '<svg class="ok" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">'
+    '<path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" fill="currentColor"/></svg>'
+)
+
 
 def header_markup(fragment_attr=""):
     """The viewer's header: brand, scrubber cluster, partner links, share and
@@ -1123,9 +1250,21 @@ def header_markup(fragment_attr=""):
         '<div id="publicPanel" hidden>'
         '<div id="publicAsk"><p>A public link uploads this graph to initialcommit.com: its commit messages and short hashes, '
         "branch and tag names, and file names. Anyone with the link can open it, and posts show the graph itself.</p>"
-        '<div class="grid"><button id="publicGo">Create link</button><button id="publicCancel">Cancel</button></div></div>'
-        '<div id="publicDone" hidden><p>Public link copied:</p><input id="publicUrl" readonly aria-label="the public link">'
-        '<p><a id="publicDelete" target="_blank" rel="noopener">Delete link</a>: keep it to remove the public link later.</p></div>'
+        '<div class="pub-actions"><button id="publicGo">Create link</button><button id="publicCancel">Cancel</button></div>'
+        '<p class="pub-alt" id="publicAlt" hidden>Or <a href="#" id="publicPrivate">post the private link</a>: '
+        "nothing is uploaded, but the post won't show the graph.</p></div>"
+        '<div id="publicDone" hidden>'
+        '<p class="pub-head"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" fill="currentColor"/></svg>'
+        '<span id="publicHead">Public link created and copied</span></p>'
+        f'<div class="pub-row"><span class="pub-label">Public link</span><div class="pub-field">'
+        f'<div class="pub-value" id="publicUrl" tabindex="0" aria-label="the public link"></div><button type="button" class="pub-copy" data-copy="publicUrl" '
+        f'title="copy the public link" aria-label="Copy the public link">{_COPY_ICONS}</button></div></div>'
+        f'<div class="pub-row"><span class="pub-label">Delete link</span><div class="pub-field">'
+        f'<div class="pub-value" id="publicDel" tabindex="0" aria-label="the delete link"></div><button type="button" class="pub-copy" data-copy="publicDel" '
+        f'title="copy the delete link" aria-label="Copy the delete link">{_COPY_ICONS}</button></div>'
+        "<small>Keep it somewhere safe: opening it lets you delete the public link.</small></div>"
+        '<p class="pub-alt" id="publicOpened" hidden>Didn\'t open? <a id="publicOpen" target="_blank" rel="noopener">Open it here</a>.</p>'
+        "</div>"
         "</div>"
         '<h3>Save</h3><div class="grid">'
         '<button data-action="png" title="a PNG of the graph as shown right now">Download PNG</button>'
