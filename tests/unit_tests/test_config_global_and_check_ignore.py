@@ -160,8 +160,10 @@ def test_config_system_write_says_which_later_scope_wins(repo, system_file):
     scene = Config(l=False, settings=["core.editor", "nano"], system=True)
     scene.construct()
     assert "editor = nano" in texts(scene, "after")
-    assert any("admin rights" in t for t in texts(scene))
-    assert any("~/.gitconfig sets it to vim" in t for t in texts(scene)), "the global value that wins here is named"
+    # the paragraph wraps where the system's fonts make it, so read it whole
+    prose = " ".join(texts(scene))
+    assert "admin rights" in prose
+    assert "~/.gitconfig sets it to vim" in prose, "the global value that wins here is named"
 
 
 def test_config_system_list_shows_only_the_system_file(repo, system_file):

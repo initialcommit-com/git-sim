@@ -55,10 +55,12 @@ def predicted(command, *revs):
 
 
 def actual(path, *args):
-    out = git(path, "bisect", *args, check=False)
-    if "only 'skip'ped commits left" in out:
+    run = subprocess.run(["git", "bisect", *args], cwd=path, capture_output=True, text=True)
+    if "only 'skip'ped commits left" in run.stdout + run.stderr:
         return ("only-skipped", "")
-    m = re.search(r"^([0-9a-f]{40}) is the first bad commit", out, re.M)
+    # the bisect log records the culprit the same way across Git versions,
+    # where the message printed for it has changed
+    m = re.search(r"^# first bad commit: \[([0-9a-f]{40})\]", git(path, "bisect", "log", check=False), re.M)
     if m:
         return ("culprit", m.group(1)[:7])
     return ("next", git(path, "rev-parse", "--short=7", "HEAD").strip())

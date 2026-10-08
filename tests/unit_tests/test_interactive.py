@@ -300,7 +300,7 @@ def test_hosted_viewer_link_carries_the_graph_in_the_fragment():
         title="git  reset --hard HEAD~2",
         theme_name="light",
         summary="* abc (HEAD -> main) top",
-        local_path=r"C:\repo\git-sim_media\page.html",
+        local_path=os.path.join(os.path.abspath("repo"), "git-sim_media", "page.html"),
     )
     parts = urllib.parse.urlsplit(link)
     assert parts.scheme == "https" and parts.netloc == "initialcommit.com"
