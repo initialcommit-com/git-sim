@@ -58,9 +58,8 @@ def actual(path, *args):
     run = subprocess.run(["git", "bisect", *args], cwd=path, capture_output=True, text=True)
     if "only 'skip'ped commits left" in run.stdout + run.stderr:
         return ("only-skipped", "")
-    # the bisect log records the culprit the same way across Git versions,
-    # where the message printed for it has changed
-    m = re.search(r"^# first bad commit: \[([0-9a-f]{40})\]", git(path, "bisect", "log", check=False), re.M)
+    # Git 2.55 quotes the term: "# first 'bad' commit: [sha]" in the log
+    m = re.search(r"^# first '?bad'? commit: \[([0-9a-f]{40})\]", git(path, "bisect", "log", check=False), re.M)
     if m:
         return ("culprit", m.group(1)[:7])
     return ("next", git(path, "rev-parse", "--short=7", "HEAD").strip())
