@@ -22,6 +22,7 @@ from git_sim.render.constants import (
     WHITE,
 )
 from git_sim.render.mobject import Mobject
+from git_sim.render.skia_lib import load_skia
 
 # Pango generic family names, and what to try for them.
 GENERIC_FAMILIES = {
@@ -89,7 +90,7 @@ def register_font(font_path):
 @lru_cache(maxsize=None)
 def _typeface(family: str, bold: bool):
     """Resolve a family name to (skia.Typeface, needs_synthetic_bold)."""
-    import skia
+    skia = load_skia()
 
     key = (family or "").strip().lower()
     if key in _registered_fonts:
@@ -113,7 +114,7 @@ def _typeface(family: str, bold: bool):
 
 
 def make_font(family: str, bold: bool, size_px: float):
-    import skia
+    skia = load_skia()
 
     typeface, embolden = _typeface(family, bool(bold))
     font = skia.Font(typeface, float(size_px))
@@ -129,7 +130,7 @@ class TextLayout:
     first line's baseline. y points up."""
 
     def __init__(self, text, family, font_size, bold):
-        import skia
+        skia = load_skia()
 
         self.lines = text.split("\n")
         self.pitch = TEXT_LINE_PITCH_PER_POINT * font_size

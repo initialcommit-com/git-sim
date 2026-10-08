@@ -19,6 +19,7 @@ from git_sim.render.constants import (
 )
 from git_sim.render.mobject import Mobject
 from git_sim.render.shapes import Rectangle
+from git_sim.render.skia_lib import load_skia
 from git_sim.render.text import make_font
 
 
@@ -57,7 +58,7 @@ class Painter:
     """Maps scene units to pixels and issues skia draw calls."""
 
     def __init__(self, canvas, frame, pixel_width, pixel_height):
-        import skia
+        skia = load_skia()
 
         self.skia = skia
         self.canvas = canvas
@@ -321,7 +322,7 @@ class Scene:
         quality=95,
     ) -> bytes:
         """Draw the current scene state to ``path``; return the encoded bytes."""
-        import skia
+        skia = load_skia()
 
         surface = skia.Surface(int(pixel_width), int(pixel_height))
         canvas = surface.getCanvas()
