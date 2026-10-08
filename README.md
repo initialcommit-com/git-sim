@@ -114,13 +114,11 @@ Run git-sim live to record every Git operation executed by you or your AI agents
 
 It names, animates, and tracks every change to your Git repo, so you can step back through any of them, replay the whole session, save it as a single HTML page, or download it as a video.
 
-The page opens in the git-sim viewer which connects to a lightweight web server `git-sim live` runs on your machine, reachable only from `127.0.0.1` and with a session key. Its address travels in the link's `#fragment`, so nothing about your repo leaves your machine, and `--open-in local` serves the page from git-sim itself instead if you prefer not to invoke initialcommit.com's git-sim viewer and run purely local.
+By default, the page opens in the git-sim viewer on initialcommit.com which connects to a lightweight web server `git-sim live` runs on your machine, reachable only from `127.0.0.1` and with a session key. All Git data is compressed and stored in the URL #fragment, so nothing about your repo leaves your machine, and `--open-in local` serves the page from git-sim itself instead if you prefer not to invoke initialcommit.com's git-sim viewer and run purely local.
 
-**On the page:** each change joins the bar above the graph with its command and time (**Hide details** slims it down). Click a change to see it again, step through them with the player's arrows or `[` and `]`, or press **Play** to replay the session from the change on screen. **Watch the repo** returns to the latest change, and **Clear** starts over from the current state. **Save session** writes the whole session as one HTML file that opens anywhere, and **Record** plays it back as an MP4 or WebM video to post on social media. Each change is also saved as its own interactive page under `git-sim media-dir`.
+**Runs inside VS Code:** the VS code extension shows the same live graph in its **Live graph** tab and sidebar view (see [docs/vscode.md](docs/vscode.md)).
 
-**Inside VS Code:** the extension shows the same live graph in its **Live graph** tab and sidebar view (see [docs/vscode.md](docs/vscode.md)).
-
-**How it keeps up:** live mode reads what Git reports between checks, rather than watching `.git`, and waits for the repo to settle, so a rebase or a pull shows as one change. It names each change from the reflog when it can (`git commit`, `git reset <commit>`, `git switch -c <branch>`), and otherwise from what changed (a branch created, a file staged, a stash popped). Chrome and Edge ask once for permission to reach the local server. If a browser refuses, the page offers the local copy.
+**How it watches your repo:** live mode reads what Git reports between checks, rather than watching `.git`, and waits for the repo to settle, so a rebase or a pull shows as one change. It names each change from the reflog when it can (`git commit`, `git reset <commit>`, `git switch -c <branch>`), and otherwise from what changed (a branch created, a file staged, a stash popped). Chrome and Edge ask once for permission to reach the local server. If a browser refuses, the page offers the local version.
 
 **Useful options:**
 
@@ -133,7 +131,7 @@ The page opens in the git-sim viewer which connects to a lightweight web server 
 `--port <number>`: the local server's port  
 `-d`: open nothing, and just print the addresses
 
-Global options like `--all`, `-n`, and `--dark-mode` apply to every drawing. Live mode shows up to three branch labels per commit, unless `--max-branches-per-commit` says otherwise. Set `GIT_SIM_LIVE_DEBUG=1` to log each detected change.
+Set `GIT_SIM_LIVE_DEBUG=1` to log each detected change.
 
 ## Pre-flight
 
@@ -143,9 +141,11 @@ $ git-sim preflight reset --hard HEAD~2
 
 [![git-sim preflight reporting what a hard reset would lose](docs/img/preflight.png)](docs/mcp.md)
 
-Pre-flight shows what a command that can lose work would do before you run it, worked out from your repo rather than guessed: how risky it is, which commits would become unreachable, which changes would be lost for good, and the command that undoes it, all without touching your repo.
+git-sim's pre-flight mode shows a deterministic evaluation of whether any Git command is safe or potentially destructive to your repo, including how risky it is, which commits might become unreachable, which changes would be lost for good, and the command that undoes it, all without impacting your repo.
 
-AI agents get the same check: the [pre-flight hook and MCP server](docs/mcp.md) run it before an agent executes a destructive Git command, so the agent stops and asks you first (`git-sim wire-agents` sets this up). `--markdown` formats the report for a pull request comment, which the [GitHub Action](docs/integrations.md) uses, and the [VS Code extension](docs/vscode.md) shows it in an editor tab.
+This can be wired into AI agents to bring yourself (the human) into the loop to approve/deny Git commands that could be destructive. Run `git-sim wire-agents` to set up the automatic git-sim pre-flight for AI agents.
+
+The `--markdown` flag formats the report for a pull request comment, and the VS Code extension shows it in an editor tab.
 
 ## Supported Git commands
 
