@@ -32,6 +32,8 @@
 
 ;;; Code:
 
+(require 'subr-x)                       ; string-trim and string-empty-p on Emacs 27 and 28
+
 (defgroup git-sim nil
   "See what Git is doing to your repository with git-sim."
   :group 'vc
