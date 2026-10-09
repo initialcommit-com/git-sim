@@ -1,25 +1,33 @@
-# Where git-sim plugs in
+# Where you can use git-sim
 
-git-sim answers three questions (what would this do, is this safe, what just
-happened) wherever Git is used. The engine is the command line; everything
-below is a thin layer over it.
+git-sim works anywhere you use Git. The `git-sim` command line tool does the work, and each integration below runs it for you from somewhere else.
 
-| Place | What | Where it lives |
+| Where | What you get | Setup |
 | --- | --- | --- |
-| Terminal | `git-sim`, `git sim`, `git preflight`, `git live`; lazygit and tig bindings | [shell.md](shell.md) |
-| Browser | the viewer and the live page at initialcommit.com; the graph never leaves your machine | [Live mode](../README.md#live-mode) |
-| VS Code, Cursor, Windsurf, VSCodium | the extension: simulate, pre-flight, live tab and sidebar view, walkthrough | [vscode.md](vscode.md) |
-| Neovim | `:GitSim`, `:GitSimPreflight`, `:GitSimLive` | [integrations/nvim](../integrations/nvim) |
-| Vim 8.1+ | the same commands in Vimscript | [integrations/vim](../integrations/vim) |
-| Emacs 27.1+ | `git-sim-simulate`, `git-sim-preflight`, `git-sim-live`; Magit's branch or commit at point as the default | [integrations/emacs](../integrations/emacs) |
-| nano, and any editor without plugins | the shell: `git sim`, `git preflight`, and `git live` in a second pane; nano's execute prompt (`^T`) can insert a pre-flight report into the buffer | [shell.md](shell.md) |
-| Jupyter | `%load_ext git_sim.jupyter`, then `%gitsim rebase main` shows the graph inline | below |
-| GitHub CLI | `gh sim pr 42`: what merging a pull request would do, in a temporary worktree | [integrations/gh-sim](../integrations/gh-sim) |
-| GitHub Actions | a comment on each pull request with the pre-flight report and the graph as an artifact | [integrations/github-action](../integrations/github-action) |
-| Blogs and docs | `git-sim-embed.js`: the interactive viewer around any git-sim SVG | [embed.md](embed.md) |
-| AI agents | the pre-flight hook and MCP server, wired by `git-sim wire-agents` | [mcp.md](mcp.md) |
+| Terminal | `git-sim`, `git sim`, `git preflight`, and `git live`, plus lazygit and tig key bindings | [shell.md](shell.md) |
+| Browser | the git-sim viewer and live page at initialcommit.com (your repo's data stays on your machine) | [Live mode](../README.md#live-mode) |
+| VS Code, Cursor, Windsurf, VSCodium | the extension: simulate, pre-flight, a live graph in a tab or the sidebar, and a getting-started walkthrough | [vscode.md](vscode.md) |
+| Neovim | `:GitSim <command>`, `:GitSim preflight <command>`, and `:GitSim live` | [integrations/nvim](../integrations/nvim) |
+| Vim 8.1 and newer | the same commands as Neovim | [integrations/vim](../integrations/vim) |
+| Emacs 27.1 and newer | `git-sim-simulate`, `git-sim-preflight`, and `git-sim-live`, with Magit's branch or commit at point as the default | [integrations/emacs](../integrations/emacs) |
+| nano, and editors without plugins | `git live` in a second terminal pane, and nano's execute prompt (`^T`) to drop a pre-flight report into your file | [shell.md](shell.md) |
+| Jupyter | `%gitsim rebase main` shows the graph right under the cell | below |
+| GitHub CLI | `gh sim pr 42` shows what merging a pull request would do | [integrations/gh-sim](../integrations/gh-sim) |
+| GitHub Actions | a comment on each pull request with the pre-flight report, and the graph attached to the run | [integrations/github-action](../integrations/github-action) |
+| Blogs and docs | `git-sim-embed.js` wraps any git-sim graph in the interactive viewer | [embed.md](embed.md) |
+| AI agents | the pre-flight hook and the MCP server, set up with `git-sim wire-agents` | [mcp.md](mcp.md) |
+
+The Vim, Neovim, Emacs, and GitHub CLI integrations live in this repo's [integrations/](../integrations) folder. Each one's README has the steps to install it from here.
 
 ## Jupyter
+
+Install git-sim in the same environment as your notebook's kernel:
+
+```console
+$ pip install git-sim
+```
+
+Then, in a notebook:
 
 ```
 %load_ext git_sim.jupyter
@@ -28,16 +36,4 @@ below is a thin layer over it.
 %gitsim preflight reset --hard HEAD~1
 ```
 
-The command runs in the notebook's working directory (or the `-C` path) as it
-would in a terminal, with the browser kept closed, and the page git-sim wrote is
-shown in an iframe under the cell so its scripts and styles stay out of the
-notebook's. `preflight` prints the report as text. Nothing in the repository is
-changed. Needs git-sim installed in the notebook's kernel environment.
-
-## Publishing the pieces that need their own repository
-
-Three of these live here only as source and want a repository of their own to
-be installable by the usual command: `gh extension install` expects a
-repository named `gh-sim` with the `gh-sim` executable at its root, and Vim
-and Neovim plugin managers expect `plugin/` (and `lua/`) at a repository's
-root. Each folder's README says what to copy where.
+The command runs in the notebook's working directory (or the `-C` path), the same as it would in a terminal. The graph shows up in a frame under the cell, 560 pixels tall unless you set `--height`. `preflight` prints the report as text. git-sim never changes your repo.

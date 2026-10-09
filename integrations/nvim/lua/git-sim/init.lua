@@ -3,10 +3,10 @@
 --
 --   :GitSim rebase main          simulate a command (opens in the browser)
 --   :GitSim                      ...the command on the current line / selection
---   :GitSimPreflight reset --hard HEAD~1
+--   :GitSim preflight reset --hard HEAD~1
 --                                the pre-flight report, in a floating window
---   :GitSimLive                  follow this repository live (browser page)
---   :GitSimLiveStop
+--   :GitSim live                 follow this repository live (browser page)
+--   :GitSim live stop
 --
 -- Setup (optional): require("git-sim").setup({ executable = "git-sim", args = {} })
 
@@ -48,7 +48,7 @@ local function words(command)
 end
 
 local function argv(extra)
-  local a = { M.config.executable }
+  local a = { vim.fn.expand(M.config.executable) }
   vim.list_extend(a, M.config.args)
   vim.list_extend(a, extra)
   return a
@@ -98,7 +98,7 @@ function M.preflight(command)
   if command == "" then return notify("nothing to check: give a command or put the cursor on one", vim.log.levels.WARN) end
   local cwd = vim.fn.expand("%:p:h")
   local out = {}
-  local a = { M.config.executable, "preflight" }
+  local a = { vim.fn.expand(M.config.executable), "preflight" }
   vim.list_extend(a, words(command))
   vim.fn.jobstart(a, {
     cwd = cwd ~= "" and cwd or vim.loop.cwd(),
@@ -114,11 +114,12 @@ function M.preflight(command)
 end
 
 -- Follow the repository live: git-sim serves the page and opens the browser.
-function M.live_start()
-  if live_job then return notify("live mode is already running (:GitSimLiveStop to end it)") end
+function M.live_start(extra)
+  if live_job then return notify("live mode is already running (:GitSim live stop ends it)") end
   local cwd = vim.fn.expand("%:p:h")
   local a = argv({ "live" })
   vim.list_extend(a, M.config.live_args)
+  vim.list_extend(a, extra or {})
   live_job = vim.fn.jobstart(a, {
     cwd = cwd ~= "" and cwd or vim.loop.cwd(),
     on_stderr = function(_, d)
@@ -139,6 +140,22 @@ function M.live_stop()
   if not live_job then return notify("live mode is not running") end
   vim.fn.jobstop(live_job)
   live_job = nil
+end
+
+-- :GitSim [preflight | live [stop] | <git command>]. With no git command, the
+-- one on the current line or in the visual selection.
+function M.run(args)
+  local w = words(args ~= "" and args or command_under_cursor())
+  if w[1] == "live" then
+    if w[2] == "stop" then return M.live_stop() end
+    return M.live_start(vim.list_slice(w, 2))
+  end
+  if w[1] == "preflight" then
+    local rest = table.concat(vim.list_slice(w, 2), " ")
+    if rest == "" then rest = (command_under_cursor():gsub("^preflight%s*", "")) end
+    return M.preflight(rest)
+  end
+  return M.simulate(table.concat(w, " "))
 end
 
 function M.setup(opts)
