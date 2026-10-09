@@ -46,3 +46,33 @@ jobs:
           echo b > b && git add b && git commit -qm Second
           git-sim -d --media-dir ../media log
           ls -R ../media
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    env:
+      # the image installs this commit rather than the release on PyPI
+      SOURCE: git+https://github.com/${{ github.event.pull_request.head.repo.full_name || github.repository }}@${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: docker build -t git-sim --build-arg PACKAGE="git-sim[extras] @ $SOURCE" .
+      # the repo is made by the runner's user and mounted into a container
+      # running as root, the case the image's safe.directory setting is for
+      - name: Make a repo to simulate
+        run: |
+          git config --global user.name "git-sim tests"
+          git config --global user.email "tests@example.com"
+          git init -q -b main demo && cd demo
+          echo a > a && git add a && git commit -qm First
+          echo b > b && git add b && git commit -qm Second
+      - name: Draw a page, an image, and a video
+        working-directory: demo
+        run: |
+          docker run --rm -v "$PWD:/usr/src/git-sim" git-sim -d log
+          docker run --rm -v "$PWD:/usr/src/git-sim" git-sim -d --img-format png log
+          docker run --rm -v "$PWD:/usr/src/git-sim" git-sim -d --animate --low-quality log
+          ls -R git-sim_media
+          for ext in html png mp4; do
+            find git-sim_media -name "*.$ext" | grep -q . || { echo "no .$ext written"; exit 1; }
+          done

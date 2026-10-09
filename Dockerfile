@@ -15,6 +15,8 @@ RUN git config --system --add safe.directory '*'
 WORKDIR /usr/src/git-sim
 
 # Static images need only the core install; 'extras' adds Manim for --animate.
-RUN pip3 install "git-sim[extras]"
+# The tests build with a Git URL here to check the commit being tested.
+ARG PACKAGE="git-sim[extras]"
+RUN pip3 install "$PACKAGE"
 
 ENTRYPOINT [ "git-sim" ]
