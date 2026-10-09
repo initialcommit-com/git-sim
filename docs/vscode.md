@@ -1,41 +1,36 @@
 # git-sim for VS Code
 
-The extension in [`vscode/`](../vscode) puts git-sim in the editor: simulate a
-Git command in an editor tab, or pre-flight it first and see what it would do,
-lose, and how to undo it. It is a thin client over the `git-sim` command line,
-so it needs no build step and tracks git-sim releases for free.
+The extension in [`vscode/`](../vscode) puts git-sim inside VS Code and the editors built on it (Cursor, Windsurf, VSCodium). You can simulate a Git command in an editor tab, pre-flight a risky one, and keep a live graph of your repo open in a tab or the sidebar.
 
-## Using it
+The extension runs the `git-sim` command line tool for all of this, so it has no build step and picks up new git-sim features when you upgrade git-sim.
 
-1. Install git-sim: `pipx install git-sim` (or `uv tool install git-sim`).
-2. Install the extension from the Marketplace, or from a `.vsix` (below).
-3. In a repository: `Ctrl+Alt+G`, the beaker button in the Source Control view,
-   or **git-sim: Simulate a Git command...** from the Command Palette. Type the
-   command as you would after `git`, for example `rebase main`.
+For what the extension does and all its commands and settings, see its [README](../vscode/README.md), which is also its Marketplace page.
 
-**Pre-flight** is the safety half: **git-sim: Pre-flight a Git command...** shows
-the risk level, the commits that would become unreachable, the files that would
-be lost, how to undo it and a text commit graph, with a button to simulate it.
-Select a command in a file or a terminal and the context menu offers both.
+## Installation
 
-Settings live under `git-sim` (executable, extra options, dark graphs when
-the editor theme is dark, open in the browser instead of a tab, timeout).
+**1. Install git-sim**
 
-## The live graph
+```console
+$ pipx install git-sim
+```
 
-**git-sim: Live graph** (or the pulse button in the Source Control toolbar)
-opens a graph that follows the repository: after every change, whoever made it
-(a terminal, the Source Control view, an AI agent), the graph plays the change
-as a before / after animation and keeps it in a strip, so the session can be
-stepped through or replayed. The same graph is a view in the sidebar (the
-git-sim icon in the Activity Bar) that can be dragged next to a chat or the
-terminal. It runs `git-sim live --json` in the repository; see
-[Live mode](../README.md#live-mode) in the README for how it keeps up with the
-repository and how `git-sim live` serves the same page in a browser.
+Or `pip install git-sim`, or `uv tool install git-sim`. git-sim needs Python 3.10 to 3.14 and Git. Some minimal Linux systems also need a few graphics libraries, see [Requirements](../README.md#requirements).
+
+**2. Install the extension**
+
+```console
+$ code --install-extension initialcommit.git-sim
+```
+
+Or search for **git-sim** in the Extensions view. VS Code installs it from the Visual Studio Marketplace, and Cursor, Windsurf, and VSCodium install it from Open VSX. You can also install a `.vsix` file you built yourself (see below).
+
+**3. Try it**
+
+Open a Git repo and press `Ctrl+Alt+G` (`Cmd+Alt+G` on a Mac), or click the beaker button in the Source Control view. Type the command as you would after `git`, for example `rebase main`.
 
 ## The `preflight` command
 
-The extension calls `git-sim preflight --json`, which is also useful on its own:
+The extension's pre-flight report comes from `git-sim preflight --json`. You can run the same check in a terminal:
 
 ```
 $ git-sim preflight reset --hard HEAD~1
@@ -49,63 +44,35 @@ What happens:
 ...
 ```
 
-Git's own options pass straight through; quoting the whole command works too
-(`git-sim preflight "git stash drop"`). `--json` prints the report the MCP
-server returns; `-C <path>` checks another repository. Only analysis runs:
-nothing is rendered and the repository is never modified.
+Git's own options pass straight through, and quoting the whole command works too (`git-sim preflight "git stash drop"`). `--json` prints the report the MCP server returns, and `-C <path>` checks another repo. Pre-flight only reads your repo. It never changes anything and doesn't draw a graph.
 
 ## Building the extension
 
-The extension is plain JavaScript, so there is nothing to compile. To package
-it without Node, run the bundled script (Python 3.10+):
+The extension is plain JavaScript, so there's nothing to compile. To package it without Node, run the bundled script (needs Python 3.10 or newer):
 
-```
-python vscode/build_vsix.py        # -> vscode/git-sim-<version>.vsix, e.g. git-sim-0.4.0.vsix
-code --install-extension vscode/git-sim-0.4.0.vsix
+```console
+$ python vscode/build_vsix.py
+$ code --install-extension vscode/git-sim-0.4.0.vsix
 ```
 
-With Node available, `npx @vscode/vsce package` in `vscode/` produces the same
-file. To try changes live, open `vscode/` in VS Code and press F5.
+The script writes `vscode/git-sim-<version>.vsix`, using the version in `vscode/package.json`.
+
+With Node installed, `npx @vscode/vsce package` in `vscode/` builds an equivalent file. To try changes as you make them, open `vscode/` in VS Code and press F5.
 
 ## Publishing
 
-Two registries, both free, same `.vsix`:
+The same `.vsix` goes to two registries, both free:
 
-- **Visual Studio Marketplace** (VS Code): a publisher named `initialcommit`
-  at marketplace.visualstudio.com/manage, then upload the `.vsix` there, or
-  `vsce login initialcommit` and `vsce publish` with a Personal Access Token
-  that has the Marketplace "Manage" scope. Verifying the initialcommit.com
-  domain with a DNS TXT record adds the publisher check mark.
-- **Open VSX** (Cursor, Windsurf, VSCodium and other forks, which cannot use
-  Microsoft's marketplace): an account at open-vsx.org, the publisher
-  agreement, then upload the `.vsix` or `npx ovsx publish -p <token>`.
+- **Visual Studio Marketplace** (VS Code): sign in at marketplace.visualstudio.com/manage with the `initialcommit` publisher and upload the `.vsix`. Or run `vsce login initialcommit` and `vsce publish` with a Personal Access Token that has the Marketplace "Manage" scope. Verifying the initialcommit.com domain with a DNS TXT record adds the publisher check mark.
+- **Open VSX** (Cursor, Windsurf, VSCodium, and other editors that can't use Microsoft's marketplace): create an account at open-vsx.org, accept the publisher agreement, then upload the `.vsix` or run `npx ovsx publish -p <token>`.
 
-The page each registry shows is `vscode/README.md`; images in it must be
-reachable on the repository's default branch.
+Both registries show `vscode/README.md` as the extension's page. Any images in it need absolute links to files on the repo's default branch.
 
 ## How it works
 
-- Simulations: `git-sim --img-format html --output-only-path <command>` in the
-  chosen repository. The self-contained page git-sim writes is shown in a
-  webview with a content-security policy allowing only its inline parts.
-- Share from a tab: a webview can neither download a file nor open a window,
-  so git-sim's page, seeing `acquireVsCodeApi`, posts the file (`saveFile`),
-  the link (`copyText`) or the post's address (`openExternal`) to the
-  extension, which saves it through a dialog, puts it on the clipboard or
-  opens it in the browser. The live page and the graph's Share menu share the
-  one editor handle a webview allows (`window.__gitSimHost`).
-- Pre-flight: `git-sim preflight --json -- <command>`, rendered as a small
-  report page with a Simulate button.
-- Live graph: `git-sim live --json -C <repo>`, one process per repository
-  shared by every tab and view showing it. Each JSON line names the animated
-  SVG git-sim wrote; the extension reads it and posts it into git-sim's own
-  live page (`git-sim live --print-page`), which runs unchanged in the
-  webview. The process ends when its stdin closes, so it never outlives the
-  window.
-- The repository is the one holding the active file, else the workspace folder
-  (a quick pick when there are several).
-- `git-sim: Wire git-sim into AI coding agents` runs `git-sim wire-agents`, which
-  gives VS Code both halves of the agent story: the pre-flight hook (VS Code's
-  agent hooks read Copilot CLI hook files, so it shares
-  `~/.copilot/hooks/git-sim.json`) and the MCP server in the user `mcp.json`,
-  for Copilot's Agent mode (see [mcp.md](mcp.md)). Restart VS Code afterwards.
+- **Simulations** run `git-sim --img-format html --output-only-path <command>` in the repo. The extension shows the page git-sim writes in a webview, with a content security policy that only allows the page's own inline code.
+- **Sharing from a tab:** a webview can't download files or open windows. So when git-sim's page sees it's running inside VS Code (`acquireVsCodeApi`), it sends the file (`saveFile`), the link (`copyText`), or the post's address (`openExternal`) to the extension. The extension saves the file through a dialog, copies the link, or opens the address in your browser. The live page and the graph's Share menu share the one editor handle a webview allows (`window.__gitSimHost`).
+- **Pre-flight** runs `git-sim preflight --json -- <command>` and shows the result as a small report page with a **Simulate it** button.
+- **The live graph** runs `git-sim live --json -C <repo>`, one process per repo, shared by every tab and view showing it. Each JSON line names the animated SVG git-sim wrote. The extension reads it and passes it to git-sim's own live page (`git-sim live --print-page`), which runs unchanged in the webview. The process ends when its input closes, so it never outlives the editor window.
+- **Which repo:** the one holding the active file, otherwise the workspace folder. With several folders, it asks.
+- **Wire git-sim into AI coding agents** runs `git-sim wire-agents`. For VS Code, that sets up the pre-flight hook (VS Code's agent hooks read Copilot CLI's hook files, so it shares `~/.copilot/hooks/git-sim.json`) and the MCP server in your user `mcp.json`, for Copilot's Agent mode. See [mcp.md](mcp.md). Restart VS Code afterwards.

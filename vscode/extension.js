@@ -100,7 +100,8 @@ async function checkAvailable() {
 function commandInstallGitSim() {
   const terminal = vscode.window.createTerminal({ name: 'git-sim' });
   terminal.show();
-  terminal.sendText('pipx install git-sim || pip install git-sim', false);
+  // Windows PowerShell 5.1 has no ||, so Windows gets pip alone
+  terminal.sendText(process.platform === 'win32' ? 'pip install git-sim' : 'pipx install git-sim || pip install git-sim', false);
   vscode.window.showInformationMessage('Press Enter in the terminal to install git-sim. The status bar will show "git-sim" once it is found.');
   // look again once the user has had a chance to run it
   const timer = setInterval(() => { checkAvailable().then(() => { if (available) { clearInterval(timer); startInbox(currentContext); } }); }, 5000);

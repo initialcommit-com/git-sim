@@ -1,7 +1,6 @@
 ## What would this do?
 
-`Ctrl+Alt+G` opens a prompt with `git-sim ` already typed. Finish it as you
-would in a terminal:
+`Ctrl+Alt+G` opens a prompt with `git-sim ` already typed. Finish the command the way you would in a terminal:
 
 ```
 git-sim rebase main
@@ -10,15 +9,8 @@ git-sim merge feature
 git-sim stash
 ```
 
-The command plays out in an editor tab on a before / after graph of your real
-repository: a rebase replays one commit at a time, a reset shows what falls out
-of reach, a merge shows whether it fast-forwards, a stash moves files between
-the working directory and the stash.
+The command plays out in an editor tab on a before / after graph of your repo. A rebase replays one commit at a time, a reset shows which commits fall out of reach, a merge shows whether it fast-forwards, and a stash moves files between the working directory and the stash.
 
-Drag the slider or press play. Hover a commit for its message, author, date and
-parents; click to copy its sha; ctrl + wheel zooms. Share copies a link or an
-image.
+Drag the slider or press play. Hover a commit for its message, author, date, and parents, and click it to copy its hash. Ctrl + mouse wheel zooms. The **Share** menu copies a link or saves the graph as an image or a page.
 
-Also: select a command in a script, a README or the terminal and choose
-**Simulate the selected command** from the context menu, or the beaker button
-in the Source Control view's title bar.
+You can also select a command in a file, like a README or a script, and choose **Simulate the selected command** from the right-click menu. In the terminal, select a command and choose **Simulate a Git command...** from the right-click menu. Or use the beaker button in the Source Control view's toolbar.

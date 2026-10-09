@@ -1,18 +1,19 @@
 ## Install git-sim
 
-The extension is a thin client: git-sim itself reads your repository, works out
-what a command would do, and draws it. Install it once, on your PATH:
+The extension runs the git-sim command line tool, which reads your repo, works out what a command would do, and draws it. Install it once:
 
 ```
 pipx install git-sim
 ```
 
-or `uv tool install git-sim`, or `pip install git-sim`. Python 3.10 or newer
-and Git are required.
+Or `pip install git-sim`, or `uv tool install git-sim`. git-sim needs Python 3.10 to 3.14 and Git.
 
-If git-sim lives somewhere unusual, point the `git-sim.executable` setting at
-it. The status bar entry turns from "git-sim: not found" to "git-sim" when the
-extension can run it.
+Minimal Linux systems (servers, containers, WSL) may also need the graphics libraries git-sim draws with. On Debian, Ubuntu, or WSL:
 
-Nothing in your repository is ever modified by git-sim. Simulations and live
-sessions are saved in your user cache folder (`git-sim media-dir` prints it).
+```
+sudo apt install libegl1 libgl1 libfontconfig1
+```
+
+The status bar changes from "git-sim: not found" to "git-sim" once the extension finds it. If git-sim isn't on your `PATH`, set `git-sim.executable` to its full path.
+
+git-sim never changes your repo. Simulations and live sessions are saved in your user cache folder (`git-sim media-dir` shows where).

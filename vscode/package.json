@@ -101,7 +101,7 @@
           {
             "id": "install",
             "title": "Install git-sim",
-            "description": "The extension drives the git-sim command line, which needs Python 3.10 or newer and Git.\n[Install git-sim](command:git-sim.installGitSim)\nThe status bar shows a beaker with \"git-sim\" once it is found.",
+            "description": "The extension drives the git-sim command line, which needs Python 3.10 to 3.14 and Git.\n[Install git-sim](command:git-sim.installGitSim)\nThe status bar shows a beaker with \"git-sim\" once it is found.",
             "media": { "markdown": "walkthrough/install.md" },
             "completionEvents": ["onContext:git-sim.available"]
           },
@@ -160,7 +160,7 @@
         "git-sim.followEditorTheme": {
           "type": "boolean",
           "default": true,
-          "description": "Draw simulations in light mode when the editor's colour theme is light."
+          "description": "Draw graphs dark when the editor's color theme is dark (git-sim draws them light by default)."
         },
         "git-sim.openInBrowser": {
           "type": "boolean",

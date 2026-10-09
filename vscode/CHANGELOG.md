@@ -17,12 +17,19 @@
   initialcommit.com.
 - The agents list in the README covers every agent `git-sim wire-agents`
   configures, the MCP-only ones included.
+- Graphs are light by default, like git-sim's own. With
+  `git-sim.followEditorTheme` on, a dark editor theme draws them dark.
+  Needs a git-sim with `--dark-mode` (`pipx upgrade git-sim`).
+- On Windows, **git-sim: Install git-sim (opens a terminal)** types
+  `pip install git-sim`, since Windows PowerShell can't run the
+  `pipx ... || pip ...` fallback.
 
 ## 0.3.0
 
 - A **Get Started** walkthrough (Help: Get Started, or on first install):
   install git-sim, simulate, pre-flight, live graph, agents, lessons.
-- **git-sim: Install git-sim** opens a terminal with the install command.
+- **git-sim: Install git-sim (opens a terminal)** types the install command
+  in a terminal.
 - Save a live session as one page (**Save session** in the strip): every
   change and the strip in a single HTML file that opens anywhere.
 - Record the replay as a video (**Record video**), MP4 where the browser

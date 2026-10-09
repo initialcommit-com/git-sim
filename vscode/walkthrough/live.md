@@ -1,22 +1,14 @@
 ## What just happened?
 
-**git-sim: Live graph** opens a graph that follows the repository. After every
-change, whoever made it (you in the terminal, the Source Control view, an AI
-agent), the graph plays the change the way a simulation does: the new commit
-fades in, labels slide over, a dropped branch fades out, a staged file crosses
-to its column.
+**git-sim: Live graph** opens a graph that follows your repo. Every change plays the moment it happens, whether you did it in the terminal, in the Source Control view, or an AI agent did it. New commits fade in, branch labels slide over, deleted branches fade out, and staged files move to their column.
 
-Every change stays in the strip above the graph:
+Each change is kept in the strip above the graph:
 
-- click one to see it again, `[` and `]` step through them;
-- **Replay all** plays the session end to end;
-- **Save session** writes the whole session as one HTML file that opens anywhere;
-- **Record video** records the replay as an MP4 or WebM to post.
+- click a change to see it again, or press `[` and `]` to step through them
+- **Replay all** plays the whole session
+- **Save session** saves the session as one HTML page that opens anywhere
+- **Record video** records the replay as an MP4 or WebM
 
-The same graph is a view in the sidebar (the git-sim icon in the Activity Bar).
-Drag it into the secondary sidebar under your AI chat, or into the panel next to
-the terminal, and it follows along. The sidebar draws the commit graph without
-the status table; change that with `git-sim.liveZones`.
+The live graph is also a view in the sidebar (the git-sim icon in the Activity Bar). Drag it next to your AI chat or your terminal and it follows along. The sidebar leaves out the table of untracked, modified, and staged files. Change that with `git-sim.liveZones`.
 
-**git-sim: Open a recorded live session...** lists past sessions of the
-repository and opens one.
+**git-sim: Open a recorded live session...** lists your repo's past sessions and opens one.

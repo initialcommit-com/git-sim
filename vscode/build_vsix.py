@@ -48,8 +48,8 @@ def manifest(pkg):
         "Microsoft.VisualStudio.Services.Links.Getstarted": pkg["repository"]["url"],
         "Microsoft.VisualStudio.Services.Links.Support": pkg["bugs"]["url"],
         "Microsoft.VisualStudio.Services.Links.Learn": pkg["homepage"],
-        "Microsoft.VisualStudio.Services.Branding.Color": "#fff7ed",
-        "Microsoft.VisualStudio.Services.Branding.Theme": "light",
+        "Microsoft.VisualStudio.Services.Branding.Color": pkg["galleryBanner"]["color"],
+        "Microsoft.VisualStudio.Services.Branding.Theme": pkg["galleryBanner"]["theme"],
     }
     properties = "".join(
         f'<Property Id="{k}" Value="{escape(v, {chr(34): "&quot;"})}"/>'
