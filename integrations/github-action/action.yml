@@ -37,6 +37,12 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
 
+    # skia draws the graph and loads these, which GitHub's Ubuntu runners lack
+    - name: Install the libraries skia needs on Linux
+      if: runner.os == 'Linux'
+      shell: bash
+      run: sudo apt-get update -qq && sudo apt-get install -y -qq libegl1 libgl1 libfontconfig1 > /dev/null
+
     - name: Install git-sim
       shell: bash
       run: python -m pip install --quiet git-sim
@@ -106,7 +112,7 @@ runs:
           echo "<sub>Computed from the repository by [git-sim](https://initialcommit.com/tools/git-sim); nothing was merged or changed.</sub>"
         } > git-sim-out/comment.md
         # one comment per pull request, updated on later runs
-        existing=$(gh api "repos/${GITHUB_REPOSITORY}/issues/$NUMBER/comments" --jq '.[] | select(.body | startswith("<!-- git-sim-pr-check -->")) | .id' | head -n 1 || true)
+        existing=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/issues/$NUMBER/comments" --jq '.[] | select(.body | startswith("<!-- git-sim-pr-check -->")) | .id' | head -n 1 || true)
         if [ -n "$existing" ]; then
           gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/$existing" -F body=@git-sim-out/comment.md > /dev/null
         else

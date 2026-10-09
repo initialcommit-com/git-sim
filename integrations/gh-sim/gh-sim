@@ -8,7 +8,7 @@
 # `gh sim pr` never touches your checkout: it fetches the pull request's head
 # and base into a temporary worktree, runs git-sim there, and removes it.
 #
-# Install:  gh extension install initialcommit-com/gh-sim
+# Install:  gh extension install .   (from this folder, in a clone of git-sim)
 # Needs:    git-sim on the PATH (pipx install git-sim) and gh logged in.
 set -euo pipefail
 
@@ -57,7 +57,7 @@ cd "$worktree"
 if [ "$mode" = "rebase" ]; then
   # What the pull request's commits look like replayed onto the base.
   git switch -q -C "gh-sim/pr-$number" "refs/gh-sim/pr-$number"
-  git-sim rebase "$base"
+  git-sim rebase "$remote/$base"
 else
   git-sim merge "gh-sim/pr-$number"
 fi
