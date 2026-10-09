@@ -29,10 +29,12 @@ def _placeholders(case, shapes, tmp_path):
     return [a.format(**values) if "{" in a else a for a in case.args]
 
 
-@pytest.mark.parametrize("case", CASES, ids=[c.id for c in CASES])
-def test_case(case, shapes, gitsim, golden, tmp_path, request):
-    if case.slow:
-        request.applymarker(pytest.mark.slow)
+# the slow mark goes on the parameter so `-m "not slow"` can deselect it
+@pytest.mark.parametrize(
+    "case",
+    [pytest.param(c, id=c.id, marks=[pytest.mark.slow] if c.slow else []) for c in CASES],
+)
+def test_case(case, shapes, gitsim, golden, tmp_path):
     shape = shapes.get(case.shape)
     args = _placeholders(case, shapes, tmp_path)
     run = gitsim.run(shape.path, *args, fmt=case.fmt, globals_=case.globals_)

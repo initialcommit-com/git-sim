@@ -1,74 +1,36 @@
-# Testing
----
+# Testing git-sim
 
-Testing is done with pytest. The focus for now is on end-to-end tests, which show that the overall project is working as it should.
+git-sim's tests use pytest. To run them from a fresh clone:
 
-## Running tests
-
-The following instructions will let you run tests as soon as you clone the repository:
-
-```sh
+```console
 $ git clone https://github.com/initialcommit-com/git-sim.git
 $ cd git-sim
-$ python3 -m venv .venv
-$ source venv/bin/activate
-(.venv)$ pip install -e .
-(.venv)$ pip install pytest
-(.venv)$ pytest -s
+$ python -m venv .venv
+$ source .venv/bin/activate          # Windows: .venv\Scripts\activate
+$ pip install -e ".[dev]"
+$ pytest tests/unit_tests
 ```
 
-Including the `-s` flag tells pytest to include diagnostic information in the test output. This will show you where the test data is being written:
+Use Python 3.10 to 3.14. On a minimal Linux system you may also need the graphics libraries git-sim draws with, see [Requirements](../README.md#requirements).
 
-```sh
-(.venv)$ pytest -s
-===== test session starts ==========================================
-platform darwin -- Python 3.11.2, pytest-7.3.2, pluggy-1.0.0
-rootdir: /Users/.../git-sim
-collected 3 items
+If you've set any `git_sim_*` environment variables for your own use (like `git_sim_img_format`), unset them before running the tests, since they change what git-sim draws.
 
-tests/e2e_tests/test_core_commands.py 
+## The test suites
 
-Temp repo directory:
-  /private/var/folders/.../pytest-108/sample_repo0
+| Folder | What it checks | How to run it |
+|---|---|---|
+| `unit_tests/` | Each part on its own: the scenes, the renderer, pre-flight, live mode, the hook, and `wire-agents` | `pytest tests/unit_tests` |
+| `validation/` | Every command, with every option, draws what Git would actually do, across many repo shapes | `pytest tests/validation` |
+| `e2e_tests/` | The PNG output still looks the same, compared pixel by pixel with reference images | `pytest tests/e2e_tests` |
+| `sanity/` | git-sim against Git on six real open-source repos, before a release | see [sanity/README.md](sanity/README.md) |
 
-...
+GitHub Actions runs the unit tests on Linux, macOS, and Windows with every supported Python version on each push. The validation suite takes a few minutes, and the sanity run takes about half an hour.
 
-===== 3 passed in 6.58s ============================================
-```
+For how the validation suite works, how to add a case, and how to accept a drawing change, see [docs/testing.md](../docs/testing.md).
 
-## Helpful pytest notes
+## Good to know
 
-- `pytest -x`: Stop after the first test fails.  
-- `pytest -n auto`: Tests can be executed in parallel to dramatically speed up performance (up to ~70%). To do this first run `pip install pytest-xdist` then run `pytest -n auto`. Note that test output is not supported when executing tests in parallel. If a failure occurs and you need output for troubleshooting, execute tests in series as outlined above.
-
-## Adding more tests
-
-To add another test:
-
-- Work in `tests/e2e_tests/test_core_commands.py`.
-- Duplicate one of the existing test functions.
-- Replace the value of `raw_cmd` with the command you want to test.
-- Run the test suite once with `pytest -sx`. The test should fail, but it will generate the output you need to finish the process.
-- Look in the "Temp repo directory" specified at the start of the test output.
-    - Find the `git-sim_media/` directory there, and find the output file that was generated for the test you just wrote.
-    - Open that file, and make sure it's correct.
-    - If it is, copy that file into `tests/e2e_tests/reference_files/`, with an appropriate name.
-    - Update your new test function so that `fp_reference` points to this new reference file.
-- Run the test suite again, and your test should pass.
-- You will need to repeat this process once on macOS or Linux, and once on Windows.
-
-## Cross-platform issues
-
-There are two cross-platform issues to be aware of.
-
-### Inconsistent png and jpg output
-
-When git-sim generates a jpg or png file, that file can be slightly different on different systems. Files can be slightly different depending on the architecture, and which system libraries are installed. Even Intel and Apple-silicon Macs can end up generating non-identical image files.
-
-These issues are mostly addressed by checking that image files are similar within a given threshold, rather than identical.
-
-### Inconsistent Windows and macOS output
-
-The differences across OSes is even greater. I believe this may have something to do with which fonts are available on each system.
-
-This is dealt with by having Windows-specific reference files and by using Courier New as the font for all test reference images.
+- `pytest -x` stops at the first failure.
+- The e2e tests need `VIRTUAL_ENV` set to the full path of your virtual environment. Activating it sets that for you.
+- The e2e reference images are drawn with a bundled font (ProggyClean) so they match across systems. Small differences between machines are allowed by comparing images within a threshold rather than exactly.
+- `pip install pytest-xdist` and `pytest -n auto` run tests in parallel, which is much faster for the validation suite.
