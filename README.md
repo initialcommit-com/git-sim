@@ -51,7 +51,7 @@ $ git-sim reset --hard HEAD^
 $ git-sim rebase main
 ```
 
-git-sim creates visual dry-runs. It generates an interactive graph of exactly how any Git command will impact your repo, without actually running the real Git command so nothing changes in your repo.
+By default, git-sim creates a web-first, shareable visualization that opens in your browser. It generates an interactive simulation of exactly how any Git command will impact your repo, without actually running the real Git command so nothing changes in your repo.
 
 Run `git-sim -h` to list every command.
 
