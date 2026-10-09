@@ -1,38 +1,34 @@
-# git-sim where you already type git
+# git-sim in your terminal tools
 
-git-sim answers three questions: what would this do (`git-sim <command>`), is
-this safe (`git-sim preflight <command>`), what just happened (`git-sim live`).
-This page is about asking them without leaving the tools you already use.
+git-sim has three main commands: `git-sim <command>` to see what a Git command would do, `git-sim preflight <command>` to check whether it's safe, and `git-sim live` to watch your repo change. This page shows how to use them from the tools you already have open.
 
-## As git subcommands
+## As Git subcommands
 
-Git runs any program named `git-<name>` on the PATH as `git <name>`, so this
-works the moment git-sim is installed:
+Git runs any program named `git-<name>` on your `PATH` as `git <name>`, so this works as soon as git-sim is installed:
 
-```
-git sim rebase main
-git sim reset --hard HEAD~2
+```console
+$ git sim rebase main
+$ git sim reset --hard HEAD~2
 ```
 
-The other two verbs become subcommands with one command:
+To get `git preflight` and `git live` too, run:
 
-```
-git-sim aliases        # adds git preflight and git live to your global config
-```
-
-```
-git preflight reset --hard HEAD~2
-git live
+```console
+$ git-sim aliases
 ```
 
-`git-sim aliases --local` writes them into the current repository instead;
-`--remove` takes them out again. An alias of your own with the same name is
-never touched.
+That adds them to your global Git config:
+
+```console
+$ git preflight reset --hard HEAD~2
+$ git live
+```
+
+`git-sim aliases --local` adds them to the current repo only, and `--remove` takes them out again. If you already have your own aliases with those names, git-sim leaves them alone.
 
 ## lazygit
 
-In `config.yml` (`lazygit --print-config-dir` says where), custom commands bind
-a key in a context to a command built from the selection:
+Add custom commands to lazygit's `config.yml` (`lazygit --print-config-dir` shows where it is). Each one binds a key to a git-sim command built from what you've selected:
 
 ```yaml
 customCommands:
@@ -51,17 +47,16 @@ customCommands:
     output: terminal
   - key: "L"
     context: "global"
-    description: "git-sim: follow this repository live"
+    description: "git-sim: watch this repo live"
     command: "git-sim live"
     output: terminal
 ```
 
-Simulations open in the browser; the pre-flight report and live mode print in
-lazygit's terminal output.
+Simulations open in your browser. The pre-flight report and live mode show in lazygit's terminal output.
 
 ## tig
 
-In `~/.tigrc`, bind keys in the main view to git-sim with the selected commit:
+Add these to `~/.tigrc` to run git-sim on the selected commit in tig's main view:
 
 ```
 bind main S !git-sim reset %(commit)
@@ -70,28 +65,20 @@ bind main P !git-sim preflight reset --hard %(commit)
 bind generic L !git-sim live
 ```
 
-## Shell completion
+## Tab completion
 
-git-sim is a Typer application: `git-sim --install-completion` adds tab
-completion for its commands and options to bash, zsh, fish or PowerShell.
+```console
+$ git-sim --install-completion
+```
+
+This adds tab completion for git-sim's commands and options to bash, zsh, fish, or PowerShell. Restart your terminal afterwards.
 
 ## In an editor
 
-The [VS Code extension](vscode.md) puts all three verbs in the editor, with a
-live view for the sidebar; [Vim](../integrations/vim), [Neovim](../integrations/nvim)
-and [Emacs](../integrations/emacs) have plugins with the same commands. For
-editors without a plugin system, nano among them, the terminal does the work:
-`git-sim live` in a pane beside the editor (tmux, a second tab) opens the
-graph in the browser and follows whatever you do in the editor's own Git
-commands. In nano 5 or newer, the execute prompt (`^T`, "Execute Command")
-runs a shell command and inserts its output, so
-`git-sim preflight reset --hard HEAD~1` there drops the report into the
-buffer you are writing in, which is handy for notes and pull request
-descriptions.
+The [VS Code extension](vscode.md) has all three commands, plus a live graph you can keep in the sidebar. [Vim](../integrations/vim), [Neovim](../integrations/nvim), and [Emacs](../integrations/emacs) have plugins with the same commands.
+
+For editors without plugins, like nano, use the terminal. Run `git-sim live` in a second pane (tmux, or a second terminal tab) and it follows whatever Git commands you run. In nano 5 or newer, the execute prompt (`^T`) runs a shell command and inserts its output into your file, so running `git-sim preflight reset --hard HEAD~1` there drops the report right into your notes or a pull request description.
 
 ## Beside an AI agent
 
-`git-sim wire-agents` wires the pre-flight hook and the MCP server into the agents
-on your machine ([mcp.md](mcp.md)). For an agent that runs in a terminal,
-`git-sim live` in a second pane shows every commit, reset and rebase the agent
-makes as it makes it, and the session's strip is the record of what it did.
+`git-sim wire-agents` adds the pre-flight hook and the MCP server to the AI agents on your machine (see [mcp.md](mcp.md)). For an agent that runs in a terminal, keep `git-sim live` open in a second pane. You'll see every commit, reset, and rebase the agent makes as it makes it, and the session is a record of everything it did.

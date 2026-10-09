@@ -1,8 +1,6 @@
 # Embedding a git-sim graph in a page
 
-Any blog post, tutorial or documentation page can show a git-sim graph with
-the full interactive viewer: the Before / After slider and play button, hover
-details, zoom, sharing. Two lines:
+You can put a git-sim graph in any blog post, tutorial, or docs page, with the full interactive viewer: the Before / After slider, the play button, hover details, zoom, and sharing. It takes two pieces of HTML:
 
 ```html
 <div class="git-sim" data-src="/img/rebase-main.svg" data-title="git rebase main">
@@ -11,50 +9,35 @@ details, zoom, sharing. Two lines:
 <script src="https://initialcommit.com/js/tools/git-sim-embed.js" defer></script>
 ```
 
-The script replaces every `.git-sim` element with the viewer showing its graph.
-Include it once; it finds all of them.
+The script turns every element with the `git-sim` class into the viewer showing its graph. Include the script once per page, and it finds all of them.
 
-The link inside the element becomes a one-line credit under the graph, and
-it's what readers see if the script can't run. Leave it out and the script
-adds the same credit itself. git-sim is free and open source, and the credit
-is how other people find it.
+The link inside the element becomes a one-line credit under the graph. It's also what readers see if the script can't run. If you leave it out, the script adds the same credit itself. git-sim is free and open source, and the credit is how other people find it.
 
 ## Making the graph
 
-```
-git-sim --img-format svg rebase main
+```console
+$ git-sim --img-format svg rebase main
 ```
 
-writes the graph alone (the interactive page's SVG, with the before / after
-data the viewer plays) under `git-sim media-dir`. Copy it next to your page.
-"Download SVG" in any git-sim page's Share menu gives the same file. A saved
-page (`.html`) works too and is framed as it is.
+This saves just the graph as an SVG, with the before and after data the viewer plays, in git-sim's media folder (`git-sim media-dir` shows where). Copy it next to your page. **Download SVG** in any git-sim page's Share menu gives you the same file. A saved git-sim page (`.html`) works too, and is shown as it is.
 
 ## Attributes
 
-| Attribute | Meaning |
+| Attribute | What it does |
 | --- | --- |
-| `data-src` | The SVG (or saved page) to show. Same origin as your page, or a host that allows cross-origin reads. |
-| `data-title` | The command, for the share text and the frame's title. |
-| `data-state` | `before`, `after` or `step=N` pins the graph there; without it the graph plays on a loop. |
-| `data-theme` | `dark` or `light`. Default: your reader's colour-scheme preference. |
-| `data-controls` | `compact` drops the brand and partner links, keeping the slider and Share. |
-| `data-height` | A fixed height (`480px`). Default: the embed takes the height the graph needs. |
+| `data-src` | The SVG (or saved page) to show. It has to be on the same site as your page, or on a host that allows cross-origin requests. |
+| `data-title` | The command, used in the share text and the frame's title. |
+| `data-state` | `before`, `after`, or `step=N` holds the graph at that point. Without it, the graph plays on a loop. |
+| `data-theme` | `dark` or `light`. By default it follows your reader's light or dark mode setting. |
+| `data-controls` | `full` (the default) or `compact`. Compact hides the git-sim, Initial Commit, and Devlands links, and keeps the slider and Share. |
+| `data-height` | A fixed height, like `480px`. By default the embed sizes itself to fit the graph. |
 
-The credit is a `<p class="git-sim-credit">` under the frame, set in small,
-muted text that takes its color from your page. Style it with that class if
-you want it to match your page more closely.
+The credit is a `<p class="git-sim-credit">` under the frame, in small muted text that takes its color from your page. Style that class if you want it to match your page more closely.
 
 ## How it works
 
-Each embed is an iframe with a self-contained document (the script carries the
-viewer's stylesheet and script), so several graphs on one page never share ids
-or keyboard shortcuts, and your page's styles never reach the graph. Your page
-fetches the SVG itself and hands the text to the frame, so there is nothing to
-configure on a server; the frame reports its height back so the embed fits the
-graph exactly. `GitSimEmbed.scan(root)` mounts elements added later, for pages
-that render content dynamically.
+Each embed is an iframe with its own self-contained document (the script carries the viewer's styles and code). So several graphs on one page never clash, and your page's styles never reach the graph. Your page fetches the SVG and hands it to the frame, so there's nothing to set up on your server. The frame reports its height back, so the embed fits the graph exactly.
 
-The script is exported from the git-sim package (`python -m git_sim.render.html`)
-alongside the viewer assets, so it is the same viewer as the pages git-sim
-writes and the one at initialcommit.com.
+If your page adds content after it loads, call `GitSimEmbed.scan(element)` to set up any new graphs inside that element.
+
+The script comes from the git-sim package (`python -m git_sim.render.html <folder>` exports it along with the rest of the viewer's files), so it's the same viewer as the pages git-sim saves and the one at initialcommit.com.

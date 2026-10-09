@@ -1,124 +1,17 @@
-# git-sim MCP server — visual pre-flight checks for AI agents
+# git-sim for AI agents: pre-flight checks and the MCP server
 
-AI coding agents run git commands on your behalf. Before an agent runs a
-command that rewrites history or discards work, it should show you — with
-ground truth, not a guess — exactly what will happen.
+AI coding agents run Git commands for you. Before an agent runs a command that rewrites history or throws away work, you should see exactly what it will do, worked out from your actual repo rather than guessed by the model.
 
-The git-sim MCP (Model Context Protocol) server gives any MCP client
-(Claude Code, Cursor, etc.) two tools:
+git-sim does this two ways:
 
-- **`git_preflight(command, repo_path)`** — the safety check. Computes the
-  deterministic consequences of running a git command in a real repository,
-  and renders a git-sim visualization of the operation. The analysis is done
-  by code (GitPython queries and git's own dry-run plumbing like `clean -n`
-  and `merge-tree`), never by the model proposing the command — so the agent
-  cannot hallucinate the preview it asks you to approve.
-- **`git_simulate(command, repo_path)`** — rendering only. Useful for
-  illustrating repo state (`log`, `status`) or explaining an operation
-  visually.
-  Pass `interactive=true` to get a self-contained HTML page instead of an
-  image: hover details, pan/zoom and a Before/After toggle that replays the
-  operation (step by step for multi-action commands). Both tools render a
-  jpg by default so the agent can look at the result; the CLI itself writes
-  the interactive page by default. The page's Share button produces a link
-  to the hosted viewer (`initialcommit.com/tools/git-sim/viewer`) with the graph
-  compressed in the URL fragment, so the repository's data never reaches the
-  server; the viewer's stylesheet, script and header are exported from
-  `git_sim/render/html.py` with `python -m git_sim.render.html <dir>`.
+- **The pre-flight hook** stops the agent before a risky Git command and asks you to approve it, with the facts in front of you. The agent can't skip it.
+- **The MCP server** gives the agent two tools it can call itself, to check a command or draw it.
 
-Both tools are strictly read-only with respect to the repository.
+The quickest way to set up both is:
 
-## What the pre-flight report contains
-
-```json
-{
-  "command": "git reset --hard HEAD~2",
-  "risk": "destructive",
-  "summary": "Moves main from ccd3d99 to 2113b72 (hard reset).",
-  "facts": [
-    "2 commit(s) will no longer be reachable from main:",
-    "  ccd3d99 Bump version to 0.3.5",
-    "  4f7c57e Update logo entry in manifest"
-  ],
-  "would_lose": ["unstaged changes in pyproject.toml (NOT recoverable)"],
-  "recovery": ["Commits stay in the reflog ~90 days: git reset --hard ccd3d99"],
-  "warnings": ["Uncommitted changes discarded by --hard cannot be recovered from the reflog."],
-  "text_graph": "* c362a60 (HEAD -> mcp-server) Add Claude Code PreToolUse hook ...   <- ABANDONED\n...",
-  "simulation_image": "C:/.../git-sim-reset_09-16-26.jpg"
-}
+```console
+$ git-sim wire-agents
 ```
-
-Risk levels: `safe`, `caution`, `destructive`.
-
-### Text graph
-
-Alongside the image, every report carries `text_graph`: a plain-text
-rendering of the operation for places an image cannot reach (a permission
-prompt, an SSH session, CI logs). It is git's own `log --graph` layout with a
-fate marker beside each affected commit, followed by a panel of the affected
-working-tree entries:
-
-```text
-* c362a60 (HEAD -> mcp-server) Add Claude Code PreToolUse hook for autom...   <- ABANDONED
-* d31d48b Add MCP server with deterministic git pre-flight engine             <- ABANDONED
-* ccd3d99 (tag: v0.3.5, main) Bump version to 0.3.5                           <- NEW HEAD
-* 4f7c57e Update logo entry in manifest
-  ... 212 earlier commit(s) not shown
-
-Working tree:
-  modified  README.md                                                         <- DISCARDED (not recoverable)
-```
-
-Markers by operation: `ABANDONED` / `NEW HEAD` (reset), `REPLAYED (new hash)`
-/ `NEW BASE` (rebase), `INCOMING` (merge), `PUSHED` / `OVERWRITTEN (remote
-only)` (push), `ABANDONED (branch deleted)` (branch -D), `REPLACED (new hash)`
-(commit --amend), `SWITCH TARGET` (checkout/switch). The window shows about 8
-commits, widened as needed so every marked commit is visible, and the panel
-lists deleted, discarded, dropped or carried-over entries. Divergent history
-(force-push, rebase onto a moved branch) draws real branch lines. The commit
-graph only appears when some commit's fate changes; file-only operations
-(`checkout -- path`, `restore`, `clean`, `stash`) show just the panel.
-
-Analyzers currently implemented: `reset` (abandoned commits + discarded
-worktree changes), `clean` (exact file list via `git clean -n`), `rebase`
-(replay set + published-history detection), `merge` (fast-forward detection +
-deterministic conflict prediction via `git merge-tree`), `push` (force-push
-overwrite detection against the tracking ref), `branch -d/-D` (unmerged
-commit detection), `restore`/`checkout`/`switch` (discarded local
-modifications), `stash` (drop/clear losses), `commit --amend`
-(published-history detection), `worktree remove/prune` (uncommitted changes
-deleted with the worktree; stale records), `rm` (uncommitted changes deleted
-with the file), `reflog expire/delete`, `gc --prune`, `filter-branch`,
-`submodule deinit/update --force` (local changes inside the submodule).
-Read-only commands and purely additive ones (`add`, `mv`, `init`, `clone`,
-`cherry-pick`, `revert`, `pull`) are `safe`; unrecognized commands default to
-`caution`. The hook only analyzes git invocations whose own subcommand has an
-analyzer, so `git add reset.py && git commit -m "fix branch"` never prompts.
-
-### Worktree awareness
-
-Agents running in parallel usually get one worktree each, and the parts of
-git that worktrees share — the stash list, branches, the object store — are
-where one agent's command reaches another's work. Every report therefore
-carries a `worktree` object (the worktree the command runs in, its branch,
-and the other worktrees), and when the repo has more than one worktree the
-hook prompt opens with a location line such as
-`In worktree 'agent-2' on feat-b; other worktree(s): repo (main), agent-1 (feat-a).`
-
-The analyzers use the same information:
-
-- `stash drop` / `stash clear` flag entries that belong to branches checked
-  out in other worktrees, since the stash list is shared repo-wide.
-- `branch -d/-D` and `checkout`/`switch` report that git will refuse when the
-  branch is checked out in another worktree (and `switch`/`checkout` honour
-  `--ignore-other-worktrees`).
-- `rebase` warns when another worktree's branch is based on the commits being
-  replayed, because that branch will diverge afterwards.
-- `worktree remove` lists the uncommitted changes that `--force` would
-  delete, and reports that git refuses without it; `worktree prune` lists
-  the stale records it would drop.
-- In the text graph, branches checked out elsewhere are decorated with the
-  worktree name, e.g. `(feat-a @agent-1)`.
 
 ## Installation
 
@@ -126,22 +19,17 @@ The analyzers use the same information:
 $ pip install git-sim
 ```
 
-The default ("core") install includes the pre-flight engine, the text graph,
-the MCP server, the Claude Code hook and the static image renderer (skia),
-and does not depend on Manim. Requires Python >= 3.10. The simulation image
-renders in well under a second. Manim is only needed for animated output
-(`pip install "git-sim[extras]"`). For a dependency-minimal ("min") install
-see the main README.
+Or `pipx install git-sim`, or `uv tool install git-sim`. git-sim needs Python 3.10 to 3.14 and Git. Some minimal Linux systems also need a few graphics libraries, see [Requirements](../README.md#requirements).
 
-## One-command setup for any agent
+The standard install includes everything on this page: the pre-flight engine, the text graph, the MCP server, the hook, and the image renderer. Images render in well under a second. You only need Manim for animated video (`pip install "git-sim[extras]"`).
+
+## Set up every agent with one command
 
 ```console
 $ git-sim wire-agents
 ```
 
-`git-sim wire-agents` detects the AI coding agents on your machine and wires
-both the pre-flight hook and the MCP server into each one's own config, in
-its own format:
+`git-sim wire-agents` finds the AI coding agents on your machine and adds the pre-flight hook and the MCP server to each one's own config file:
 
 | Agent | Hook | MCP server |
 |---|---|---|
@@ -151,74 +39,76 @@ its own format:
 | GitHub Copilot CLI | `~/.copilot/hooks/git-sim.json` → `hooks.preToolUse` | `~/.copilot/mcp-config.json` |
 | Gemini CLI | `~/.gemini/settings.json` → `hooks.BeforeTool` (matcher `run_shell_command`) | same file → `mcpServers` |
 | VS Code (Copilot) | shares Copilot CLI's `~/.copilot/hooks/git-sim.json` (VS Code's agent hooks read it) | user `mcp.json` → `servers` |
-| Windsurf | no hook API | `~/.codeium/windsurf/mcp_config.json` |
-| Cline (VS Code) | no hook API | VS Code `globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json` |
-| Roo Code (VS Code) | no hook API | VS Code `globalStorage/rooveterinaryinc.roo-cline/settings/mcp_settings.json` (project: `.roo/mcp.json`) |
-| Amazon Q Developer CLI | no hook API | `~/.aws/amazonq/mcp.json` (project: `.amazonq/mcp.json`) |
-| Claude Desktop | no hook API | `claude_desktop_config.json` in the app's config folder |
+| Windsurf | no hook support | `~/.codeium/windsurf/mcp_config.json` |
+| Cline (VS Code) | no hook support | VS Code `globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json` |
+| Roo Code (VS Code) | no hook support | VS Code `globalStorage/rooveterinaryinc.roo-cline/settings/mcp_settings.json` |
+| Amazon Q Developer CLI | no hook support | `~/.aws/amazonq/mcp.json` |
+| Claude Desktop | no hook support | `claude_desktop_config.json` in the app's config folder |
 
-Agents without a hook API get the MCP server alone: they can call `git_preflight` and `git_simulate` themselves, and their system prompts can ask them to. Keep a [live graph](../README.md#live-mode) open beside any of them to see what they do as they do it.
+Restart any agents that are running afterwards, since they read their config when they start.
 
-Where people type `git` themselves, `git sim <command>` already works (git runs any `git-<name>` program), and `git-sim aliases` adds `git preflight` and `git live` to your global git config; see [shell.md](shell.md).
+Agents without hook support get the MCP server only. They can call `git_preflight` and `git_simulate` themselves, and you can ask them to in their instructions. Keep a [live graph](../README.md#live-mode) open beside any agent to see what it does as it does it.
 
-Under VS Code the hook behaves a little differently: it leaves a note in
-`git-sim_media/inbox/` that the git-sim extension picks up to open the
-simulation in an editor tab (when no extension picks the note up, the hook
-goes on as it does anywhere else). It also answers for git commands that rate below the
-threshold with an "allow" carrying a one-line SAFE or CAUTION note, so a
-verdict shows on every git command (`GIT_SIM_HOOK_REPORT_SAFE=0` turns that
-off; `=1` turns it on for other agents).
+**Options:**
 
-The hook and MCP commands are written as absolute paths. Where the console
-scripts are missing (an editable install made before they existed) the
-interpreter runs the module instead (`python -m git_sim.claude_hook`), so a
-bare name that might not be on the agent's PATH is never written.
+`--agent claude --agent cursor`: set up only these agents  
+`--all`: set up every supported agent, even ones git-sim didn't find  
+`--scope project`: write to the current repo instead of your home folder (`.claude/settings.json`, `.mcp.json`, `.codex/`, `.cursor/`, `.github/hooks/git-sim.json`, `.github/copilot/mcp-config.json`, `.gemini/settings.json`, `.vscode/mcp.json`, `.roo/mcp.json`, `.amazonq/mcp.json`). Windsurf, Cline, and Claude Desktop have no project config, so they're always set up for your user.  
+`--no-hook`, `--no-mcp`: skip one of the two  
+`--dry-run`: show what would change without writing anything
 
-Options: `--agent claude --agent cursor` to pick agents, `--all` for every
-supported one, `--scope project` to write into the current repo instead of
-your home config (`.claude/settings.json`, `.codex/hooks.json`,
-`.cursor/hooks.json`, `.github/hooks/git-sim.json`, `.gemini/settings.json`,
-`.mcp.json`, `.vscode/mcp.json`), `--no-hook` / `--no-mcp`, and `--dry-run`.
-Writes are idempotent (an existing git-sim entry is updated in place) and
-`git-sim unwire-agents` removes exactly what was added. Agents read their config
-at startup, so restart any that are running.
+Running it again updates git-sim's entries in place. `git-sim unwire-agents` removes exactly what it added.
 
-The hook is one executable, `git-sim-hook`, invoked with `--agent <name>` so
-it answers in that agent's hook dialect. Claude Code, Cursor and Copilot
-hooks can ask the user, so risky commands produce an approval prompt with
-the facts. Codex and Gemini hooks can only allow or deny, so there a risky
-command is denied and the reason carries the facts plus an instruction: show
-them to the user and, if they approve, re-run the command prefixed with
-`GIT_SIM_APPROVE=1` (PowerShell: `$env:GIT_SIM_APPROVE=1;`), which the hook
-lets through. `GIT_SIM_HOOK_MODE=deny` makes every agent deny risky commands
-outright (for unattended runs), and `GIT_SIM_HOOK_MODE=warn` allows them but
-attaches the facts as a message.
+git-sim writes the hook and MCP server as full paths, so they work even when an agent's `PATH` doesn't include git-sim.
 
-## Claude Code (manual)
+Where you type `git` yourself, `git sim <command>` already works, and `git-sim aliases` adds `git preflight` and `git live`. See [shell.md](shell.md).
 
-```console
-$ claude mcp add git-sim -- git-sim-mcp
+## The pre-flight hook
+
+The MCP tools only help if the agent decides to call them. The hook doesn't rely on that. It runs before every shell command the agent is about to run, checks any Git commands in it, and when one is risky, makes the agent stop and ask you. It also opens git-sim's simulation of the command, so you can see it before you decide.
+
+How it answers depends on the agent:
+
+- **Claude Code, Cursor, and Copilot** can ask you directly, so a risky command brings up an approval prompt with the facts.
+- **Codex and Gemini** hooks can only allow or deny. So the hook denies the risky command, and tells the agent to show you the facts and, if you approve, run the command again starting with `GIT_SIM_APPROVE=1` (in PowerShell, `$env:GIT_SIM_APPROVE=1;`). The hook lets that through.
+
+`GIT_SIM_HOOK_MODE=deny` makes every agent deny risky commands outright, which is useful for unattended runs. `GIT_SIM_HOOK_MODE=warn` lets them run and attaches the facts as a message.
+
+Here's what a Claude Code prompt looks like:
+
+```
+git-sim preflight: DESTRUCTIVE  git reset -q --hard HEAD~2
+Moves main from e35b0b7 to cb54632 (hard reset).
+Loses: 2 commits removed from branch main; unstaged changes in README.md (NOT recoverable)
+Undo: Commits stay in the reflog ~90 days: git reset --hard e35b0b7
 ```
 
-Then in any repo, ask e.g. "preflight git rebase main" — or add a rule to
-your CLAUDE.md such as:
+**Good to know:**
 
-> Before running any destructive git command (reset --hard, clean -f,
-> rebase, push --force, checkout/restore over local changes, branch -D,
-> stash drop/clear, commit --amend), call the git-sim `git_preflight` tool
-> and show me the image and facts, and wait for my approval.
+- Safe commands, and commands that aren't Git, go straight through. A quick text check skips almost every command without any analysis.
+- The hook only checks Git subcommands that can lose something (see [what pre-flight checks](#what-pre-flight-checks)), so a command like `git add reset.py && git commit -m "fix branch"` never prompts.
+- The simulation opens in the [git-sim viewer](https://initialcommit.com/tools/git-sim/viewer). The graph, the command, and the theme all travel in the link's `#fragment`, which your browser never sends to the site, so nothing about your repo leaves your machine. `GIT_SIM_HOOK_OPEN_IN=local` opens the saved `.html` file instead. If the hook is set up twice (globally and in a project), it still only opens once.
+- Options git-sim doesn't draw, which agents add all the time (`-q`, `--no-edit`, `--no-verify`, `-s ours`), are left out of the simulation. Options that change what happens (`--hard`, `-f`, `--force-with-lease`) are kept. Git's own `-C <dir>` and `-c key=value` point the check at the right repo.
+- If the hook hits an error of its own, it lets the command through rather than blocking your agent.
+- In VS Code, the git-sim extension opens the simulation in an editor tab instead of your browser. The hook also adds a one-line SAFE or CAUTION note to Git commands below the prompt threshold, so you see a verdict on every Git command there.
 
-## Claude Code hook: enforced pre-flight (`git-sim-hook`)
+**Settings** (environment variables):
 
-The MCP tools rely on the agent choosing to call them. The `git-sim-hook`
-command removes that reliance: registered as a PreToolUse hook, it
-intercepts every shell command the agent is about to run, analyzes any git
-invocations in it, and — when the pre-flight engine rates one risky —
-forces an approval prompt showing the deterministic facts, and offers you the
-git-sim simulation before you decide. The agent cannot skip it.
+| Variable | Default | What it does |
+|---|---|---|
+| `GIT_SIM_HOOK_ASK_ON` | `caution` | The lowest risk that stops the agent: `caution` or `destructive` |
+| `GIT_SIM_HOOK_MODE` | `ask` | `ask` prompts you (or denies with instructions, for agents that can't prompt), `deny` denies risky commands outright, `warn` lets them run with the facts attached |
+| `GIT_SIM_HOOK_AGENT` | detected | Which agent's hook format to answer in (`claude`, `codex`, `cursor`, `copilot`, `gemini`). `git-sim wire-agents` passes `--agent` instead |
+| `GIT_SIM_HOOK_RENDER` | `1` | `0` skips drawing the simulation, for just the facts (faster) |
+| `GIT_SIM_HOOK_OPEN` | `always` | `always` opens the simulation in your browser, `never` doesn't, `ask` asks you first in a small system dialog (not shown over SSH, in CI, or on Linux without zenity or kdialog) |
+| `GIT_SIM_HOOK_OPEN_IN` | `hosted` | `hosted` opens it in the git-sim viewer at initialcommit.com, `local` opens the saved `.html` file. Follows `git_sim_open_in` if that's set |
+| `GIT_SIM_HOOK_TEXT` | `0` | `1` adds the text commit graph to the prompt |
+| `GIT_SIM_HOOK_REPORT_SAFE` | `1` in VS Code, `0` elsewhere | `1` adds a one-line SAFE or CAUTION note to Git commands that don't stop the agent |
+| `GIT_SIM_APPROVE` | | Set on a single command to let it through after you've approved it (Codex and Gemini) |
 
-Add to `.claude/settings.json` (project) or `~/.claude/settings.json`
-(global; run `/hooks` or restart Claude Code after editing):
+### Setting up the hook by hand in Claude Code
+
+`git-sim wire-agents` does this for you. To do it yourself, add this to `.claude/settings.json` in a project, or `~/.claude/settings.json` for every project, then run `/hooks` or restart Claude Code:
 
 ```json
 {
@@ -240,57 +130,26 @@ Add to `.claude/settings.json` (project) or `~/.claude/settings.json`
 }
 ```
 
-Behavior:
+## The MCP server
 
-- Safe commands (and non-git commands) pass through instantly — a cheap
-  string pre-filter avoids any analysis cost on the vast majority of calls.
-- Risky commands trigger an "ask" permission decision whose reason is the
-  pre-flight report in a few lines, so you approve or reject with ground
-  truth in front of you:
+The MCP (Model Context Protocol) server gives any MCP client two tools:
 
-  ```
-  git-sim preflight: DESTRUCTIVE — git reset -q --hard HEAD~2
-  Moves main from e35b0b7 to cb54632 (hard reset).
-  Loses: 2 commits removed from branch main; unstaged changes in README.md (NOT recoverable)
-  Undo: Commits stay in the reflog ~90 days: git reset --hard e35b0b7
-  ```
+- **`git_preflight(command, repo_path)`** checks a Git command in a real repo: how risky it is, what it would do, what would be lost, and how to undo it. It also draws a git-sim image of the command. git-sim works this out with code (GitPython, and Git's own dry-run commands like `clean -n` and `merge-tree`), not the model, so the agent can't make up the answer it shows you.
+- **`git_simulate(command, repo_path)`** only draws the command. It's handy for showing the state of a repo (`log`, `status`) or explaining what a command does. Pass `interactive=true` for git-sim's interactive HTML page instead of an image.
 
-- As the prompt appears, git-sim's interactive simulation of the command
-  opens in the git-sim viewer at initialcommit.com, so you see it before you
-  decide. The link has no query string: the graph, the command and the theme
-  all ride in its `#fragment`, which your browser never sends to the server,
-  so the site serves the page and learns nothing about your repository.
-  `GIT_SIM_HOOK_OPEN_IN=local` (or git-sim's own `git_sim_open_in=local`)
-  opens the saved `.html` file instead. If the hook is registered twice
-  (globally and in a project, say), it still opens once.
-  `GIT_SIM_HOOK_OPEN=never` leaves it out; `GIT_SIM_HOOK_OPEN=ask` asks first, in a small dialog of the system's own
-  just before the prompt (an agent's prompt has only approve and deny, so the
-  question can't go there). The dialog gives up after a minute, and never
-  shows over SSH, in CI, or on a Linux desktop without zenity or kdialog.
-- Options git-sim doesn't draw, which agents add freely (`-q`, `--no-edit`,
-  `--no-verify`, `-s ours`), are left out of the simulation; the ones that
-  shape it (`--hard`, `-f`, `--force-with-lease`) are kept. Git's own global
-  options (`-C <dir>`, `-c key=value`) point the check at the right
-  repository.
-- The hook never denies on its own and fails open on any internal error —
-  it adds information to Claude Code's existing permission flow, never a
-  new failure mode.
+Both tools draw a JPG by default, so the agent can look at the result. Neither one ever changes your repo.
 
-Configuration via environment variables:
+To add the server to Claude Code by hand:
 
-| Variable | Default | Effect |
-|---|---|---|
-| `GIT_SIM_HOOK_ASK_ON` | `caution` | Minimum risk that triggers the prompt (`caution` or `destructive`) |
-| `GIT_SIM_HOOK_MODE` | `ask` | `ask` prompts (or denies with instructions where the agent cannot prompt); `deny` denies risky commands outright; `warn` allows them with the facts attached |
-| `GIT_SIM_HOOK_AGENT` | detected | Force the hook dialect (`claude`, `codex`, `cursor`, `copilot`, `gemini`); `git-sim wire-agents` passes `--agent` instead |
-| `GIT_SIM_HOOK_RENDER` | `1` | Set `0` to skip rendering the simulation (facts only, faster) |
-| `GIT_SIM_HOOK_OPEN` | `always` | `always` opens the simulation in your browser; `never` doesn't make one; `ask` asks in a dialog whether to open it |
-| `GIT_SIM_HOOK_OPEN_IN` | `hosted` | `hosted` opens it in the git-sim viewer at initialcommit.com (everything in the `#fragment`); `local` opens the saved `.html` file. Defaults to `git_sim_open_in` |
-| `GIT_SIM_HOOK_TEXT` | `0` | Set `1` to add the plain-text commit graph to the prompt |
+```console
+$ claude mcp add git-sim -- git-sim-mcp
+```
 
-## Other MCP clients
+Then ask something like "preflight git rebase main" in any repo, or add a rule to your `CLAUDE.md` such as:
 
-Any client that supports stdio servers can use:
+> Before running any destructive git command (reset --hard, clean -f, rebase, push --force, checkout/restore over local changes, branch -D, stash drop/clear, commit --amend), call the git-sim `git_preflight` tool, show me the image and facts, and wait for my approval.
+
+Any other client that supports stdio servers can use:
 
 ```json
 {
@@ -302,22 +161,97 @@ Any client that supports stdio servers can use:
 }
 ```
 
-## Smoke test
+## The pre-flight report
 
-With the repo checked out and dev dependencies installed:
+`git_preflight`, `git-sim preflight --json`, and the hook all use the same report:
+
+```json
+{
+  "command": "git reset --hard HEAD~2",
+  "risk": "destructive",
+  "summary": "Moves main from ccd3d99 to 2113b72 (hard reset).",
+  "facts": [
+    "2 commit(s) will no longer be reachable from main:",
+    "  ccd3d99 Bump version to 0.3.5",
+    "  4f7c57e Update logo entry in manifest"
+  ],
+  "would_lose": ["unstaged changes in pyproject.toml (NOT recoverable)"],
+  "recovery": ["Commits stay in the reflog ~90 days: git reset --hard ccd3d99"],
+  "warnings": ["Uncommitted changes discarded by --hard cannot be recovered from the reflog."],
+  "text_graph": "* c362a60 (HEAD -> mcp-server) Add Claude Code PreToolUse hook ...   <- ABANDONED\n...",
+  "simulation_image": "C:/.../git-sim-reset_09-16-26.jpg"
+}
+```
+
+The risk is `safe`, `caution`, or `destructive`.
+
+### The text graph
+
+Every report also has `text_graph`, a plain-text version of the operation for places an image can't go, like a permission prompt, an SSH session, or CI logs. It's Git's own `log --graph` layout, with a marker beside each commit the command affects, and then a list of the affected files:
+
+```text
+* c362a60 (HEAD -> mcp-server) Add Claude Code PreToolUse hook for autom...   <- ABANDONED
+* d31d48b Add MCP server with deterministic git pre-flight engine             <- ABANDONED
+* ccd3d99 (tag: v0.3.5, main) Bump version to 0.3.5                           <- NEW HEAD
+* 4f7c57e Update logo entry in manifest
+  ... 212 earlier commit(s) not shown
+
+Working tree:
+  modified  README.md                                                         <- DISCARDED (not recoverable)
+```
+
+The markers are:
+
+- `ABANDONED` and `NEW HEAD` for reset
+- `REPLAYED (new hash)` and `NEW BASE` for rebase
+- `INCOMING` for merge
+- `PUSHED` and `OVERWRITTEN (remote only)` for push
+- `ABANDONED (branch deleted)` for `branch -D`
+- `REPLACED (new hash)` for `commit --amend`
+- `SWITCH TARGET` for checkout and switch
+
+It shows about 8 commits, and more when needed so every marked commit fits. Diverging history (a force-push, or a rebase onto a branch that moved) is drawn with real branch lines. The commit graph only shows when a command affects commits. Commands that only touch files (`checkout -- <path>`, `restore`, `clean`, `stash`) show just the file list.
+
+### What pre-flight checks
+
+- `reset`: the commits left behind and the uncommitted changes thrown away
+- `clean`: the exact files it would delete (from `git clean -n`)
+- `rebase`: the commits it replays, and whether any were already pushed
+- `merge`: whether it fast-forwards, and whether it would conflict (from `git merge-tree`)
+- `push`: whether a force-push would overwrite commits on the remote, and branches `push --delete` would remove
+- `branch -d` and `-D`: commits not merged anywhere else
+- `restore`, `checkout`, and `switch`: local changes they would throw away
+- `stash drop` and `stash clear`: the stashed changes lost
+- `commit --amend`: whether the commit was already pushed
+- `worktree remove` and `prune`: uncommitted changes deleted with the worktree, and stale records
+- `rm`: uncommitted changes deleted with the file
+- `reflog expire` and `delete`, `gc --prune`, and `filter-branch`
+- `submodule deinit` and `update --force`: local changes inside the submodule
+- `--abort`, `--continue`, `--skip`, and `--quit` for merges, rebases, cherry-picks, and reverts in progress
+
+Commands that only read, or only add (`add`, `mv`, `init`, `clone`, `cherry-pick`, `revert`), are `safe`. `pull` is `safe` unless it's `pull --rebase` with local commits, which is `caution`. Commands pre-flight doesn't know are `caution`.
+
+### Worktrees
+
+Agents running in parallel usually get a worktree each. The parts of Git that worktrees share (the stash list, branches, and the object store) are where one agent's command can reach another's work. So every report includes a `worktree` object with the worktree the command runs in, its branch, and the other worktrees. When a repo has more than one worktree, the hook's prompt starts with where the command runs, like `In worktree 'agent-2' on feat-b; other worktree(s): repo (main), agent-1 (feat-a).`
+
+The checks use this too:
+
+- `stash drop` and `stash clear` flag stashes that belong to branches checked out in other worktrees, since all worktrees share one stash list.
+- `branch -d/-D`, `checkout`, and `switch` report when Git will refuse because the branch is checked out in another worktree (and `switch` and `checkout` respect `--ignore-other-worktrees`).
+- `rebase` warns when another worktree's branch is built on the commits being replayed, because that branch will split off afterwards.
+- `worktree remove` lists the uncommitted changes `--force` would delete, and reports that Git refuses without it. `worktree prune` lists the stale records it would drop.
+- In the text graph, branches checked out in another worktree show the worktree's name, like `(feat-a @agent-1)`.
+
+## Testing
+
+To check the MCP server against one of your repos:
 
 ```console
 $ python scripts/mcp_smoke_test.py /path/to/some/repo
 ```
 
-## Validating the simulations
-
-`scripts/validate_commands.py` builds fixture repositories with git-dummy,
-constructs every subcommand scene in-process (122 cases covering each command
-and flag, including the refusal paths), and checks what was drawn — which commits, where the HEAD, branch
-and tag labels landed, the arrows between commits, and the files in each zone
-column — against ground truth computed from the repository with GitPython.
-It prints a PASS/FAIL table and writes one image per case for spot checks:
+`scripts/validate_commands.py` builds sample repos with git-dummy, draws every command and option in-process (including the cases where git-sim should refuse), and checks what was drawn against the repo: which commits, where the HEAD, branch, and tag labels landed, the arrows between commits, and the files in each column. It prints a PASS / FAIL table and saves an image for each case:
 
 ```console
 $ python scripts/validate_commands.py [image-output-dir]
