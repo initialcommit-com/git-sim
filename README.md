@@ -80,7 +80,7 @@ $ pip install git-sim
 
 Or `pipx install git-sim`, or `uv tool install git-sim`.
 
-**2. Simulate a command:** in a local Git repo, prefix any Git command with `git-sim` instead of `git`
+**2. Simulate any Git command:** in your local repo, prefix any Git command with `git-sim` instead of `git`
 
 ```console
 $ git-sim merge dev
@@ -92,7 +92,7 @@ By default, git-sim creates a web-first, shareable visualization that opens in y
 
 Run `git-sim -h` to list all commands.
 
-**3. Watch your repo live:** a graph that follows your repo as it changes, and records every command you (or your agents) run
+**3. Watch your repo update in real time:** a live graph that animates each Git operation in sequence, recording it so you can save, replay, and share it
 
 ```console
 $ git-sim live
@@ -106,13 +106,20 @@ $ code --install-extension initialcommit.git-sim
 
 Or search for **git-sim** in the Extensions view (the Marketplace in VS Code, Open VSX in Cursor, Windsurf, and VSCodium).
 
-**5. Jupyter integration:** with git-sim installed in the notebook's environment, the graph shows up right under the cell
+**5. Jupyter Notebook integration:** after installing git-sim in the notebook's Python environment:
 
 ```
 %load_ext git_sim.jupyter
 %gitsim rebase main
 %gitsim live
+%gitsim live stop
 ```
+
+From Jupyter, git-sim simulates Git commands against the repo in the notebook's working directory, or path specified after the `-C` flag.
+
+The graph's frame grows to fit it unless you set `--height` in pixels.
+
+`%gitsim live` runs live mode in the background until you stop it or restart the kernel, and needs Jupyter running on your own machine (not Colab, JupyterHub, or Binder).
 
 **6. Pull request integration:** `gh sim pr 42` simulates merging a pull request, and the git-sim GitHub Action comments the pre-flight report on each one. See [Installation](https://github.com/initialcommit-com/git-sim#github).
 
@@ -905,20 +912,6 @@ git-sim() { docker run --rm -v $(pwd):/usr/src/git-sim git-sim "$@"; }
 This will enable you to run git-sim subcommands as [described above](https://github.com/initialcommit-com/git-sim#supported-git-commands).
 
 </details>
-
-### Jupyter
-
-Install git-sim in the same environment as the notebook's kernel (`pip install git-sim`), then in a notebook:
-
-```
-%load_ext git_sim.jupyter
-%gitsim rebase main
-%gitsim preflight reset --hard HEAD~1
-%gitsim live
-%gitsim live stop
-```
-
-Commands run in the notebook's working directory, or the `-C` path. The graph's frame grows to fit it unless you set `--height`. `%gitsim live` runs live mode in the background until you stop it or restart the kernel, and needs Jupyter running on your own machine (not Colab, JupyterHub, or Binder).
 
 ### GitHub
 
