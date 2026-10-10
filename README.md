@@ -228,14 +228,15 @@ To set up both in every agent on your machine, run:
 
 ```console
 $ git-sim wire-agents
+$ git-sim unwire-agents
 ```
 
 Then restart any agents that are running. Wire-agents sets up both the hook and MCP server in Claude Code, Codex CLI, Cursor, GitHub Copilot CLI, Gemini CLI, and VS Code (Copilot), and the MCP server only in Windsurf, Cline, Roo Code, Amazon Q Developer CLI, and Claude Desktop, which have no hooks.
 
-Designate specific agents with: `--agent claude --agent cursor`
-Skip hook or mcp as desired: `--no-hook` or `--no-mcp`
-Dry run with: `--dry-run`
-Remove hook and mcp configuration with: `git-sim unwire-agents`
+-Designate specific agents with: `--agent claude --agent cursor`
+-Skip hook or mcp as desired: `--no-hook` or `--no-mcp`
+-Dry run with: `--dry-run`
+-Remove hook and mcp configuration with: `git-sim unwire-agents`
 
 Here's an example of what Claude Code prompt looks like if it tries to run a hard Git reset:
 
@@ -863,13 +864,19 @@ Animation-only global options (to be used in conjunction with `--animate`):
 
 ## Installation
 
-git-sim ships in tiers, so an AI agent's machine or a CI runner installs only what it needs:
+For convenience, git-sim ships in 3 tiers. **Core** is the default and the right choice for the vast majority of users:
 
 | Tier | Install | Includes |
 |---|---|---|
-| **core** (default) | `pip install git-sim` | pre-flight engine, text commit graph, static image simulation (skia), MCP server (`git-sim-mcp`), Claude Code hook (`git-sim-hook`) |
+| **core** (default) | `pip install git-sim` | git command simulation, pre-flight engine, MCP server (`git-sim-mcp`), Claude Code hook (`git-sim-hook`) |
 | **extras** | `pip install "git-sim[extras]"` | everything in core, plus animated video output (`--animate`) via Manim (install Manim's own system dependencies first, see below) |
 | **min** | see below | pre-flight engine, text commit graph and MCP server only, with no image rendering, for headless machines |
+
+For **extras** tier:
+
+Animated video (`--animate`) uses Manim, which needs FFmpeg and other system packages: install them first with the Manim guide for [Windows](https://docs.manim.community/en/stable/installation/windows.html), [macOS](https://docs.manim.community/en/stable/installation/macos.html), [Linux](https://docs.manim.community/en/stable/installation/linux.html), or [Conda](https://docs.manim.community/en/stable/installation/conda.html). On macOS, it is recommended to use a Homebrew Python or a virtual environment rather than the system Python.
+
+For **min** tier:
 
 pip extras can only add packages, so the `min` tier is the core package installed without its rendering dependencies (`skia-python`, `numpy`):
 
@@ -877,10 +884,6 @@ pip extras can only add packages, so the `min` tier is the core package installe
 $ pip install --no-deps git-sim
 $ pip install gitpython "mcp>=2.0" typer pydantic-settings fonttools git-dummy
 ```
-
-Older docs mention `pip install git-sim[mcp]`, which still works and is the same as core.
-
-Animated video (`--animate`) uses Manim, which needs FFmpeg and other system packages: install them first with the Manim guide for [Windows](https://docs.manim.community/en/stable/installation/windows.html), [macOS](https://docs.manim.community/en/stable/installation/macos.html), [Linux](https://docs.manim.community/en/stable/installation/linux.html), or [Conda](https://docs.manim.community/en/stable/installation/conda.html). On macOS, use a Homebrew Python or a virtual environment rather than the system Python.
 
 ### Docker
 
@@ -909,7 +912,7 @@ Optional: On MacOS / Linux / or GitBash in Windows, create an alias for the long
 git-sim() { docker run --rm -v $(pwd):/usr/src/git-sim git-sim "$@"; }
 ```
 
-This will enable you to run git-sim subcommands as [described above](https://github.com/initialcommit-com/git-sim#supported-git-commands).
+This will enable you to run [all the git-sim subcommands described above](https://github.com/initialcommit-com/git-sim#supported-git-commands).
 
 </details>
 
@@ -957,7 +960,7 @@ To change how it runs, add a `with:` block under the `uses:` line:
 | `python-version` | `3.12` | The Python that git-sim is installed with |
 | `token` | the workflow's own token | The token used to post the comment, to post as another account or bot |
 
-Pull requests from forks get a read-only token, which can't post comments, so set `comment: "false"` if your repo takes them. The graph is still attached to the run.
+Pull requests from forks get a read-only token, which can't post comments, so set `comment: "false"`. The graph artifact will still attach to the run.
 
 </details>
 
