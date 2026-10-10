@@ -366,7 +366,12 @@ class Scene:
         default_steps(everything)
         for mobject in everything:
             mobject.draw(painter)
-        return painter.document(background, painter.content_view_box(everything), theme_name=theme_name)
+        return painter.document(
+            background,
+            painter.content_view_box(everything),
+            theme_name=theme_name,
+            learn=getattr(self, "learn_shape", None),
+        )
 
     def render_html(
         self,

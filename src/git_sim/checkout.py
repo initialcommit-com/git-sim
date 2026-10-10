@@ -106,6 +106,8 @@ class Checkout(GitSimBaseCommand):
 
         if self.branch in [branch.name for branch in self.repo.heads]:
             self.selected_branches.append(self.branch)
+        elif not self.b:
+            self.learn_shape = "detached"  # the page's learn link: a commit, not a branch
 
         try:
             self.selected_branches.append(self.repo.active_branch.name)

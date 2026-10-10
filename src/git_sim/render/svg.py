@@ -278,7 +278,7 @@ class SvgPainter:
         hi += padding_px
         return (float(lo[0]), float(lo[1]), float(hi[0] - lo[0]), float(hi[1] - lo[1]))
 
-    def document(self, background=None, view_box=None, theme_name=None):
+    def document(self, background=None, view_box=None, theme_name=None, learn=None):
         if view_box is None:
             view_box = (0.0, 0.0, float(self.pixel_width), float(self.pixel_height))
         x, y, w, h = view_box
@@ -303,6 +303,9 @@ class SvgPainter:
             f'width="{_fmt(w)}" height="{_fmt(h)}" font-family=\'{self.font_stack}\' '
             f"{camera}"
             + (f' data-theme="{theme_name}"' if theme_name else "")  # which palette drew it, for a viewer that recolours
+            # the command's shape where no flag shows it (file, range,
+            # detached), for the page's learn link; never a name from the repo
+            + (f' data-learn="{learn}"' if learn else "")
             + ">"
             f"{self._defs()}{bg}{''.join(self.parts)}</svg>"
         )

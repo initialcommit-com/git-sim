@@ -26,6 +26,7 @@ class CherryPick(GitSimBaseCommand):
             if self.edit:
                 print("git-sim error: -e applies to a single commit, not a range")
                 sys.exit(1)
+            self.learn_shape = "range"  # the page's learn link: git cherry-pick A..B
         else:
             self.require_rev(self.commit)
             self.picks = [self.repo.commit(self.commit)]

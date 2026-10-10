@@ -74,6 +74,7 @@ class Reset(GitSimBaseCommand):
             self.mode = ResetMode.SOFT
 
         if self.paths:
+            self.learn_shape = "file"  # the page's learn link: git reset <file>
             if self.mode == ResetMode.HARD:
                 print("git-sim error: git reset --hard cannot be used with paths")
                 sys.exit(1)

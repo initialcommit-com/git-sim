@@ -908,14 +908,55 @@ function makeViewer(root){
   const isLive = !!byId('live') && !/^(shared|demo|empty)$/.test(document.documentElement.dataset.mode || '');
   const from = isLive ? where + '-live' : where;
   const SUBCOMMANDS = /^(add|remove|rename|set-url|show|prune|pop|apply|drop|list|clear|push|save|branch|start|good|bad|skip|run|init|update|deinit|move|lock|unlock|repair)$/;
+  // The flags and subcommands that have a command page of their own on the
+  // site, and the page each one means (the site's LearnGoController knows the
+  // same spellings). The label names one only if it is here, so it never
+  // promises a page that isn't there; a newer page is still reached, since
+  // the site picks the target, and the label just stays general.
+  const PAGES = {
+    branch: {'-d': 'delete', '--delete': 'delete', '-D': 'delete-force', '-m': 'rename', '-M': 'rename', '--move': 'rename'},
+    checkout: {'-b': 'b', '-B': 'b', '--detach': 'detached', detached: 'detached'},
+    'cherry-pick': {'--abort': 'abort', '--continue': 'continue', range: 'range'},
+    clean: {'-n': 'dry-run', '--dry-run': 'dry-run', '-d': 'directories'},
+    commit: {'-a': 'all', '--all': 'all', '--amend': 'amend'},
+    fetch: {'-p': 'prune', '--prune': 'prune'},
+    merge: {'--abort': 'abort', '--continue': 'continue', '--ff': 'fast-forward', '--ff-only': 'fast-forward', '--no-ff': 'no-ff', '--squash': 'squash'},
+    pull: {'-r': 'rebase', '--rebase': 'rebase'},
+    push: {'-d': 'delete', '--delete': 'delete', '-f': 'force', '--force': 'force', '--force-with-lease': 'force-with-lease', '-u': 'set-upstream', '--set-upstream': 'set-upstream', '--tags': 'tags'},
+    rebase: {'--abort': 'abort', '--continue': 'continue', '--skip': 'skip', '-i': 'interactive', '--interactive': 'interactive', '--onto': 'onto'},
+    remote: {add: 'add'},
+    reset: {'--hard': 'hard', '--mixed': 'mixed', '--soft': 'soft', file: 'file'},
+    restore: {'-S': 'staged', '--staged': 'staged'},
+    revert: {'-m': 'merge', '--mainline': 'merge'},
+    rm: {'--cached': 'cached'},
+    stash: {apply: 'apply', drop: 'drop', list: 'list', pop: 'pop', '-u': 'include-untracked', '--include-untracked': 'include-untracked'},
+    switch: {'-c': 'c', '-C': 'c', '--create': 'c', '-d': 'detach', '--detach': 'detach'},
+    tag: {'-d': 'delete', '--delete': 'delete'},
+    worktree: {add: 'add', remove: 'remove'},
+  };
+  // the command's shape where no flag shows it, which git-sim wrote on the
+  // drawing (reset <file>, cherry-pick A..B, checkout <commit>), as named in
+  // the label; the link sends only the shape's word, never the names
+  const SHAPES = {file: '<file>', range: 'A..B', detached: '<commit>'};
   const learnQuery = text => {
     const m = /\bgit\s+([a-z][a-z-]*)((?:\s+\S+)*)/.exec(text || '');
     if (!m) return null;
+    const cmd = m[1];
     const words = m[2].trim().split(/\s+/).filter(Boolean);
     const args = words.map(w => w.split('=')[0]).filter(w => /^--?[a-zA-Z][\w-]*$/.test(w));
     const sub = words.find(w => !w.startsWith('-'));
     if (sub && SUBCOMMANDS.test(sub)) args.unshift(sub);
-    return {cmd: m[1], args};
+    let shape = svg.dataset.learn;
+    if (!shape && cmd === 'cherry-pick' && words.some(w => w.includes('..'))) shape = 'range';
+    if (shape && SHAPES[shape]) args.unshift(shape);
+    // the first word with a page of its own: as typed, or one letter of -fd
+    const pages = PAGES[cmd] || {};
+    const has = a => pages[a] || (/^-[a-zA-Z]{2,}$/.test(a) && [...a.slice(1)].some(c => pages['-' + c]));
+    let hit = args.find(has);
+    // git-sim writes git clean -fd as -f -d; its page is "git clean -fd"
+    if (cmd === 'clean' && hit === '-d' && args.includes('-f')) hit = '-fd';
+    const named = hit ? `${cmd} ${SHAPES[hit] && pages[hit] === hit ? SHAPES[hit] : hit}` : cmd;
+    return {cmd, args, named};
   };
   const learn = byId('learn');
   const learnText = byId('learnText') || learn;
@@ -927,8 +968,11 @@ function makeViewer(root){
       const p = new URLSearchParams({cmd: q.cmd, from});
       if (q.args.length) p.set('args', q.args.join(' '));
       learn.href = SITE + '/learn/git/go?' + p;
-      learnText.textContent = 'Learn git ' + q.cmd;
-      learn.title = `How git ${q.cmd} works, on Initial Commit`;
+      // named as the page it lands on (git push --delete), or just the
+      // command when no flag has a page (git log --oneline is git log)
+      const named = q.named.length <= 32 ? q.named : q.cmd;
+      learnText.textContent = 'Learn git ' + named;
+      learn.title = `How git ${named} works, on Initial Commit`;
     } else {
       learn.href = SITE + '/learn/git?ref=git-sim-' + from;
       learnText.textContent = 'Learn Git';

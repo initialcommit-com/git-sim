@@ -472,6 +472,9 @@ def test_reset_path_unstages_without_moving_head(repo):
     scene.construct()
     assert ref_commit(scene, "HEAD") == head
     assert {t.text for t in scene.firstColumnFiles} == {"file1.txt"}
+    # the drawing says it's a file reset (for the page's learn link), never which file
+    svg = scene.render_svg()
+    assert 'data-learn="file"' in svg.split(">", 1)[0]
     with pytest.raises(SystemExit):
         Reset(
             commit="HEAD",
