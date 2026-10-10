@@ -1,7 +1,7 @@
 """git-sim in Jupyter: ``%load_ext git_sim.jupyter`` then
 
     %gitsim rebase main                 the interactive graph, inline
-    %gitsim --height 700 merge feature  taller
+    %gitsim --height 700 merge feature  a fixed height (it fits the graph otherwise)
     %gitsim preflight reset --hard HEAD~1
                                         the pre-flight report, as text
 
@@ -21,11 +21,12 @@ from typing import List, Optional, Tuple
 DEFAULT_HEIGHT = 560
 
 
-def parse_line(line: str) -> Tuple[List[str], int, Optional[str]]:
-    """Split a magic line into git-sim arguments, the iframe height and the
-    repository path (our own options are taken off the front)."""
+def parse_line(line: str) -> Tuple[List[str], Optional[int], Optional[str]]:
+    """Split a magic line into git-sim arguments, the iframe height (None to
+    fit the graph) and the repository path (our own options are taken off the
+    front)."""
     words = shlex.split(line, posix=(os.name != "nt"))
-    height, repo = DEFAULT_HEIGHT, None
+    height, repo = None, None
     while words and words[0] in ("--height", "-C", "--repo"):
         flag = words.pop(0)
         if not words:
@@ -38,13 +39,37 @@ def parse_line(line: str) -> Tuple[List[str], int, Optional[str]]:
     return words, height, repo
 
 
-def embed_page(page_html: str, height: int = DEFAULT_HEIGHT) -> str:
+MAX_FIT_HEIGHT = 1200
+
+# Runs in the notebook when the frame loads (the sandbox allows same origin,
+# so it can read the page). The viewer shrinks a tall graph to the frame, so
+# the graph's own height is cleared and measured with the frame squeezed to
+# 1px, all before the browser paints. The frame refits when its width changes
+# or the viewer's layout does.
+FIT_SCRIPT = (
+    "var f=this,w=f.contentWindow,last=0;"
+    "function fit(){var d=f.contentDocument,s=d&&d.getElementById('scene');if(!s)return;"
+    "s.style.height='';f.style.height='1px';"
+    f"f.style.height=Math.min(d.documentElement.scrollHeight+24,{MAX_FIT_HEIGHT})+'px';}}"
+    "fit();w.addEventListener('git-sim:layout',fit);"
+    "if(window.ResizeObserver)new ResizeObserver(function(){"
+    "if(f.clientWidth!==last){last=f.clientWidth;fit();}}).observe(f);"
+)
+
+
+def embed_page(page_html: str, height: Optional[int] = None) -> str:
     """The page inside an iframe, so a notebook can show several without
     their scripts or ids colliding. The div keeps IPython from suggesting its
-    IFrame, which takes a URL rather than a page."""
+    IFrame, which takes a URL rather than a page. With no height, the frame
+    grows to fit the graph."""
+    size = (
+        f'height:{int(height)}px"'
+        if height
+        else f'height:{DEFAULT_HEIGHT}px" onload="{html.escape(FIT_SCRIPT, quote=True)}"'
+    )
     return (
         f'<div><iframe srcdoc="{html.escape(page_html, quote=True)}" '
-        f'style="width:100%;height:{int(height)}px;border:0;border-radius:10px" '
+        f'style="width:100%;border:0;border-radius:10px;{size} '
         'sandbox="allow-scripts allow-same-origin allow-popups" '
         'title="git-sim"></iframe></div>'
     )

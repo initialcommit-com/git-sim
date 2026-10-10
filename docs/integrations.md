@@ -36,4 +36,4 @@ Then, in a notebook:
 %gitsim preflight reset --hard HEAD~1
 ```
 
-The command runs in the notebook's working directory (or the `-C` path), the same as it would in a terminal. The graph shows up in a frame under the cell, 560 pixels tall unless you set `--height`. `preflight` prints the report as text. git-sim never changes your repo.
+The command runs in the notebook's working directory (or the `-C` path), the same as it would in a terminal. The graph shows up in a frame under the cell that grows to fit it, up to 1200 pixels. To pick the height yourself, put `--height` and a number of pixels before the Git command. `preflight` prints the report as text. git-sim never changes your repo.
