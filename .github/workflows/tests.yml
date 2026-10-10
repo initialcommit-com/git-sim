@@ -10,16 +10,17 @@ permissions:
 
 jobs:
   unit:
-    name: ${{ matrix.os }}, Python ${{ matrix.python }}
+    name: ${{ matrix.os }}, Python ${{ matrix.python }}${{ matrix.python == '3.15' && ' (allowed to fail)' || '' }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
-    # skia-python publishes no 3.15 wheels yet, so 3.15 runs report
-    # whether the install works there without failing the others
-    continue-on-error: ${{ matrix.python == '3.15' }}
+    # skia-python publishes no 3.15 wheels yet, so on 3.15 each step may fail:
+    # its log says how far it got, but the job (and the commit's check) stays
+    # green. continue-on-error on the job itself would still mark the commit
+    # failed. The steps after the install run once it succeeds.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -30,15 +31,22 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libfontconfig1
       - name: Install
+        id: install
+        continue-on-error: ${{ matrix.python == '3.15' }}
         run: python -m pip install ".[dev]"
       - name: Set a Git identity for the test repos
+        if: steps.install.outcome == 'success'
         run: |
           git config --global user.name "git-sim tests"
           git config --global user.email "tests@example.com"
           git config --global init.defaultBranch main
       - name: Unit tests
+        if: steps.install.outcome == 'success'
+        continue-on-error: ${{ matrix.python == '3.15' }}
         run: python -m pytest tests/unit_tests -q
       - name: Draw a simulation
+        if: steps.install.outcome == 'success'
+        continue-on-error: ${{ matrix.python == '3.15' }}
         shell: bash
         run: |
           git init -q demo && cd demo
