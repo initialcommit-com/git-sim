@@ -66,10 +66,12 @@ class CheckoutFiles(Restore):
 
 
 class Checkout(GitSimBaseCommand):
-    def __init__(self, branch: str, b: bool):
+    def __init__(self, branch: str, b: bool, start_point: str = None):
         super().__init__()
         self.branch = branch
         self.b = b
+        self.start_point = start_point
+        self.track = None
 
         if self.b:
             if self.branch in self.repo.heads:
@@ -79,6 +81,14 @@ class Checkout(GitSimBaseCommand):
                     + "', it already exists"
                 )
                 sys.exit(1)
+            if self.start_point:
+                try:
+                    self.repo.commit(self.start_point)
+                except Exception:
+                    print(f"git-sim error: '{self.start_point}' is not a valid commit to start the branch at")
+                    sys.exit(1)
+                if self.start_point in self.get_remote_tracking_branches():
+                    self.track = self.start_point
         else:
             try:
                 git.repo.fun.rev_parse(self.repo, self.branch)
@@ -116,6 +126,7 @@ class Checkout(GitSimBaseCommand):
 
         self.cmd += (
             f"{type(self).__name__.lower()}{' -b' if self.b else ''} {self.branch}"
+            f"{' ' + self.start_point if self.start_point else ''}"
         )
 
     def construct(self):
@@ -125,8 +136,10 @@ class Checkout(GitSimBaseCommand):
         self.show_intro()
         head_commit = self.get_commit()
 
+        if self.b and self.start_point:
+            self.create_elsewhere(head_commit)
         # using -b flag, create new branch label and exit
-        if self.b:
+        elif self.b:
             self.parse_commits(head_commit)
             self.recenter_frame()
             self.scale_frame()
@@ -176,3 +189,30 @@ class Checkout(GitSimBaseCommand):
         self.fadeout()
         self.show_command_as_title()
         self.show_outro()
+
+    def create_elsewhere(self, head_commit):
+        """Create the branch at its start point and move HEAD onto it."""
+        target = self.repo.commit(self.start_point)
+        self.parse_commits(head_commit)
+        if target.hexsha not in self.drawnCommits:
+            # Leave room for HEAD, the new branch and any remote label below
+            # the lowest row already drawn by HEAD's history.
+            gap = 4 if self.compact else 5
+            top = self.drawnCommits[head_commit.hexsha].get_center()[1] if head_commit.hexsha in self.drawnCommits else 0.0
+            lowest = min((c.get_center()[1] for c in self.drawnCommits.values()), default=top)
+            self.parse_commits(target, shift=(top - lowest + gap) * m.DOWN)
+        drawn = target.hexsha in self.drawnCommits
+        if drawn and self.track and self.track not in self.drawnRefs:
+            self.draw_ref(target, self.stack_top(target.hexsha), text=self.track, color=self.theme.remote, kind="remote", phase="before")
+        self.recenter_frame()
+        self.scale_frame()
+        if drawn:
+            self.draw_ref(target, self.stack_top(target.hexsha), text=self.branch, color=self.theme.branch)
+            if target.hexsha != head_commit.hexsha:
+                self.reset_head(target.hexsha)
+                if not self.repo.head.is_detached:
+                    self.reset_branch(head_commit.hexsha)
+        notes = [f"Creates {self.branch} at {self.start_point} ({target.hexsha[:6]}) and checks it out."]
+        if self.track:
+            notes.append(f"{self.track} is a remote-tracking branch, so it becomes {self.branch}'s upstream.")
+        self.add_notes(notes)
