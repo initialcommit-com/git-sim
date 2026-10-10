@@ -90,7 +90,7 @@ $ git-sim rebase main
 
 By default, git-sim creates a web-first, shareable visualization that opens in your browser. It generates an interactive simulation of exactly how any Git command will impact your repo, without actually running the real Git command so nothing changes in your repo.
 
-Run `git-sim -h` to list every command. Once git-sim is installed, `git sim <command>` works too, and `git-sim aliases` adds `git preflight` and `git live` (see [Terminal](https://github.com/initialcommit-com/git-sim#terminal)).
+Run `git-sim -h` to list all commands.
 
 **3. Watch your repo live:** a graph that follows your repo as it changes, and records every command you (or your agents) run
 
@@ -191,51 +191,9 @@ git-sim's pre-flight mode shows a deterministic evaluation of whether any Git co
 
 This can be wired into AI agents to bring yourself (the human) into the loop to approve/deny Git commands that could be destructive. Run `git-sim wire-agents` to set up the automatic git-sim pre-flight for AI agents.
 
-Git's own options pass straight through, and quoting the whole command works too (`git-sim preflight "git stash drop"`). `-C <path>` checks another repo, `--json` prints the report as JSON, and `--markdown` formats it for a pull request comment. The VS Code extension shows it in an editor tab.
+Git's flags and options pass straight through, and quoting the whole command works: `git-sim preflight "git stash drop"`).
 
-<details>
-<summary>What pre-flight checks</summary>
-
-- `reset`: the commits left behind and the uncommitted changes thrown away
-- `clean`: the exact files it would delete (from `git clean -n`)
-- `rebase`: the commits it replays, and whether any were already pushed
-- `merge`: whether it fast-forwards, and whether it would conflict (from `git merge-tree`)
-- `push`: whether a force-push would overwrite commits on the remote, and branches `push --delete` would remove
-- `branch -d` and `-D`: commits not merged anywhere else
-- `restore`, `checkout`, and `switch`: local changes they would throw away
-- `stash drop` and `stash clear`: the stashed changes lost, including stashes from branches checked out in other worktrees
-- `commit --amend`: whether the commit was already pushed
-- `worktree remove` and `prune`: uncommitted changes deleted with the worktree, and stale records
-- `rm`: uncommitted changes deleted with the file
-- `reflog expire` and `delete`, `gc --prune`, and `filter-branch`
-- `submodule deinit` and `update --force`: local changes inside the submodule
-- `--abort`, `--continue`, `--skip`, and `--quit` for merges, rebases, cherry-picks, and reverts in progress
-
-Commands that only read, or only add (`add`, `mv`, `init`, `clone`, `cherry-pick`, `revert`), are `safe`. `pull` is `safe` unless it's `pull --rebase` with local commits, which is `caution`. Commands pre-flight doesn't know are `caution`.
-
-When a repo has more than one worktree, as with agents running in parallel, every report says which worktree the command runs in and checks what it could reach in the others: shared stashes, branches checked out elsewhere, and branches built on commits a rebase replays.
-
-</details>
-
-<details>
-<summary>The text graph</summary>
-
-Every report has a plain-text graph for places an image can't go, like a permission prompt, an SSH session, or CI logs. It's Git's own `log --graph` layout with a marker beside each commit the command affects, then the affected files:
-
-```text
-* c362a60 (HEAD -> mcp-server) Add Claude Code PreToolUse hook for autom...   <- ABANDONED
-* d31d48b Add MCP server with deterministic git pre-flight engine             <- ABANDONED
-* ccd3d99 (tag: v0.3.5, main) Bump version to 0.3.5                           <- NEW HEAD
-* 4f7c57e Update logo entry in manifest
-  ... 212 earlier commit(s) not shown
-
-Working tree:
-  modified  README.md                                                         <- DISCARDED (not recoverable)
-```
-
-The markers are `ABANDONED` and `NEW HEAD` (reset), `REPLAYED (new hash)` and `NEW BASE` (rebase), `INCOMING` (merge), `PUSHED` and `OVERWRITTEN (remote only)` (push), `ABANDONED (branch deleted)` (`branch -D`), `REPLACED (new hash)` (`commit --amend`), and `SWITCH TARGET` (checkout and switch).
-
-</details>
+Format the report with `--json` or `--markdown` as needed.
 
 ## git-sim for agentic AI
 
@@ -319,7 +277,7 @@ Or in any client that supports stdio servers:
 
 ## Embed a graph in a web page
 
-Embed a git-sim graph in any blog post, tutorial, or docs page, with the full interactive viewer. Save the graph as an SVG (or use **Download SVG** in any git-sim page's Share menu):
+Embed a git-sim graph in any web page, blog post, tutorial, or docs, with the full interactive viewer. Save the graph as an SVG (or use **Download SVG** in any git-sim page's Share menu):
 
 ```console
 $ git-sim --img-format svg rebase main
