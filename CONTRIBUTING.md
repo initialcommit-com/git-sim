@@ -54,7 +54,7 @@ $ git-sim merge dev
 - `src/git_sim/render/`: the static renderer, which draws the SVG, PNG, and JPG output and the interactive page
 - `src/git_sim/live.py`, `preflight.py`, `mcp_server.py`, `claude_hook.py`: live mode, pre-flight, the MCP server, and the agent hook
 - `vscode/`: the VS Code extension
-- `integrations/`: the GitHub CLI extension (`gh sim`) and the GitHub Action
+- `integrations/`: the GitHub CLI extension (`gh gitsim`) and the GitHub Action
 - `docs/img/`: the README's images
 - `scripts/`: the scripts that draw the README's graphs
 

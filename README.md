@@ -965,31 +965,31 @@ Pull requests from forks get a read-only token, which can't post comments, so se
 </details>
 
 <details>
-<summary>GitHub CLI: gh sim</summary>
+<summary>GitHub CLI: gh gitsim</summary>
 
 With the [GitHub CLI](https://github.com/cli/cli#installation) installed and logged in (`gh auth login`), install the extension from a clone of this repo:
 
 ```console
 $ git clone https://github.com/initialcommit-com/git-sim.git ~/git-sim
-$ cd ~/git-sim/integrations/gh-sim
+$ cd ~/git-sim/integrations/gh-gitsim
 $ gh extension install .
 ```
 
 Then, inside a clone of the pull request's repo:
 
 ```console
-$ gh sim pr 42           # what merging pull request #42 into its base would do
-$ gh sim pr 42 rebase    # what rebasing it onto its base would do
+$ gh gitsim pr 42           # what merging pull request #42 into its base would do
+$ gh gitsim pr 42 rebase    # what rebasing it onto its base would do
 ```
 
-`gh sim pr` simulates in a temporary worktree, so your checkout and branches are never touched. Any other `gh sim` command is the same as running git-sim. On Windows, `gh` runs the extension with the bash from Git for Windows.
+`gh gitsim pr` simulates in a temporary worktree, so your checkout and branches are never touched. Any other `gh gitsim` command is the same as running git-sim. On Windows, `gh` runs the extension with the bash from Git for Windows.
 
 </details>
 
 ## Support git-sim
 
 Git-Sim is Free and Open-Source Software (FOSS). Your support will help me work on it (and other Git projects) full time!
-- ⭐ [Star the repo](https://github.com/initialcommit-com/git-sim)
+- ⭐ [Star the repo](#top)
 - [Sponsor Git-Sim on GitHub](https://github.com/sponsors/initialcommit-com)
 - [Support Git-Sim via Patreon](https://patreon.com/user?u=92322459)
 
