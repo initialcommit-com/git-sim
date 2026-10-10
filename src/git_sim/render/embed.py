@@ -28,7 +28,7 @@ links), ``data-height`` (a fixed height instead of fitting the graph).
 Under the frame goes a one-line credit, "<command>, created with git-sim",
 linking to git-sim's page at initialcommit.com. It is part of the host page,
 not the frame, so readers (and search engines) see where the graph comes
-from. The snippet in docs/embed.md writes the link inside the ``.git-sim``
+from. The README's embed snippet writes the link inside the ``.git-sim``
 element, where it is also the fallback when the script can't run; the script
 keeps that link rather than adding a second one. On initialcommit.com itself
 the credit is left out.
@@ -88,7 +88,7 @@ EMBED_JS = r"""
   }
 
   // The credit under each graph: the host page's own link when the snippet has
-  // one (docs/embed.md), else a new one. Not shown on initialcommit.com itself.
+  // one (the README's embed snippet), else a new one. Not shown on initialcommit.com itself.
   const HOME = 'https://initialcommit.com/tools/git-sim';
   function credit(el){
     if (/(^|\.)initialcommit\.com$/i.test(location.hostname)) return null;

@@ -55,23 +55,48 @@ $ git-sim merge dev
 - `src/git_sim/live.py`, `preflight.py`, `mcp_server.py`, `claude_hook.py`: live mode, pre-flight, the MCP server, and the agent hook
 - `vscode/`: the VS Code extension
 - `integrations/`: the GitHub CLI extension (`gh sim`) and the GitHub Action
-- `docs/`: guides for live mode, pre-flight and agents, embedding, integrations, and testing
+- `docs/img/`: the README's images
 - `scripts/`: the scripts that draw the README's graphs
 
 ## Running the tests
 
-Three suites, each answering a different question. [docs/testing.md](docs/testing.md) explains them in detail.
-
 ```console
 $ pytest tests/unit_tests          # the pieces, in isolation
-$ pytest tests/validation          # every command and option, checked against what git does
+$ pytest tests/validation          # every command and option, checked against what Git does
 $ pytest tests/e2e_tests           # the raster images, pixel by pixel
 ```
 
+GitHub Actions runs the unit tests on Linux, macOS, and Windows with every supported Python version on each push.
+
 - **Clear your own settings first.** Any `git_sim_*` environment variables you've set (a dark theme, an image format) change what git-sim draws, so unset them before running the suites.
-- **The e2e suite** needs `VIRTUAL_ENV` set to your virtual environment's absolute path.
-- **The validation suite** compares what git-sim draws with golden models in `tests/validation/golden/`. When you change what a command draws on purpose, review the diff, then accept it with `pytest tests/validation --update-golden`.
-- **New options need a case.** A new command or option needs a case in `tests/validation/cases.py`, and `test_coverage.py` fails until it has one.
+- **The e2e suite** needs `VIRTUAL_ENV` set to your virtual environment's absolute path. Its reference images use a bundled font so they match across systems.
+- **The validation suite** builds repo shapes with git-dummy, runs git-sim as a real subprocess, reads the SVG back into a model of what was drawn, and checks it against Git (`oracle.py`), against a golden model in `tests/validation/golden/`, and for clean failures. When you change what a command draws on purpose, review the diff, then accept it with `pytest tests/validation --update-golden`. It's almost 400 renders, so `pip install pytest-xdist` and `pytest -n auto` help, and `-m "not slow"` skips the large repo shape.
+- **New options need a case.** A new command or option needs a one-line case in `tests/validation/cases.py`, and `test_coverage.py` fails until it has one.
+- **The MCP server** can be checked against one of your repos with `python scripts/mcp_smoke_test.py /path/to/repo`.
+
+### The sanity run
+
+Before each release, `tests/sanity/sanity.py` runs git-sim the way a user would on six open-source repos, up to git/git, and compares every simulation with what Git actually does. It isn't collected by pytest and takes about half an hour:
+
+```console
+$ python tests/sanity/sanity.py clone          # once: about 400 MB, most of it git/git
+$ python tests/sanity/sanity.py run            # all six repos, three at a time
+$ python tests/sanity/sanity.py run flask --scenario "merge: conflict"
+$ python tests/sanity/sanity.py list           # the repos and scenario names
+```
+
+`run` ends with a report of the scenarios that matched Git and every problem with the command that showed it, also saved to `tests/sanity/.work/report.md`. A problem is either in git-sim or in the scenario, so check the scenario's `check=` and `refuse=` in `sanity.py` first. A real git-sim bug usually deserves a validation case too, so it stays fixed.
+
+## The VS Code extension
+
+The extension in `vscode/` is plain JavaScript that runs the `git-sim` command line tool, so there's nothing to compile. Open `vscode/` in VS Code and press F5 to try changes. To package it without Node:
+
+```console
+$ python vscode/build_vsix.py
+$ code --install-extension vscode/git-sim-0.4.0.vsix
+```
+
+The same `.vsix` is published to the Visual Studio Marketplace (`initialcommit` publisher, at marketplace.visualstudio.com/manage or with `vsce publish`) and to Open VSX for Cursor, Windsurf, and VSCodium (`npx ovsx publish -p <token>`). Both show `vscode/README.md` as the extension's page, so images in it need absolute links.
 
 ## Code style
 

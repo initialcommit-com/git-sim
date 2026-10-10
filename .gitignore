@@ -16,5 +16,5 @@ git_sim.egg-info/
 vscode/*.vsix
 vscode/LICENSE.txt
 
-# the sanity run's clones, results and logs (docs/testing.md)
+# the sanity run's clones, results and logs (CONTRIBUTING.md)
 tests/sanity/.work/

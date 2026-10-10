@@ -125,7 +125,7 @@ It names, animates, and tracks every change to your Git repo, so you can step ba
 
 By default, the page opens in the git-sim viewer on initialcommit.com which connects to a lightweight web server `git-sim live` runs on your machine, reachable only from `127.0.0.1` and with a session key. All Git data is compressed and stored in the URL #fragment, so nothing about your repo leaves your machine, and `--open-in local` serves the page from git-sim itself instead if you prefer not to invoke initialcommit.com's git-sim viewer and run purely local.
 
-**Runs inside VS Code:** the VS code extension shows the same live graph in its **Live graph** tab and sidebar view (see [docs/vscode.md](https://github.com/initialcommit-com/git-sim/blob/main/docs/vscode.md)).
+**Runs inside VS Code:** the VS code extension shows the same live graph in its **Live graph** tab and sidebar view (see the [extension's page](https://github.com/initialcommit-com/git-sim/tree/main/vscode)).
 
 **How it watches your repo:** live mode reads what Git reports between checks, rather than watching `.git`, and waits for the repo to settle, so a rebase or a pull shows as one change. It names each change from the reflog when it can (`git commit`, `git reset <commit>`, `git switch -c <branch>`), and otherwise from what changed (a branch created, a file staged, a stash popped). Chrome and Edge ask once for permission to reach the local server. If a browser refuses, the page offers the local version.
 
@@ -148,13 +148,171 @@ Set `GIT_SIM_LIVE_DEBUG=1` to log each detected change.
 $ git-sim preflight reset --hard HEAD~2
 ```
 
-[![git-sim preflight reporting what a hard reset would lose](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/preflight.png)](https://github.com/initialcommit-com/git-sim/blob/main/docs/mcp.md)
+[![git-sim preflight reporting what a hard reset would lose](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/preflight.png)](https://github.com/initialcommit-com/git-sim#ai-agents)
 
 git-sim's pre-flight mode shows a deterministic evaluation of whether any Git command is safe or potentially destructive to your repo, including how risky it is, which commits might become unreachable, which changes would be lost for good, and the command that undoes it, all without impacting your repo.
 
 This can be wired into AI agents to bring yourself (the human) into the loop to approve/deny Git commands that could be destructive. Run `git-sim wire-agents` to set up the automatic git-sim pre-flight for AI agents.
 
-The `--markdown` flag formats the report for a pull request comment, and the VS Code extension shows it in an editor tab.
+Git's own options pass straight through, and quoting the whole command works too (`git-sim preflight "git stash drop"`). `-C <path>` checks another repo, `--json` prints the report as JSON, and `--markdown` formats it for a pull request comment. The VS Code extension shows it in an editor tab.
+
+<details>
+<summary>What pre-flight checks</summary>
+
+- `reset`: the commits left behind and the uncommitted changes thrown away
+- `clean`: the exact files it would delete (from `git clean -n`)
+- `rebase`: the commits it replays, and whether any were already pushed
+- `merge`: whether it fast-forwards, and whether it would conflict (from `git merge-tree`)
+- `push`: whether a force-push would overwrite commits on the remote, and branches `push --delete` would remove
+- `branch -d` and `-D`: commits not merged anywhere else
+- `restore`, `checkout`, and `switch`: local changes they would throw away
+- `stash drop` and `stash clear`: the stashed changes lost, including stashes from branches checked out in other worktrees
+- `commit --amend`: whether the commit was already pushed
+- `worktree remove` and `prune`: uncommitted changes deleted with the worktree, and stale records
+- `rm`: uncommitted changes deleted with the file
+- `reflog expire` and `delete`, `gc --prune`, and `filter-branch`
+- `submodule deinit` and `update --force`: local changes inside the submodule
+- `--abort`, `--continue`, `--skip`, and `--quit` for merges, rebases, cherry-picks, and reverts in progress
+
+Commands that only read, or only add (`add`, `mv`, `init`, `clone`, `cherry-pick`, `revert`), are `safe`. `pull` is `safe` unless it's `pull --rebase` with local commits, which is `caution`. Commands pre-flight doesn't know are `caution`.
+
+When a repo has more than one worktree, as with agents running in parallel, every report says which worktree the command runs in and checks what it could reach in the others: shared stashes, branches checked out elsewhere, and branches built on commits a rebase replays.
+
+</details>
+
+<details>
+<summary>The text graph</summary>
+
+Every report has a plain-text graph for places an image can't go, like a permission prompt, an SSH session, or CI logs. It's Git's own `log --graph` layout with a marker beside each commit the command affects, then the affected files:
+
+```text
+* c362a60 (HEAD -> mcp-server) Add Claude Code PreToolUse hook for autom...   <- ABANDONED
+* d31d48b Add MCP server with deterministic git pre-flight engine             <- ABANDONED
+* ccd3d99 (tag: v0.3.5, main) Bump version to 0.3.5                           <- NEW HEAD
+* 4f7c57e Update logo entry in manifest
+  ... 212 earlier commit(s) not shown
+
+Working tree:
+  modified  README.md                                                         <- DISCARDED (not recoverable)
+```
+
+The markers are `ABANDONED` and `NEW HEAD` (reset), `REPLAYED (new hash)` and `NEW BASE` (rebase), `INCOMING` (merge), `PUSHED` and `OVERWRITTEN (remote only)` (push), `ABANDONED (branch deleted)` (`branch -D`), `REPLACED (new hash)` (`commit --amend`), and `SWITCH TARGET` (checkout and switch).
+
+</details>
+
+## AI agents
+
+AI coding agents run Git commands for you. git-sim shows you what a risky one will do before it runs, worked out from your actual repo rather than guessed by the model, in two ways:
+
+- **The pre-flight hook** stops the agent before a risky Git command and asks you to approve it, with the facts in front of you and the simulation open. The agent can't skip it.
+- **The MCP server** gives the agent two tools it can call itself: `git_preflight(command, repo_path)` to check a command, and `git_simulate(command, repo_path)` to draw one (`interactive=true` for the interactive page). Neither ever changes your repo.
+
+To set up both in every agent on your machine, run:
+
+```console
+$ git-sim wire-agents
+```
+
+Then restart any agents that are running. It sets up the hook and the MCP server in Claude Code, Codex CLI, Cursor, GitHub Copilot CLI, Gemini CLI, and VS Code (Copilot), and the MCP server only in Windsurf, Cline, Roo Code, Amazon Q Developer CLI, and Claude Desktop, which have no hooks.
+
+`--agent claude --agent cursor` sets up only those agents, `--scope project` writes to the current repo instead of your home folder, `--no-hook` or `--no-mcp` skips one, and `--dry-run` shows what would change. Running it again updates git-sim's entries, and `git-sim unwire-agents` removes exactly what it added.
+
+Here's what a Claude Code prompt looks like:
+
+```
+git-sim preflight: DESTRUCTIVE  git reset -q --hard HEAD~2
+Moves main from e35b0b7 to cb54632 (hard reset).
+Loses: 2 commits removed from branch main; unstaged changes in README.md (NOT recoverable)
+Undo: Commits stay in the reflog ~90 days: git reset --hard e35b0b7
+```
+
+Claude Code, Cursor, and Copilot ask you directly. Codex and Gemini hooks can only allow or deny, so the hook denies the command and tells the agent to show you the facts and, if you approve, rerun it starting with `GIT_SIM_APPROVE=1`. Safe commands and anything that isn't Git go straight through, and if the hook hits an error of its own, it lets the command through rather than blocking your agent.
+
+<details>
+<summary>Hook settings</summary>
+
+Set these as environment variables:
+
+| Variable | Default | What it does |
+|---|---|---|
+| `GIT_SIM_HOOK_ASK_ON` | `caution` | The lowest risk that stops the agent: `caution` or `destructive` |
+| `GIT_SIM_HOOK_MODE` | `ask` | `ask` prompts you, `deny` denies risky commands outright (for unattended runs), `warn` lets them run with the facts attached |
+| `GIT_SIM_HOOK_RENDER` | `1` | `0` skips drawing the simulation, for just the facts |
+| `GIT_SIM_HOOK_OPEN` | `always` | `always` opens the simulation, `never` doesn't, `ask` asks first in a small system dialog |
+| `GIT_SIM_HOOK_OPEN_IN` | `hosted` | `local` opens the saved `.html` file instead of the git-sim viewer |
+| `GIT_SIM_HOOK_TEXT` | `0` | `1` adds the text commit graph to the prompt |
+| `GIT_SIM_HOOK_REPORT_SAFE` | `1` in VS Code, `0` elsewhere | `1` adds a one-line SAFE or CAUTION note to Git commands that don't stop the agent |
+| `GIT_SIM_HOOK_AGENT` | detected | Which agent's hook format to answer in (`claude`, `codex`, `cursor`, `copilot`, `gemini`) |
+| `GIT_SIM_APPROVE` | | Set on a single command to let it through after you've approved it (Codex and Gemini) |
+
+</details>
+
+<details>
+<summary>Setting up by hand</summary>
+
+The hook in Claude Code, in `.claude/settings.json` or `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [{ "type": "command", "command": "git-sim-hook", "timeout": 120 }]
+      }
+    ]
+  }
+}
+```
+
+The MCP server in Claude Code:
+
+```console
+$ claude mcp add git-sim -- git-sim-mcp
+```
+
+Or in any client that supports stdio servers:
+
+```json
+{ "mcpServers": { "git-sim": { "command": "git-sim-mcp" } } }
+```
+
+</details>
+
+## Embed a graph in a web page
+
+Put a git-sim graph in any blog post, tutorial, or docs page, with the full interactive viewer. Save the graph as an SVG (or use **Download SVG** in any git-sim page's Share menu):
+
+```console
+$ git-sim --img-format svg rebase main
+```
+
+Copy it next to your page, then add:
+
+```html
+<div class="git-sim" data-src="/img/rebase-main.svg" data-title="git rebase main">
+  <a href="https://initialcommit.com/tools/git-sim">git rebase main, created with git-sim</a>
+</div>
+<script src="https://initialcommit.com/js/tools/git-sim-embed.js" defer></script>
+```
+
+The script turns every element with the `git-sim` class into the viewer, each in its own frame so they never clash with your page or each other. The link becomes a credit under the graph, and is what readers see if the script can't run.
+
+<details>
+<summary>Embed attributes</summary>
+
+| Attribute | What it does |
+| --- | --- |
+| `data-src` | The SVG (or saved git-sim page) to show, on the same site as your page or a host that allows cross-origin requests |
+| `data-title` | The command, used in the share text and the frame's title |
+| `data-state` | `before`, `after`, or `step=N` holds the graph at that point. Without it, the graph plays on a loop |
+| `data-theme` | `dark` or `light`. By default it follows the reader's setting |
+| `data-controls` | `full` (the default) or `compact`, which keeps just the slider and Share |
+| `data-height` | A fixed height, like `480px`. By default the embed fits the graph |
+
+Style `.git-sim-credit` to change the credit's look. If your page adds content after it loads, call `GitSimEmbed.scan(element)` to set up new graphs inside it.
+
+</details>
 
 ## Supported Git commands
 
@@ -686,7 +844,7 @@ Every option can also be set with an environment variable named `git_sim_` plus 
 
 The `[global options]` apply to the overarching `git-sim` simulation itself, including:
 
-`--img-format`: Output format, i.e. `html` (default: the interactive page), `jpg`, `png`, or `svg` (the graph alone, for [embedding in a page](https://github.com/initialcommit-com/git-sim/blob/main/docs/embed.md)). Set `git_sim_img_format=jpg` in your environment to make an image the default.  
+`--img-format`: Output format, i.e. `html` (default: the interactive page), `jpg`, `png`, or `svg` (the graph alone, for [embedding in a page](https://github.com/initialcommit-com/git-sim#embed-a-graph-in-a-web-page)). Set `git_sim_img_format=jpg` in your environment to make an image the default.  
 `--open-in`: Where the interactive page opens: `hosted` (default) shows it in the git-sim viewer at initialcommit.com, `local` opens the saved `.html` file. The page is saved locally either way, and the hosted page says where. Set `git_sim_open_in=local` to make local the default.  
 `--reverse, -r` / `--no-reverse`: By default the newest commit is on the left and arrows point right toward parents, so history reads left to right. `--no-reverse` puts the newest commit on the right with arrows pointing left, the original layout.  
 `-n <number>`: Number of commits to display from each branch head.  
