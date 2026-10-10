@@ -163,13 +163,13 @@ $ git-sim live
 
 [![git-sim live following a repository as six Git commands run: each change plays the moment it happens and joins the bar above the graph](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/live.webp)](https://initialcommit.com/tools/git-sim#live)
 
-Run git-sim live to record every Git operation executed by you or your AI agents in real-time as an visual, interactive session you can replay and share.
+Run git-sim live to record every Git operation executed by you or your AI agents in real-time as a visual, interactive session you can replay and share.
 
 It names, animates, and tracks every change to your Git repo, so you can step back through any of them, replay the whole session, save it as a single HTML page, or download it as a video.
 
 By default, the page opens in the git-sim viewer on initialcommit.com which connects to a lightweight web server `git-sim live` runs on your machine, reachable only from `127.0.0.1` and with a session key. All Git data is compressed and stored in the URL #fragment, so nothing about your repo leaves your machine, and `--open-in local` serves the page from git-sim itself instead if you prefer not to invoke initialcommit.com's git-sim viewer and run purely local.
 
-**Runs inside VS Code:** the VS code extension shows the same live graph in its **Live graph** tab and sidebar view (see the [extension's page](https://github.com/initialcommit-com/git-sim/tree/main/vscode)).
+**Runs inside VS Code:** the VS Code extension shows the same live graph in its **Live graph** tab and sidebar view (see the [extension's page](https://github.com/initialcommit-com/git-sim/tree/main/vscode)).
 
 **How it watches your repo:** live mode reads what Git reports between checks, rather than watching `.git`, and waits for the repo to settle, so a rebase or a pull shows as one change. It names each change from the reflog when it can (`git commit`, `git reset <commit>`, `git switch -c <branch>`), and otherwise from what changed (a branch created, a file staged, a stash popped). Chrome and Edge ask once for permission to reach the local server. If a browser refuses, the page offers the local version.
 
