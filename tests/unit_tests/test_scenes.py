@@ -926,6 +926,19 @@ def test_switch_create_at_a_start_point(repo, tmp_path):
         Switch(branch="topic", c=True, detach=False, start_point="nope")
 
 
+def test_checkout_create_at_a_start_point(repo):
+    from git_sim.checkout import Checkout
+
+    head = run_git(repo, "rev-parse", "HEAD").strip()
+    target = run_git(repo, "rev-parse", "HEAD~3").strip()
+    short = run_git(repo, "rev-parse", "--short=8", "HEAD~3").strip()
+    scene = Checkout(branch="topic", b=True, start_point=short)
+    assert scene.cmd == f"git checkout -b topic {short}"
+    scene.construct()
+    assert ref_commit(scene, "topic") == ref_commit(scene, "HEAD") == target
+    assert ref_commit(scene, "main") == head
+
+
 def test_annotated_tag_draws_the_tag_object(repo):
     from git_sim.tag import Tag
 
