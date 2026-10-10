@@ -155,10 +155,17 @@ html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-f
 #stepLabel{color:var(--muted);font:600 12px/1 var(--font);min-width:84px;text-align:left}
 #stepLabel[hidden]{display:none}
 /* Narrow windows: the bar gives up its side links, then the brand and step label, rather than overflowing. */
-#learn[hidden]{display:none}
-#helpMenu .help-more{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--rule);font:600 12.5px/1.4 var(--font)}
-#helpMenu .help-more a{color:var(--accent);text-decoration:none}
-#helpMenu .help-more a:hover{text-decoration:underline}
+#bar .right a#learn{display:inline-flex;align-items:center;gap:7px;padding:7px 13px 7px 10px;border-color:var(--rule);background:var(--panel);color:var(--text);font:700 12px/1 var(--font);white-space:nowrap}
+#bar .right a#learn svg{flex:none;color:var(--accent)}
+#bar .right a#learn:hover{border-color:var(--accent);color:var(--accent)}
+#bar .right a#learn[hidden],#learn[hidden]{display:none}
+#helpMenu .help-more{margin:12px 0 0;padding-top:12px;border-top:1px solid var(--rule)}
+#helpMenu .help-more a{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--panel);color:var(--text);text-decoration:none;transition:border-color .15s}
+#helpMenu .help-more a:hover{border-color:var(--accent)}
+#helpMenu .help-more .more-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+#helpMenu .help-more b{font:700 13px/1.3 var(--font)}
+#helpMenu .help-more small{color:var(--muted);font:600 10.5px/1.3 var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#helpMenu .help-more .more-go{flex:none;color:var(--accent);font:700 14px/1 var(--font)}
 @media (max-width:1180px){#scrub{width:min(36vw,520px)}}
 @media (max-width:640px){#learn{display:none}}
 @media (max-width:820px){#bar{grid-template-columns:auto 1fr auto;padding:0 10px}#brand,#stepLabel{display:none}#scrub{width:min(40vw,520px)}}
@@ -911,6 +918,7 @@ function makeViewer(root){
     return {cmd: m[1], args};
   };
   const learn = byId('learn');
+  const learnText = byId('learnText') || learn;
   if (learn) {
     const q = learnQuery(title);
     const sitePage = where === 'viewer' && !/^\/tools\/git-sim(\/|$)/.test(location.pathname);
@@ -919,11 +927,11 @@ function makeViewer(root){
       const p = new URLSearchParams({cmd: q.cmd, from});
       if (q.args.length) p.set('args', q.args.join(' '));
       learn.href = SITE + '/learn/git/go?' + p;
-      learn.textContent = 'Learn git ' + q.cmd;
+      learnText.textContent = 'Learn git ' + q.cmd;
       learn.title = `How git ${q.cmd} works, on Initial Commit`;
     } else {
       learn.href = SITE + '/learn/git?ref=git-sim-' + from;
-      learn.textContent = 'Learn Git';
+      learnText.textContent = 'Learn Git';
       learn.title = 'Git lessons on Initial Commit';
     }
   }
@@ -1325,7 +1333,9 @@ def header_markup(fragment_attr=""):
         "</div>"
         '<div class="right">'
         # filled in (or left hidden) by the page script, for the command shown
-        '<a id="learn" href="https://initialcommit.com/learn/git" target="_blank" rel="noopener" hidden>Learn Git</a>'
+        '<a id="learn" href="https://initialcommit.com/learn/git" target="_blank" rel="noopener" hidden>'
+        '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 5.5c3-1.6 6-1.6 9 0 3-1.6 6-1.6 9 0V19c-3-1.6-6-1.6-9 0-3-1.6-6-1.6-9 0z M12 5.5V19" '
+        'fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span id="learnText">Learn Git</span></a>'
         '<button id="share" title="copy a link or an image of this simulation, save it, or post it">Share</button>'
         '<div id="shareMenu" hidden>'
         '<h3>Copy</h3><div class="grid">'
@@ -1370,7 +1380,9 @@ def header_markup(fragment_attr=""):
         '<button id="help" title="how to use this page (?)">?</button>'
         f'<div id="helpMenu" hidden><h3>How to use this page</h3><ul>{help_items}</ul>'
         '<p class="help-more"><a id="cheatSheet" href="https://initialcommit.com/learn/git/animated-cheat-sheet?ref=git-sim-help" '
-        'target="_blank" rel="noopener">Get the free animated, customizable Git cheat sheet</a></p></div>'
+        'target="_blank" rel="noopener"><span class="more-text"><b>The Animated Git Cheat Sheet</b>'
+        "<small>Free &middot; Customize it &middot; Download it &middot; Print it</small></span>"
+        '<span class="more-go" aria-hidden="true">&rarr;</span></a></p></div>'
         "</div>"
         "</header>"
     )

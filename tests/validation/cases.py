@@ -758,8 +758,8 @@ CASES: List[Case] = [
     Case("push-tag", "new-tag", ["push", "origin", "v9.9"], all_of(title("git push origin v9.9"), texts("Pushes tag v9.9 to origin", "The 2 commit(s) it reaches"), ref_after("on origin"))),
     Case("push-tag-present", "remote-tag", ["push", "origin", "v0.9"], all_of(texts("origin already has tag v0.9"), ref_before("on origin"))),
     Case("push-tag-missing", "new-tag", ["push", "origin", "refs/tags/nope"], error="no tag"),
-    Case("push-delete-tag", "remote-tag", ["push", "origin", "--delete", "v0.9"], all_of(texts("Deletes tag v0.9 on origin", "Your local tag v0.9 is kept"), ref_removed("on origin"), ref_after("deleted on origin", "deleted tag"))),
-    Case("push-delete-remote-only-tag", "remote-tag", ["push", "origin", "-d", "refs/tags/v0.8"], all_of(texts("You have no local tag v0.8"), ref_before("v0.8"), ref_after("deleted on origin"))),
+    Case("push-delete-tag", "remote-tag", ["push", "origin", "--delete", "v0.9"], all_of(texts("Deletes tag v0.9 on origin", "Your local tag v0.9 is kept"), ref_before("v0.9"), ref_before("v0.9 on origin"))),
+    Case("push-delete-remote-only-tag", "remote-tag", ["push", "origin", "-d", "refs/tags/v0.8"], all_of(texts("You have no local tag v0.8"), ref_before("v0.8 on origin"))),
     # rebase
     Case("rebase", "rebase-ready", ["rebase", "main"], all_of(title("git rebase main"), rebase_onto("main"))),
     Case("rebase-classic", "classic", ["rebase", "branch2"], rebase_onto("branch2")),

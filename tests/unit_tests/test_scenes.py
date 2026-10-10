@@ -990,8 +990,11 @@ def test_push_a_tag_and_delete_one_on_the_remote(repo, tmp_path):
 
     gone = Push(remote="origin", branch="v1", delete=True)
     gone.construct()
-    assert gone.drawnRefs["deleted on origin"].meta["phase"] == "after"
-    assert any(r.meta.get("name") == "on origin" and r.meta["phase"] == "removed" for r in gone.removed_mobjects)
+    # the remote's copy is one pill that grays out and is struck through
+    remote_copy = gone.drawnRefs["v1 on origin"]
+    assert remote_copy.meta["phase"] == "before"
+    assert remote_copy[0].meta["before_fill"] == gone.theme.remote
+    assert "deleted on origin" not in gone.drawnRefs and "v1" in gone.drawnRefs
     assert any("Your local tag v1 is kept" in t for t in scene_texts(gone))
     with pytest.raises(SystemExit):
         Push(remote="origin", branch="refs/tags/nope")

@@ -54,7 +54,7 @@
  },
  "files": [],
  "notes": [
-  "Deletes tag v0.8 on origin; no commit or branch changes.",
+  "Deletes tag v0.8 on origin. No commit or branch changes.",
   "You have no local tag v0.8 either, so this repository keeps no copy of it.",
   "Clones that already fetched v0.8 keep their copy until they delete it."
  ],
@@ -65,23 +65,11 @@
    "moved": false,
    "phase": "before"
   },
-  "deleted on origin": {
-   "count": 2,
-   "kind": "deleted tag",
-   "moved": false,
-   "phase": "after"
-  },
   "main": {
    "count": 2,
    "kind": "branch",
    "moved": false,
    "phase": "before"
-  },
-  "on origin": {
-   "count": 2,
-   "kind": "pushed tag",
-   "moved": false,
-   "phase": "removed"
   },
   "origin/main": {
    "count": 2,
@@ -89,9 +77,9 @@
    "moved": false,
    "phase": "before"
   },
-  "v0.8": {
+  "v0.8 on origin": {
    "count": 2,
-   "kind": "tag",
+   "kind": "remote tag",
    "moved": false,
    "phase": "before"
   },
@@ -102,6 +90,6 @@
    "phase": "before"
   }
  },
- "steps": 2,
+ "steps": 1,
  "title": "git push --delete origin refs/tags/v0.8"
 }

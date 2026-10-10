@@ -382,14 +382,14 @@ class Push(GitSimBaseCommand):
         local = name in self.repo.tags and commit is not None and self.repo.tags[name].commit.hexsha == commit.hexsha
         self.parse_commits()
         if commit is not None and self.ensure_drawn(commit):
-            if not local or name not in self.drawnRefs:
-                # a tag only the remote has (or has elsewhere): name it there
+            if local and name not in self.drawnRefs:
                 self.draw_ref(commit, self.stack_top(commit.hexsha), text=name, color=self.theme.tag, kind="tag", phase="before")
-            on_remote = f"on {remote_name}"
-            self.draw_ref(commit, self.stack_top(commit.hexsha), text=on_remote, color=self.theme.remote, kind="pushed tag", phase="before")
-            self.remove_ref(on_remote)
-            self.draw_ref(commit, self.stack_top(commit.hexsha), text=f"deleted on {remote_name}", color=self.theme.commit, kind="deleted tag", phase="after")
-        notes = [(f"Deletes tag {name} on {remote_name}; no commit or branch changes.", self.theme.gold)]
+            # the remote's copy is its own teal pill, which the command
+            # grays out and strikes through; your own tag pill is untouched
+            on_remote = f"{name} on {remote_name}"
+            self.draw_ref(commit, self.stack_top(commit.hexsha), text=on_remote, color=self.theme.remote, kind="remote tag", phase="before")
+            self.strike_ref(on_remote)
+        notes = [(f"Deletes tag {name} on {remote_name}. No commit or branch changes.", self.theme.gold)]
         if name in self.repo.tags:
             notes.append(f"Your local tag {name} is kept: git tag -d {name} deletes it here too.")
         else:
@@ -398,6 +398,27 @@ class Push(GitSimBaseCommand):
         self.recenter_frame()  # notes center on the frame
         self.add_notes(notes)
         self.finish()
+
+    def strike_ref(self, name):
+        """Gray out a drawn label and strike it through: what the command
+        deletes somewhere you can't see, such as a tag on the remote."""
+        box, label = self.drawnRefs[name]
+        self.tag(box, before_fill=box.fill_color, before_stroke=box.fill_color)
+        through = self.strike_line(label)  # the font's strikeout height and weight
+        y = through.get_center()[1]
+        strike = m.Line(
+            (box.get_left()[0] + 0.08, y, 0),
+            (box.get_right()[0] - 0.08, y, 0),
+            color=self.theme.ref_text,
+            stroke_width=through.stroke_width,
+        )
+        self.tag(strike, phase="after", with_recolor=True)
+        if settings.animate:
+            self.play(box.animate.set_color(self.theme.merge), m.Create(strike), run_time=1 / settings.speed)
+        else:
+            box.set_color(self.theme.merge)
+            self.add(strike)
+        self.toFadeOut.add(strike)
 
     def finish(self):
         self.recenter_frame()

@@ -54,7 +54,7 @@
  },
  "files": [],
  "notes": [
-  "Deletes tag v0.9 on origin; no commit or branch changes.",
+  "Deletes tag v0.9 on origin. No commit or branch changes.",
   "Your local tag v0.9 is kept: git tag -d v0.9 deletes it here too.",
   "Clones that already fetched v0.9 keep their copy until they delete it."
  ],
@@ -65,23 +65,11 @@
    "moved": false,
    "phase": "before"
   },
-  "deleted on origin": {
-   "count": 2,
-   "kind": "deleted tag",
-   "moved": false,
-   "phase": "after"
-  },
   "main": {
    "count": 2,
    "kind": "branch",
    "moved": false,
    "phase": "before"
-  },
-  "on origin": {
-   "count": 2,
-   "kind": "pushed tag",
-   "moved": false,
-   "phase": "removed"
   },
   "origin/main": {
    "count": 2,
@@ -94,8 +82,14 @@
    "kind": "tag",
    "moved": false,
    "phase": "before"
+  },
+  "v0.9 on origin": {
+   "count": 2,
+   "kind": "remote tag",
+   "moved": false,
+   "phase": "before"
   }
  },
- "steps": 2,
+ "steps": 1,
  "title": "git push --delete origin v0.9"
 }
