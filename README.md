@@ -141,7 +141,7 @@ No Git repo handy to visualize? The bundled [git-dummy](https://github.com/initi
 
 ## Your Git repo data stays on your machine
 
-By default, when you run git-sim it generates an interactive Git graph which opens in the [git-sim viewer at initialcommit.com](https://initialcommit.com/tools/git-sim/viewer), but the graph's data is compressed and placed in the link's `#fragment`, which browsers never send to a server, so nothing about your code leaves your local machine. The one exception is a public link, which you create on purpose with **Share** → **Public link…**: it keeps that graph on initialcommit.com, so the link is short and shows the graph itself when posted, and gives you a link to delete it.
+By default, when you run git-sim it generates an interactive Git graph which opens in the [git-sim viewer at initialcommit.com](https://initialcommit.com/tools/git-sim/viewer), but the graph's data is compressed and placed in the link's `#fragment`, which browsers never send to the server, so nothing about your code leaves your local machine.
 
 For example, `git-sim branch feature` opens a link like the one below, shortened here (the full link is about 2,000 characters):
 
@@ -152,6 +152,8 @@ https://initialcommit.com/tools/git-sim/viewer#d=eNrNWdtu2zgQ_RVBxaK7QEzzTqmIDbj
 Everything after the `#` stays in your local browser: `d` is the compressed graph, `t` is the command, `m` is the color theme, and `p` is the name of the graph file saved on your machine. All the site receives is `https://initialcommit.com/tools/git-sim/viewer`.
 
 The page is also saved locally, and `--open-in local` (or `git_sim_open_in=local`) opens that file offline instead, without invoking the git-sim viewer on initialcommit.com at all.
+
+The one exception is a public link, which you may decide to create with the **Share** → **Public link** option. Generating the public link stores the git-sim graph data on initialcommit.com servers. The link is shortened for convenience and shows the graph itself when posted, and you'll also be provided a link to delete the stored graph data at any time.
 
 ## Live mode
 
