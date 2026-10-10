@@ -1,7 +1,7 @@
 # git-sim
 ![git-sim-logo-with-tagline-1440x376p45](https://user-images.githubusercontent.com/49353917/232990611-58d0693f-69c0-45c8-b51d-cd540793d18c.gif)
 
-<a href="https://initialcommit.com/tools/git-sim"><img src="https://initialcommit.com/img/initialcommit/logo.png" alt="Initial Commit" height="20"></a> [![GitHub license](https://img.shields.io/github/license/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/blob/main/LICENSE) [![GitHub tag](https://img.shields.io/github/v/release/initialcommit-com/git-sim)](https://img.shields.io/github/v/release/initialcommit-com/git-sim) [![Downloads](https://static.pepy.tech/badge/git-sim)](https://pepy.tech/project/git-sim) [![Contributors](https://img.shields.io/github/contributors/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/graphs/contributors)
+<a href="https://initialcommit.com/tools/git-sim"><img src="https://initialcommit.com/img/initialcommit/logo.png" alt="Initial Commit" height="20"></a> [![GitHub license](https://img.shields.io/github/license/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/blob/main/LICENSE) [![GitHub tag](https://img.shields.io/github/v/release/initialcommit-com/git-sim)](https://img.shields.io/github/v/release/initialcommit-com/git-sim) [![Downloads](https://static.pepy.tech/badge/git-sim)](https://pepy.tech/project/git-sim) [![Contributors](https://img.shields.io/github/contributors/initialcommit-com/git-sim)](https://github.com/initialcommit-com/git-sim/graphs/contributors) [![Sponsor](https://img.shields.io/badge/Sponsor-git--sim-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/initialcommit-com)
 
 **The visual layer for Git in your own repos:** simulate, record, replay, audit, and share individual Git commands or entire Git workflows, wherever you or your agents run them.
 
@@ -56,6 +56,8 @@
 
 </td></tr></tbody>
 </table>
+
+If git-sim helps you, ⭐ [star the repo](#top) or [sponsor it on GitHub](https://github.com/sponsors/initialcommit-com).
 
 ## Requirements
 
