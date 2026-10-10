@@ -663,6 +663,36 @@ def test_the_local_server_requires_the_key_and_answers_the_site(repo, tmp_path):
             urllib.request.urlopen(base + "/info")
         with urllib.request.urlopen(base + f"/info?k={session.key}") as r:
             assert json.loads(r.read()) == {"repo": "repo", "where": session.where}
+        # no page may frame it
+        with urllib.request.urlopen(base + "/") as r:
+            assert r.headers["X-Frame-Options"] == "DENY"
+            assert r.headers.get("Content-Security-Policy") is None
+    finally:
+        session.stop.set()
+        server.shutdown()
+        server.server_close()
+
+
+def test_the_jupyter_magics_server_lets_only_local_pages_frame_it(repo, tmp_path):
+    import urllib.request
+
+    from git_sim.live import LiveServer
+
+    session = LiveSession(str(repo), str(tmp_path / "out"), zones=False, poll=0.1)
+    session.start()
+    server = LiveServer(("127.0.0.1", 0), session, local_frames=True)
+    thread = __import__("threading").Thread(
+        target=server.serve_forever, kwargs={"poll_interval": 0.1}, daemon=True
+    )
+    thread.start()
+    try:
+        with urllib.request.urlopen(
+            f"http://127.0.0.1:{server.server_address[1]}/"
+        ) as r:
+            assert r.headers.get("X-Frame-Options") is None
+            policy = r.headers["Content-Security-Policy"]
+            assert policy.startswith("frame-ancestors ") and "http://localhost:*" in policy
+            assert "initialcommit" not in policy
     finally:
         session.stop.set()
         server.shutdown()

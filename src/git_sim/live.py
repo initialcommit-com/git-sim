@@ -971,7 +971,10 @@ class LiveHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
-        self.send_header("X-Frame-Options", "DENY")
+        if self.server.local_frames:
+            self.send_header("Content-Security-Policy", LOCAL_FRAME_ANCESTORS)
+        else:
+            self.send_header("X-Frame-Options", "DENY")
         self._cors()
         self.end_headers()
         self.wfile.write(body)
@@ -1093,9 +1096,10 @@ class LiveServer(http.server.ThreadingHTTPServer):
     # git-sim live finds it busy (and picks another) rather than sharing it.
     allow_reuse_address = os.name != "nt"
 
-    def __init__(self, address, session: LiveSession):
+    def __init__(self, address, session: LiveSession, local_frames: bool = False):
         super().__init__(address, LiveHandler)
         self.session = session
+        self.local_frames = local_frames
 
     def server_bind(self):
         if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
@@ -1105,8 +1109,17 @@ class LiveServer(http.server.ThreadingHTTPServer):
 
 SERVER_FILE = "server.json"
 
+# With --allow-local-frames (the Jupyter magic): only pages served from this
+# machine may put the live page in a frame. Without it, nothing may.
+LOCAL_FRAME_ANCESTORS = (
+    "frame-ancestors http://localhost:* http://127.0.0.1:* "
+    "https://localhost:* https://127.0.0.1:*"
+)
 
-def _serve(session: "LiveSession", port: int, sessions_dir: str) -> LiveServer:
+
+def _serve(
+    session: "LiveSession", port: int, sessions_dir: str, local_frames: bool = False
+) -> LiveServer:
     """The live server, on the port and with the key this repository's last
     one had (kept in <sessions dir>/server.json), so a page still open from
     before git-sim live was restarted reconnects by itself. With --port, that
@@ -1121,12 +1134,14 @@ def _serve(session: "LiveSession", port: int, sessions_dir: str) -> LiveServer:
     server = None
     if saved.get("port") and saved.get("key") and (not port or port == saved["port"]):
         try:
-            server = LiveServer(("127.0.0.1", int(saved["port"])), session)
+            server = LiveServer(
+                ("127.0.0.1", int(saved["port"])), session, local_frames
+            )
             session.key = saved["key"]
         except (OSError, ValueError):
             server = None
     if server is None:
-        server = LiveServer(("127.0.0.1", port), session)
+        server = LiveServer(("127.0.0.1", port), session, local_frames)
     try:
         os.makedirs(sessions_dir, exist_ok=True)
         with open(os.path.join(sessions_dir, SERVER_FILE), "w", encoding="utf-8") as f:
@@ -1276,6 +1291,12 @@ def live(
         POLL_SECONDS, "--interval", help="Seconds between checks of the repository."
     ),
     repo: str = typer.Option(".", "--repo", "-C", help="The repository to watch."),
+    local_frames: bool = typer.Option(
+        False,
+        "--allow-local-frames",
+        hidden=True,
+        help="Let pages on this machine frame the live page (the Jupyter magic uses it).",
+    ),
 ):
     """Follow the repository as it changes: an animated graph that plays every
     commit, branch, checkout, reset, rebase or staged file as it happens, in
@@ -1386,7 +1407,7 @@ def live(
     # Browser mode: draw the current state, serve, watch.
     _say(f"git-sim live: drawing {root} ...")
     session.start()
-    server = _serve(session, port, _sessions_dir(root))
+    server = _serve(session, port, _sessions_dir(root), local_frames)
     base = f"http://127.0.0.1:{server.server_address[1]}"
     local_url = f"{base}/#k={session.key}"
     watcher = threading.Thread(
