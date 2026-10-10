@@ -867,23 +867,25 @@ git-sim ships in tiers, so an AI agent's machine or a CI runner installs only wh
 
 | Tier | Install | Includes |
 |---|---|---|
-| **core** (default) | `pip3 install git-sim` | pre-flight engine, text commit graph, static image simulation (skia), MCP server (`git-sim-mcp`), Claude Code hook (`git-sim-hook`) |
-| **extras** | `pip3 install "git-sim[extras]"` | everything in core, plus animated video output (`--animate`) via Manim (install Manim's own system dependencies first — see below) |
-| **min** | see below | pre-flight engine, text commit graph and MCP server only — no image rendering, for headless machines |
+| **core** (default) | `pip install git-sim` | pre-flight engine, text commit graph, static image simulation (skia), MCP server (`git-sim-mcp`), Claude Code hook (`git-sim-hook`) |
+| **extras** | `pip install "git-sim[extras]"` | everything in core, plus animated video output (`--animate`) via Manim (install Manim's own system dependencies first, see below) |
+| **min** | see below | pre-flight engine, text commit graph and MCP server only, with no image rendering, for headless machines |
 
 pip extras can only add packages, so the `min` tier is the core package installed without its rendering dependencies (`skia-python`, `numpy`):
 
 ```console
-$ pip3 install --no-deps git-sim
-$ pip3 install gitpython "mcp>=2.0" typer pydantic-settings fonttools git-dummy
+$ pip install --no-deps git-sim
+$ pip install gitpython "mcp>=2.0" typer pydantic-settings fonttools git-dummy
 ```
 
-Older docs mention `pip install git-sim[mcp]`; that still works and is the same as core.
+Older docs mention `pip install git-sim[mcp]`, which still works and is the same as core.
 
 Animated video (`--animate`) uses Manim, which needs FFmpeg and other system packages: install them first with the Manim guide for [Windows](https://docs.manim.community/en/stable/installation/windows.html), [macOS](https://docs.manim.community/en/stable/installation/macos.html), [Linux](https://docs.manim.community/en/stable/installation/linux.html), or [Conda](https://docs.manim.community/en/stable/installation/conda.html). On macOS, use a Homebrew Python or a virtual environment rather than the system Python.
 
+### Docker
+
 <details>
-<summary>Docker</summary>
+<summary>Run git-sim in a Docker container</summary>
 
 1) Clone down the git-sim repository:
 
@@ -938,7 +940,24 @@ jobs:
 
 When a new PR comes in, the git-sim GitHub Action automatically evaluates it, adding a comment with the risk level, the included commits, how to undo it, and a text commit graph. The visual, interactive graph is attached to the run as the artifact `git-sim-pr-<number>`.
 
-Inputs, set under `with:`: `mode` (`merge` or `rebase`, default `merge`), `comment` and `artifact` (`"true"` or `"false"`), `python-version` (default `3.12`), and `token`. Pull requests from forks get a read-only token, so set `comment: "false"` if you take them.
+To change how it runs, add a `with:` block under the `uses:` line:
+
+```yaml
+      - uses: initialcommit-com/git-sim/integrations/github-action@v0.4.0
+        with:
+          mode: rebase
+          comment: "false"
+```
+
+| Setting | Default | What it does |
+|---|---|---|
+| `mode` | `merge` | `merge` checks merging the pull request into its base branch, `rebase` checks rebasing its commits onto the base |
+| `comment` | `"true"` | Post the report as a comment on the pull request |
+| `artifact` | `"true"` | Attach the interactive graph to the workflow run as a download |
+| `python-version` | `3.12` | The Python that git-sim is installed with |
+| `token` | the workflow's own token | The token used to post the comment, to post as another account or bot |
+
+Pull requests from forks get a read-only token, which can't post comments, so set `comment: "false"` if your repo takes them. The graph is still attached to the run.
 
 </details>
 
