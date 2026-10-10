@@ -194,7 +194,7 @@ Embed a git-sim graph in any web page, blog post, tutorial, or docs. Includes th
 
 ```html
 <div class="git-sim" data-graph="eJzVXWtvo0gW_SuI0a52..." data-title="git rebase main">
-  <a href="https://initialcommit.com/tools/git-sim">git rebase main, created with git-sim</a>
+  <a href="https://initialcommit.com/learn/git/go?cmd=rebase&amp;from=embed">git rebase</a> main, created with <a href="https://initialcommit.com/tools/git-sim">git-sim</a>
 </div>
 <script src="https://initialcommit.com/js/tools/git-sim-embed.js" defer></script>
 ```

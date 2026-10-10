@@ -99,8 +99,11 @@ def test_html_page_is_self_contained_and_wires_the_controls(tmp_path):
     assert "data-phase" in page and "ancestry" in page and "viewBox" in page
     # Links the reader may click are fine; nothing is fetched on load.
     assert 'src="http' not in page and "<link" not in page and "@import" not in page
-    assert 'href="https://initialcommit.com"' in page
-    assert 'href="https://devlands.com"' in page
+    # the bar links back to initialcommit.com: the tool page, and a page that
+    # explains the command shown; the help menu offers the cheat sheet
+    assert 'id="brand" href="https://initialcommit.com/tools/git-sim"' in page
+    assert 'id="learn"' in page and "/learn/git/go?" in page
+    assert "animated-cheat-sheet" in page and "devlands.com" not in page
     assert 'id="help"' in page and 'id="helpMenu"' in page
     assert 'id="share"' in page and 'data-action="image"' in page
     assert 'data-action="embed"' in page and 'data-graph="${graph}"' in page

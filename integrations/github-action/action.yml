@@ -116,6 +116,7 @@ runs:
         NUMBER: ${{ github.event.pull_request.number }}
         REPORT: ${{ steps.sim.outputs.report }}
         HAS_PAGE: ${{ steps.sim.outputs.page }}
+        MODE: ${{ inputs.mode }}
         RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       run: |
         set -euo pipefail
@@ -127,7 +128,9 @@ runs:
             echo "The interactive before / after graph is attached to [this run]($RUN_URL) as the artifact \`git-sim-pr-$NUMBER\`."
           fi
           echo
-          echo "<sub>Computed from the repository by [git-sim](https://initialcommit.com/tools/git-sim); nothing was merged or changed.</sub>"
+          if [ "$MODE" = "rebase" ]; then OP=rebase; else OP=merge; fi
+          echo "<sub>What does \`git $OP\` do? [See it explained on Initial Commit](https://initialcommit.com/learn/git/go?cmd=$OP&from=github-action).</sub><br>"
+          echo "<sub>Computed from the repository by [git-sim](https://initialcommit.com/tools/git-sim?ref=git-sim-github-action); nothing was merged or changed.</sub>"
         } > git-sim-out/comment.md
         # one comment per pull request, updated on later runs
         existing=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/issues/$NUMBER/comments" --jq '.[] | select(.body | startswith("<!-- git-sim-pr-check -->")) | .id' | head -n 1 || true)

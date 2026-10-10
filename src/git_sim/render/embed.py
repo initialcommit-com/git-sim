@@ -50,7 +50,8 @@ EMBED_JS = r"""
   const VIEWER = __VIEWER__;
   // min-height:0 so the height the frame reports is its content's, not the frame's own
   // (which would hold a short graph at the frame's starting 320px)
-  const FRAME_CSS = 'html,body{overflow:hidden;min-height:0}#bar{position:static}' +
+  // no learn link in an embed: the host page is the lesson
+  const FRAME_CSS = 'html,body{overflow:hidden;min-height:0}#bar{position:static}#learn{display:none!important}' +
     '[data-controls="compact"] #brand,[data-controls="compact"] #bar .right a{display:none}' +
     '[data-controls="compact"] #bar{grid-template-columns:auto 1fr auto;padding:0 10px}';
   const FRAME_JS = `
@@ -89,22 +90,28 @@ EMBED_JS = r"""
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   }
 
-  // The credit under each graph: the host page's own link when the snippet has
-  // one (the README's embed snippet), else a new one. Not shown on initialcommit.com itself.
+  // The credit under each graph: what the snippet wrote inside the element
+  // when it links initialcommit.com ("Copy embed" links the command's page and
+  // git-sim's; older snippets link git-sim alone), else a new line. Not shown
+  // on initialcommit.com itself.
   const HOME = 'https://initialcommit.com/tools/git-sim';
   function credit(el){
     if (/(^|\.)initialcommit\.com$/i.test(location.hostname)) return null;
-    let link = el.querySelector('a[href*="initialcommit.com"]');
-    if (!link) {
-      link = document.createElement('a');
-      link.href = HOME;
-      link.textContent = (el.dataset.title ? el.dataset.title + ', created' : 'Created') + ' with git-sim';
-    }
     const line = document.createElement('p');
     line.className = 'git-sim-credit';
     line.style.cssText = 'margin:6px 2px 0;font:12px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;text-align:right;opacity:.75';
-    link.style.color = 'inherit';
-    line.appendChild(link);
+    if (el.querySelector('a[href*="initialcommit.com"]')) {
+      line.append(...Array.from(el.childNodes));
+      line.normalize();
+      if (line.firstChild && line.firstChild.nodeType === 3) line.firstChild.textContent = line.firstChild.textContent.replace(/^\s+/, '');
+      if (line.lastChild && line.lastChild.nodeType === 3) line.lastChild.textContent = line.lastChild.textContent.replace(/\s+$/, '');
+    } else {
+      const link = document.createElement('a');
+      link.href = HOME;
+      link.textContent = (el.dataset.title ? el.dataset.title + ', created' : 'Created') + ' with git-sim';
+      line.appendChild(link);
+    }
+    line.querySelectorAll('a').forEach(a => { a.style.color = 'inherit'; });
     return line;
   }
   function place(el, iframe){

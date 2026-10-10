@@ -120,7 +120,20 @@ def remote_kernel() -> bool:
     )
 
 
+CHEAT_SHEET_URL = (
+    "https://initialcommit.com/learn/git/animated-cheat-sheet?ref=git-sim-jupyter"
+)
+
+
+def in_jupyter(page_html: str) -> str:
+    """Mark a git-sim page as shown in a notebook, so its learn link goes to
+    the site's lessons."""
+    return page_html.replace("<html", '<html data-host="jupyter"', 1)
+
+
 def live_frame(url: str, height: int = LIVE_HEIGHT) -> str:
+    # ?host=jupyter: the live page's learn link goes to the site's lessons
+    url = url.replace("/#", "/?host=jupyter#", 1)
     return (
         f'<div><iframe src="{html.escape(url, quote=True)}" '
         f'style="width:100%;height:{int(height)}px;border:0;border-radius:10px" '
@@ -264,8 +277,23 @@ def gitsim(line: str):
         )
         return
     with open(page, encoding="utf-8") as f:
-        display(HTML(embed_page(f.read(), height)))
+        display(HTML(embed_page(in_jupyter(f.read()), height)))
+
+
+_welcomed = False
 
 
 def load_ipython_extension(ipython):
+    global _welcomed
     ipython.register_magic_function(gitsim, magic_kind="line", magic_name="gitsim")
+    # once per session: a reload of the extension doesn't repeat it
+    if not _welcomed:
+        _welcomed = True
+        from IPython.display import Markdown, display
+
+        display(
+            Markdown(
+                "`%gitsim` is ready. New to Git? Get the free "
+                f"[animated, customizable Git cheat sheet]({CHEAT_SHEET_URL})."
+            )
+        )

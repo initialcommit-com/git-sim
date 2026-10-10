@@ -36,6 +36,13 @@ def test_the_page_is_framed_with_its_markup_escaped():
     assert "sandbox=" in frame and '" onload="' not in frame
 
 
+def test_a_notebook_marks_its_pages_and_points_to_the_cheat_sheet():
+    assert jupyter.in_jupyter('<!DOCTYPE html><html lang="en"><head>').startswith(
+        '<!DOCTYPE html><html data-host="jupyter" lang="en">'
+    )
+    assert "animated-cheat-sheet" in jupyter.CHEAT_SHEET_URL
+
+
 def test_with_no_height_the_frame_fits_the_graph():
     frame = embed_page("<html></html>")
     assert f"height:{DEFAULT_HEIGHT}px" in frame and '" onload="' in frame
@@ -55,7 +62,9 @@ def test_live_starts_once_per_repo_and_serves_a_frameable_page(tmp_path):
         assert jupyter.live_start([], str(tmp_path)) == (url, "")
         with urllib.request.urlopen(url.split("#")[0]) as r:
             assert "frame-ancestors" in r.headers["Content-Security-Policy"]
-        assert f'src="{url}"' in jupyter.live_frame(url)
+        # marked as shown in a notebook, ahead of the session key's fragment
+        framed = url.replace("/#", "/?host=jupyter#", 1)
+        assert f'src="{framed}"' in jupyter.live_frame(url)
     finally:
         assert jupyter.live_stop() == [str(tmp_path)]
     assert jupyter.live_stop() == []

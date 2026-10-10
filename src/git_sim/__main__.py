@@ -22,7 +22,11 @@ from git_sim.settings import (
     settings,
 )
 
-app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
+app = typer.Typer(
+    context_settings={"help_option_names": ["-h", "--help"]},
+    epilog="New to Git? Lessons, a guide to every command, and an animated, "
+    "customizable cheat sheet: https://initialcommit.com/learn/git",
+)
 
 
 def get_font_name(font_path):

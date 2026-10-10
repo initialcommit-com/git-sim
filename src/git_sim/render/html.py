@@ -155,7 +155,12 @@ html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-f
 #stepLabel{color:var(--muted);font:600 12px/1 var(--font);min-width:84px;text-align:left}
 #stepLabel[hidden]{display:none}
 /* Narrow windows: the bar gives up its side links, then the brand and step label, rather than overflowing. */
-@media (max-width:1180px){#bar .right a{display:none}#scrub{width:min(36vw,520px)}}
+#learn[hidden]{display:none}
+#helpMenu .help-more{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--rule);font:600 12.5px/1.4 var(--font)}
+#helpMenu .help-more a{color:var(--accent);text-decoration:none}
+#helpMenu .help-more a:hover{text-decoration:underline}
+@media (max-width:1180px){#scrub{width:min(36vw,520px)}}
+@media (max-width:640px){#learn{display:none}}
 @media (max-width:820px){#bar{grid-template-columns:auto 1fr auto;padding:0 10px}#brand,#stepLabel{display:none}#scrub{width:min(40vw,520px)}}
 /* Phones (and small embeds): one row that fits, the slider taking what is left; no keyboard, so no shortcut help. */
 @media (max-width:480px){#bar{grid-template-columns:minmax(0,1fr) auto;gap:6px;padding:0 6px}#controls{min-width:0;gap:6px;padding:4px 8px 4px 4px}#play{flex:none;width:32px;height:32px;font-size:13px}.end{flex:none;font-size:12.5px;padding:4px 2px}#scrub{flex:1 1 auto;width:auto;min-width:40px;margin:0}#help,#helpMenu{display:none!important}#share{margin-left:0;padding:7px 10px}#shareMenu{right:0;width:min(340px,calc(100vw - 16px))}}
@@ -875,6 +880,63 @@ function makeViewer(root){
   // opening the hosted viewer keeps it out of the query string).
   const title = (info.title && info.title !== 'git-sim' ? info.title : '') || params.t || document.title;
   if (params.t && (!info.title || info.title === 'git-sim')) document.title = params.t + ' — created with git-sim';
+
+  // ---- links back to initialcommit.com ------------------------------------------
+  // "Learn git rebase" goes to the site's page for the command on the stage
+  // (the site picks a lesson in a notebook, the command's page elsewhere). It
+  // follows each mount, so a live page's link follows the change shown. Only
+  // the command, its flags and known subcommand words go in the link, never
+  // branch, file or commit names. Not in embeds, whose host page is the lesson,
+  // nor on the site's own pages other than the viewer.
+  const SITE = 'https://initialcommit.com';
+  const where = (() => {
+    if (document.documentElement.dataset.embedId) return 'embed';
+    const host = document.documentElement.dataset.host || new URLSearchParams(location.search).get('host') || '';
+    if (/^(jupyter|vscode)$/.test(host)) return host;
+    if (typeof acquireVsCodeApi === 'function' || window.__gitSimHost) return 'vscode';
+    return /(^|\.)initialcommit\.com$/i.test(location.hostname) ? 'viewer' : 'page';
+  })();
+  // a live page (or a recorded workflow) has the strip of changes; the hosted
+  // viewer carries it on every page, and its mode says which one this is
+  const isLive = !!byId('live') && !/^(shared|demo|empty)$/.test(document.documentElement.dataset.mode || '');
+  const from = isLive ? where + '-live' : where;
+  const SUBCOMMANDS = /^(add|remove|rename|set-url|show|prune|pop|apply|drop|list|clear|push|save|branch|start|good|bad|skip|run|init|update|deinit|move|lock|unlock|repair)$/;
+  const learnQuery = text => {
+    const m = /\bgit\s+([a-z][a-z-]*)((?:\s+\S+)*)/.exec(text || '');
+    if (!m) return null;
+    const words = m[2].trim().split(/\s+/).filter(Boolean);
+    const args = words.map(w => w.split('=')[0]).filter(w => /^--?[a-zA-Z][\w-]*$/.test(w));
+    const sub = words.find(w => !w.startsWith('-'));
+    if (sub && SUBCOMMANDS.test(sub)) args.unshift(sub);
+    return {cmd: m[1], args};
+  };
+  const learn = byId('learn');
+  if (learn) {
+    const q = learnQuery(title);
+    const sitePage = where === 'viewer' && !/^\/tools\/git-sim(\/|$)/.test(location.pathname);
+    learn.hidden = where === 'embed' || sitePage || (!q && !isLive);
+    if (q) {
+      const p = new URLSearchParams({cmd: q.cmd, from});
+      if (q.args.length) p.set('args', q.args.join(' '));
+      learn.href = SITE + '/learn/git/go?' + p;
+      learn.textContent = 'Learn git ' + q.cmd;
+      learn.title = `How git ${q.cmd} works, on Initial Commit`;
+    } else {
+      learn.href = SITE + '/learn/git?ref=git-sim-' + from;
+      learn.textContent = 'Learn Git';
+      learn.title = 'Git lessons on Initial Commit';
+    }
+  }
+  const brand = byId('brand');
+  if (brand && where !== 'viewer') brand.href = SITE + '/tools/git-sim?ref=git-sim-' + from;
+  const cheat = byId('cheatSheet');
+  if (cheat) cheat.href = SITE + '/learn/git/animated-cheat-sheet?ref=git-sim-' + from;
+  // A VS Code tab can't open a window itself: the editor opens the link
+  [learn, brand, cheat].forEach(a => a && on(a, 'click', e => {
+    if (!editor) return;
+    e.preventDefault();
+    editor.postMessage({type: 'openExternal', url: a.href});
+  }));
   // The state a copied link pins. While the loop is playing nothing is pinned,
   // so whoever opens the link sees it play from "before" too.
   const stateHash = () => playing ? '' : progress <= 0.001 ? 'before' : progress >= maxStep - 0.001 ? 'after' : 'step=' + Math.round(progress);
@@ -954,9 +1016,19 @@ function makeViewer(root){
       const graph = params.d || await deflate(pristine);
       const esc = v => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
       // text for the reader's page, never loaded by this one
-      const script = 'https://initialcommit.com/js/tools/git-sim-embed.js';
+      const script = SITE + '/js/tools/git-sim-embed.js';
+      // the credit: the command links its page on the site, "git-sim" the tool's
+      const q = learnQuery(title);
+      const m = q && /\bgit\s+[a-z][a-z-]*/.exec(title);
+      let credit = `<a href="${SITE}/tools/git-sim">${esc(title)}, created with git-sim</a>`;
+      if (m) {
+        const p = new URLSearchParams({cmd: q.cmd, from: 'embed'});
+        if (q.args.length) p.set('args', q.args.join(' '));
+        credit = `${esc(title.slice(0, m.index))}<a href="${esc(SITE + '/learn/git/go?' + p)}">${esc(m[0])}</a>` +
+          `${esc(title.slice(m.index + m[0].length))}, created with <a href="${SITE}/tools/git-sim">git-sim</a>`;
+      }
       await copyText(`<div class="git-sim" data-graph="${graph}" data-title="${esc(title)}"${s ? ` data-state="${s}"` : ''}>\n` +
-        `  <a href="https://initialcommit.com/tools/git-sim">${esc(title)}, created with git-sim</a>\n</div>\n` +
+        `  ${credit}\n</div>\n` +
         `<script src="${script}" defer><\/script>`);
       say('embed copied: paste it into your page');
     },
@@ -1243,7 +1315,7 @@ def header_markup(fragment_attr=""):
     )
     return (
         f'<header id="bar"{fragment_attr}>'
-        '<a id="brand" href="https://github.com/initialcommit-com/git-sim" target="_blank" rel="noopener" title="git-sim on GitHub: the tool that rendered this page">git-sim</a>'
+        '<a id="brand" href="https://initialcommit.com/tools/git-sim" target="_blank" rel="noopener" title="git-sim: the free, open source tool that drew this graph">git-sim</a>'
         '<div id="controls">'
         '<button id="play" title="play the command from before to after, on a loop (A)">&#9654;</button>'
         '<button id="toBefore" class="end" title="the repository as it is">Before</button>'
@@ -1252,10 +1324,8 @@ def header_markup(fragment_attr=""):
         '<span id="stepLabel"></span>'
         "</div>"
         '<div class="right">'
-        '<a href="https://initialcommit.com" target="_blank" rel="noopener" '
-        'title="Initial Commit — the team behind git-sim. Quality resources and tools for developers: Git guides, courses and tools that make version control click.">Initial Commit</a>'
-        '<a href="https://devlands.com" target="_blank" rel="noopener" '
-        'title="Devlands — learn Git comfortably, use Git confidently. Explore your own repository as an immersive 3D world where every Git operation is something you can see and walk through.">Devlands</a>'
+        # filled in (or left hidden) by the page script, for the command shown
+        '<a id="learn" href="https://initialcommit.com/learn/git" target="_blank" rel="noopener" hidden>Learn Git</a>'
         '<button id="share" title="copy a link or an image of this simulation, save it, or post it">Share</button>'
         '<div id="shareMenu" hidden>'
         '<h3>Copy</h3><div class="grid">'
@@ -1298,7 +1368,9 @@ def header_markup(fragment_attr=""):
         "Copy the image to post right away, or download the page and attach it.</p>"
         "</div>"
         '<button id="help" title="how to use this page (?)">?</button>'
-        f'<div id="helpMenu" hidden><h3>How to use this page</h3><ul>{help_items}</ul></div>'
+        f'<div id="helpMenu" hidden><h3>How to use this page</h3><ul>{help_items}</ul>'
+        '<p class="help-more"><a id="cheatSheet" href="https://initialcommit.com/learn/git/animated-cheat-sheet?ref=git-sim-help" '
+        'target="_blank" rel="noopener">Get the free animated, customizable Git cheat sheet</a></p></div>'
         "</div>"
         "</header>"
     )
