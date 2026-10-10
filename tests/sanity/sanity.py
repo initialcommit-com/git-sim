@@ -16,7 +16,7 @@ For each repository and scenario it sets up a situation on the repository's
 own files, runs git-sim exactly as a user would, reads the drawing back
 (tests/validation/svgmodel.py), asks pre-flight for its facts where the
 command is risky, runs the real git command, and compares what git-sim
-predicted with what git did. See README.md in this folder.
+predicted with what git did. See "The sanity run" in docs/testing.md.
 """
 import argparse
 import json

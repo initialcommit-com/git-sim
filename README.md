@@ -5,7 +5,7 @@
 
 **The visual layer for Git in your own repos:** simulate, record, replay, audit, and share individual Git commands or entire Git workflows, wherever you or your agents run them.
 
-- **Simulate any Git command before it runs**, as an interactive graph you can step through. In the terminal, on the web, and in VS Code, Jupyter, Vim / Neovim / Emacs, and GitHub pull requests.
+- **Simulate any Git command before it runs**, as an interactive graph you can step through. In the terminal, on the web, and in VS Code, Jupyter, and GitHub pull requests.
 - **Track your repo live** while recording every Git operation, human or agentic, as a visual command sequence you can replay. On the web and in VS Code.
 - **Catch and review risky Git commands from AI agents** in real time, before they harm your work. Claude Code, GitHub Copilot, Cursor, Codex, Gemini CLI, and any MCP agent.
 - **Share any git-sim output** as a link, an embed, an HTML page, a PNG or SVG image, an MP4 video, or a social post.
@@ -53,7 +53,7 @@ $ git-sim rebase main
 
 By default, git-sim creates a web-first, shareable visualization that opens in your browser. It generates an interactive simulation of exactly how any Git command will impact your repo, without actually running the real Git command so nothing changes in your repo.
 
-Run `git-sim -h` to list every command.
+Run `git-sim -h` to list every command. Once git-sim is installed, `git sim <command>` works too, and `git-sim aliases` adds `git preflight` and `git live` (see [Terminal](https://github.com/initialcommit-com/git-sim#terminal)).
 
 **3. Watch your repo live:** a graph that follows your repo as it changes, and records every command you (or your agents) run
 
@@ -69,13 +69,15 @@ $ code --install-extension initialcommit.git-sim
 
 Or search for **git-sim** in the Extensions view (the Marketplace in VS Code, Open VSX in Cursor, Windsurf, and VSCodium).
 
-**5. Vim, Neovim, and Emacs integration**
+**5. Jupyter integration:** with git-sim installed in the notebook's environment, the graph shows up right under the cell
 
-For Vim, Neovim, and Emacs, see [integrations/](https://github.com/initialcommit-com/git-sim/tree/main/integrations/).
+```
+%load_ext git_sim.jupyter
+%gitsim rebase main
+%gitsim live
+```
 
-**6. Jupyter integration**
-
-For Jupyter, `gh`, and GitHub Actions, see [docs/integrations.md](https://github.com/initialcommit-com/git-sim/blob/main/docs/integrations.md).
+**6. Pull request integration:** `gh sim pr 42` simulates merging a pull request, and the git-sim GitHub Action comments the pre-flight report on each one. See [Installation](https://github.com/initialcommit-com/git-sim#github).
 
 **7. Check a risky command before it runs:** how risky it is, and what you could lose
 
@@ -765,6 +767,124 @@ git-sim() { docker run --rm -v $(pwd):/usr/src/git-sim git-sim "$@"; }
 ```
 
 This will enable you to run git-sim subcommands as [described above](https://github.com/initialcommit-com/git-sim#supported-git-commands).
+
+</details>
+
+### Terminal
+
+Git runs any program named `git-<name>` as `git <name>`, so `git sim rebase main` works as soon as git-sim is installed. To add `git preflight` and `git live` to your global Git config:
+
+```console
+$ git-sim aliases
+```
+
+`--local` adds them to the current repo only, and `--remove` takes them out. Aliases you already have with those names are left alone.
+
+For tab completion in bash, zsh, fish, or PowerShell, run `git-sim --install-completion` and restart your terminal.
+
+<details>
+<summary>lazygit and tig key bindings</summary>
+
+In lazygit's `config.yml` (`lazygit --print-config-dir` shows where it is):
+
+```yaml
+customCommands:
+  - key: "S"
+    context: "localBranches"
+    description: "git-sim: simulate rebasing onto this branch"
+    command: "git-sim rebase {{ .SelectedLocalBranch.Name }}"
+  - key: "S"
+    context: "commits"
+    description: "git-sim: simulate resetting to this commit"
+    command: "git-sim reset {{ .SelectedLocalCommit.Sha }}"
+  - key: "P"
+    context: "commits"
+    description: "git-sim: pre-flight a hard reset to this commit"
+    command: "git-sim preflight reset --hard {{ .SelectedLocalCommit.Sha }}"
+    output: terminal
+  - key: "L"
+    context: "global"
+    description: "git-sim: watch this repo live"
+    command: "git-sim live"
+    output: terminal
+```
+
+In `~/.tigrc`, for the selected commit in tig's main view:
+
+```
+bind main S !git-sim reset %(commit)
+bind main C !git-sim cherry-pick %(commit)
+bind main P !git-sim preflight reset --hard %(commit)
+bind generic L !git-sim live
+```
+
+</details>
+
+### Jupyter
+
+Install git-sim in the same environment as the notebook's kernel (`pip install git-sim`), then in a notebook:
+
+```
+%load_ext git_sim.jupyter
+%gitsim rebase main
+%gitsim --height 700 -C ../other-repo merge feature
+%gitsim preflight reset --hard HEAD~1
+%gitsim live
+%gitsim live stop
+```
+
+Commands run in the notebook's working directory, or the `-C` path. The graph's frame grows to fit it unless you set `--height`. `%gitsim live` runs live mode in the background until you stop it or restart the kernel, and needs Jupyter running on your own machine (not Colab, JupyterHub, or Binder).
+
+### GitHub
+
+<details>
+<summary>GitHub CLI: gh sim</summary>
+
+With the [GitHub CLI](https://github.com/cli/cli#installation) installed and logged in (`gh auth login`), install the extension from a clone of this repo:
+
+```console
+$ git clone https://github.com/initialcommit-com/git-sim.git ~/git-sim
+$ cd ~/git-sim/integrations/gh-sim
+$ gh extension install .
+```
+
+Then, inside a clone of the pull request's repo:
+
+```console
+$ gh sim pr 42           # what merging pull request #42 into its base would do
+$ gh sim pr 42 rebase    # what rebasing it onto its base would do
+```
+
+`gh sim pr` simulates in a temporary worktree, so your checkout and branches are never touched. Any other `gh sim` command is the same as running git-sim. On Windows, `gh` runs the extension with the bash from Git for Windows.
+
+</details>
+
+<details>
+<summary>GitHub Actions: a pre-flight comment on each pull request</summary>
+
+Add this to your repo as `.github/workflows/git-sim.yml`:
+
+```yaml
+name: git-sim
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: initialcommit-com/git-sim/integrations/github-action@v0.4.0
+```
+
+Each pull request gets one comment with the risk level, the commits that come in, what you could lose and how to undo it, and a text commit graph. The interactive graph is attached to the run as the artifact `git-sim-pr-<number>`.
+
+Inputs, set under `with:`: `mode` (`merge` or `rebase`, default `merge`), `comment` and `artifact` (`"true"` or `"false"`), `python-version` (default `3.12`), and `token`. Pull requests from forks get a read-only token, so set `comment: "false"` if you take them.
 
 </details>
 

@@ -61,7 +61,7 @@ Running it again updates git-sim's entries in place. `git-sim unwire-agents` rem
 
 git-sim writes the hook and MCP server as full paths, so they work even when an agent's `PATH` doesn't include git-sim.
 
-Where you type `git` yourself, `git sim <command>` already works, and `git-sim aliases` adds `git preflight` and `git live`. See [shell.md](shell.md).
+Where you type `git` yourself, `git sim <command>` already works, and `git-sim aliases` adds `git preflight` and `git live`. See [Terminal](../README.md#terminal).
 
 ## The pre-flight hook
 

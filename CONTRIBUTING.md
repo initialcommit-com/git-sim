@@ -53,7 +53,8 @@ $ git-sim merge dev
 - `src/git_sim/`: one module per Git command (`merge.py`, `rebase.py`, and so on), sharing `git_sim_base_command.py`
 - `src/git_sim/render/`: the static renderer, which draws the SVG, PNG, and JPG output and the interactive page
 - `src/git_sim/live.py`, `preflight.py`, `mcp_server.py`, `claude_hook.py`: live mode, pre-flight, the MCP server, and the agent hook
-- `vscode/` and `integrations/`: the VS Code extension and the editor integrations
+- `vscode/`: the VS Code extension
+- `integrations/`: the GitHub CLI extension (`gh sim`) and the GitHub Action
 - `docs/`: guides for live mode, pre-flight and agents, embedding, integrations, and testing
 - `scripts/`: the scripts that draw the README's graphs
 
