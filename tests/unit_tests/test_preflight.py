@@ -93,6 +93,9 @@ def test_merge_conflict_detected(repo):
     report = analyze("git merge feature", str(repo))
     assert any("conflict" in w.lower() for w in report.warnings)
     assert any("file1.txt" in w for w in report.warnings)
+    # git stops at the conflict with no merge commit, so --abort comes first
+    assert "git merge --abort" in report.recovery[0]
+    assert "resolve and commit" in report.recovery[1] and "ORIG_HEAD" in report.recovery[1]
 
 
 def conflict_on_main(repo):

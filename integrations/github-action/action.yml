@@ -54,35 +54,44 @@ runs:
       run: python -m pip install --quiet "$PACKAGE"
 
     - name: Fetch the pull request and its base
+      id: fetch
       shell: bash
       env:
         BASE: ${{ github.event.pull_request.base.ref }}
         NUMBER: ${{ github.event.pull_request.number }}
+        HEAD_REF: ${{ github.event.pull_request.head.ref }}
       run: |
         set -euo pipefail
-        # The pull request's commits as a branch git-sim can name. The base is
-        # fetched apart from it: on pull_request_target the checkout is the base
-        # branch itself, which git refuses to fetch into.
-        git fetch -q origin "+refs/pull/$NUMBER/head:refs/heads/pr-$NUMBER"
+        # The pull request's commits as a local branch named like its own, so
+        # the report says "merge feature"; pr-<number> when that name can't be
+        # used (a fork's main into main, or a name git won't take)
+        BRANCH="$HEAD_REF"
+        if [ -z "$BRANCH" ] || [ "$BRANCH" = "$BASE" ] || ! git check-ref-format --branch "$BRANCH" > /dev/null 2>&1; then
+          BRANCH="pr-$NUMBER"
+        fi
+        # The base is fetched apart from it: on pull_request_target the checkout
+        # is the base branch itself, which git refuses to fetch into.
+        git fetch -q origin "+refs/pull/$NUMBER/head:refs/heads/$BRANCH"
         git fetch -q origin "$BASE"
         git checkout -q -B "$BASE" "origin/$BASE"
+        echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
 
     - name: Pre-flight and simulate
       id: sim
       shell: bash
       env:
         MODE: ${{ inputs.mode }}
-        NUMBER: ${{ github.event.pull_request.number }}
+        BRANCH: ${{ steps.fetch.outputs.branch }}
         BASE: ${{ github.event.pull_request.base.ref }}
         git_sim_auto_open: "false"
       run: |
         set -euo pipefail
         mkdir -p git-sim-out
         if [ "$MODE" = "rebase" ]; then
-          git checkout -q "pr-$NUMBER"
+          git checkout -q "$BRANCH"
           CMD=(rebase "$BASE")
         else
-          CMD=(merge "pr-$NUMBER")
+          CMD=(merge "$BRANCH")
         fi
         git-sim preflight --markdown "${CMD[@]}" > git-sim-out/report.md || true
         PAGE=$(git-sim -d --media-dir git-sim-out --output-only-path "${CMD[@]}" 2>/dev/null | tail -n 1 || true)

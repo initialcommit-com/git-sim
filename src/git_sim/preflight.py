@@ -757,6 +757,7 @@ def _analyze_merge(repo: git.Repo, args: List[str], report: PreflightReport) -> 
         report.marks[c.hexsha] = "INCOMING"
 
     # Deterministic conflict detection via git's own merge machinery (git >= 2.38).
+    conflicts = False
     if not ff:
         mt = ["git", "merge-tree", "--write-tree", "--name-only", "--no-messages"]
         if unrelated_ok:
@@ -767,6 +768,7 @@ def _analyze_merge(repo: git.Repo, args: List[str], report: PreflightReport) -> 
         else:
             # the merged tree's id, then one conflicted path per line
             conflicted = list(dict.fromkeys(line.strip() for line in out.splitlines()[1:] if line.strip()))
+            conflicts = True
             report.escalate(Risk.CAUTION)
             report.warnings.append(
                 f"Merge WILL conflict in {len(conflicted)} file(s): "
@@ -782,6 +784,15 @@ def _analyze_merge(repo: git.Repo, args: List[str], report: PreflightReport) -> 
     elif ff:
         report.recovery.append(
             f"A fast-forward only moves the branch: git reset --hard ORIG_HEAD puts it back on {_short_sha(head)}"
+        )
+    elif conflicts:
+        # git stops at the conflict before committing, so there is no merge
+        # commit to reset away yet
+        report.recovery.append(
+            "It stops at the conflict without making a merge commit: git merge --abort puts everything back"
+        )
+        report.recovery.append(
+            f"Once you resolve and commit it, undo the merge with: git reset --hard ORIG_HEAD (back to {_short_sha(head)})"
         )
     else:
         report.recovery.append(
