@@ -40,12 +40,13 @@ def parse_line(line: str) -> Tuple[List[str], int, Optional[str]]:
 
 def embed_page(page_html: str, height: int = DEFAULT_HEIGHT) -> str:
     """The page inside an iframe, so a notebook can show several without
-    their scripts or ids colliding."""
+    their scripts or ids colliding. The div keeps IPython from suggesting its
+    IFrame, which takes a URL rather than a page."""
     return (
-        f'<iframe srcdoc="{html.escape(page_html, quote=True)}" '
+        f'<div><iframe srcdoc="{html.escape(page_html, quote=True)}" '
         f'style="width:100%;height:{int(height)}px;border:0;border-radius:10px" '
         'sandbox="allow-scripts allow-same-origin allow-popups" '
-        'title="git-sim"></iframe>'
+        'title="git-sim"></iframe></div>'
     )
 
 

@@ -21,7 +21,7 @@ def test_the_magic_line_splits_our_options_from_gits():
 
 def test_the_page_is_framed_with_its_markup_escaped():
     frame = embed_page('<html><body onload="x()">a & b</body></html>', 640)
-    assert frame.startswith('<iframe srcdoc="') and "height:640px" in frame
+    assert frame.startswith('<div><iframe srcdoc="') and "height:640px" in frame
     assert (
         "&lt;html&gt;" in frame and "&quot;x()&quot;" in frame and "a &amp; b" in frame
     )
