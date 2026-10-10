@@ -29,6 +29,10 @@ inputs:
     description: "Token for the comment (defaults to the workflow's GITHUB_TOKEN)"
     required: false
     default: ${{ github.token }}
+  package:
+    description: "What pip installs: git-sim from PyPI, a pinned version (git-sim==0.4.0), or a Git URL"
+    required: false
+    default: git-sim
 
 runs:
   using: composite
@@ -45,7 +49,9 @@ runs:
 
     - name: Install git-sim
       shell: bash
-      run: python -m pip install --quiet git-sim
+      env:
+        PACKAGE: ${{ inputs.package }}
+      run: python -m pip install --quiet "$PACKAGE"
 
     - name: Fetch the pull request and its base
       shell: bash

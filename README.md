@@ -958,6 +958,7 @@ To change how it runs, add a `with:` block under the `uses:` line:
 | `comment` | `"true"` | Post the report as a comment on the pull request |
 | `artifact` | `"true"` | Attach the interactive graph to the workflow run as a download |
 | `python-version` | `3.12` | The Python that git-sim is installed with |
+| `package` | `git-sim` | What gets installed: the latest git-sim from PyPI, a pinned version like `git-sim==0.4.0`, or a Git URL |
 | `token` | the workflow's own token | The token used to post the comment, to post as another account or bot |
 
 Pull requests from forks get a read-only token, which can't post comments, so set `comment: "false"`. The graph artifact will still attach to the run.
