@@ -96,6 +96,12 @@ def test_render_text_shows_an_error_only():
     report.error = "Not a git repository: /nowhere"
     text = render_text(report)
     assert text.splitlines()[-1] == "error: Not a git repository: /nowhere"
+    # a command that couldn't be checked is never reported as safe
+    assert text.startswith("NOT CHECKED") and "SAFE" not in text
+    from git_sim.preflight_cli import render_markdown
+
+    md = render_markdown(report)
+    assert md.startswith("### ⚪ Not checked") and "Safe" not in md
 
 
 def test_cli_prints_json_for_a_real_repository(repo):

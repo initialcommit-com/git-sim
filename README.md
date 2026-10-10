@@ -926,7 +926,7 @@ Add this to your repo as `.github/workflows/git-sim.yml`:
 ```yaml
 name: git-sim
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
 permissions:
   contents: read
@@ -961,7 +961,7 @@ To change how it runs, add a `with:` block under the `uses:` line:
 | `package` | `git-sim` | What gets installed: the latest git-sim from PyPI, a pinned version like `git-sim==0.4.0`, or a Git URL |
 | `token` | the workflow's own token | The token used to post the comment, to post as another account or bot |
 
-Pull requests from forks get a read-only token, which can't post comments, so set `comment: "false"`. The graph artifact will still attach to the run.
+The workflow runs on `pull_request_target` because GitHub skips `pull_request` workflows for pull requests with merge conflicts, which are the ones you most want checked. It also lets the Action comment on pull requests from forks. That's safe here because the Action never runs the pull request's code: it only reads its commits.
 
 </details>
 

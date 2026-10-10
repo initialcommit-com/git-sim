@@ -60,7 +60,10 @@ runs:
         NUMBER: ${{ github.event.pull_request.number }}
       run: |
         set -euo pipefail
-        git fetch -q origin "refs/pull/$NUMBER/head:refs/heads/pr-$NUMBER" "$BASE:refs/heads/$BASE" || true
+        # The pull request's commits as a branch git-sim can name. The base is
+        # fetched apart from it: on pull_request_target the checkout is the base
+        # branch itself, which git refuses to fetch into.
+        git fetch -q origin "+refs/pull/$NUMBER/head:refs/heads/pr-$NUMBER"
         git fetch -q origin "$BASE"
         git checkout -q -B "$BASE" "origin/$BASE"
 

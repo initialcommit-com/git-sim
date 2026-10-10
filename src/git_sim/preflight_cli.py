@@ -56,12 +56,12 @@ def words_after_preflight(argv: List[str]) -> List[str]:
 
 def render_text(report: PreflightReport) -> str:
     d = report.to_dict()
+    # a command that couldn't be checked is never called safe
+    if d.get("error"):
+        return f"NOT CHECKED  git {d['command']}".rstrip() + f"\nerror: {d['error']}"
     lines = [
         f"{RISK_LABELS.get(d['risk'], d['risk'].upper())}  git {d['command']}".rstrip()
     ]
-    if d.get("error"):
-        lines.append(f"error: {d['error']}")
-        return "\n".join(lines)
     if d.get("summary"):
         lines += ["", d["summary"]]
     for title, key in (
@@ -82,12 +82,11 @@ def render_text(report: PreflightReport) -> str:
 def render_markdown(report: PreflightReport) -> str:
     """The report as Markdown, for a pull request comment or a chat message."""
     d = report.to_dict()
+    if d.get("error"):
+        return f"### ⚪ Not checked · `git {d['command']}`\n\n**Error:** {d['error']}"
     lines = [
         f"### {RISK_BADGES.get(d['risk'], d['risk'])} · `git {d['command']}`".rstrip()
     ]
-    if d.get("error"):
-        lines += ["", f"**Error:** {d['error']}"]
-        return "\n".join(lines)
     if d.get("summary"):
         lines += ["", d["summary"]]
     for title, key in (
