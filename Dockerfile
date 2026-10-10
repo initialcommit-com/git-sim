@@ -14,6 +14,11 @@ RUN git config --system --add safe.directory '*'
 
 WORKDIR /usr/src/git-sim
 
+# git-sim saves to the user's cache folder by default, which here is inside
+# the container and gone when it exits; saving to the mounted folder puts
+# git-sim_media in the repo on the host instead
+ENV git_sim_media_dir=/usr/src/git-sim
+
 # Static images need only the core install; 'extras' adds Manim for --animate.
 # The tests build with a Git URL here to check the commit being tested.
 ARG PACKAGE="git-sim[extras]"
