@@ -38,7 +38,7 @@
 
 **Automatically run git-sim on GitHub PR's**: The git-sim GitHub Action generates both textual and visual descriptions of the resulting PR merge, whether it is safe, and how to undo it.
 
-[![The git-sim GitHub Action's pull request comment: the risk, the commits coming in, how to undo the merge, and a text commit graph](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/pull-request.webp)](https://github.com/initialcommit-com/git-sim#github)
+[![The git-sim GitHub Action's comment on a pull request: a Caution verdict for the merge, the commits coming in, how to undo it, a warning that it will conflict in README.md, and a text commit graph](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/pull-request.webp)](https://github.com/initialcommit-com/git-sim#github)
 
 </td></tr></tbody>
 <tbody><tr><td>
