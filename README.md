@@ -6,55 +6,55 @@
 **The visual layer for Git in your own repos:** simulate, record, replay, audit, and share individual Git commands or entire Git workflows, wherever you or your agents run them.
 
 <table>
-<tr><td>
+<tbody><tr><td>
 
 **Simulate any Git command before you run it**, as a web-first, embeddable, interactive graph designed for you to share.
 
 [![git-sim rebase feature/pagination](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/rebase.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=rebase)
 
-</td></tr>
-<tr><td>
+</td></tr></tbody>
+<tbody><tr><td>
 
 **Watch and record your repo animating in real-time**, every Git operation, human or agentic, as a visual command sequence you can save, replay, and share.
 
 [![git-sim live following a repo as Git commands run](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/live.webp)](https://initialcommit.com/tools/git-sim#live)
 
-</td></tr>
-<tr><td>
+</td></tr></tbody>
+<tbody><tr><td>
 
 **Use git-sim right in your IDE with the VS Code extension**: Generate and watch Git simulations within VS Code (also works in Cursor, Windsurf, and VSCodium).
 
 [![The git-sim VS Code extension showing a simulation of git reset --hard HEAD^ in an editor tab](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/vscode.webp)](https://github.com/initialcommit-com/git-sim/tree/main/vscode)
 
-</td></tr>
-<tr><td>
+</td></tr></tbody>
+<tbody><tr><td>
 
 **Integrate with Jupyter**: Invoke git-sim within Jupyter to render Git simulations inline in your notebooks.
 
 [![A Jupyter notebook showing git-sim's simulation of git reset --hard HEAD^ under the cell](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/jupyter.webp)](https://github.com/initialcommit-com/git-sim#jupyter)
 
-</td></tr>
-<tr><td>
+</td></tr></tbody>
+<tbody><tr><td>
 
 **Automatically run git-sim on GitHub PR's**: The git-sim GitHub Action generates both textual and visual descriptions of the resulting merge, whether it is safe, and how to undo it.
 
 [![The git-sim GitHub Action's pull request comment: the risk, the commits coming in, how to undo the merge, and a text commit graph](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/pull-request.webp)](https://github.com/initialcommit-com/git-sim#github)
 
-</td></tr>
-<tr><td>
+</td></tr></tbody>
+<tbody><tr><td>
 
 **Catch and review risky Git commands from AI agents** in real time, before they harm your work. Wires into Claude Code, GitHub Copilot, Cursor, Codex, Gemini CLI, and any MCP agent.
 
 [![git-sim preflight reporting what a hard reset would lose](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/preflight.png)](https://github.com/initialcommit-com/git-sim#ai-agents)
 
-</td></tr>
-<tr><td>
+</td></tr></tbody>
+<tbody><tr><td>
 
 **Share any git-sim visualization** as a link, an embed, an HTML page, a PNG or SVG image, an MP4 video, or a social post.
 
 [![git-sim's Share menu: copy a link or image, make a public link, download a PNG, SVG, or page, or post to X, Bluesky, LinkedIn, Reddit, Hacker News, or email](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/share.webp)](https://initialcommit.com/tools/git-sim/viewer?demo=rebase)
 
-</td></tr>
+</td></tr></tbody>
 </table>
 
 ## Requirements
