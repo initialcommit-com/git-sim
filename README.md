@@ -36,7 +36,7 @@
 </td></tr></tbody>
 <tbody><tr><td>
 
-**Automatically run git-sim on GitHub PR's**: The git-sim GitHub Action generates both textual and visual descriptions of the resulting merge, whether it is safe, and how to undo it.
+**Automatically run git-sim on GitHub PR's**: The git-sim GitHub Action generates both textual and visual descriptions of the resulting PR merge, whether it is safe, and how to undo it.
 
 [![The git-sim GitHub Action's pull request comment: the risk, the commits coming in, how to undo the merge, and a text commit graph](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/pull-request.webp)](https://github.com/initialcommit-com/git-sim#github)
 
@@ -106,7 +106,7 @@ $ code --install-extension initialcommit.git-sim
 
 Or search for **git-sim** in the Extensions view (the Marketplace in VS Code, Open VSX in Cursor, Windsurf, and VSCodium).
 
-**5. Jupyter Notebook integration:** after installing git-sim in the notebook's Python environment:
+**5. Jupyter Notebook integration:** use git-sim inside Jupyter after installing it in the notebook's Python environment:
 
 ```
 %load_ext git_sim.jupyter   # once per notebook: adds the %gitsim magic
@@ -121,7 +121,7 @@ The graph's frame grows to fit it unless you set `--height` in pixels.
 
 `%gitsim live` runs live mode in the background until you stop it or restart the kernel, and needs Jupyter running on your own machine (not Colab, JupyterHub, or Binder).
 
-**6. Pull request integration:** `gh sim pr 42` simulates merging a pull request, and the git-sim GitHub Action comments the pre-flight report on each one. See [Installation](https://github.com/initialcommit-com/git-sim#github).
+**6. GitHub PR integration:** See [Installation](https://github.com/initialcommit-com/git-sim#github).
 
 **7. Check a risky command before it runs:** how risky it is, and what you could lose
 
@@ -185,6 +185,21 @@ By default, the page opens in the git-sim viewer on initialcommit.com which conn
 `-d`: open nothing, and just print the addresses
 
 Set `GIT_SIM_LIVE_DEBUG=1` to log each detected change.
+
+## Embed a git-sim graph in your web page
+
+Embed a git-sim graph in any web page, blog post, tutorial, or docs. Includes the full interactive viewer. Click **Copy embed** in any git-sim graph's **Share** menu, and paste the HTML into your page:
+
+```html
+<div class="git-sim" data-graph="eJzVXWtvo0gW_SuI0a52..." data-title="git rebase main">
+  <a href="https://initialcommit.com/tools/git-sim">git rebase main, created with git-sim</a>
+</div>
+<script src="https://initialcommit.com/js/tools/git-sim-embed.js" defer></script>
+```
+
+The compressed graph data travels inside the `data-graph` attribute, so there's no file to host.
+
+To host it as a file instead, save the SVG with `git-sim --img-format svg rebase main` (or **Download SVG** in the **Share** menu), and use `data-src="/path/to/graph.svg"` in place of `data-graph`.
 
 ## Pre-flight
 
@@ -281,19 +296,6 @@ Or in any client that supports stdio servers:
 ```
 
 </details>
-
-## Embed a graph in a web page
-
-Embed a git-sim graph in any web page, blog post, tutorial, or docs, with the full interactive viewer. Click **Copy embed** in any git-sim graph's Share menu, and paste the HTML into your page:
-
-```html
-<div class="git-sim" data-graph="eJzVXWtvo0gW_SuI0a52..." data-title="git rebase main">
-  <a href="https://initialcommit.com/tools/git-sim">git rebase main, created with git-sim</a>
-</div>
-<script src="https://initialcommit.com/js/tools/git-sim-embed.js" defer></script>
-```
-
-The graph travels inside `data-graph`, so there's no file to host. To host it as a file instead, save the SVG with `git-sim --img-format svg rebase main` (or **Download SVG** in the Share menu), and use `data-src="/path/to/graph.svg"` in place of `data-graph`.
 
 ## Supported Git commands
 
@@ -912,29 +914,7 @@ This will enable you to run git-sim subcommands as [described above](https://git
 ### GitHub
 
 <details>
-<summary>GitHub CLI: gh sim</summary>
-
-With the [GitHub CLI](https://github.com/cli/cli#installation) installed and logged in (`gh auth login`), install the extension from a clone of this repo:
-
-```console
-$ git clone https://github.com/initialcommit-com/git-sim.git ~/git-sim
-$ cd ~/git-sim/integrations/gh-sim
-$ gh extension install .
-```
-
-Then, inside a clone of the pull request's repo:
-
-```console
-$ gh sim pr 42           # what merging pull request #42 into its base would do
-$ gh sim pr 42 rebase    # what rebasing it onto its base would do
-```
-
-`gh sim pr` simulates in a temporary worktree, so your checkout and branches are never touched. Any other `gh sim` command is the same as running git-sim. On Windows, `gh` runs the extension with the bash from Git for Windows.
-
-</details>
-
-<details>
-<summary>GitHub Actions: a pre-flight comment on each pull request</summary>
+<summary>GitHub Actions: use git-sim to automatically evaluate PR's</summary>
 
 Add this to your repo as `.github/workflows/git-sim.yml`:
 
@@ -956,9 +936,31 @@ jobs:
       - uses: initialcommit-com/git-sim/integrations/github-action@v0.4.0
 ```
 
-Each pull request gets one comment with the risk level, the commits that come in, what you could lose and how to undo it, and a text commit graph. The interactive graph is attached to the run as the artifact `git-sim-pr-<number>`.
+When a new PR comes in, the git-sim GitHub Action automatically evaluates it, adding a comment with the risk level, the included commits, how to undo it, and a text commit graph. The visual, interactive graph is attached to the run as the artifact `git-sim-pr-<number>`.
 
 Inputs, set under `with:`: `mode` (`merge` or `rebase`, default `merge`), `comment` and `artifact` (`"true"` or `"false"`), `python-version` (default `3.12`), and `token`. Pull requests from forks get a read-only token, so set `comment: "false"` if you take them.
+
+</details>
+
+<details>
+<summary>GitHub CLI: gh sim</summary>
+
+With the [GitHub CLI](https://github.com/cli/cli#installation) installed and logged in (`gh auth login`), install the extension from a clone of this repo:
+
+```console
+$ git clone https://github.com/initialcommit-com/git-sim.git ~/git-sim
+$ cd ~/git-sim/integrations/gh-sim
+$ gh extension install .
+```
+
+Then, inside a clone of the pull request's repo:
+
+```console
+$ gh sim pr 42           # what merging pull request #42 into its base would do
+$ gh sim pr 42 rebase    # what rebasing it onto its base would do
+```
+
+`gh sim pr` simulates in a temporary worktree, so your checkout and branches are never touched. Any other `gh sim` command is the same as running git-sim. On Windows, `gh` runs the extension with the bash from Git for Windows.
 
 </details>
 
