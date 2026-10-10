@@ -22,7 +22,7 @@
 </td></tr></tbody>
 <tbody><tr><td>
 
-**Use git-sim right in your IDE with the VS Code extension**: Generate and watch Git simulations within VS Code (also works in Cursor, Windsurf, and VSCodium).
+**Use git-sim without ever leaving your editor**: Leverage git-sim right in your IDE with the VS Code extension (also works in Cursor, Windsurf, and VSCodium).
 
 [![The git-sim VS Code extension showing a simulation of git reset --hard HEAD^ in an editor tab](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/vscode.webp)](https://github.com/initialcommit-com/git-sim/tree/main/vscode)
 
@@ -98,7 +98,7 @@ Run `git-sim -h` to list all commands.
 $ git-sim live
 ```
 
-**4. Install the git-sim VS Code extension**
+**4. Install the git-sim VS Code extension:** Use all git-sim functionality directly in VS Code via the integrated command palette tools.
 
 ```console
 $ code --install-extension initialcommit.git-sim
