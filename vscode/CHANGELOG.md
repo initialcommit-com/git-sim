@@ -2,8 +2,8 @@
 
 ## 0.4.0
 
-- Share works from an editor tab: **Copy link** puts the link on the
-  clipboard, **PNG**, **SVG** and **HTML page** save through a save dialog,
+- Share works from an editor tab: **Copy link** and **Copy embed** put the
+  link or the embed HTML on the clipboard, **PNG**, **SVG** and **HTML page** save through a save dialog,
   and posting to X, Bluesky, LinkedIn, Reddit or Hacker News opens in your
   browser. (A tab cannot copy an image, so **Copy image** saves the PNG.)
   The same goes for the live graph and recorded sessions. Needs a git-sim

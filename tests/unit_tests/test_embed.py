@@ -33,6 +33,8 @@ def repo(tmp_path):
 def test_embed_script_carries_the_viewer_and_mounts_by_class():
     js = build_embed_js()
     assert "window.GitSimEmbed" in js and ".git-sim[data-src]" in js
+    # the graph can come inside the snippet, as the Share menu's "Copy embed" writes it
+    assert ".git-sim[data-graph]" in js and "DecompressionStream('deflate')" in js
     # the viewer's stylesheet, header and script travel inside, as JSON strings
     assert "#bar{position:sticky" in js and 'id=\\"toBefore\\"' in js
     assert "function makeViewer(root){" in js and "window.GitSimViewer = Object.assign(makeViewer(document)" in js

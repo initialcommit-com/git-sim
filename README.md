@@ -52,7 +52,7 @@
 
 **Share any git-sim visualization** as a link, an embed, an HTML page, a PNG or SVG image, an MP4 video, or a social post.
 
-[![git-sim's Share menu: copy a link or image, make a public link, download a PNG, SVG, or page, or post to X, Bluesky, LinkedIn, Reddit, Hacker News, or email](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/share.webp)](https://initialcommit.com/tools/git-sim/viewer?demo=rebase)
+[![git-sim's Share menu: copy a link, an image, or an embed, make a public link, download a PNG, SVG, or page, or post to X, Bluesky, LinkedIn, Reddit, Hacker News, or email](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/share.webp)](https://initialcommit.com/tools/git-sim/viewer?demo=rebase)
 
 </td></tr></tbody>
 </table>
@@ -109,10 +109,10 @@ Or search for **git-sim** in the Extensions view (the Marketplace in VS Code, Op
 **5. Jupyter Notebook integration:** after installing git-sim in the notebook's Python environment:
 
 ```
-%load_ext git_sim.jupyter
-%gitsim rebase main
-%gitsim live
-%gitsim live stop
+%load_ext git_sim.jupyter   # once per notebook: adds the %gitsim magic
+%gitsim rebase main         # the interactive graph, right under the cell
+%gitsim live                # a live graph that follows the repo as it changes
+%gitsim live stop           # stops live mode (so does restarting the kernel)
 ```
 
 From Jupyter, git-sim simulates Git commands against the repo in the notebook's working directory, or path specified after the `-C` flag.
@@ -284,20 +284,16 @@ Or in any client that supports stdio servers:
 
 ## Embed a graph in a web page
 
-Embed a git-sim graph in any web page, blog post, tutorial, or docs, with the full interactive viewer. Save the graph as an SVG (or use **Download SVG** in any git-sim page's Share menu):
-
-```console
-$ git-sim --img-format svg rebase main
-```
-
-Copy it next to your page, then add:
+Embed a git-sim graph in any web page, blog post, tutorial, or docs, with the full interactive viewer. Click **Copy embed** in any git-sim graph's Share menu, and paste the HTML into your page:
 
 ```html
-<div class="git-sim" data-src="/img/rebase-main.svg" data-title="git rebase main">
+<div class="git-sim" data-graph="eJzVXWtvo0gW_SuI0a52..." data-title="git rebase main">
   <a href="https://initialcommit.com/tools/git-sim">git rebase main, created with git-sim</a>
 </div>
 <script src="https://initialcommit.com/js/tools/git-sim-embed.js" defer></script>
 ```
+
+The graph travels inside `data-graph`, so there's no file to host. To host it as a file instead, save the SVG with `git-sim --img-format svg rebase main` (or **Download SVG** in the Share menu), and use `data-src="/path/to/graph.svg"` in place of `data-graph`.
 
 ## Supported Git commands
 

@@ -945,6 +945,21 @@ function makeViewer(root){
       try { await navigator.clipboard.write([new ClipboardItem({'image/png': png})]); say('image copied — paste it anywhere'); }
       catch (e) { download(png, fileName() + '.png'); say('image downloaded'); }
     },
+    // The embed snippet, with the graph compressed into it (as in a link's
+    // fragment) and the slider's position pinned, so nothing needs hosting.
+    // "<\/script>" because this code sits in a page's <script> element, which
+    // a plain closing tag would end.
+    embed: async () => {
+      const s = stateHash();
+      const graph = params.d || await deflate(pristine);
+      const esc = v => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      // text for the reader's page, never loaded by this one
+      const script = 'https://initialcommit.com/js/tools/git-sim-embed.js';
+      await copyText(`<div class="git-sim" data-graph="${graph}" data-title="${esc(title)}"${s ? ` data-state="${s}"` : ''}>\n` +
+        `  <a href="https://initialcommit.com/tools/git-sim">${esc(title)}, created with git-sim</a>\n</div>\n` +
+        `<script src="${script}" defer><\/script>`);
+      say('embed copied: paste it into your page');
+    },
     png: async () => { await download(await toPng(2), fileName() + '.png'); if (!editor) say('PNG downloaded'); },
     svg: async () => { await download(new Blob([pristine], {type: 'image/svg+xml'}), fileName() + '.svg'); if (!editor) say('SVG downloaded'); },
     html: async () => { await download(new Blob(['<!DOCTYPE html>\n' + document.documentElement.outerHTML], {type: 'text/html'}), fileName() + '.html'); if (!editor) say('page downloaded'); },
@@ -1014,6 +1029,7 @@ function makeViewer(root){
     Promise.resolve().then(() => actions[b.dataset.action]()).catch(() => say('could not share'));
   });
   if (!navigator.share) $('[data-action="native"]', shareMenu).forEach(el => el.remove());
+  if (!canPack) $('[data-action="embed"]', shareMenu).forEach(el => el.remove());
 
   // A public link: the graph kept on initialcommit.com under a short address,
   // with a share card drawn here from the graph itself, so a posted link shows
@@ -1245,6 +1261,7 @@ def header_markup(fragment_attr=""):
         '<h3>Copy</h3><div class="grid">'
         '<button data-action="link" title="a link that opens this graph in the git-sim viewer at the current slider position. The graph itself stays in the link\'s #fragment; the command and a short text graph (git log --oneline, up to 12 lines) go in the query string so the link gets a preview card when posted">Copy link</button>'
         '<button data-action="image" title="a PNG of the graph as shown right now, on your clipboard">Copy image</button>'
+        '<button data-action="embed" title="HTML that puts this interactive graph in your own page, blog post, or docs. The graph travels inside the HTML, so there is no file to host">Copy embed</button>'
         '<button data-action="public" title="a short link to this graph, kept on initialcommit.com, that shows the graph itself when posted">Public link…</button>'
         "</div>"
         '<div id="publicPanel" hidden>'

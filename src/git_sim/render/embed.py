@@ -18,7 +18,9 @@ fetches the SVG itself (same origin as the post, so no cross-origin setup) and
 hands the text to the frame; the frame reports its height back so the embed
 takes exactly the room the graph needs.
 
-Attributes: ``data-src`` (the SVG, or a saved .html page, which is fetched
+Attributes: ``data-graph`` (the graph itself, compressed as in a git-sim
+link's ``#d=``, which the Share menu's "Copy embed" writes, so the page hosts
+no file) or ``data-src`` (the SVG, or a saved .html page, which is fetched
 into the frame), ``data-title`` (the command, for the share text), ``data-state``
 (``before`` / ``after`` / ``step=N``; else it plays), ``data-theme`` (``dark``
 or ``light``; default follows the host page's ``prefers-color-scheme``),
@@ -110,11 +112,20 @@ EMBED_JS = r"""
     if (line) el.replaceChildren(iframe, line); else el.replaceChildren(iframe);
   }
 
+  // data-graph: the graph compressed the way a git-sim link's #d= carries it
+  // (what the Share menu's "Copy embed" writes), so the page hosts no file
+  async function inflate(b64){
+    const bytes = Uint8Array.from(atob(b64.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'));
+    return await new Response(stream).text();
+  }
+
   function mount(el){
     if (el.dataset.gitSimMounted) return;
     el.dataset.gitSimMounted = '1';
-    const src = el.dataset.src;
-    if (!src) { el.textContent = 'git-sim embed: data-src is missing'; return; }
+    const src = el.dataset.src, graph = el.dataset.graph;
+    if (!src && !graph) { el.textContent = 'git-sim embed: data-graph or data-src is missing'; return; }
+    if (graph && typeof DecompressionStream === 'undefined') { el.textContent = 'git-sim embed: this browser cannot unpack the graph (it needs DecompressionStream)'; return; }
     const id = 'gs' + (++counter);
     const iframe = document.createElement('iframe');
     iframe.setAttribute('title', el.dataset.title ? 'git-sim: ' + el.dataset.title : 'git-sim graph');
@@ -122,7 +133,7 @@ EMBED_JS = r"""
     iframe.setAttribute('loading', 'lazy');
     const theme = themeFor(el);
     const controls = (el.dataset.controls || 'full').toLowerCase() === 'compact' ? 'compact' : 'full';
-    if (/\.html?(\?|#|$)/i.test(src)) {
+    if (!graph && /\.html?(\?|#|$)/i.test(src)) {
       // A saved git-sim page (a simulation or a recorded live session): fetched
       // and given to the frame as its document, so a host that refuses to be
       // framed by URL (X-Frame-Options) still shows it; its own script runs it.
@@ -136,9 +147,10 @@ EMBED_JS = r"""
     iframe.srcdoc = documentFor(id, theme, controls, el.dataset.title || '');
     frames.set(id, {iframe, element: el, theme, svg: null, ready: false});
     place(el, iframe);
-    fetch(src, {credentials: 'same-origin'}).then(r => { if (!r.ok) throw new Error(r.status + ' fetching ' + src); return r.text(); })
-      .then(svg => { const f = frames.get(id); f.svg = svg; if (f.ready) deliver(id); })
-      .catch(err => { el.textContent = 'git-sim embed: ' + err.message; });
+    const svgText = graph ? inflate(graph)
+      : fetch(src, {credentials: 'same-origin'}).then(r => { if (!r.ok) throw new Error(r.status + ' fetching ' + src); return r.text(); });
+    svgText.then(svg => { const f = frames.get(id); f.svg = svg; if (f.ready) deliver(id); })
+      .catch(err => { el.textContent = 'git-sim embed: ' + (graph ? 'the graph could not be unpacked' : err.message); });
   }
 
   function deliver(id){
@@ -156,7 +168,7 @@ EMBED_JS = r"""
     }
   });
 
-  function scan(root){ Array.from((root || document).querySelectorAll('.git-sim[data-src]')).forEach(mount); }
+  function scan(root){ Array.from((root || document).querySelectorAll('.git-sim[data-src], .git-sim[data-graph]')).forEach(mount); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => scan()); else scan();
   window.GitSimEmbed = {mount, scan, version: 1};
 })();

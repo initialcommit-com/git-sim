@@ -33,7 +33,8 @@ def parse_line(line: str) -> Tuple[List[str], Optional[int], Optional[str]]:
     """Split a magic line into git-sim arguments, the iframe height (None to
     fit the graph) and the repository path (our own options are taken off the
     front)."""
-    words = shlex.split(line, posix=(os.name != "nt"))
+    # a trailing "# comment" is dropped, as a shell does (IPython passes it on)
+    words = shlex.split(line, comments=True, posix=(os.name != "nt"))
     height, repo = None, None
     while words and words[0] in ("--height", "-C", "--repo"):
         flag = words.pop(0)

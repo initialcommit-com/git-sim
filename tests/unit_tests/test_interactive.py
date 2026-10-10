@@ -103,6 +103,9 @@ def test_html_page_is_self_contained_and_wires_the_controls(tmp_path):
     assert 'href="https://devlands.com"' in page
     assert 'id="help"' in page and 'id="helpMenu"' in page
     assert 'id="share"' in page and 'data-action="image"' in page
+    assert 'data-action="embed"' in page and 'data-graph="${graph}"' in page
+    # the snippet's closing script tag is escaped, or it would end the page's own script
+    assert 'defer><\\/script>`' in page
     assert "intent/tweet" in page and "bsky.app" in page and "linkedin.com" in page
     assert "startPlay();" in page and "before|after|step=" in page, "plays on open"
     assert "/^step=\\d+$/.test(raw)" in page, "#step=N is a pinned state, not a key"

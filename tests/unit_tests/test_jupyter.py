@@ -21,6 +21,10 @@ def test_the_magic_line_splits_our_options_from_gits():
         "HEAD~1",
     ]
     assert parse_line("") == ([], None, None)
+    # a comment after the command is not part of it, but a quoted # is
+    assert parse_line("rebase main   # replay onto main")[0] == ["rebase", "main"]
+    assert parse_line('commit -m "fix #12"')[0][:2] == ["commit", "-m"]
+    assert "#12" in parse_line('commit -m "fix #12"')[0][2]
 
 
 def test_the_page_is_framed_with_its_markup_escaped():
