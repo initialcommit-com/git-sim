@@ -376,10 +376,10 @@ Usage: `git-sim check-ignore [-v] <path>...`
 <summary><b><code>git checkout</code></b>: switch branches, or create one</summary>
 <br>
 
-Usage: `git-sim checkout [-b] <branch>`
+Usage: `git-sim checkout [-b] <branch> [<start-point>]`
 
 - Checks out `<branch>` into the working directory, i.e. moves `HEAD` to the specified `<branch>`
-- The `-b` flag creates a new branch with the specified name `<branch>` and checks it out, assuming it doesn't already exist
+- The `-b` flag creates a new branch with the specified name `<branch>` and checks it out, assuming it doesn't already exist. An optional `<start-point>` (a branch, tag, or commit) starts it there instead of at `HEAD`; a remote-tracking branch such as `origin/x` becomes its upstream
 
 [![git-sim checkout fix/order-totals](https://raw.githubusercontent.com/initialcommit-com/git-sim/main/docs/img/checkout.svg)](https://initialcommit.com/tools/git-sim/viewer?demo=checkout)
 
