@@ -1369,20 +1369,22 @@ class GitSimBaseCommand(m.MovingCameraScene):
             self.secondColumnFiles = m.VGroup()
             self.thirdColumnFiles = m.VGroup()
             return
-        if compact or n_rows < 8:
-            # the column rules end just below the last row (a long list in a
-            # full-size table reaches the frame's edge and is extended below)
-            bottom = rule_y - 0.5 * max(n_rows, 1) - 0.4
-            for old, x in ((vert1, v1x), (vert2, v2x)):
-                new = column_rule(x, bottom)
-                self.remove(old)
-                self.toFadeOut.remove(old)
-                self.add(new)
-                self.toFadeOut.add(new)
-                if old is vert1:
-                    vert1 = new
-                else:
-                    vert2 = new
+        # The column rules end just below the last row, however many rows
+        # there are. Left at the frame's edge (as they were first drawn), a
+        # table of ten files under a tall graph trailed empty rules for a
+        # third of the picture, and the viewer sizes the picture by its
+        # whole height.
+        bottom = rule_y - 0.5 * max(n_rows, 1) - 0.4
+        for old, x in ((vert1, v1x), (vert2, v2x)):
+            new = column_rule(x, bottom)
+            self.remove(old)
+            self.toFadeOut.remove(old)
+            self.add(new)
+            self.toFadeOut.add(new)
+            if old is vert1:
+                vert1 = new
+            else:
+                vert2 = new
         for row in range(1, n_rows, 2):
             stripe = m.Rectangle(
                 width=right - left,
@@ -1465,8 +1467,8 @@ class GitSimBaseCommand(m.MovingCameraScene):
             else:
                 self.add(*[s for s in thirdColumnFiles])
 
-        # The separators start at the frame's bottom edge, but a long file list
-        # can run past it: extend them to the last row.
+        # The rules end at the last row's slot; an entry's text can hang a
+        # little lower than its slot, so keep them 0.6 under the lowest one.
         rows = [
             t
             for group in (firstColumnFiles, secondColumnFiles, thirdColumnFiles)
