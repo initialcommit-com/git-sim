@@ -612,6 +612,10 @@ CASES: List[Case] = [
     # checkout
     Case("checkout-branch", "classic", ["checkout", "branch2"], all_of(title("git checkout branch2"), relabelled("HEAD"))),
     Case("checkout-new", "classic", ["checkout", "-b", "topic"], ref_after("topic", "branch")),
+    Case("checkout-new-at", "classic", ["checkout", "-b", "topic", "branch2"], all_of(title("git checkout -b topic branch2"), ref_after("topic", "branch"), relabelled("HEAD"))),
+    Case("checkout-new-tracking", "remote-branch", ["checkout", "-b", "idea", "origin/old-idea"], all_of(title("git checkout -b idea origin/old-idea"), ref_after("idea", "branch"), relabelled("HEAD"), texts("becomes idea's upstream"))),
+    Case("checkout-new-bad-start", "classic", ["checkout", "-b", "topic", "nope"], error="not a valid commit"),
+    Case("checkout-new-two-starts", "classic", ["checkout", "-b", "topic", "main", "branch2"], error="at most one start point"),
     Case("checkout-tag", "release", ["checkout", "v1.0.0"], relabelled("HEAD")),
     Case("checkout-commit", "classic", ["checkout", "HEAD~2"], relabelled("HEAD")),
     Case("checkout-missing", "classic", ["checkout", "nope"], error="git-sim error"),

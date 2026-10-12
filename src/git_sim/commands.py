@@ -137,12 +137,12 @@ def branch(
 def checkout(
     branch: List[str] = typer.Argument(
         default=None,
-        help="The name of the branch to checkout, or after -- the files whose changes to discard (git checkout -- <paths>)",
+        help="The branch to checkout, with an optional start point (branch, tag, or commit) after the new branch name with -b, or after -- the files whose changes to discard",
     ),
     b: bool = typer.Option(
         False,
         "-b",
-        help="Create the specified branch if it doesn't already exist",
+        help="Create and check out a new branch at HEAD or the optional start point",
     ),
 ):
     import sys
@@ -168,10 +168,13 @@ def checkout(
         scene = CheckoutFiles(paths=paths)
     else:
         _need(revisions, "name the branch to check out, or the files after --")
-        if len(revisions) > 1:
+        if b and after is None and len(revisions) > 2:
+            print("git-sim error: git checkout -b takes a new branch and at most one start point")
+            raise typer.Exit(1)
+        if len(revisions) > 1 and not (b and after is None):
             print("git-sim error: git checkout takes one branch or commit")
             raise typer.Exit(1)
-        scene = Checkout(branch=revisions[0], b=b)
+        scene = Checkout(branch=revisions[0], b=b, start_point=revisions[1] if len(revisions) == 2 else None)
     handle_animations(scene=scene)
 
 
