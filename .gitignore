@@ -18,3 +18,4 @@ vscode/LICENSE.txt
 
 # the sanity run's clones, results and logs (CONTRIBUTING.md)
 tests/sanity/.work/
+venv/
